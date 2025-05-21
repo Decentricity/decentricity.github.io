@@ -1,252 +1,135 @@
-import React, { useState } from "react";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
-import { Info, Wallet } from "lucide-react";
+<!-- mwx marketplace single‑file mockup: drop this as index.html on github pages and you’re done -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>mwx ai marketplace</title>
+<style>
+:root{--bg:#f5f5f5;--bg-dark:#0e0e0e;--card:#fff;--card-dark:#1a1a1a;--border:#d0d0d0;--border-dark:#333;--txt:#111;--txt-dark:#e7e7e7;--indigo:#6366f1;--purple:#a855f7}
+@media(prefers-color-scheme:dark){body{background:var(--bg-dark);color:var(--txt-dark)}.card{background:var(--card-dark);border-color:var(--border-dark)}input,select{background:#111;color:var(--txt-dark);border-color:var(--border-dark)}.btn{border-color:var(--border-dark)}.btn.primary{background:var(--indigo)}}
+body{margin:0;font-family:system-ui,sans-serif;background:var(--bg);color:var(--txt)}
+h1{margin:0;font-size:2rem;font-weight:700}
+header{margin-bottom:2rem}
+.container{max-width:1200px;margin:auto;padding:1.5rem}
+.flex{display:flex;align-items:center}
+.wrap{flex-wrap:wrap}
+.gap{gap:.75rem}
+.mt{margin-top:.5rem}
+input,select{padding:.4rem .6rem;font-size:.9rem;border:1px solid var(--border);border-radius:.3rem}
+.wallet{background:var(--card);border:1px solid var(--border);border-radius:.5rem;padding:.4rem .6rem;font-size:.75rem;display:flex;align-items:center;gap:.4rem}
+.wallet svg{color:var(--indigo)}
+.btn{padding:.4rem .8rem;font-size:.8rem;border-radius:.3rem;cursor:pointer;border:1px solid var(--border)}
+.btn.primary{background:var(--indigo);color:#fff;border:none}
+section{margin-bottom:3rem}
+section>h2{font-size:1.25rem;font-weight:600;margin:.5rem 0 1rem}
+.grid{display:grid;gap:1rem}
+.grid-3{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+.grid-4{grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+.card{background:var(--card);border:1px solid var(--border);border-radius:.6rem;position:relative;padding:1.25rem;display:flex;flex-direction:column;height:100%}
+.rank{position:absolute;top:.6rem;right:.6rem;background:var(--indigo);color:#fff;font-size:.6rem;padding:.15rem .4rem;border-radius:999px;font-weight:600}
+.card h3{margin:0 0 .25rem;font-size:1.1rem;text-transform:capitalize}
+.card p.desc{font-size:.8rem;margin:.25rem 0 1rem;color:var(--txt)}
+.metric{display:flex;align-items:baseline;gap:.25rem;margin-bottom:1rem}
+.metric .val{font-weight:800;color:var(--purple)}
+.metric.large .val{font-size:2.2rem}
+.metric.small .val{font-size:1.4rem}
+.price{margin-top:auto;font-weight:800}
+.price.large{font-size:1.8rem}
+.price.small{font-size:1.3rem}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+  <div class="flex wrap gap">
+    <div style="flex:1 1 200px">
+      <h1>mwx ai marketplace</h1>
+      <p style="font-size:.8rem;color:gray">discover, buy, and stake on ai solutions for small businesses</p>
+    </div>
+    <input id="search" placeholder="search products…" style="flex:1 1 250px"/>
+    <select id="vendor" style="width:120px">
+      <option value="all">all vendors</option>
+      <option value="blocksphere">blocksphere</option>
+      <option value="mediawave">mediawave</option>
+      <option value="vendor 3">vendor 3</option>
+    </select>
+    <div class="wallet">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-wallet"><path d="M4 18a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h16a1 1 0 0 1 1 1v3"/><path d="M18 12h2a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2"/><path d="M18 12a2 2 0 1 0 0 4"/></svg>
+      <div>
+        <div><strong id="usdc"></strong> usdc</div>
+        <div><strong id="mwx"></strong> mwx</div>
+      </div>
+    </div>
+  </div>
+  <div class="flex gap mt" style="font-size:.75rem;background:var(--card);border:1px solid var(--border);padding:.4rem .6rem;border-radius:.4rem">
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+    boost a product’s visibility by staking $mwx. stakers share revenue whenever the product is purchased – proportional to stake.
+  </div>
+</header>
 
-/* ------------------------------------------------------------------
- * demo data & static wallet balance
- * ----------------------------------------------------------------*/
-const USER_BALANCE = {
-  usdc: 542.75,
-  mwx: 13250,
-};
+<section id="featured">
+  <h2>featured solutions</h2>
+  <div class="grid grid-3" id="featuredGrid"></div>
+</section>
 
-const FEATURED = [
-  {
-    id: 1,
-    name: "custodian zk-kyc",
-    vendor: "blocksphere",
-    description: "zk-powered compliance layer for fintech onboarding",
-    tvl: 19750,
-    priceUsd: 149,
-    stakers: 87,
-  },
-  {
-    id: 2,
-    name: "sentiment analysis pro",
-    vendor: "mediawave",
-    description: "real‑time multilingual sentiment analysis api with dashboard",
-    tvl: 3000,
-    priceUsd: 29,
-    stakers: 22,
-  },
-  {
-    id: 3,
-    name: "sales forecast lite",
-    vendor: "vendor 3",
-    description: "time‑series demand forecasting for retail smbs",
-    tvl: 625,
-    priceUsd: 19,
-    stakers: 9,
-  },
+<section id="apps">
+  <h2>all apps</h2>
+  <div class="grid grid-4" id="appsGrid"></div>
+</section>
+
+<footer style="font-size:.7rem;color:gray;text-align:center">pay in usdc or $mwx • staking uses $mwx only and auto‑unlocks after 7 days</footer>
+</div>
+<script>
+const WALLET = {usdc:542.75,mwx:13250};
+const FEATURED=[
+  {id:1,name:'custodian zk-kyc',vendor:'blocksphere',desc:'zk-powered compliance layer for fintech onboarding',tvl:19750,price:149,stakers:87},
+  {id:2,name:'sentiment analysis pro',vendor:'mediawave',desc:'real-time multilingual sentiment analysis api with dashboard',tvl:3000,price:29,stakers:22},
+  {id:3,name:'sales forecast lite',vendor:'vendor 3',desc:'time-series demand forecasting for retail smbs',tvl:625,price:19,stakers:9},
+];
+const APPS=[
+  {id:4,name:'compliance copilot',vendor:'blocksphere',desc:'llm that drafts & scores docs vs gdpr',tvl:4600,price:59,stakers:18},
+  {id:5,name:'chainwatch anomaly ai',vendor:'blocksphere',desc:'on-chain fraud detector',tvl:8250,price:79,stakers:32},
+  {id:6,name:'gas guru',vendor:'blocksphere',desc:'predicts cheap eth gas windows',tvl:2150,price:25,stakers:12},
+  {id:7,name:'emotion tracker 360',vendor:'mediawave',desc:'live call sentiment alerts',tvl:2900,price:39,stakers:14},
+  {id:8,name:'hashtag oracle',vendor:'mediawave',desc:'predicts hashtag virality',tvl:1750,price:19,stakers:11},
+  {id:9,name:'ad mockup remix',vendor:'mediawave',desc:'autogenerates ad creatives',tvl:3100,price:29,stakers:15},
+  {id:10,name:'demand surge radar',vendor:'vendor 3',desc:'predicts retail demand spikes',tvl:1200,price:35,stakers:7},
+  {id:11,name:'churn whisperer',vendor:'vendor 3',desc:'scores users on cancel-risk',tvl:980,price:27,stakers:6},
+  {id:12,name:'smart rota',vendor:'vendor 3',desc:'ml shift-scheduling optimiser',tvl:1650,price:29,stakers:8},
 ];
 
-const ALL_APPS = [
-  // blocksphere extras
-  { id: 4, name: "compliance copilot", vendor: "blocksphere", description: "llm that drafts & scores docs vs gdpr", tvl: 4600, priceUsd: 59, stakers: 18 },
-  { id: 5, name: "chainwatch anomaly ai", vendor: "blocksphere", description: "on‑chain fraud detector", tvl: 8250, priceUsd: 79, stakers: 32 },
-  { id: 6, name: "gas guru", vendor: "blocksphere", description: "predicts cheap eth gas windows", tvl: 2150, priceUsd: 25, stakers: 12 },
-  // mediawave extras
-  { id: 7, name: "emotion tracker 360", vendor: "mediawave", description: "live call sentiment alerts", tvl: 2900, priceUsd: 39, stakers: 14 },
-  { id: 8, name: "hashtag oracle", vendor: "mediawave", description: "predicts hashtag virality", tvl: 1750, priceUsd: 19, stakers: 11 },
-  { id: 9, name: "ad mockup remix", vendor: "mediawave", description: "autogenerates ad creatives", tvl: 3100, priceUsd: 29, stakers: 15 },
-  // vendor 3 extras
-  { id: 10, name: "demand surge radar", vendor: "vendor 3", description: "predicts retail demand spikes", tvl: 1200, priceUsd: 35, stakers: 7 },
-  { id: 11, name: "churn whisperer", vendor: "vendor 3", description: "scores users on cancel‑risk", tvl: 980, priceUsd: 27, stakers: 6 },
-  { id: 12, name: "smart rota", vendor: "vendor 3", description: "ml shift‑scheduling optimiser", tvl: 1650, priceUsd: 29, stakers: 8 },
-];
+document.getElementById('usdc').textContent=WALLET.usdc.toLocaleString();
+document.getElementById('mwx').textContent=WALLET.mwx.toLocaleString();
 
-/* ------------------------------------------------------------------
- * util
- * ----------------------------------------------------------------*/
-const filterSort = (arr, vendor, q) =>
-  arr
-    .filter(
-      (p) =>
-        (vendor === "all" || p.vendor === vendor) &&
-        p.name.toLowerCase().includes(q.toLowerCase())
-    )
-    .sort((a, b) => b.tvl - a.tvl);
+const searchEl=document.getElementById('search');
+const vendorEl=document.getElementById('vendor');
 
-/* ------------------------------------------------------------------
- * root component
- * ----------------------------------------------------------------*/
-export default function MWXMarketplaceMockup() {
-  const [search, setSearch] = useState("");
-  const [vendor, setVendor] = useState("all");
-
-  const featuredList = filterSort(FEATURED, vendor, search);
-  const appList = filterSort(ALL_APPS, vendor, search);
-
-  return (
-    <div className="min-h-screen bg-neutral-100 p-6 dark:bg-neutral-900">
-      <MarketplaceHeader
-        search={search}
-        setSearch={setSearch}
-        vendor={vendor}
-        setVendor={setVendor}
-      />
-
-      <Section title="featured solutions">
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {featuredList.map((p, i) => (
-            <ProductCard key={p.id} product={p} rank={i + 1} large />
-          ))}
-        </div>
-      </Section>
-
-      <Section title="all apps">
-        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          {appList.map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
-        </div>
-      </Section>
-
-      <footer className="mt-12 text-center text-xs text-neutral-500 dark:text-neutral-400">
-        pay in usdc or $mwx • staking uses $mwx only and auto‑unlocks after 7 days
-      </footer>
-    </div>
-  );
+function renderCard(p,large){
+  const numCls=large?'metric large':'metric small';
+  const priceCls=large?'price large':'price small';
+  return `<div class="card">
+    ${p.rank?`<span class="rank">#${p.rank}</span>`:''}
+    <h3>${p.name}</h3>
+    <p class="desc">${p.desc}</p>
+    <div class="${numCls}"><span class="val">${p.stakers}</span> stakers</div>
+    <div class="${numCls}"><span class="val">${p.tvl.toLocaleString()}</span> $mwx tvl</div>
+    <div class="${priceCls}">$${p.price}/mo</div>
+    <div class="flex gap mt"><button class="btn primary">buy</button><button class="btn">stake</button></div>
+  </div>`;
 }
 
-/* ------------------------------------------------------------------
- * header + wallet widget
- * ----------------------------------------------------------------*/
-function MarketplaceHeader({ search, setSearch, vendor, setVendor }) {
-  return (
-    <header className="mb-8 space-y-4">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        {/* brand */}
-        <div className="flex-1">
-          <h1 className="text-3xl font-bold tracking-tight text-neutral-900 dark:text-white">mwx ai marketplace</h1>
-          <p className="text-sm text-neutral-600 dark:text-neutral-300">
-            discover, buy, and stake on ai solutions for small businesses
-          </p>
-        </div>
-
-        {/* search + vendor filter */}
-        <div className="flex w-full max-w-md gap-2 lg:mx-auto">
-          <Input
-            placeholder="search products…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="flex-1"
-          />
-          <Select value={vendor} onValueChange={setVendor}>
-            <SelectTrigger className="w-32 capitalize">
-              <SelectValue placeholder="vendor" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all" className="capitalize">all vendors</SelectItem>
-              <SelectItem value="mediawave" className="capitalize">mediawave</SelectItem>
-              <SelectItem value="blocksphere" className="capitalize">blocksphere</SelectItem>
-              <SelectItem value="vendor 3" className="capitalize">vendor 3</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* wallet */}
-        <WalletBox />
-      </div>
-
-      <div className="flex items-start gap-2 rounded-lg bg-neutral-200 p-3 text-xs text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 sm:text-sm">
-        <Info size={16} className="mt-0.5" />
-        <span>
-          boost a product’s visibility by staking $mwx. stakers share revenue whenever the product is purchased – proportional to stake.
-        </span>
-      </div>
-    </header>
-  );
+function draw(){
+  const q=searchEl.value.toLowerCase();
+  const v=vendorEl.value;
+  const filter=l=>l.filter(p=>(v==='all'||p.vendor===v)&&p.name.includes(q));
+  const featured=filter([...FEATURED]).sort((a,b)=>b.tvl-a.tvl).map((p,i)=>({...p,rank:i+1}));
+  const apps=filter([...APPS]).sort((a,b)=>b.tvl-a.tvl);
+  document.getElementById('featuredGrid').innerHTML=featured.map(p=>renderCard(p,true)).join('');
+  document.getElementById('appsGrid').innerHTML=apps.map(p=>renderCard(p,false)).join('');
 }
-
-function WalletBox() {
-  return (
-    <div className="mt-2 flex items-center gap-3 rounded-lg bg-white px-3 py-2 shadow-sm dark:bg-neutral-800">
-      <Wallet size={18} className="text-indigo-600" />
-      <div className="flex flex-col text-xs leading-tight">
-        <span className="font-semibold text-neutral-900 dark:text-neutral-100">
-          {USER_BALANCE.usdc.toLocaleString()} usdc
-        </span>
-        <span className="font-semibold text-neutral-900 dark:text-neutral-100">
-          {USER_BALANCE.mwx.toLocaleString()} mwx
-        </span>
-      </div>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------
- * reusable layout
- * ----------------------------------------------------------------*/
-function Section({ title, children }) {
-  return (
-    <section className="mb-10">
-      <h2 className="mb-4 text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
-        {title}
-      </h2>
-      {children}
-    </section>
-  );
-}
-
-function Metric({ label, value, size }) {
-  return (
-    <div className="flex items-baseline gap-1">
-      <span className={`${size} font-extrabold text-purple-500 dark:text-purple-400`}>{value}</span>
-      <span className="text-sm font-medium text-neutral-600 dark:text-neutral-400">{label}</span>
-    </div>
-  );
-}
-
-function ProductCard({ product, rank, large = false }) {
-  const numSize = large ? "text-5xl" : "text-3xl";
-  const priceSize = large ? "text-4xl" : "text-2xl";
-
-  return (
-    <Card className="relative overflow-hidden bg-white dark:bg-neutral-800">
-      {rank && (
-        <span className="absolute right-3 top-3 rounded-full bg-indigo-600 px-2 py-0.5 text-xs font-semibold text-white">
-          #{rank}
-        </span>
-      )}
-
-      <CardHeader>
-        <CardTitle className="capitalize text-neutral-900 dark:text-neutral-100">{product.name}</CardTitle>
-        <CardDescription className="capitalize text-neutral-500 dark:text-neutral-400">by {product.vendor}</CardDescription>
-      </CardHeader>
-
-      <CardContent>
-        <p className="mb-6 text-sm leading-relaxed text-neutral-700 dark:text-neutral-300">{product.description}</p>
-
-        <div className="mb-6 flex flex-wrap items-baseline gap-6">
-          <Metric label="stakers" value={product.stakers} size={numSize} />
-          <Metric label="$mwx tvl" value={product.tvl.toLocaleString()} size={numSize} />
-        </div>
-      </CardContent>
-
-      <CardFooter className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <span className={`${priceSize} font-extrabold text-neutral-900 dark:text-neutral-100`}>${product.priceUsd}/mo</span>
-        <div className="flex gap-2">
-          <Button size="sm">buy</Button>
-          <Button variant="secondary" size="sm">stake</Button>
-        </div>
-      </CardFooter>
-    </Card>
-  );
-}
+searchEl.oninput=vendorEl.onchange=draw;
+draw();
+</script>
+</body>
+</html>
