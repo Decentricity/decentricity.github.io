@@ -1,4 +1,4 @@
-<!-- mwx marketplace single‑file mockup: drop this as index.html on github pages and you’re done -->
+<!-- mwx marketplace static mockup v2 (complete) -->
 <!doctype html>
 <html lang="en">
 <head>
@@ -6,129 +6,116 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>mwx ai marketplace</title>
 <style>
-:root{--bg:#f5f5f5;--bg-dark:#0e0e0e;--card:#fff;--card-dark:#1a1a1a;--border:#d0d0d0;--border-dark:#333;--txt:#111;--txt-dark:#e7e7e7;--indigo:#6366f1;--purple:#a855f7}
-@media(prefers-color-scheme:dark){body{background:var(--bg-dark);color:var(--txt-dark)}.card{background:var(--card-dark);border-color:var(--border-dark)}input,select{background:#111;color:var(--txt-dark);border-color:var(--border-dark)}.btn{border-color:var(--border-dark)}.btn.primary{background:var(--indigo)}}
+:root{--bg:#0d1117;--panel:#161b22;--card:#1e242c;--border:#30363d;--txt:#e6edf3;--indigo:#6366f1;--purple:#a855f7}
 body{margin:0;font-family:system-ui,sans-serif;background:var(--bg);color:var(--txt)}
-h1{margin:0;font-size:2rem;font-weight:700}
-header{margin-bottom:2rem}
-.container{max-width:1200px;margin:auto;padding:1.5rem}
-.flex{display:flex;align-items:center}
-.wrap{flex-wrap:wrap}
-.gap{gap:.75rem}
-.mt{margin-top:.5rem}
-input,select{padding:.4rem .6rem;font-size:.9rem;border:1px solid var(--border);border-radius:.3rem}
-.wallet{background:var(--card);border:1px solid var(--border);border-radius:.5rem;padding:.4rem .6rem;font-size:.75rem;display:flex;align-items:center;gap:.4rem}
+*{box-sizing:border-box}
+
+/* layout */
+.layout{display:flex;min-height:100vh}
+.sidebar{width:230px;background:var(--panel);padding:1.5rem;border-right:1px solid var(--border)}
+.main{flex:1;padding:1.5rem;max-width:1440px;margin:auto}
+
+/* sidebar */
+.sidebar h2{font-size:1rem;margin:0 0 1rem;font-weight:600}
+.filter-group{margin-bottom:1.8rem}
+.filter-group label{display:block;font-size:.8rem;margin:.35rem 0;cursor:pointer}
+.filter-group input{margin-right:.4rem}
+
+/* header bar */
+.topbar{display:flex;flex-wrap:wrap;gap:.75rem;align-items:center;margin-bottom:1.5rem}
+.topbar input,.topbar select{padding:.45rem .65rem;font-size:.9rem;background:var(--panel);border:1px solid var(--border);border-radius:.3rem;color:var(--txt)}
+.wallet{display:flex;align-items:center;gap:.4rem;background:var(--panel);border:1px solid var(--border);border-radius:.45rem;padding:.4rem .6rem;font-size:.75rem}
 .wallet svg{color:var(--indigo)}
-.btn{padding:.4rem .8rem;font-size:.8rem;border-radius:.3rem;cursor:pointer;border:1px solid var(--border)}
-.btn.primary{background:var(--indigo);color:#fff;border:none}
-section{margin-bottom:3rem}
-section>h2{font-size:1.25rem;font-weight:600;margin:.5rem 0 1rem}
+
+/* grid */
 .grid{display:grid;gap:1rem}
 .grid-3{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
 .grid-4{grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
-.card{background:var(--card);border:1px solid var(--border);border-radius:.6rem;position:relative;padding:1.25rem;display:flex;flex-direction:column;height:100%}
+
+/* card */
+.card{background:var(--card);border:1px solid var(--border);border-radius:.55rem;padding:1rem;display:flex;flex-direction:column;position:relative;min-height:280px}
+.card img{width:100%;height:120px;object-fit:cover;border:1px solid var(--border);border-radius:.35rem;background:#23272f}
 .rank{position:absolute;top:.6rem;right:.6rem;background:var(--indigo);color:#fff;font-size:.6rem;padding:.15rem .4rem;border-radius:999px;font-weight:600}
-.card h3{margin:0 0 .25rem;font-size:1.1rem;text-transform:capitalize}
-.card p.desc{font-size:.8rem;margin:.25rem 0 1rem;color:var(--txt)}
-.metric{display:flex;align-items:baseline;gap:.25rem;margin-bottom:1rem}
+.card h3{font-size:1rem;margin:.6rem 0 .25rem;text-transform:capitalize}
+.card p.desc{font-size:.75rem;margin:.25rem 0 1rem;color:#c3c9d1;line-height:1.3}
+.metric{display:flex;align-items:baseline;gap:.25rem;margin-bottom:.45rem}
 .metric .val{font-weight:800;color:var(--purple)}
-.metric.large .val{font-size:2.2rem}
-.metric.small .val{font-size:1.4rem}
-.price{margin-top:auto;font-weight:800}
-.price.large{font-size:1.8rem}
-.price.small{font-size:1.3rem}
+.metric.large .val{font-size:2rem}.metric.small .val{font-size:1.3rem}
+.price{margin-top:auto;font-weight:800}.price.large{font-size:1.5rem}.price.small{font-size:1.2rem}
+.btn{padding:.4rem .8rem;font-size:.75rem;border-radius:.3rem;cursor:pointer;border:1px solid var(--border);background:var(--panel);color:var(--txt)}
+.btn.primary{background:var(--indigo);border:none}
+
+footer{font-size:.7rem;color:#8b949e;text-align:center;margin-top:2rem}
 </style>
 </head>
 <body>
-<div class="container">
-<header>
-  <div class="flex wrap gap">
-    <div style="flex:1 1 200px">
-      <h1>mwx ai marketplace</h1>
-      <p style="font-size:.8rem;color:gray">discover, buy, and stake on ai solutions for small businesses</p>
+<div class="layout">
+  <!-- sidebar -->
+  <aside class="sidebar">
+    <h2>filter</h2>
+    <div class="filter-group">
+      <strong style="font-size:.85rem">category</strong>
+      <label><input type="checkbox"/>ai tools</label>
+      <label><input type="checkbox"/>workflows</label>
+      <label><input type="checkbox"/>templates</label>
+      <label><input type="checkbox"/>ai agents</label>
+      <label><input type="checkbox"/>datasets</label>
+      <label><input type="checkbox"/>apis</label>
     </div>
-    <input id="search" placeholder="search products…" style="flex:1 1 250px"/>
-    <select id="vendor" style="width:120px">
-      <option value="all">all vendors</option>
-      <option value="blocksphere">blocksphere</option>
-      <option value="mediawave">mediawave</option>
-      <option value="vendor 3">vendor 3</option>
-    </select>
-    <div class="wallet">
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-wallet"><path d="M4 18a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h16a1 1 0 0 1 1 1v3"/><path d="M18 12h2a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2"/><path d="M18 12a2 2 0 1 0 0 4"/></svg>
-      <div>
-        <div><strong id="usdc"></strong> usdc</div>
-        <div><strong id="mwx"></strong> mwx</div>
+  </aside>
+
+  <!-- main -->
+  <main class="main">
+    <div class="topbar">
+      <input id="search" placeholder="search here…" style="flex:1 1 260px"/>
+      <select id="vendor">
+        <option value="all">all vendors</option>
+        <option value="blocksphere">blocksphere</option>
+        <option value="mediawave">mediawave</option>
+        <option value="vendor 3">vendor 3</option>
+      </select>
+      <div class="wallet">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h16a1 1 0 0 1 1 1v3"/><path d="M18 12h2a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2"/><path d="M18 12a2 2 0 1 0 0 4"/></svg>
+        <div><div><strong id="usdc"></strong> usdc</div><div><strong id="mwx"></strong> mwx</div></div>
       </div>
     </div>
-  </div>
-  <div class="flex gap mt" style="font-size:.75rem;background:var(--card);border:1px solid var(--border);padding:.4rem .6rem;border-radius:.4rem">
-    <svg xmlns="http://www.w3.org/2000/svg" width="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-    boost a product’s visibility by staking $mwx. stakers share revenue whenever the product is purchased – proportional to stake.
-  </div>
-</header>
 
-<section id="featured">
-  <h2>featured solutions</h2>
-  <div class="grid grid-3" id="featuredGrid"></div>
-</section>
+    <section>
+      <h2>featured solutions</h2>
+      <div class="grid grid-3" id="featuredGrid"></div>
+    </section>
 
-<section id="apps">
-  <h2>all apps</h2>
-  <div class="grid grid-4" id="appsGrid"></div>
-</section>
+    <section>
+      <h2>all apps</h2>
+      <div class="grid grid-4" id="appsGrid"></div>
+    </section>
 
-<footer style="font-size:.7rem;color:gray;text-align:center">pay in usdc or $mwx • staking uses $mwx only and auto‑unlocks after 7 days</footer>
+    <footer>pay in usdc or $mwx • staking uses $mwx only and auto-unlocks after 7 days</footer>
+  </main>
 </div>
+
 <script>
-const WALLET = {usdc:542.75,mwx:13250};
-const FEATURED=[
-  {id:1,name:'custodian zk-kyc',vendor:'blocksphere',desc:'zk-powered compliance layer for fintech onboarding',tvl:19750,price:149,stakers:87},
-  {id:2,name:'sentiment analysis pro',vendor:'mediawave',desc:'real-time multilingual sentiment analysis api with dashboard',tvl:3000,price:29,stakers:22},
-  {id:3,name:'sales forecast lite',vendor:'vendor 3',desc:'time-series demand forecasting for retail smbs',tvl:625,price:19,stakers:9},
-];
-const APPS=[
-  {id:4,name:'compliance copilot',vendor:'blocksphere',desc:'llm that drafts & scores docs vs gdpr',tvl:4600,price:59,stakers:18},
-  {id:5,name:'chainwatch anomaly ai',vendor:'blocksphere',desc:'on-chain fraud detector',tvl:8250,price:79,stakers:32},
-  {id:6,name:'gas guru',vendor:'blocksphere',desc:'predicts cheap eth gas windows',tvl:2150,price:25,stakers:12},
-  {id:7,name:'emotion tracker 360',vendor:'mediawave',desc:'live call sentiment alerts',tvl:2900,price:39,stakers:14},
-  {id:8,name:'hashtag oracle',vendor:'mediawave',desc:'predicts hashtag virality',tvl:1750,price:19,stakers:11},
-  {id:9,name:'ad mockup remix',vendor:'mediawave',desc:'autogenerates ad creatives',tvl:3100,price:29,stakers:15},
-  {id:10,name:'demand surge radar',vendor:'vendor 3',desc:'predicts retail demand spikes',tvl:1200,price:35,stakers:7},
-  {id:11,name:'churn whisperer',vendor:'vendor 3',desc:'scores users on cancel-risk',tvl:980,price:27,stakers:6},
-  {id:12,name:'smart rota',vendor:'vendor 3',desc:'ml shift-scheduling optimiser',tvl:1650,price:29,stakers:8},
-];
+const WALLET={usdc:542.75,mwx:13250};
+const FEATURED=[{id:1,name:'custodian zk-kyc',vendor:'blocksphere',desc:'zk-powered compliance layer for fintech onboarding',tvl:19750,price:149,stakers:87},{id:2,name:'sentiment analysis pro',vendor:'mediawave',desc:'real-time multilingual sentiment analysis api with dashboard',tvl:3000,price:29,stakers:22},{id:3,name:'sales forecast lite',vendor:'vendor 3',desc:'time-series demand forecasting for retail smbs',tvl:625,price:19,stakers:9}];
+const APPS=[{id:4,name:'compliance copilot',vendor:'blocksphere',desc:'llm that drafts & scores docs vs gdpr',tvl:4600,price:59,stakers:18},{id:5,name:'chainwatch anomaly ai',vendor:'blocksphere',desc:'on-chain fraud detector',tvl:8250,price:79,stakers:32},{id:6,name:'gas guru',vendor:'blocksphere',desc:'predicts cheap eth gas windows',tvl:2150,price:25,stakers:12},{id:7,name:'emotion tracker 360',vendor:'mediawave',desc:'live call sentiment alerts',tvl:2900,price:39,stakers:14},{id:8,name:'hashtag oracle',vendor:'mediawave',desc:'predicts hashtag virality',tvl:1750,price:19,stakers:11},{id:9,name:'ad mockup remix',vendor:'mediawave',desc:'autogenerates ad creatives',tvl:3100,price:29,stakers:15},{id:10,name:'demand surge radar',vendor:'vendor 3',desc:'predicts retail demand spikes',tvl:1200,price:35,stakers:7},{id:11,name:'churn whisperer',vendor:'vendor 3',desc:'scores users on cancel-risk',tvl:980,price:27,stakers:6},{id:12,name:'smart rota',vendor:'vendor 3',desc:'ml shift-scheduling optimiser',tvl:1650,price:29,stakers:8}];
 
 document.getElementById('usdc').textContent=WALLET.usdc.toLocaleString();
 document.getElementById('mwx').textContent=WALLET.mwx.toLocaleString();
-
 const searchEl=document.getElementById('search');
 const vendorEl=document.getElementById('vendor');
 
-function renderCard(p,large){
-  const numCls=large?'metric large':'metric small';
-  const priceCls=large?'price large':'price small';
-  return `<div class="card">
-    ${p.rank?`<span class="rank">#${p.rank}</span>`:''}
-    <h3>${p.name}</h3>
-    <p class="desc">${p.desc}</p>
-    <div class="${numCls}"><span class="val">${p.stakers}</span> stakers</div>
-    <div class="${numCls}"><span class="val">${p.tvl.toLocaleString()}</span> $mwx tvl</div>
-    <div class="${priceCls}">$${p.price}/mo</div>
-    <div class="flex gap mt"><button class="btn primary">buy</button><button class="btn">stake</button></div>
-  </div>`;
-}
+function metricHTML(label,val,large){return `<div class="metric ${large?'large':'small'}"><span class="val">${val}</span> ${label}</div>`}
+function card(p,large,rank){return `<div class="card">${rank?`<span class="rank">#${rank}</span>`:''}<img src="https://via.placeholder.com/600x400?text=${encodeURIComponent(p.name[0].toUpperCase())}" alt="icon"/><h3>${p.name}</h3><p class="desc">${p.desc}</p>${metricHTML('stakers',p.stakers,large)}${metricHTML('$mwx tvl',p.tvl.toLocaleString(),large)}<div class="price ${large?'large':'small'}">$${p.price}/mo</div><div class="flex gap"><button class="btn primary">buy</button><button class="btn">stake</button></div></div>`;}
 
 function draw(){
-  const q=searchEl.value.toLowerCase();
-  const v=vendorEl.value;
-  const filter=l=>l.filter(p=>(v==='all'||p.vendor===v)&&p.name.includes(q));
-  const featured=filter([...FEATURED]).sort((a,b)=>b.tvl-a.tvl).map((p,i)=>({...p,rank:i+1}));
-  const apps=filter([...APPS]).sort((a,b)=>b.tvl-a.tvl);
-  document.getElementById('featuredGrid').innerHTML=featured.map(p=>renderCard(p,true)).join('');
-  document.getElementById('appsGrid').innerHTML=apps.map(p=>renderCard(p,false)).join('');
+  const q=searchEl.value.toLowerCase(),v=vendorEl.value;
+  const filter=l=>l.filter(p=>(v==='all'||p.vendor===v)&&p.name.includes(q)).sort((a,b)=>b.tvl-a.tvl);
+  const feat=filter([...FEATURED]).map((p,i)=>card({...p},true,i+1));
+  const apps=filter([...APPS]).map(p=>card(p,false));
+  document.getElementById('featuredGrid').innerHTML=feat.join('');
+  document.getElementById('appsGrid').innerHTML=apps.join('');
 }
-searchEl.oninput=vendorEl.onchange=draw;
+searchEl.oninput = vendorEl.onchange = draw;
 draw();
 </script>
 </body>
