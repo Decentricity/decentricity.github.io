@@ -44,302 +44,174 @@
       src models via jsdelivr cdn. credit: google mediapipe tasks vision.
     </div>
   </div>
+<script type="module">
+  const statusEl = document.getElementById("status");
+  const fpsEl = document.getElementById("fps");
+  const gHeadEl = document.getElementById("g_head");
+  const gTorsoEl = document.getElementById("g_torso");
+  const pLEl = document.getElementById("p_l");
+  const pREl = document.getElementById("p_r");
+  const video = document.getElementById("cam");
+  const canvas = document.getElementById("overlay");
+  const ctx = canvas.getContext("2d");
+  const startBtn = document.getElementById("start");
 
-  <script type="module">
-    // cdn imports
-    import {
-      FilesetResolver,
-      PoseLandmarker,
-      DrawingUtils
-    } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.7";
+  const cdns = [
+    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.7",
+    "https://unpkg.com/@mediapipe/tasks-vision@0.10.7"
+  ];
+  const pick = (suffix) => Promise.any(cdns.map(base => fetch(`${base}/${suffix}`, {mode:"cors"}).then(r => {
+    if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+    return `${base}/${suffix}`;
+  })));
 
-    // dom
-    const video = document.getElementById("cam");
-    const canvas = document.getElementById("overlay");
-    const ctx = canvas.getContext("2d");
-    const statusEl = document.getElementById("status");
-    const fpsEl = document.getElementById("fps");
-    const gHeadEl = document.getElementById("g_head");
-    const gTorsoEl = document.getElementById("g_torso");
-    const pLEl = document.getElementById("p_l");
-    const pREl = document.getElementById("p_r");
-    const startBtn = document.getElementById("start");
+  // lazy import (after we know at least one cdn is reachable)
+  async function loadVision() {
+    const base = await pick("wasm/vision_wasm_internal.wasm").then(url => url.replace("/wasm/vision_wasm_internal.wasm",""));
+    const modelURL = await pick("wasm/pose_landmarker_lite.task");
+    const { FilesetResolver, PoseLandmarker } = await import(/* webpackIgnore: true */ `${base}/index.js`);
+    const vision = await FilesetResolver.forVisionTasks(`${base}/wasm`);
+    const landmarker = await PoseLandmarker.createFromOptions(vision, {
+      baseOptions: { modelAssetPath: modelURL },
+      runningMode: "VIDEO",
+      numPoses: 1,
+      minPoseDetectionConfidence: 0.5,
+      minPosePresenceConfidence: 0.5,
+      minTrackingConfidence: 0.5
+    });
+    return { PoseLandmarker, landmarker };
+  }
 
-    // state
-    let landmarker = null;
-    let running = false;
-    let lastT = 0, fpsCounter = 0, lastFpsT = 0;
+  // tiny utils (same logic as before, trimmed for brevity)
+  const EMA_A=0.5, refractoryMs=220; let fpsCounter=0, lastFpsT=0;
+  const hands = { L:{}, R:{} }; const recentSpeeds=[];
+  const vlen=a=>Math.hypot(a[0],a[1],a[2]??0), dist2=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
+  function emaInit(h){hands[h]._y=null; hands[h].ema=(x)=>{ if(!hands[h]._y){hands[h]._y=x.slice(); return x.slice();}
+    const y=hands[h]._y; y[0]=EMA_A*x[0]+(1-EMA_A)*y[0]; y[1]=EMA_A*x[1]+(1-EMA_A)*y[1]; y[2]=EMA_A*x[2]+(1-EMA_A)*y[2]; return y.slice();};}
+  ["L","R"].forEach(emaInit);
+  function pointToPolyDist(p,poly){let d=1e9; for(let i=0;i<poly.length;i++){const a=poly[i],b=poly[(i+1)%poly.length];
+    const ab=[b[0]-a[0],b[1]-a[1]], t=Math.max(0,Math.min(1,((p[0]-a[0])*ab[0]+(p[1]-a[1])*ab[1])/(ab[0]*ab[0]+ab[1]*ab[1]+1e-9)));
+    const pr=[a[0]+t*ab[0],a[1]+t*ab[1]]; d=Math.min(d,dist2(p,pr)); } return d; }
 
-    // kinematics state
-    const EMA_A = 0.5; // simple smoothing
-    const hands = {
-      L: { prev:null, vel:[0,0,0], ema:null, lastPunch:0, lastPts:[] },
-      R: { prev:null, vel:[0,0,0], ema:null, lastPunch:0, lastPts:[] },
-    };
-    function emaInit(h) { hands[h].ema = (x) => {
-      if (!hands[h]._y) { hands[h]._y = x.slice(); return x.slice(); }
-      const y = hands[h]._y;
-      y[0] = EMA_A*x[0] + (1-EMA_A)*y[0];
-      y[1] = EMA_A*x[1] + (1-EMA_A)*y[1];
-      y[2] = EMA_A*x[2] + (1-EMA_A)*y[2];
-      return y.slice();
-    }}
-
-    // geometry helpers
-    const vsub = (a,b)=>[a[0]-b[0], a[1]-b[1], (a[2]??0)-(b[2]??0)];
-    const vlen = (a)=>Math.hypot(a[0], a[1], a[2]??0);
-    const dist2 = (a,b)=>Math.hypot(a[0]-b[0], a[1]-b[1]);
-    function pointToPolyDist(p, poly){
-      let d = 1e9;
-      for(let i=0;i<poly.length;i++){
-        const a = poly[i], b = poly[(i+1)%poly.length];
-        const ab = [b[0]-a[0], b[1]-a[1]];
-        const t = Math.max(0, Math.min(1, ((p[0]-a[0])*ab[0] + (p[1]-a[1])*ab[1]) / (ab[0]*ab[0] + ab[1]*ab[1] + 1e-9)));
-        const proj = [a[0] + t*ab[0], a[1] + t*ab[1]];
-        d = Math.min(d, dist2(p, proj));
-      }
-      return d;
-    }
-
-    // polygons from pose landmarks (image coords)
-    function headPoly(lms){
-      // use: left_ear, nose, right_ear, chin (chin approximated below)
-      return [lms.left_ear, lms.nose, lms.right_ear, lms.chin].map(p=>[p.x, p.y]);
-    }
-    function torsoPoly(lms){
-      return [lms.left_shoulder, lms.right_shoulder, lms.right_hip, lms.left_hip].map(p=>[p.x, p.y]);
-    }
-
-    function shoulderWidth(lms){
-      return dist2([lms.left_shoulder.x, lms.left_shoulder.y], [lms.right_shoulder.x, lms.right_shoulder.y]);
-    }
-
-    // punch and guard logic
-    const refractoryMs = 220;
-    let baselineSpeed = 0.0;
-    const recentSpeeds = [];
-
-    function updateHand(handKey, pt3, t){
-      if (!hands[handKey].ema) emaInit(handKey);
-      const p = hands[handKey].ema(pt3);
-      if (hands[handKey].prev){
-        const dt = Math.max(0.016, t - hands[handKey]._prevT);
-        const vel = [(p[0]-hands[handKey].prev[0])/dt, (p[1]-hands[handKey].prev[1])/dt, (p[2]-hands[handKey].prev[2])/dt];
-        hands[handKey].vel = vel;
-      }
-      hands[handKey].prev = p.slice();
-      hands[handKey]._prevT = t;
-      hands[handKey].lastPts.push([p[0], p[1]]);
-      if (hands[handKey].lastPts.length > 6) hands[handKey].lastPts.shift();
-      return hands[handKey].vel;
-    }
-
-    function punchEvent(handKey, now){
-      const v = hands[handKey].vel;
-      const speed = vlen(v);
-      recentSpeeds.push(speed);
-      if (recentSpeeds.length > 45) recentSpeeds.shift();
-      baselineSpeed = recentSpeeds.length ? recentSpeeds.slice().sort((a,b)=>a-b)[Math.floor(recentSpeeds.length/2)] : 0.001;
-
-      const forward = (-v[2]) > 0.6*speed; // toward camera
-      const fast = speed > Math.max(0.002, 1.8*baselineSpeed);
-      if (fast && forward && (now - hands[handKey].lastPunch) > refractoryMs){
-        hands[handKey].lastPunch = now;
-        return true;
-      }
-      return false;
-    }
-
-    // main init
-    startBtn.addEventListener("click", async () => {
-      startBtn.disabled = true;
-      statusEl.textContent = "initializing camera...";
+  startBtn.addEventListener("click", async () => {
+    startBtn.disabled = true;
+    try {
+      statusEl.textContent = "requesting camera...";
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode:"user", width:{ideal:720}, height:{ideal:1280} },
-        audio: false
+        video: { facingMode:"user", width:{ideal:720}, height:{ideal:1280} }, audio:false
       });
       video.srcObject = stream;
-
       await video.play();
-      // size canvas to video box
-      const rect = video.getBoundingClientRect();
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+
+      // wait for dimensions to be known
+      await new Promise(r => {
+        if (video.videoWidth) return r();
+        video.addEventListener("loadedmetadata", r, {once:true});
+      });
+      canvas.width = video.videoWidth; canvas.height = video.videoHeight;
 
       statusEl.textContent = "loading model...";
-      const vision = await FilesetResolver.forVisionTasks(
-        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.7/wasm"
-      );
-
-      landmarker = await PoseLandmarker.createFromOptions(vision, {
-        baseOptions: {
-          modelAssetPath: "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.7/wasm/pose_landmarker_lite.task"
-        },
-        runningMode: "VIDEO",
-        numPoses: 1,
-        minPoseDetectionConfidence: 0.5,
-        minPosePresenceConfidence: 0.5,
-        minTrackingConfidence: 0.5,
-        outputSegmentationMasks: false
-      });
+      const { PoseLandmarker, landmarker } = await loadVision();
 
       statusEl.textContent = "running";
-      running = true;
-      lastT = performance.now();
-      lastFpsT = lastT;
-      requestAnimationFrame(loop);
-    });
+      let baseline=0;
 
-    // drawing utils
-    const drawer = new DrawingUtils(ctx);
+      const IDX = PoseLandmarker.POSE_LANDMARKS;
+      let lastT = performance.now(), lastFpsT = lastT;
 
-    function loop(now){
-      if (!running) return;
+      const loop = (now) => {
+        // fps
+        fpsCounter++; if (now - lastFpsT >= 1000){ fpsEl.textContent=String(fpsCounter); fpsCounter=0; lastFpsT=now; }
 
-      // fps
-      fpsCounter++;
-      if (now - lastFpsT >= 1000){
-        fpsEl.textContent = String(fpsCounter);
-        fpsCounter = 0;
-        lastFpsT = now;
-      }
+        // warm-up: skip detect until we have a real frame
+        if (!video.videoWidth){ requestAnimationFrame(loop); return; }
 
-      // pose inference
-      const res = landmarker.detectForVideo(video, now);
+        const res = landmarker.detectForVideo(video, now);
+        ctx.clearRect(0,0,canvas.width,canvas.height);
 
-      // clear canvas
-      ctx.clearRect(0,0,canvas.width, canvas.height);
+        let headGuard=false, torsoGuard=false, punchL=false, punchR=false;
 
-      let headGuard = false, torsoGuard = false, punchL=false, punchR=false;
+        if (res.landmarks && res.landmarks[0]){
+          const lm = res.landmarks[0];
+          const get = (i)=>({x:lm[i].x*canvas.width, y:lm[i].y*canvas.height, z:lm[i].z});
+          const lms = {
+            LW:get(IDX.LEFT_WRIST), RW:get(IDX.RIGHT_WRIST),
+            LS:get(IDX.LEFT_SHOULDER), RS:get(IDX.RIGHT_SHOULDER),
+            LH:get(IDX.LEFT_HIP), RH:get(IDX.RIGHT_HIP),
+            NO:get(IDX.NOSE), LE:get(IDX.LEFT_EAR), RE:get(IDX.RIGHT_EAR)
+          };
+          const sw = dist2([lms.LS.x,lms.LS.y],[lms.RS.x,lms.RS.y]);
+          const CH = {x:lms.NO.x, y:lms.NO.y+0.35*sw, z:lms.NO.z};
+          const headP = [[lms.LE.x,lms.LE.y],[lms.NO.x,lms.NO.y],[lms.RE.x,lms.RE.y],[CH.x,CH.y]];
+          const torsoP = [[lms.LS.x,lms.LS.y],[lms.RS.x,lms.RS.y],[lms.RH.x,lms.RH.y],[lms.LH.x,lms.LH.y]];
 
-      if (res.landmarks && res.landmarks[0]){
-        // landmarks: normalized, we convert to pixels
-        const lm = res.landmarks[0];
-        const get = (idx)=>({ x: lm[idx].x * canvas.width, y: lm[idx].y * canvas.height, z: lm[idx].z });
+          // draw polys
+          ctx.strokeStyle="#ffee77"; ctx.lineWidth=3; drawPoly(headP);
+          ctx.strokeStyle="#55ff88"; ctx.lineWidth=3; drawPoly(torsoP);
+          dot(lms.LW.x,lms.LW.y,"#ff4444",8); dot(lms.RW.x,lms.RW.y,"#4488ff",8);
 
-        const IDX = PoseLandmarker.POSE_LANDMARKS;
-        const lms = {
-          left_wrist: get(IDX.LEFT_WRIST),
-          right_wrist: get(IDX.RIGHT_WRIST),
-          left_elbow: get(IDX.LEFT_ELBOW),
-          right_elbow: get(IDX.RIGHT_ELBOW),
-          left_shoulder: get(IDX.LEFT_SHOULDER),
-          right_shoulder: get(IDX.RIGHT_SHOULDER),
-          left_hip: get(IDX.LEFT_HIP),
-          right_hip: get(IDX.RIGHT_HIP),
-          nose: get(IDX.NOSE),
-          left_ear: get(IDX.LEFT_EAR),
-          right_ear: get(IDX.RIGHT_EAR),
-        };
+          // kinematics
+          const t = performance.now()/1000;
+          const vL = updateHand("L",[lms.LW.x,lms.LW.y,lms.LW.z],t);
+          const vR = updateHand("R",[lms.RW.x,lms.RW.y,lms.RW.z],t);
 
-        // approximate chin from nose down by fraction of shoulder width
-        const sw = shoulderWidth(lms);
-        const chin = { x: lms.nose.x, y: lms.nose.y + 0.35*sw, z: lms.nose.z };
-        lms.chin = chin;
+          // guards
+          headGuard = Math.min(pointToPolyDist([lms.LW.x,lms.LW.y],headP), pointToPolyDist([lms.RW.x,lms.RW.y],headP)) < 0.10*sw;
+          torsoGuard = Math.min(pointToPolyDist([lms.LW.x,lms.LW.y],torsoP), pointToPolyDist([lms.RW.x,lms.RW.y],torsoP)) < 0.15*sw;
 
-        // polygons
-        const headP = headPoly(lms);
-        const torsoP = torsoPoly(lms);
+          // baseline + punch
+          const speed = (v)=>vlen(v);
+          const speeds = [speed(vL), speed(vR)]; recentSpeeds.push((speeds[0]+speeds[1])*0.5);
+          if (recentSpeeds.length > 45) recentSpeeds.shift();
+          const med = recentSpeeds.slice().sort((a,b)=>a-b)[Math.floor(recentSpeeds.length/2)] || 0.001; baseline = med;
 
-        // draw polygons
-        ctx.strokeStyle = "#ffee77";
-        ctx.lineWidth = 3;
-        drawPoly(headP);
-        ctx.strokeStyle = "#55ff88";
-        ctx.lineWidth = 3;
-        drawPoly(torsoP);
+          const pe = (hand, v, last)=> {
+            const s = vlen(v), forward = (-v[2]) > 0.6*s, fast = s > Math.max(0.002, 1.8*baseline);
+            if (fast && forward && (performance.now()-hand.lastPunch)>refractoryMs){ hand.lastPunch = performance.now(); return true; }
+            return false;
+          };
+          hands.L.lastPunch ??= 0; hands.R.lastPunch ??= 0;
+          punchL = pe(hands.L, vL);
+          punchR = pe(hands.R, vR);
 
-        // draw wrists
-        dot(lms.left_wrist.x, lms.left_wrist.y, "#ff4444", 8);
-        dot(lms.right_wrist.x, lms.right_wrist.y, "#4488ff", 8);
-
-        // update hand kinematics
-        const t = performance.now()/1000;
-        const velL = updateHand("L", [lms.left_wrist.x, lms.left_wrist.y, lms.left_wrist.z], t);
-        const velR = updateHand("R", [lms.right_wrist.x, lms.right_wrist.y, lms.right_wrist.z], t);
-
-        // guards
-        const dLHead = pointToPolyDist([lms.left_wrist.x, lms.left_wrist.y], headP);
-        const dRHead = pointToPolyDist([lms.right_wrist.x, lms.right_wrist.y], headP);
-        const dLTorso = pointToPolyDist([lms.left_wrist.x, lms.left_wrist.y], torsoP);
-        const dRTorso = pointToPolyDist([lms.right_wrist.x, lms.right_wrist.y], torsoP);
-
-        headGuard = Math.min(dLHead, dRHead) < 0.10 * sw;
-        torsoGuard = Math.min(dLTorso, dRTorso) < 0.15 * sw;
-
-        // punches
-        punchL = punchEvent("L", performance.now());
-        punchR = punchEvent("R", performance.now());
-
-        // draw punch rays if any
-        if (punchL){
-          const p = hands.L.prev;
-          const v = hands.L.vel;
-          arrow([p[0],p[1]], [p[0] + 0.15*v[0], p[1] + 0.15*v[1]], "#ff6666");
-        }
-        if (punchR){
-          const p = hands.R.prev;
-          const v = hands.R.vel;
-          arrow([p[0],p[1]], [p[0] + 0.15*v[0], p[1] + 0.15*v[1]], "#66aaff");
+          // overlay text
+          ctx.fillStyle="#fff"; ctx.font="16px ui-monospace, monospace";
+          ctx.fillText(`head_guard: ${headGuard}`, 12, 24);
+          ctx.fillText(`torso_guard: ${torsoGuard}`, 12, 44);
+          ctx.fillText(`punch_l: ${punchL}  punch_r: ${punchR}`, 12, 64);
         }
 
-        // simple text hud on canvas
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "16px ui-monospace, monospace";
-        ctx.fillText(`head_guard: ${headGuard}`, 12, 24);
-        ctx.fillText(`torso_guard: ${torsoGuard}`, 12, 44);
-        ctx.fillText(`punch_l: ${punchL}  punch_r: ${punchR}`, 12, 64);
+        // mirror the video underneath the overlay
+        ctx.save(); ctx.setTransform(-1,0,0,1,canvas.width,0); ctx.drawImage(video,0,0,canvas.width,canvas.height); ctx.restore();
+
+        // reflect small hud
+        gHeadEl.textContent=String(headGuard); gTorsoEl.textContent=String(torsoGuard);
+        pLEl.textContent=String(punchL); pREl.textContent=String(punchR);
+
+        requestAnimationFrame(loop);
+      };
+
+      // helpers
+      function updateHand(key, pt3, t){
+        const h=hands[key];
+        if (!h.prev){ h.prev=pt3.slice(); h._t=t; h.vel=[0,0,0]; return h.vel; }
+        const y = h.ema(pt3);
+        const dt = Math.max(0.016, t - h._t);
+        h.vel = [(y[0]-h.prev[0])/dt, (y[1]-h.prev[1])/dt, (y[2]-h.prev[2])/dt];
+        h.prev = y.slice(); h._t=t; return h.vel;
       }
+      function drawPoly(poly){ ctx.beginPath(); ctx.moveTo(poly[0][0],poly[0][1]); for(let i=1;i<poly.length;i++) ctx.lineTo(poly[i][0],poly[i][1]); ctx.closePath(); ctx.stroke(); }
+      function dot(x,y,c,r=6){ ctx.fillStyle=c; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill(); }
 
-      // mirror video for selfie view
-      ctx.save();
-      ctx.setTransform(-1, 0, 0, 1, canvas.width, 0); // flip horizontally
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      ctx.restore();
+      // slight warm-up before first detect
+      setTimeout(()=>requestAnimationFrame(loop), 60);
 
-      // overlay already drawn on top
-
-      // reflect to dom
-      gHeadEl.textContent = String(headGuard);
-      gTorsoEl.textContent = String(torsoGuard);
-      pLEl.textContent = String(punchL);
-      pREl.textContent = String(punchR);
-
-      requestAnimationFrame(loop);
+    } catch (err) {
+      console.error(err);
+      statusEl.textContent = `error: ${err.message || err}`;
+      startBtn.disabled = false;
     }
-
-    // drawing helpers
-    function drawPoly(poly){
-      if (!poly || poly.length < 3) return;
-      ctx.beginPath();
-      ctx.moveTo(poly[0][0], poly[0][1]);
-      for(let i=1;i<poly.length;i++) ctx.lineTo(poly[i][0], poly[i][1]);
-      ctx.closePath();
-      ctx.stroke();
-    }
-    function dot(x,y,color,r=6){
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(x,y,r,0,Math.PI*2);
-      ctx.fill();
-    }
-    function arrow(a, b, color="#fff"){
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.moveTo(a[0], a[1]);
-      ctx.lineTo(b[0], b[1]);
-      ctx.stroke();
-      // tip
-      const ang = Math.atan2(b[1]-a[1], b[0]-a[0]);
-      const len = 12;
-      ctx.beginPath();
-      ctx.moveTo(b[0], b[1]);
-      ctx.lineTo(b[0]-len*Math.cos(ang - Math.PI/6), b[1]-len*Math.sin(ang - Math.PI/6));
-      ctx.moveTo(b[0], b[1]);
-      ctx.lineTo(b[0]-len*Math.cos(ang + Math.PI/6), b[1]-len*Math.sin(ang + Math.PI/6));
-      ctx.stroke();
-    }
-  </script>
+  });
+</script>
 </body>
 </html>
