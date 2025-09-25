@@ -1,31 +1,32 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="utf-8" />
   <title>sovereign spl token auto-deployer (solana, devnet)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- single dependency: solana web3 iife -->
   <script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.js"></script>
   <style>
-    body { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; padding: 2rem; background:#121212; color:#f0f0f0; }
-    input { padding:0.6rem; margin-top:0.5rem; width:100%; border-radius:8px; border:1px solid #333; background:#181818; color:#eee; }
-    .info { color:#80b3ff; margin-top:1.2rem; word-break:break-all; }
-    .status { color:#ffea80; margin-top:1rem; word-break:break-all; white-space:pre-wrap; }
-    a { color:#80ff80; }
-    .muted{color:#9aa;}
+    body{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#121212;color:#f0f0f0;padding:2rem}
+    input{width:100%;padding:.6rem;margin-top:.5rem;border-radius:8px;border:1px solid #333;background:#181818;color:#eee}
+    .status{white-space:pre-wrap;margin-top:1rem;color:#ffea80;word-break:break-all}
+    .info{margin-top:1rem;color:#80b3ff;word-break:break-all}
+    a{color:#80ff80}
+    .muted{color:#9aa}
   </style>
 </head>
 <body>
   <h2>sovereign spl token auto-deployer</h2>
 
-  <input type="text" id="name"   placeholder="token name (display only)" />
-  <input type="text" id="symbol" placeholder="token symbol (display only)" />
-  <input type="text" id="supply" placeholder="initial supply (default: 1000000)" />
-  <input type="number" id="decimals" placeholder="decimals (default: 9)" />
+  <input id="name"    type="text"   placeholder="token name (display only)">
+  <input id="symbol"  type="text"   placeholder="token symbol (display only)">
+  <input id="supply"  type="text"   placeholder="initial supply (default: 1000000)">
+  <input id="decimals" type="number" placeholder="decimals (default: 9)">
 
-  <div class="status" id="status">initializing...</div>
+  <div id="status" class="status">initializing...</div>
 
   <div class="info">
-    <strong>send SOL (devnet) to deploy your token:</strong><br />
+    <strong>send sol (devnet) to deploy your token:</strong><br>
     <span id="walletAddress">...</span>
     <div class="muted">ephemeral keypair: lost on refresh (by design)</div>
   </div>
@@ -33,172 +34,185 @@
 <script>
 window.onload = async () => {
   const S = document.getElementById("status");
-  const log = (m) => { console.log(m); S.textContent = m; };
+  const out = (m) => { console.log(m); S.textContent = m; };
+  const append = (m) => { console.log(m); S.textContent += "\n" + m; };
 
   try {
-    if (!window.solanaWeb3) { S.textContent = "❌ solana web3 not loaded"; return; }
+    if (!window.solanaWeb3) { out("❌ solana web3 not loaded"); return; }
 
     const {
       Connection, Keypair, LAMPORTS_PER_SOL, SystemProgram,
       Transaction, TransactionInstruction, PublicKey
     } = solanaWeb3;
 
+    // program ids (classic spl-token, not token-2022) and constants
     const TOKEN_PROGRAM_ID = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
-    const ASSOCIATED_TOKEN_PROGRAM_ID = new PublicKey("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL");
-    const RENT_SYSVAR_ID = new PublicKey("SysvarRent111111111111111111111111111111111");
-    const MINT_SIZE = 82;
+    const RENT_SYSVAR_ID   = new PublicKey("SysvarRent111111111111111111111111111111111");
+    const MINT_SIZE = 82;   // spl mint account size
+    const ACCOUNT_SIZE = 165; // spl token account size
 
-    // helpers
-    function pubkeyTo32(pub) { return pub.toBytes ? pub.toBytes() : Uint8Array.from(pub.toBuffer()); }
+    // helpers (no node Buffer usage)
+    const pk32 = (pubkey) => (pubkey.toBytes ? pubkey.toBytes() : Uint8Array.from(pubkey.toBuffer()));
 
-    function encodeInitMint(decimals, mintAuthorityPubkey, hasFreeze=false, freezeAuthorityPubkey=null) {
-      // layout: u8 instruction(0) | u8 decimals | [32] mint_auth | u8 freeze_option | [32]? freeze_auth
-      const baseLen = 1 + 1 + 32 + 1;
-      const totalLen = baseLen + (hasFreeze ? 32 : 0);
-      const out = new Uint8Array(totalLen);
-      let o = 0;
-      out[o++] = 0; // InitializeMint
+    function encodeInitMint(decimals, mintAuthority, withFreeze=false, freezeAuthority=null){
+      // u8:0 (initializeMint) | u8:decimals | [32] mintAuthority | u8:freezeOpt | [32]? freezeAuthority
+      const base = 1+1+32+1;
+      const out = new Uint8Array(base + (withFreeze?32:0));
+      let o=0;
+      out[o++] = 0;
       out[o++] = decimals & 0xff;
-      out.set(pubkeyTo32(mintAuthorityPubkey), o); o += 32;
-      out[o++] = hasFreeze ? 1 : 0;
-      if (hasFreeze) { out.set(pubkeyTo32(freezeAuthorityPubkey), o); o += 32; }
+      out.set(pk32(mintAuthority), o); o+=32;
+      out[o++] = withFreeze ? 1 : 0;
+      if(withFreeze){ out.set(pk32(freezeAuthority), o); }
       return out;
     }
 
-    function encodeMintTo(amountBigInt) {
-      // layout: u8 instruction(7) | u64 little-endian amount
-      const out = new Uint8Array(1 + 8);
-      out[0] = 7; // MintTo
-      const dv = new DataView(out.buffer);
-      dv.setBigUint64(1, BigInt(amountBigInt), true); // little-endian
-      return out;
+    function encodeInitializeAccount(){ return new Uint8Array([1]); } // instruction 1
+    function encodeMintTo(amount){
+      const u = new Uint8Array(1+8);
+      u[0]=7; // mintTo
+      new DataView(u.buffer).setBigUint64(1, BigInt(amount), true); // little-endian
+      return u;
     }
 
-    async function findATA(mint, owner) {
-      const [ata] = await PublicKey.findProgramAddress(
-        [owner.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), mint.toBuffer()],
-        ASSOCIATED_TOKEN_PROGRAM_ID
-      );
-      return ata;
+    // minimal bigint decimal parser: "123.45" with dec places -> base units
+    function parseAmount(human, dec){
+      const clean = String(human).replace(/_/g,'').trim();
+      if(!/^[0-9]+(\.[0-9]+)?$/.test(clean)) throw new Error("initial supply must be numeric");
+      const [i,f=""] = clean.split(".");
+      const frac = (f + "0".repeat(dec)).slice(0, dec);
+      return BigInt(i||"0")*(10n**BigInt(dec)) + BigInt(frac||"0");
     }
 
-    // boot
+    // boot connection + ephemeral wallet
     const connection = new Connection("https://api.devnet.solana.com", "confirmed");
     const wallet = Keypair.generate();
     document.getElementById("walletAddress").textContent = wallet.publicKey.toBase58();
-    log("✅ wallet: " + wallet.publicKey.toBase58() + "\nwaiting for SOL deposit...");
+    out("✅ wallet: " + wallet.publicKey.toBase58() + "\nwaiting for sol deposit...");
 
-    let alreadyDeploying = false;
+    async function getBalance(){
+      try { return (await connection.getBalance(wallet.publicKey))/LAMPORTS_PER_SOL; }
+      catch(e){ append("❌ getBalance: " + (e.message||e)); return 0; }
+    }
 
-    async function getBalance() {
+    async function confirm(sig,label){
       try {
-        const lam = await connection.getBalance(wallet.publicKey);
-        return lam / LAMPORTS_PER_SOL;
-      } catch (e) {
-        log("❌ getBalance error: " + (e.message || e));
-        return 0;
+        await connection.confirmTransaction({signature:sig}, "confirmed");
+        append(`✔ ${label} confirmed: ${sig}`);
+      } catch(e) {
+        append(`❌ confirm failed (${label}): ${(e.message||e)}`);
       }
     }
 
-    async function deployToken() {
-      alreadyDeploying = true;
-      try {
-        const name  = document.getElementById("name").value   || "MyToken";
-        const sym   = document.getElementById("symbol").value || "MTK";
-        const supIn = (document.getElementById("supply").value || "1000000").replace(/_/g,"").trim();
-        const dec   = parseInt(document.getElementById("decimals").value || "9", 10);
-        if (!/^[0-9]+(\.[0-9]+)?$/.test(supIn)) throw new Error("initial supply must be numeric");
-        if (!(dec >= 0 && dec <= 9)) throw new Error("decimals should be 0..9");
+    let fired = false;
 
+    async function deploy(){
+      fired = true;
+      try{
+        const name = document.getElementById("name").value || "MyToken";
+        const sym  = document.getElementById("symbol").value || "MTK";
+        const dec  = parseInt(document.getElementById("decimals").value || "9", 10);
+        if(!(dec>=0 && dec<=9)) throw new Error("decimals should be 0..9");
+        const amount = parseAmount(document.getElementById("supply").value || "1000000", dec);
+
+        // 1) create + initialize mint
+        append("📦 creating mint...");
         const mint = Keypair.generate();
-        const rent = await connection.getMinimumBalanceForRentExemption(MINT_SIZE);
+        const rentMint = await connection.getMinimumBalanceForRentExemption(MINT_SIZE);
 
-        log("📦 creating mint account...");
-        let tx = new Transaction().add(
+        let tx1 = new Transaction().add(
           SystemProgram.createAccount({
             fromPubkey: wallet.publicKey,
             newAccountPubkey: mint.publicKey,
             space: MINT_SIZE,
-            lamports: rent,
+            lamports: rentMint,
             programId: TOKEN_PROGRAM_ID
           }),
           new TransactionInstruction({
             programId: TOKEN_PROGRAM_ID,
             keys: [
-              { pubkey: mint.publicKey, isSigner: true,  isWritable: true },
-              { pubkey: RENT_SYSVAR_ID, isSigner: false, isWritable: false }
+              {pubkey: mint.publicKey, isSigner:true,  isWritable:true},
+              {pubkey: RENT_SYSVAR_ID, isSigner:false, isWritable:false}
             ],
-            data: encodeInitMint(dec, wallet.publicKey, false, null) // Uint8Array
+            data: encodeInitMint(dec, wallet.publicKey, false, null)
           })
         );
-        await connection.sendTransaction(tx, [wallet, mint]);
+        const sig1 = await connection.sendTransaction(tx1, [wallet, mint], {skipPreflight:false});
+        await confirm(sig1, "mint init");
 
-        log("✅ mint created: " + mint.publicKey.toBase58() + "\ncreating ata...");
-        const ata = await findATA(mint.publicKey, wallet.publicKey);
+        // 2) create a plain token account (no associated-token program; fewer edge-cases)
+        append("🏦 creating token account...");
+        const tokenAcc = Keypair.generate();
+        const rentAcc = await connection.getMinimumBalanceForRentExemption(ACCOUNT_SIZE);
 
-        const createAtaIx = new TransactionInstruction({
-          programId: ASSOCIATED_TOKEN_PROGRAM_ID,
-          keys: [
-            { pubkey: wallet.publicKey, isSigner: true,  isWritable: true },  // payer
-            { pubkey: ata,              isSigner: false, isWritable: true },  // ata
-            { pubkey: wallet.publicKey, isSigner: false, isWritable: false }, // owner
-            { pubkey: mint.publicKey,   isSigner: false, isWritable: false }, // mint
-            { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-            { pubkey: TOKEN_PROGRAM_ID,       isSigner: false, isWritable: false },
-            { pubkey: RENT_SYSVAR_ID,         isSigner: false, isWritable: false }
-          ],
-          data: new Uint8Array(0) // no payload
-        });
+        let tx2 = new Transaction().add(
+          SystemProgram.createAccount({
+            fromPubkey: wallet.publicKey,
+            newAccountPubkey: tokenAcc.publicKey,
+            space: ACCOUNT_SIZE,
+            lamports: rentAcc,
+            programId: TOKEN_PROGRAM_ID
+          }),
+          new TransactionInstruction({
+            programId: TOKEN_PROGRAM_ID,
+            keys: [
+              {pubkey: tokenAcc.publicKey, isSigner:false, isWritable:true}, // account
+              {pubkey: mint.publicKey,     isSigner:false, isWritable:false},// mint
+              {pubkey: wallet.publicKey,   isSigner:false, isWritable:false},// owner
+              {pubkey: RENT_SYSVAR_ID,     isSigner:false, isWritable:false} // rent
+            ],
+            data: encodeInitializeAccount() // instruction 1
+          })
+        );
+        const sig2 = await connection.sendTransaction(tx2, [wallet, tokenAcc], {skipPreflight:false});
+        await confirm(sig2, "token account init");
 
-        // amount human -> bigint base units
-        const parts = supIn.split(".");
-        let amt = 0n;
-        if (parts.length === 1) {
-          amt = BigInt(parts[0]) * (10n ** BigInt(dec));
-        } else {
-          const int = parts[0] || "0";
-          const fracRaw = (parts[1] || "");
-          const frac = (fracRaw + "0".repeat(dec)).slice(0, dec);
-          amt = BigInt(int) * (10n ** BigInt(dec)) + BigInt(frac || "0");
-        }
+        // 3) mint to that account
+        append("🪙 minting supply...");
+        let tx3 = new Transaction().add(
+          new TransactionInstruction({
+            programId: TOKEN_PROGRAM_ID,
+            keys: [
+              {pubkey: mint.publicKey,      isSigner:false, isWritable:true}, // mint
+              {pubkey: tokenAcc.publicKey,  isSigner:false, isWritable:true}, // dest
+              {pubkey: wallet.publicKey,    isSigner:true,  isWritable:false} // mint authority
+            ],
+            data: encodeMintTo(amount) // instruction 7
+          })
+        );
+        const sig3 = await connection.sendTransaction(tx3, [wallet], {skipPreflight:false});
+        await confirm(sig3, "mintTo");
 
-        const mintToIx = new TransactionInstruction({
-          programId: TOKEN_PROGRAM_ID,
-          keys: [
-            { pubkey: mint.publicKey,   isSigner: false, isWritable: true },  // mint
-            { pubkey: ata,              isSigner: false, isWritable: true },  // dest
-            { pubkey: wallet.publicKey, isSigner: true,  isWritable: false }  // authority
-          ],
-          data: encodeMintTo(amt) // Uint8Array
-        });
+        const expTx = (sig) => `https://explorer.solana.com/tx/${sig}?cluster=devnet`;
+        const expAddr = (a) => `https://explorer.solana.com/address/${a}?cluster=devnet`;
 
-        tx = new Transaction().add(createAtaIx, mintToIx);
-        const sig = await connection.sendTransaction(tx, [wallet]);
-
-        const exp = `https://explorer.solana.com/tx/${sig}?cluster=devnet`;
-        const mintUrl = `https://explorer.solana.com/address/${mint.publicKey.toBase58()}?cluster=devnet`;
-        log(`🎉 deployed!
-tx: ${sig}
-explorer: ${exp}
+        out(`🎉 deployed!
 mint: ${mint.publicKey.toBase58()}
-mint page: ${mintUrl}
+mint page: ${expAddr(mint.publicKey.toBase58())}
+holder account: ${tokenAcc.publicKey.toBase58()}
+holder page: ${expAddr(tokenAcc.publicKey.toBase58())}
+txs:
+- mint init: ${expTx(sig1)}
+- account init: ${expTx(sig2)}
+- mintTo: ${expTx(sig3)}
 meta: ${name} (${sym}), decimals=${dec}`);
-      } catch (e) {
-        log("❌ deploy error: " + (e.message || e) + "\n" + (e.stack || ""));
+      }catch(e){
+        const logs = e && e.logs ? `\nlogs:\n${e.logs.join("\n")}` : "";
+        out("❌ deploy error: " + (e.message||e) + logs);
       }
     }
 
+    // poll for funds then deploy
     setInterval(async () => {
-      if (alreadyDeploying) return;
-      const bal = await getBalance();
-      if (bal > 0) {
-        log(`💰 received ${bal} SOL -- deploying token now...`);
-        deployToken();
-      }
-    }, 15000);
+      if (fired) return;
+      try{
+        const bal = await getBalance();
+        if (bal > 0) { out(`💰 received ${bal} sol — deploying...`); deploy(); }
+      }catch(e){ append("poll error: " + (e.message||e)); }
+    }, 12000);
 
-  } catch (e) {
-    S.textContent = "❌ fatal: " + (e.message || e);
+  } catch(e) {
+    out("❌ fatal: " + (e.message||e));
   }
 };
 </script>
