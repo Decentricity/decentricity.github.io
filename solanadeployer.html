@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>TESTNET Sovereign SPL Token Auto-Deployer (Solana)</title>
+  <title>borsh Sovereign SPL Token Auto-Deployer (Solana)</title>
   <script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.js"></script>
-  <script src="https://unpkg.com/@solana/spl-token@0.4.3/lib/index.iife.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/borsh@0.7.0/lib/borsh.min.js"></script>
   <style>
     body { font-family: monospace; padding: 2rem; background:#121212; color:#f0f0f0; }
     input { padding:0.5rem; margin-top:0.5rem; width:100%; }
@@ -31,37 +31,24 @@
   <script>
     window.onload = async () => {
       const statusEl = document.getElementById("status");
-      function setStatus(msg) {
-        console.log(msg);
-        statusEl.textContent = msg;
-      }
+      const setStatus = msg => { console.log(msg); statusEl.textContent = msg; };
 
       try {
-        if (!window.solanaWeb3) {
-          setStatus("❌ solanaWeb3 not loaded");
-          return;
-        }
-        if (!window.splToken) {
-          setStatus("❌ splToken not loaded");
-          return;
-        }
+        const {
+          Connection, Keypair, LAMPORTS_PER_SOL, SystemProgram,
+          Transaction, TransactionInstruction, PublicKey
+        } = solanaWeb3;
 
-        const { Connection, Keypair, LAMPORTS_PER_SOL, SystemProgram, Transaction } = solanaWeb3;
-        const { getMinimumBalanceForRentExemptMint,
-                MINT_SIZE,
-                createInitializeMintInstruction,
-                getAssociatedTokenAddress,
-                createAssociatedTokenAccountInstruction,
-                createMintToInstruction,
-                TOKEN_PROGRAM_ID,
-                ASSOCIATED_TOKEN_PROGRAM_ID } = splToken;
+        const TOKEN_PROGRAM_ID = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
+        const ASSOCIATED_TOKEN_PROGRAM_ID = new PublicKey("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL");
+        const RENT_SYSVAR_ID = new PublicKey("SysvarRent111111111111111111111111111111111");
 
-        setStatus("✅ libraries loaded, generating wallet...");
+        const MINT_SIZE = 82;
         const connection = new Connection("https://api.devnet.solana.com", "confirmed");
         const wallet = Keypair.generate();
 
         document.getElementById("walletAddress").textContent = wallet.publicKey.toBase58();
-        setStatus("✅ wallet generated: " + wallet.publicKey.toBase58() + "\nwaiting for SOL deposit...");
+        setStatus("✅ wallet: " + wallet.publicKey.toBase58() + "\nwaiting for SOL deposit...");
 
         let alreadyDeploying = false;
 
@@ -75,19 +62,68 @@
           }
         }
 
+        // derive ATA
+        async function findATA(mint, owner) {
+          const [ata] = await PublicKey.findProgramAddress(
+            [owner.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), mint.toBuffer()],
+            ASSOCIATED_TOKEN_PROGRAM_ID
+          );
+          return ata;
+        }
+
+        // borsh schemas
+        class InitializeMint {
+          constructor(fields) { Object.assign(this, fields); }
+        }
+        class MintTo {
+          constructor(fields) { Object.assign(this, fields); }
+        }
+
+        const InitMintSchema = new Map([
+          [InitializeMint, {
+            kind: 'struct',
+            fields: [
+              ['instruction', 'u8'],
+              ['decimals', 'u8'],
+              ['mintAuthority', [32]],
+              ['freezeOption', 'u8'],
+              ['freezeAuthority', [32]],
+            ]
+          }]
+        ]);
+
+        const MintToSchema = new Map([
+          [MintTo, {
+            kind: 'struct',
+            fields: [
+              ['instruction', 'u8'],
+              ['amount', 'u64'],
+            ]
+          }]
+        ]);
+
         async function deployToken() {
           alreadyDeploying = true;
-          setStatus("🚀 starting token deployment...");
-
           try {
             const tokenName = document.getElementById("name").value || "MyToken";
             const tokenSymbol = document.getElementById("symbol").value || "MTK";
             const initialSupply = document.getElementById("supply").value || "1000000";
             const decimals = parseInt(document.getElementById("decimals").value || "9");
 
-            setStatus("📦 creating mint account...");
             const mint = Keypair.generate();
-            const lamportsForMint = await getMinimumBalanceForRentExemptMint(connection);
+            const lamportsForMint = await connection.getMinimumBalanceForRentExemption(MINT_SIZE);
+
+            // initialize mint instruction
+            const initMintData = borsh.serialize(
+              InitMintSchema,
+              new InitializeMint({
+                instruction: 0,
+                decimals,
+                mintAuthority: wallet.publicKey.toBytes(),
+                freezeOption: 0, // no freeze authority
+                freezeAuthority: new Uint8Array(32),
+              })
+            );
 
             let tx = new Transaction().add(
               SystemProgram.createAccount({
@@ -97,48 +133,58 @@
                 lamports: lamportsForMint,
                 programId: TOKEN_PROGRAM_ID,
               }),
-              createInitializeMintInstruction(
-                mint.publicKey,
-                decimals,
-                wallet.publicKey,
-                wallet.publicKey,
-                TOKEN_PROGRAM_ID
-              )
+              new TransactionInstruction({
+                programId: TOKEN_PROGRAM_ID,
+                keys: [
+                  { pubkey: mint.publicKey, isSigner: true, isWritable: true },
+                  { pubkey: RENT_SYSVAR_ID, isSigner: false, isWritable: false }
+                ],
+                data: Buffer.from(initMintData),
+              })
             );
 
             await connection.sendTransaction(tx, [wallet, mint]);
             setStatus("✅ mint created: " + mint.publicKey.toBase58() + "\ncreating ATA...");
 
-            const ata = await getAssociatedTokenAddress(
-              mint.publicKey,
-              wallet.publicKey,
-              false,
-              TOKEN_PROGRAM_ID,
-              ASSOCIATED_TOKEN_PROGRAM_ID
+            const ata = await findATA(mint.publicKey, wallet.publicKey);
+
+            // create ATA ix
+            const createATAIx = new TransactionInstruction({
+              programId: ASSOCIATED_TOKEN_PROGRAM_ID,
+              keys: [
+                { pubkey: wallet.publicKey, isSigner: true, isWritable: true },
+                { pubkey: ata, isSigner: false, isWritable: true },
+                { pubkey: wallet.publicKey, isSigner: false, isWritable: false },
+                { pubkey: mint.publicKey, isSigner: false, isWritable: false },
+                { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+                { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+                { pubkey: RENT_SYSVAR_ID, isSigner: false, isWritable: false },
+              ],
+              data: Buffer.alloc(0),
+            });
+
+            // mintTo ix
+            const mintAmount = BigInt(initialSupply) * BigInt(10 ** decimals);
+            const mintToData = borsh.serialize(
+              MintToSchema,
+              new MintTo({ instruction: 7, amount: mintAmount })
             );
 
-            tx = new Transaction().add(
-              createAssociatedTokenAccountInstruction(
-                wallet.publicKey,
-                ata,
-                wallet.publicKey,
-                mint.publicKey,
-                TOKEN_PROGRAM_ID,
-                ASSOCIATED_TOKEN_PROGRAM_ID
-              ),
-              createMintToInstruction(
-                mint.publicKey,
-                ata,
-                wallet.publicKey,
-                BigInt(initialSupply) * BigInt(10 ** decimals),
-                [],
-                TOKEN_PROGRAM_ID
-              )
-            );
+            const mintToIx = new TransactionInstruction({
+              programId: TOKEN_PROGRAM_ID,
+              keys: [
+                { pubkey: mint.publicKey, isSigner: false, isWritable: true },
+                { pubkey: ata, isSigner: false, isWritable: true },
+                { pubkey: wallet.publicKey, isSigner: true, isWritable: false },
+              ],
+              data: Buffer.from(mintToData),
+            });
 
+            tx = new Transaction().add(createATAIx, mintToIx);
             await connection.sendTransaction(tx, [wallet]);
+
             const explorer = `https://explorer.solana.com/address/${mint.publicKey.toBase58()}?cluster=devnet`;
-            setStatus(`🎉 deployment successful!\nMint: ${mint.publicKey.toBase58()}\nExplorer: ${explorer}\nName/Symbol: ${tokenName} (${tokenSymbol})`);
+            setStatus(`🎉 deployed!\nMint: ${mint.publicKey.toBase58()}\nExplorer: ${explorer}\nName/Symbol: ${tokenName} (${tokenSymbol})`);
           } catch (err) {
             setStatus("❌ deployToken error: " + err.message + "\n" + (err.stack || ""));
           }
@@ -153,8 +199,18 @@
           }
         }, 15000);
 
+        async function getBalance() {
+          try {
+            const bal = await connection.getBalance(wallet.publicKey);
+            return bal / LAMPORTS_PER_SOL;
+          } catch (err) {
+            setStatus("❌ balance error: " + err.message);
+            return 0;
+          }
+        }
+
       } catch (err) {
-        statusEl.textContent = "❌ fatal error: " + err.message + "\n" + (err.stack || "");
+        statusEl.textContent = "❌ fatal: " + err.message;
       }
     };
   </script>
