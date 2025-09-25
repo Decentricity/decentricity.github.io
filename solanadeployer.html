@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sovereign SPL Token Auto-Deployer (Solana)</title>
+  <script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.js"></script>
+  <script src="https://unpkg.com/@solana/spl-token@0.4.3/lib/index.iife.js"></script>
+  <style>
+    body { font-family: monospace; padding: 2rem; background:#121212; color:#f0f0f0; }
+    input { padding:0.5rem; margin-top:0.5rem; width:100%; }
+    .info { color:#80b3ff; margin-top:2rem; word-break:break-all; }
+    .status { color:#ffea80; margin-top:1rem; word-break:break-all; }
+    a { color:#80ff80; }
+  </style>
+</head>
+<body>
+  <h2>Sovereign SPL Token Auto-Deployer</h2>
+
+  <input type="text" id="name" placeholder="Token Name (display only)">
+  <input type="text" id="symbol" placeholder="Token Symbol (display only)">
+  <input type="number" id="supply" placeholder="Initial Supply (default: 1000000)">
+  <input type="number" id="decimals" placeholder="Decimals (default: 9)">
+
+  <div class="status" id="status">generating wallet...</div>
+
+  <div class="info">
+    <strong>send SOL (devnet) to deploy your token:</strong><br>
+    <span id="walletAddress">...</span>
+  </div>
+
+  <script>
+    const { Connection, Keypair, LAMPORTS_PER_SOL, SystemProgram, Transaction } = solanaWeb3;
+    const { getMinimumBalanceForRentExemptMint,
+            MINT_SIZE,
+            createInitializeMintInstruction,
+            getAssociatedTokenAddress,
+            createAssociatedTokenAccountInstruction,
+            createMintToInstruction,
+            TOKEN_PROGRAM_ID,
+            ASSOCIATED_TOKEN_PROGRAM_ID } = splToken;
+
+    const connection = new Connection("https://api.devnet.solana.com", "confirmed");
+    const wallet = Keypair.generate();
+    document.getElementById("walletAddress").textContent = wallet.publicKey.toBase58();
+    document.getElementById("status").textContent = "waiting for SOL deposit...";
+
+    let alreadyDeploying = false;
+
+    async function getBalance() {
+      const bal = await connection.getBalance(wallet.publicKey);
+      return bal / LAMPORTS_PER_SOL;
+    }
+
+    async function deployToken() {
+      alreadyDeploying = true;
+      document.getElementById("status").textContent = "creating mint...";
+
+      const tokenName = document.getElementById("name").value || "MyToken";
+      const tokenSymbol = document.getElementById("symbol").value || "MTK";
+      const initialSupply = document.getElementById("supply").value || "1000000";
+      const decimals = parseInt(document.getElementById("decimals").value || "9");
+
+      // create new mint
+      const mint = Keypair.generate();
+      const lamportsForMint = await getMinimumBalanceForRentExemptMint(connection);
+
+      let tx = new Transaction().add(
+        SystemProgram.createAccount({
+          fromPubkey: wallet.publicKey,
+          newAccountPubkey: mint.publicKey,
+          space: MINT_SIZE,
+          lamports: lamportsForMint,
+          programId: TOKEN_PROGRAM_ID,
+        }),
+        createInitializeMintInstruction(
+          mint.publicKey,
+          decimals,
+          wallet.publicKey,
+          wallet.publicKey,
+          TOKEN_PROGRAM_ID
+        )
+      );
+
+      await connection.sendTransaction(tx, [wallet, mint]);
+      document.getElementById("status").textContent = "mint created, setting up ATA...";
+
+      // create associated token account
+      const ata = await getAssociatedTokenAddress(
+        mint.publicKey,
+        wallet.publicKey,
+        false,
+        TOKEN_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID
+      );
+
+      tx = new Transaction().add(
+        createAssociatedTokenAccountInstruction(
+          wallet.publicKey,
+          ata,
+          wallet.publicKey,
+          mint.publicKey,
+          TOKEN_PROGRAM_ID,
+          ASSOCIATED_TOKEN_PROGRAM_ID
+        ),
+        createMintToInstruction(
+          mint.publicKey,
+          ata,
+          wallet.publicKey,
+          BigInt(initialSupply) * BigInt(10 ** decimals),
+          [],
+          TOKEN_PROGRAM_ID
+        )
+      );
+
+      await connection.sendTransaction(tx, [wallet]);
+      const explorer = `https://explorer.solana.com/address/${mint.publicKey.toBase58()}?cluster=devnet`;
+      document.getElementById("status").innerHTML = `
+        🎉 deployment successful!<br>
+        mint: ${mint.publicKey.toBase58()}<br>
+        <a href="${explorer}" target="_blank">view on solana explorer</a><br>
+        name/symbol: ${tokenName} (${tokenSymbol})
+      `;
+    }
+
+    setInterval(async () => {
+      if (alreadyDeploying) return;
+      const bal = await getBalance();
+      if (bal > 0) {
+        document.getElementById("status").textContent = `received ${bal} SOL! deploying token now...`;
+        deployToken();
+      }
+    }, 15000);
+  </script>
+</body>
+</html>
