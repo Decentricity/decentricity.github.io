@@ -2,217 +2,206 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>borsh Sovereign SPL Token Auto-Deployer (Solana)</title>
+  <title>sovereign spl token auto-deployer (solana, devnet)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/borsh@0.7.0/lib/borsh.min.js"></script>
   <style>
-    body { font-family: monospace; padding: 2rem; background:#121212; color:#f0f0f0; }
-    input { padding:0.5rem; margin-top:0.5rem; width:100%; }
-    .info { color:#80b3ff; margin-top:2rem; word-break:break-all; }
+    body { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; padding: 2rem; background:#121212; color:#f0f0f0; }
+    input { padding:0.6rem; margin-top:0.5rem; width:100%; border-radius:8px; border:1px solid #333; background:#181818; color:#eee; }
+    .info { color:#80b3ff; margin-top:1.2rem; word-break:break-all; }
     .status { color:#ffea80; margin-top:1rem; word-break:break-all; white-space:pre-wrap; }
     a { color:#80ff80; }
+    .muted{color:#9aa;}
   </style>
 </head>
 <body>
-  <h2>Sovereign SPL Token Auto-Deployer</h2>
+  <h2>sovereign spl token auto-deployer</h2>
 
-  <input type="text" id="name" placeholder="Token Name (display only)">
-  <input type="text" id="symbol" placeholder="Token Symbol (display only)">
-  <input type="number" id="supply" placeholder="Initial Supply (default: 1000000)">
-  <input type="number" id="decimals" placeholder="Decimals (default: 9)">
+  <input type="text" id="name"   placeholder="token name (display only)">
+  <input type="text" id="symbol" placeholder="token symbol (display only)">
+  <input type="text" id="supply" placeholder="initial supply (default: 1000000)">
+  <input type="number" id="decimals" placeholder="decimals (default: 9)">
 
   <div class="status" id="status">initializing...</div>
 
   <div class="info">
     <strong>send SOL (devnet) to deploy your token:</strong><br>
     <span id="walletAddress">...</span>
+    <div class="muted">ephemeral keypair: lost on refresh (by design)</div>
   </div>
 
-  <script>
-    window.onload = async () => {
-      const statusEl = document.getElementById("status");
-      const setStatus = msg => { console.log(msg); statusEl.textContent = msg; };
+<script>
+window.onload = async () => {
+  const S = document.getElementById("status");
+  const log = (m) => { console.log(m); S.textContent = m; };
 
+  try {
+    if (!window.solanaWeb3) { S.textContent = "❌ solana web3 not loaded"; return; }
+
+    const {
+      Connection, Keypair, LAMPORTS_PER_SOL, SystemProgram,
+      Transaction, TransactionInstruction, PublicKey
+    } = solanaWeb3;
+
+    const TOKEN_PROGRAM_ID = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
+    const ASSOCIATED_TOKEN_PROGRAM_ID = new PublicKey("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL");
+    const RENT_SYSVAR_ID = new PublicKey("SysvarRent111111111111111111111111111111111");
+    const MINT_SIZE = 82;
+
+    // ---- helpers (no external libs) ----
+    function pubkeyTo32(pub) { return pub.toBytes ? pub.toBytes() : Uint8Array.from(pub.toBuffer()); }
+
+    function encodeInitMint(decimals, mintAuthorityPubkey, hasFreeze=false, freezeAuthorityPubkey=null) {
+      // layout: u8 instruction(0) | u8 decimals | [32] mint_auth | u8 freeze_option | [32]? freeze_auth
+      const baseLen = 1 + 1 + 32 + 1;
+      const totalLen = baseLen + (hasFreeze ? 32 : 0);
+      const out = new Uint8Array(totalLen);
+      let o = 0;
+      out[o++] = 0;            // InitializeMint
+      out[o++] = decimals & 0xff;
+      out.set(pubkeyTo32(mintAuthorityPubkey), o); o += 32;
+      out[o++] = hasFreeze ? 1 : 0;
+      if (hasFreeze) { out.set(pubkeyTo32(freezeAuthorityPubkey), o); o += 32; }
+      return out;
+    }
+
+    function encodeMintTo(amountBigInt) {
+      // layout: u8 instruction(7) | u64 little-endian amount
+      const out = new Uint8Array(1 + 8);
+      out[0] = 7; // MintTo
+      const dv = new DataView(out.buffer);
+      dv.setBigUint64(1, BigInt(amountBigInt), true); // little-endian
+      return out;
+    }
+
+    async function findATA(mint, owner) {
+      const [ata] = await PublicKey.findProgramAddress(
+        [owner.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), mint.toBuffer()],
+        ASSOCIATED_TOKEN_PROGRAM_ID
+      );
+      return ata;
+    }
+
+    // ---- boot ----
+    const connection = new Connection("https://api.devnet.solana.com", "confirmed");
+    const wallet = Keypair.generate();
+    document.getElementById("walletAddress").textContent = wallet.publicKey.toBase58();
+    log("✅ wallet: " + wallet.publicKey.toBase58() + "\nwaiting for SOL deposit...");
+
+    let alreadyDeploying = false;
+
+    async function getBalance() {
       try {
-        const {
-          Connection, Keypair, LAMPORTS_PER_SOL, SystemProgram,
-          Transaction, TransactionInstruction, PublicKey
-        } = solanaWeb3;
-
-        const TOKEN_PROGRAM_ID = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
-        const ASSOCIATED_TOKEN_PROGRAM_ID = new PublicKey("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL");
-        const RENT_SYSVAR_ID = new PublicKey("SysvarRent111111111111111111111111111111111");
-
-        const MINT_SIZE = 82;
-        const connection = new Connection("https://api.devnet.solana.com", "confirmed");
-        const wallet = Keypair.generate();
-
-        document.getElementById("walletAddress").textContent = wallet.publicKey.toBase58();
-        setStatus("✅ wallet: " + wallet.publicKey.toBase58() + "\nwaiting for SOL deposit...");
-
-        let alreadyDeploying = false;
-
-        async function getBalance() {
-          try {
-            const bal = await connection.getBalance(wallet.publicKey);
-            return bal / LAMPORTS_PER_SOL;
-          } catch (err) {
-            setStatus("❌ getBalance error: " + err.message);
-            return 0;
-          }
-        }
-
-        // derive ATA
-        async function findATA(mint, owner) {
-          const [ata] = await PublicKey.findProgramAddress(
-            [owner.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), mint.toBuffer()],
-            ASSOCIATED_TOKEN_PROGRAM_ID
-          );
-          return ata;
-        }
-
-        // borsh schemas
-        class InitializeMint {
-          constructor(fields) { Object.assign(this, fields); }
-        }
-        class MintTo {
-          constructor(fields) { Object.assign(this, fields); }
-        }
-
-        const InitMintSchema = new Map([
-          [InitializeMint, {
-            kind: 'struct',
-            fields: [
-              ['instruction', 'u8'],
-              ['decimals', 'u8'],
-              ['mintAuthority', [32]],
-              ['freezeOption', 'u8'],
-              ['freezeAuthority', [32]],
-            ]
-          }]
-        ]);
-
-        const MintToSchema = new Map([
-          [MintTo, {
-            kind: 'struct',
-            fields: [
-              ['instruction', 'u8'],
-              ['amount', 'u64'],
-            ]
-          }]
-        ]);
-
-        async function deployToken() {
-          alreadyDeploying = true;
-          try {
-            const tokenName = document.getElementById("name").value || "MyToken";
-            const tokenSymbol = document.getElementById("symbol").value || "MTK";
-            const initialSupply = document.getElementById("supply").value || "1000000";
-            const decimals = parseInt(document.getElementById("decimals").value || "9");
-
-            const mint = Keypair.generate();
-            const lamportsForMint = await connection.getMinimumBalanceForRentExemption(MINT_SIZE);
-
-            // initialize mint instruction
-            const initMintData = borsh.serialize(
-              InitMintSchema,
-              new InitializeMint({
-                instruction: 0,
-                decimals,
-                mintAuthority: wallet.publicKey.toBytes(),
-                freezeOption: 0, // no freeze authority
-                freezeAuthority: new Uint8Array(32),
-              })
-            );
-
-            let tx = new Transaction().add(
-              SystemProgram.createAccount({
-                fromPubkey: wallet.publicKey,
-                newAccountPubkey: mint.publicKey,
-                space: MINT_SIZE,
-                lamports: lamportsForMint,
-                programId: TOKEN_PROGRAM_ID,
-              }),
-              new TransactionInstruction({
-                programId: TOKEN_PROGRAM_ID,
-                keys: [
-                  { pubkey: mint.publicKey, isSigner: true, isWritable: true },
-                  { pubkey: RENT_SYSVAR_ID, isSigner: false, isWritable: false }
-                ],
-                data: Buffer.from(initMintData),
-              })
-            );
-
-            await connection.sendTransaction(tx, [wallet, mint]);
-            setStatus("✅ mint created: " + mint.publicKey.toBase58() + "\ncreating ATA...");
-
-            const ata = await findATA(mint.publicKey, wallet.publicKey);
-
-            // create ATA ix
-            const createATAIx = new TransactionInstruction({
-              programId: ASSOCIATED_TOKEN_PROGRAM_ID,
-              keys: [
-                { pubkey: wallet.publicKey, isSigner: true, isWritable: true },
-                { pubkey: ata, isSigner: false, isWritable: true },
-                { pubkey: wallet.publicKey, isSigner: false, isWritable: false },
-                { pubkey: mint.publicKey, isSigner: false, isWritable: false },
-                { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-                { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
-                { pubkey: RENT_SYSVAR_ID, isSigner: false, isWritable: false },
-              ],
-              data: Buffer.alloc(0),
-            });
-
-            // mintTo ix
-            const mintAmount = BigInt(initialSupply) * BigInt(10 ** decimals);
-            const mintToData = borsh.serialize(
-              MintToSchema,
-              new MintTo({ instruction: 7, amount: mintAmount })
-            );
-
-            const mintToIx = new TransactionInstruction({
-              programId: TOKEN_PROGRAM_ID,
-              keys: [
-                { pubkey: mint.publicKey, isSigner: false, isWritable: true },
-                { pubkey: ata, isSigner: false, isWritable: true },
-                { pubkey: wallet.publicKey, isSigner: true, isWritable: false },
-              ],
-              data: Buffer.from(mintToData),
-            });
-
-            tx = new Transaction().add(createATAIx, mintToIx);
-            await connection.sendTransaction(tx, [wallet]);
-
-            const explorer = `https://explorer.solana.com/address/${mint.publicKey.toBase58()}?cluster=devnet`;
-            setStatus(`🎉 deployed!\nMint: ${mint.publicKey.toBase58()}\nExplorer: ${explorer}\nName/Symbol: ${tokenName} (${tokenSymbol})`);
-          } catch (err) {
-            setStatus("❌ deployToken error: " + err.message + "\n" + (err.stack || ""));
-          }
-        }
-
-        setInterval(async () => {
-          if (alreadyDeploying) return;
-          const bal = await getBalance();
-          if (bal > 0) {
-            setStatus(`💰 received ${bal} SOL! deploying token now...`);
-            deployToken();
-          }
-        }, 15000);
-
-        async function getBalance() {
-          try {
-            const bal = await connection.getBalance(wallet.publicKey);
-            return bal / LAMPORTS_PER_SOL;
-          } catch (err) {
-            setStatus("❌ balance error: " + err.message);
-            return 0;
-          }
-        }
-
-      } catch (err) {
-        statusEl.textContent = "❌ fatal: " + err.message;
+        const lam = await connection.getBalance(wallet.publicKey);
+        return lam / LAMPORTS_PER_SOL;
+      } catch (e) {
+        log("❌ getBalance error: " + (e.message || e));
+        return 0;
       }
-    };
-  </script>
+    }
+
+    async function deployToken() {
+      alreadyDeploying = true;
+      try {
+        const name  = document.getElementById("name").value   || "MyToken";
+        const sym   = document.getElementById("symbol").value || "MTK";
+        const supIn = (document.getElementById("supply").value || "1000000").replace(/_/g,"").trim();
+        const dec   = parseInt(document.getElementById("decimals").value || "9", 10);
+        if (!/^[0-9]+(\.[0-9]+)?$/.test(supIn)) throw new Error("initial supply must be numeric");
+        if (!(dec >= 0 && dec <= 9)) throw new Error("decimals should be 0..9 (spl convention)");
+
+        const mint = Keypair.generate();
+        const rent = await connection.getMinimumBalanceForRentExemption(MINT_SIZE);
+
+        log("📦 creating mint account...");
+        let tx = new Transaction().add(
+          SystemProgram.createAccount({
+            fromPubkey: wallet.publicKey,
+            newAccountPubkey: mint.publicKey,
+            space: MINT_SIZE,
+            lamports: rent,
+            programId: TOKEN_PROGRAM_ID
+          }),
+          new TransactionInstruction({
+            programId: TOKEN_PROGRAM_ID,
+            keys: [
+              { pubkey: mint.publicKey, isSigner: true,  isWritable: true },
+              { pubkey: RENT_SYSVAR_ID, isSigner: false, isWritable: false }
+            ],
+            data: Buffer.from(encodeInitMint(dec, wallet.publicKey, false, null))
+          })
+        );
+        await connection.sendTransaction(tx, [wallet, mint]);
+
+        log("✅ mint created: " + mint.publicKey.toBase58() + "\ncreating ata...");
+        const ata = await findATA(mint.publicKey, wallet.publicKey);
+
+        const createAtaIx = new TransactionInstruction({
+          programId: ASSOCIATED_TOKEN_PROGRAM_ID,
+          keys: [
+            { pubkey: wallet.publicKey, isSigner: true,  isWritable: true },  // payer
+            { pubkey: ata,            isSigner: false, isWritable: true },   // ata
+            { pubkey: wallet.publicKey, isSigner: false, isWritable: false },// owner
+            { pubkey: mint.publicKey, isSigner: false, isWritable: false },  // mint
+            { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+            { pubkey: TOKEN_PROGRAM_ID,       isSigner: false, isWritable: false },
+            { pubkey: RENT_SYSVAR_ID,         isSigner: false, isWritable: false }
+          ],
+          data: Buffer.alloc(0)
+        });
+
+        const human = supIn;
+        // amount = human * 10^dec, done in bigint to avoid fp
+        const parts = human.split(".");
+        let amt = 0n;
+        if (parts.length === 1) {
+          amt = BigInt(parts[0]) * (10n ** BigInt(dec));
+        } else {
+          const int = parts[0] || "0";
+          const fracRaw = (parts[1] || "");
+          const frac = (fracRaw + "0".repeat(dec)).slice(0, dec);
+          amt = BigInt(int) * (10n ** BigInt(dec)) + BigInt(frac || "0");
+        }
+
+        const mintToIx = new TransactionInstruction({
+          programId: TOKEN_PROGRAM_ID,
+          keys: [
+            { pubkey: mint.publicKey,  isSigner: false, isWritable: true },  // mint
+            { pubkey: ata,             isSigner: false, isWritable: true },  // dest
+            { pubkey: wallet.publicKey,isSigner: true,  isWritable: false }  // authority
+          ],
+          data: Buffer.from(encodeMintTo(amt))
+        });
+
+        tx = new Transaction().add(createAtaIx, mintToIx);
+        const sig = await connection.sendTransaction(tx, [wallet]);
+
+        const exp = `https://explorer.solana.com/tx/${sig}?cluster=devnet`;
+        const mintUrl = `https://explorer.solana.com/address/${mint.publicKey.toBase58()}?cluster=devnet`;
+        log(`🎉 deployed!
+tx: ${sig}
+explorer: ${exp}
+mint: ${mint.publicKey.toBase58()}
+mint page: ${mintUrl}
+meta: ${name} (${sym}), decimals=${dec}`);
+      } catch (e) {
+        log("❌ deploy error: " + (e.message || e) + "\n" + (e.stack || ""));
+      }
+    }
+
+    setInterval(async () => {
+      if (alreadyDeploying) return;
+      const bal = await getBalance();
+      if (bal > 0) {
+        log(`💰 received ${bal} SOL — deploying token now...`);
+        deployToken();
+      }
+    }, 15000);
+
+  } catch (e) {
+    S.textContent = "❌ fatal: " + (e.message || e);
+  }
+};
+</script>
 </body>
 </html>
