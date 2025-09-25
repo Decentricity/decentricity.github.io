@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>sovereign spl token auto-deployer (solana, devnet)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.js"></script>
@@ -17,15 +17,15 @@
 <body>
   <h2>sovereign spl token auto-deployer</h2>
 
-  <input type="text" id="name"   placeholder="token name (display only)">
-  <input type="text" id="symbol" placeholder="token symbol (display only)">
-  <input type="text" id="supply" placeholder="initial supply (default: 1000000)">
-  <input type="number" id="decimals" placeholder="decimals (default: 9)">
+  <input type="text" id="name"   placeholder="token name (display only)" />
+  <input type="text" id="symbol" placeholder="token symbol (display only)" />
+  <input type="text" id="supply" placeholder="initial supply (default: 1000000)" />
+  <input type="number" id="decimals" placeholder="decimals (default: 9)" />
 
   <div class="status" id="status">initializing...</div>
 
   <div class="info">
-    <strong>send SOL (devnet) to deploy your token:</strong><br>
+    <strong>send SOL (devnet) to deploy your token:</strong><br />
     <span id="walletAddress">...</span>
     <div class="muted">ephemeral keypair: lost on refresh (by design)</div>
   </div>
@@ -48,7 +48,7 @@ window.onload = async () => {
     const RENT_SYSVAR_ID = new PublicKey("SysvarRent111111111111111111111111111111111");
     const MINT_SIZE = 82;
 
-    // ---- helpers (no external libs) ----
+    // helpers
     function pubkeyTo32(pub) { return pub.toBytes ? pub.toBytes() : Uint8Array.from(pub.toBuffer()); }
 
     function encodeInitMint(decimals, mintAuthorityPubkey, hasFreeze=false, freezeAuthorityPubkey=null) {
@@ -57,7 +57,7 @@ window.onload = async () => {
       const totalLen = baseLen + (hasFreeze ? 32 : 0);
       const out = new Uint8Array(totalLen);
       let o = 0;
-      out[o++] = 0;            // InitializeMint
+      out[o++] = 0; // InitializeMint
       out[o++] = decimals & 0xff;
       out.set(pubkeyTo32(mintAuthorityPubkey), o); o += 32;
       out[o++] = hasFreeze ? 1 : 0;
@@ -82,7 +82,7 @@ window.onload = async () => {
       return ata;
     }
 
-    // ---- boot ----
+    // boot
     const connection = new Connection("https://api.devnet.solana.com", "confirmed");
     const wallet = Keypair.generate();
     document.getElementById("walletAddress").textContent = wallet.publicKey.toBase58();
@@ -108,7 +108,7 @@ window.onload = async () => {
         const supIn = (document.getElementById("supply").value || "1000000").replace(/_/g,"").trim();
         const dec   = parseInt(document.getElementById("decimals").value || "9", 10);
         if (!/^[0-9]+(\.[0-9]+)?$/.test(supIn)) throw new Error("initial supply must be numeric");
-        if (!(dec >= 0 && dec <= 9)) throw new Error("decimals should be 0..9 (spl convention)");
+        if (!(dec >= 0 && dec <= 9)) throw new Error("decimals should be 0..9");
 
         const mint = Keypair.generate();
         const rent = await connection.getMinimumBalanceForRentExemption(MINT_SIZE);
@@ -128,7 +128,7 @@ window.onload = async () => {
               { pubkey: mint.publicKey, isSigner: true,  isWritable: true },
               { pubkey: RENT_SYSVAR_ID, isSigner: false, isWritable: false }
             ],
-            data: Buffer.from(encodeInitMint(dec, wallet.publicKey, false, null))
+            data: encodeInitMint(dec, wallet.publicKey, false, null) // Uint8Array
           })
         );
         await connection.sendTransaction(tx, [wallet, mint]);
@@ -140,19 +140,18 @@ window.onload = async () => {
           programId: ASSOCIATED_TOKEN_PROGRAM_ID,
           keys: [
             { pubkey: wallet.publicKey, isSigner: true,  isWritable: true },  // payer
-            { pubkey: ata,            isSigner: false, isWritable: true },   // ata
-            { pubkey: wallet.publicKey, isSigner: false, isWritable: false },// owner
-            { pubkey: mint.publicKey, isSigner: false, isWritable: false },  // mint
+            { pubkey: ata,              isSigner: false, isWritable: true },  // ata
+            { pubkey: wallet.publicKey, isSigner: false, isWritable: false }, // owner
+            { pubkey: mint.publicKey,   isSigner: false, isWritable: false }, // mint
             { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
             { pubkey: TOKEN_PROGRAM_ID,       isSigner: false, isWritable: false },
             { pubkey: RENT_SYSVAR_ID,         isSigner: false, isWritable: false }
           ],
-          data: Buffer.alloc(0)
+          data: new Uint8Array(0) // no payload
         });
 
-        const human = supIn;
-        // amount = human * 10^dec, done in bigint to avoid fp
-        const parts = human.split(".");
+        // amount human -> bigint base units
+        const parts = supIn.split(".");
         let amt = 0n;
         if (parts.length === 1) {
           amt = BigInt(parts[0]) * (10n ** BigInt(dec));
@@ -166,11 +165,11 @@ window.onload = async () => {
         const mintToIx = new TransactionInstruction({
           programId: TOKEN_PROGRAM_ID,
           keys: [
-            { pubkey: mint.publicKey,  isSigner: false, isWritable: true },  // mint
-            { pubkey: ata,             isSigner: false, isWritable: true },  // dest
-            { pubkey: wallet.publicKey,isSigner: true,  isWritable: false }  // authority
+            { pubkey: mint.publicKey,   isSigner: false, isWritable: true },  // mint
+            { pubkey: ata,              isSigner: false, isWritable: true },  // dest
+            { pubkey: wallet.publicKey, isSigner: true,  isWritable: false }  // authority
           ],
-          data: Buffer.from(encodeMintTo(amt))
+          data: encodeMintTo(amt) // Uint8Array
         });
 
         tx = new Transaction().add(createAtaIx, mintToIx);
@@ -193,7 +192,7 @@ meta: ${name} (${sym}), decimals=${dec}`);
       if (alreadyDeploying) return;
       const bal = await getBalance();
       if (bal > 0) {
-        log(`💰 received ${bal} SOL — deploying token now...`);
+        log(`💰 received ${bal} SOL -- deploying token now...`);
         deployToken();
       }
     }, 15000);
