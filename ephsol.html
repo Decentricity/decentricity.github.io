@@ -4,6 +4,12 @@
   <meta charset="utf-8" />
   <title>ephemeral solana wallet (devnet)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+<script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.js"></script>
+<script src="https://unpkg.com/buffer@6.0.3/index.js"></script>
+<script>
+  window.Buffer = buffer.Buffer;
+</script>
+<!-- then your wallet code -->
   <!-- deps: solana web3 iife + tiny qrcode lib -->
   <script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
