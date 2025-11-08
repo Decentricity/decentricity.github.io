@@ -184,23 +184,30 @@ if [[ -z "${USER_REQUEST// }" ]]; then
 fi
 
 PROMPT="$(cat <<EOF
-you are an expert linux shell engineer.
+you are an expert linux shell engineer, working as a NON-ROOT user in a termux / linux home directory.
 
 task: write a bash script that fulfills the following user request:
 
 \"${USER_REQUEST}\"
 
-requirements:
+strict requirements:
 - output ONLY the bash script source code.
 - no markdown, no code fences, no explanation, no comments from you.
 - assume this script will be saved to a file and run as:
     bash script.sh
 - include this near the top:
     set -euo pipefail
-- assume current working directory is where the script lives and runs.
-- avoid obviously destructive commands like wiping disks or rm -rf /.
-- do not ask the user for more input inside the script.
-- just implement the requested behavior directly.
+- NEVER use "sudo", "su", "systemctl", "service", or package managers (apt, yum, pacman, brew, etc).
+- operate ONLY in the current directory (.) and its subdirectories UNLESS the user explicitly gives an absolute path.
+  - that means: prefer "find . ..." instead of "find / ...".
+  - NEVER use "find / ..." unless the user literally wrote "find /" in the request.
+- when using "find" over directories that might contain unreadable paths, use this pattern:
+    find . -type f 2>/dev/null | wc -l
+  or, if used in a command substitution with set -euo pipefail:
+    count=\$(find . -type f 2>/dev/null | wc -l || true)
+- do not change global shell config files, do not edit ~/.bashrc or similar, do not install packages.
+- do not ask the user for more input inside the script; just implement the behavior directly.
+- at the end of the script, exit normally without printing extra debug noise unless the task requires output.
 EOF
 )"
 
@@ -226,6 +233,9 @@ if [[ "${SCRIPT_BODY}" != '#!'* ]]; then
   SCRIPT_BODY="#!/usr/bin/env bash
 ${SCRIPT_BODY}"
 fi
+
+# small hack: if it still used "find /" anywhere, rewrite to "find ."
+SCRIPT_BODY="$(printf '%s\n' "$SCRIPT_BODY" | sed 's/find[[:space:]]\+\//find .\//g')"
 
 SCRIPT_PATH="$(pwd)/${OUTFILE}"
 printf '%s\n' "$SCRIPT_BODY" > "$SCRIPT_PATH"
