@@ -13,6 +13,7 @@ API_BASE="https://text.pollinations.ai"
 MODEL="openai"    # change if you want another model id
 OUTFILE="pollinations_generated.sh"
 INSTALL_NAME="shellbot"
+SHELLBOT_URL="https://decentricity.github.io/shellbot.sh"
 
 # ---------- install / uninstall helpers ----------
 
@@ -44,7 +45,7 @@ detect_target_dir() {
 }
 
 resolve_self_path() {
-  # best-effort absolute path to this script
+  # best effort absolute path to this script
   local src="${BASH_SOURCE[0]:-$0}"
 
   if command -v readlink >/dev/null 2>&1; then
@@ -58,7 +59,6 @@ resolve_self_path() {
   case "$src" in
     /*) echo "$src" ;;
     *)
-      # relative path: prepend current dir
       echo "$(pwd)/$src"
       ;;
   esac
@@ -80,7 +80,13 @@ install_self() {
   src="$(resolve_self_path)"
   target="$target_dir/$INSTALL_NAME"
 
-  cp "$src" "$target"
+  if [ -f "$src" ]; then
+    cp "$src" "$target"
+  else
+    echo "could not resolve script file on disk, downloading from ${SHELLBOT_URL}"
+    curl -fsSL "$SHELLBOT_URL" -o "$target"
+  fi
+
   chmod +x "$target"
 
   echo "installed shellbot as:"
@@ -107,7 +113,7 @@ uninstall_self() {
   IFS=':'
   for dir in $PATH; do
     IFS="$oldifs"
-    [ -z "$dir" ] && continue
+    [ -z "$dir" ] && { IFS=':'; continue; }
     local candidate="$dir/$INSTALL_NAME"
     if [ -f "$candidate" ]; then
       rm -f "$candidate"
