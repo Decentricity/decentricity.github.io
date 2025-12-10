@@ -1,6 +1,8 @@
 // index.js
+import * as webllm from "https://esm.run/@mlc-ai/web-llm@0.2.80";
 
-// dynamic viewport height hack for mobile chrome
+/* ========== viewport helper (harmless if broken) ========== */
+
 function setViewportHeightVar() {
   const vh = window.innerHeight * 0.01;
   document.documentElement.style.setProperty("--vh", `${vh}px`);
@@ -9,9 +11,6 @@ function setViewportHeightVar() {
 setViewportHeightVar();
 window.addEventListener("resize", setViewportHeightVar);
 window.addEventListener("orientationchange", setViewportHeightVar);
-
-
-import * as webllm from "https://esm.run/@mlc-ai/web-llm@0.2.80";
 
 /* ========== typewriter helper ========== */
 
@@ -75,9 +74,33 @@ const availableModels = (webllm.prebuiltAppConfig?.model_list ?? []).map(
   (m) => m.model_id,
 );
 
-// pick a default that definitely exists; fall back to qwen if list empty
-let selectedModel =
-  availableModels[0] ?? "Qwen2.5-1.5B-Instruct-q4f16_1-MLC";
+// helper: estimate model size in B from its id, e.g. "...-0.5B-...", "...-1.5B-..."
+function estimateModelSizeB(modelId) {
+  const m = modelId.match(/([0-9.]+)B/i);
+  if (!m) return Number.POSITIVE_INFINITY;
+  const v = parseFloat(m[1]);
+  if (Number.isNaN(v)) return Number.POSITIVE_INFINITY;
+  return v;
+}
+
+// choose the smallest instruct/chat model if possible, else smallest overall
+let selectedModel;
+
+if (availableModels.length > 0) {
+  const instructModels = availableModels.filter((id) =>
+    /instruct|chat/i.test(id),
+  );
+  const candidates = instructModels.length ? instructModels : availableModels;
+
+  candidates.sort(
+    (a, b) => estimateModelSizeB(a) - estimateModelSizeB(b),
+  );
+
+  selectedModel = candidates[0];
+} else {
+  // fallback if for some reason the config is empty
+  selectedModel = "Qwen2.5-1.5B-Instruct-q4f16_1-MLC";
+}
 
 // engine state
 let engine = new webllm.MLCEngine();
@@ -146,8 +169,7 @@ async function initializeWebLLMEngine() {
     if (statusEl) {
       statusEl.classList.remove("hidden");
       statusEl.textContent =
-        "failed to initialize model on this device.\n\n" +
-        "this is a WebGPU / Vulkan error inside chrome (VK_ERROR_UNKNOWN).\n" +
+        "failed to initialize model on this device. this is a WebGPU / Vulkan error inside chrome (VK_ERROR_UNKNOWN).\n" +
         "try a different device, or desktop chrome / another webgpu-capable browser.";
     }
 
