@@ -8,7 +8,8 @@ html {
   height: 100%;
   background-color: #000;
   color: #c7a4ff;
-  overflow: hidden;
+  overflow-y: auto; /* let the page scroll vertically */
+  overflow-x: hidden;
 }
 
 #main-container {
