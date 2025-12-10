@@ -1,4 +1,16 @@
 // index.js
+
+// dynamic viewport height hack for mobile chrome
+function setViewportHeightVar() {
+  const vh = window.innerHeight * 0.01;
+  document.documentElement.style.setProperty("--vh", `${vh}px`);
+}
+
+setViewportHeightVar();
+window.addEventListener("resize", setViewportHeightVar);
+window.addEventListener("orientationchange", setViewportHeightVar);
+
+
 import * as webllm from "https://esm.run/@mlc-ai/web-llm@0.2.80";
 
 /* ========== typewriter helper ========== */
