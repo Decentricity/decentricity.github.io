@@ -1,22 +1,30 @@
 @import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap");
 
+:root {
+  /* default fallback if js hasnt set it yet */
+  --vh: 1vh;
+}
+
 body,
 html {
   font-family: Roboto, monospace, sans-serif !important;
   padding: 10px 20px;
   margin: 0;
-  height: 100%;
   background-color: #000;
   color: #c7a4ff;
-  overflow-y: auto; /* let the page scroll vertically */
   overflow-x: hidden;
+  overflow-y: auto;
 }
 
+/* main layout uses dynamic viewport height */
 #main-container {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: calc(var(--vh) * 100);
+  max-height: calc(var(--vh) * 100);
 }
+
+/* download section */
 
 .download-container {
   display: flex;
@@ -37,21 +45,30 @@ html {
   box-sizing: border-box;
 }
 
+#download-status ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+/* chat layout */
+
 .chat-container {
   display: flex;
   flex-direction: column;
-  flex-grow: 1;
+  flex: 1 1 auto;
   overflow: hidden;
   border: 2px solid #c7a4ff;
   width: 100%;
+  min-height: 0; /* important so flexbox lets chat-box shrink */
 }
 
 .chat-box {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   background-color: #333;
   border: 1px solid #555;
   padding: 5px;
-  flex-grow: 1;
   color: #c7a4ff;
 }
 
@@ -92,10 +109,14 @@ html {
   color: #c7a4ff;
 }
 
+/* input bar pinned to bottom of chat-container */
+
 .chat-input-container {
   display: flex;
   border-top: 1px solid #555;
   padding: 10px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
 }
 
 #user-input {
@@ -105,6 +126,8 @@ html {
   background-color: #222;
   color: #c7a4ff;
 }
+
+/* headings */
 
 #title {
   font-family: "Roboto Mono", monospace;
@@ -120,10 +143,7 @@ html {
   text-shadow: 0 0 5px #7b5eff, 0 0 10px #ff00ff;
 }
 
-#download-status ul {
-  margin: 0;
-  padding-left: 20px;
-}
+/* misc text */
 
 strong {
   font-family: "Roboto Mono", monospace;
@@ -153,6 +173,8 @@ code {
   padding: 2px 4px;
   border-radius: 4px;
 }
+
+/* buttons */
 
 button#download {
   width: 100%;
@@ -186,6 +208,8 @@ button:disabled {
 button:hover:not(:disabled) {
   background-color: #6e4fd8;
 }
+
+/* utility */
 
 .hidden {
   display: none;
