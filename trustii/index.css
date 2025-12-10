@@ -16,6 +16,16 @@ html {
   overflow-y: auto;
 }
 
+
+#footer-brand {
+  margin-top: 8px;
+  text-align: center;
+  font-family: "Roboto Mono", monospace;
+  font-size: 0.8rem;
+  color: #444;
+  padding-bottom: 16px;
+}
+
 /* main layout uses dynamic viewport height */
 #main-container {
   display: flex;
