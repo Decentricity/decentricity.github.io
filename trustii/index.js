@@ -1,8 +1,14 @@
-import * as webllm from "https://esm.run/@mlc-ai/web-llm";
+// index.js
+import * as webllm from "https://esm.run/@mlc-ai/web-llm@0.2.80";
 
+// ========== simple typewriter ==========
 function typeWriter(elementId, text, delay = 50) {
   const element = document.getElementById(elementId);
+  if (!element) return;
   let index = 0;
+
+  element.textContent = ""; // clear the content initially
+
   function type() {
     if (index < text.length) {
       element.textContent += text.charAt(index);
@@ -10,70 +16,122 @@ function typeWriter(elementId, text, delay = 50) {
       setTimeout(type, delay);
     }
   }
-  element.textContent = ""; // clear the content initially
+
   type();
 }
-// on window load, animate the title and liberate text
-window.addEventListener('load', function() {
-  // type out the initial message without the link
-  typeWriter('title', "Hi I'm an unconnected AI.", 100);
 
-  // replace the plain text with a clickable link after the typing effect is completed
+// animate title + subtitle on load
+window.addEventListener("load", () => {
+  const titleText = "Hi I'm an unconnected AI.";
+
+  typeWriter("title", titleText, 100);
+
+  // swap to non-typed version (keeps linkability etc)
   setTimeout(() => {
-    document.getElementById('title').innerHTML = 'Hi I\'m an unconnected AI.';
-  }, 100 * ("Hi I'm an unconnected AI.".length + 1)); // adjust timeout to match typewriter speed
-  
-  // type out the liberate text
+    const titleEl = document.getElementById("title");
+    if (titleEl) {
+      titleEl.innerHTML = "Hi I'm an unconnected AI.";
+    }
+  }, 100 * (titleText.length + 1));
+
   setTimeout(() => {
-    typeWriter('liberateme', 'press start to load my model into your browser cache, where i can run offline through your WebGPU.', 50);
-  }, 1500); // delay to start liberate text animation
+    typeWriter(
+      "liberateme",
+      "press start to load my model into your browser cache, where i can run offline through your WebGPU.",
+      50
+    );
+  }, 1500);
 });
 
-/*************** WebLLM logic ***************/
+// ========== webllm setup ==========
+
+// prompt style stays yours
 const messages = [
   {
-    content: "You are Decentricity, an AI and blockchain futurist shaping the next era of technology. respond with bold insights, strategic foresight, and a no-nonsense approach.",
+    content:
+      "You are Decentricity, an AI and blockchain futurist shaping the next era of technology. respond with bold insights, strategic foresight, and a no-nonsense approach.",
     role: "system",
   },
 ];
 
+// pull available models from webllm
 const availableModels = webllm.prebuiltAppConfig.model_list.map(
   (m) => m.model_id,
 );
-// corrected to use the model id from your list
-let selectedModel = "Qwen2.5-1.5B-Instruct-q4f16_1-MLC";
 
+// pick a *smaller* default model for phones;
+// you can change this back to qwen2.5 on beefier machines
+// e.g. "Qwen2.5-1.5B-Instruct-q4f16_1-MLC"
+let selectedModel = "Phi-3.5-mini-instruct-q4f16_1-MLC";
 
-// Callback function for initializing progress
+// engine + state
+let engine = new webllm.MLCEngine();
+let engineReady = false;
+
+// progress callback
 function updateEngineInitProgressCallback(report) {
-  console.log("initialize", report.progress);
-  document.getElementById("download-status").textContent = report.text;
+  console.log("initialize", report.progress, report.text);
+  const statusEl = document.getElementById("download-status");
+  if (!statusEl) return;
+  statusEl.textContent = report.text || "initializing...";
+  if (report.progress >= 1) {
+    statusEl.textContent =
+      "model loaded into your browser cache. you can now go offline.";
+  }
 }
 
-// Create engine instance
-const engine = new webllm.MLCEngine();
 engine.setInitProgressCallback(updateEngineInitProgressCallback);
 
+// initialize engine + load model
 async function initializeWebLLMEngine() {
-  document.getElementById("download-status").classList.remove("hidden");
-  const config = {
-    temperature: 0.7,
-    top_p: 0.7,
-  };
-  await engine.reload(selectedModel, config);
+  const statusEl = document.getElementById("download-status");
+  const sendBtn = document.getElementById("send");
+
+  if (statusEl) {
+    statusEl.classList.remove("hidden");
+    statusEl.textContent =
+      "initializing webllm engine and preparing WebGPU kernels...";
+  }
+
+  try {
+    const config = {
+      temperature: 0.7,
+      top_p: 0.7,
+    };
+
+    await engine.reload(selectedModel, config);
+    engineReady = true;
+
+    if (sendBtn) {
+      sendBtn.disabled = false;
+    }
+
+    // cute feedback
+    typeWriter("liberateme", "bestee ready for airplane mode.", 50);
+  } catch (err) {
+    console.error("engine init failed", err);
+    if (statusEl) {
+      statusEl.textContent =
+        "failed to initialize model: " + (err?.message || String(err));
+    }
+  }
 }
 
-async function streamingGenerating(messages, onUpdate, onFinish, onError) {
+// streaming chat helper
+async function streamingGenerating(msgs, onUpdate, onFinish, onError) {
   try {
     let curMessage = "";
     let usage;
+
     const completion = await engine.chat.completions.create({
+      model: selectedModel, // explicit model
       stream: true,
-      messages,
+      messages: msgs,
       stream_options: { include_usage: true },
     });
+
     for await (const chunk of completion) {
-      const curDelta = chunk.choices[0]?.delta.content;
+      const curDelta = chunk.choices?.[0]?.delta?.content;
       if (curDelta) {
         curMessage += curDelta;
       }
@@ -82,6 +140,7 @@ async function streamingGenerating(messages, onUpdate, onFinish, onError) {
       }
       onUpdate(curMessage);
     }
+
     const finalMessage = await engine.getMessage();
     onFinish(finalMessage, usage);
   } catch (err) {
@@ -89,59 +148,15 @@ async function streamingGenerating(messages, onUpdate, onFinish, onError) {
   }
 }
 
-/*************** UI logic ***************/
-function onMessageSend() {
-  const input = document.getElementById("user-input").value.trim();
-  const message = {
-    content: input,
-    role: "user",
-  };
-  if (input.length === 0) {
-    return;
-  }
-  document.getElementById("send").disabled = true;
-
-  messages.push(message);
-  appendMessage(message);
-
-  document.getElementById("user-input").value = "";
-  document
-    .getElementById("user-input")
-    .setAttribute("placeholder", "Generating...");
-
-  const aiMessage = {
-    content: "typing...",
-    role: "assistant",
-  };
-  appendMessage(aiMessage);
-
-  const onFinishGenerating = (finalMessage, usage) => {
-    updateLastMessage(finalMessage);
-    document.getElementById("send").disabled = false;
-    
-  // typewriter effect to change liberateme text
-  typeWriter('liberateme', "Bestee ready for airplane mode.", 50);
-    const usageText =
-      `prompt_tokens: ${usage.prompt_tokens}, ` +
-      `completion_tokens: ${usage.completion_tokens}, ` +
-      `prefill: ${usage.extra.prefill_tokens_per_s.toFixed(4)} tokens/sec, ` +
-      `decoding: ${usage.extra.decode_tokens_per_s.toFixed(4)} tokens/sec`;
-    document.getElementById("chat-stats").classList.remove("hidden");
-    document.getElementById("chat-stats").textContent = usageText;
-  };
-
-  streamingGenerating(
-    messages,
-    updateLastMessage,
-    onFinishGenerating,
-    console.error,
-  );
-}
+// ========== chat ui logic ==========
 
 function appendMessage(message) {
   const chatBox = document.getElementById("chat-box");
+  if (!chatBox) return;
+
   const container = document.createElement("div");
   container.classList.add("message-container");
+
   const newMessage = document.createElement("div");
   newMessage.classList.add("message");
   newMessage.textContent = message.content;
@@ -154,42 +169,148 @@ function appendMessage(message) {
 
   container.appendChild(newMessage);
   chatBox.appendChild(container);
-  chatBox.scrollTop = chatBox.scrollHeight; // Scroll to the latest message
+  chatBox.scrollTop = chatBox.scrollHeight;
 }
 
 function updateLastMessage(content) {
-  const messageDoms = document
-    .getElementById("chat-box")
-    .querySelectorAll(".message");
+  const chatBox = document.getElementById("chat-box");
+  if (!chatBox) return;
+
+  const messageDoms = chatBox.querySelectorAll(".message");
+  if (!messageDoms.length) return;
+
   const lastMessageDom = messageDoms[messageDoms.length - 1];
   lastMessageDom.textContent = content;
 }
 
-/*************** UI binding ***************/
-availableModels.forEach((modelId) => {
-  const option = document.createElement("option");
-  option.value = modelId;
-  option.textContent = modelId;
-  document.getElementById("model-selection").appendChild(option);
-});
-document.getElementById("model-selection").value = selectedModel;
-document.getElementById("download").addEventListener("click", function () {
-  // hide start button
-  document.getElementById("download").classList.add("hidden");
+function onMessageSend() {
+  const inputEl = document.getElementById("user-input");
+  const sendBtn = document.getElementById("send");
 
-  // hide important and ul sections
-  document.querySelector("ul").classList.add("hidden");
-  document.querySelector("strong").classList.add("hidden");
+  if (!inputEl) return;
 
-  // typewriter effect to change liberateme text
-  typeWriter('liberateme', "i am liberating my ai.", 50);
+  const input = inputEl.value.trim();
+  if (!input.length) return;
 
-  // initialize the webllm engine
-  initializeWebLLMEngine().then(() => {
-    document.getElementById("send").disabled = false;
+  if (!engineReady) {
+    // soft guard in case button gets enabled early somehow
+    alert("model is still loading, hang on a bit.");
+    return;
+  }
+
+  const message = {
+    content: input,
+    role: "user",
+  };
+
+  if (sendBtn) {
+    sendBtn.disabled = true;
+  }
+
+  messages.push(message);
+  appendMessage(message);
+  inputEl.value = "";
+  inputEl.setAttribute("placeholder", "generating...");
+
+  const aiMessage = {
+    content: "typing...",
+    role: "assistant",
+  };
+  appendMessage(aiMessage);
+
+  const onFinishGenerating = (finalMessage, usage) => {
+    updateLastMessage(finalMessage);
+    if (sendBtn) {
+      sendBtn.disabled = false;
+    }
+    inputEl.setAttribute("placeholder", "type a message...");
+
+    if (usage) {
+      const usageText =
+        `prompt_tokens: ${usage.prompt_tokens}, ` +
+        `completion_tokens: ${usage.completion_tokens}, ` +
+        `prefill: ${usage.extra?.prefill_tokens_per_s?.toFixed?.(4) ?? "n/a"} tokens/sec, ` +
+        `decoding: ${usage.extra?.decode_tokens_per_s?.toFixed?.(4) ?? "n/a"} tokens/sec`;
+
+      const statsEl = document.getElementById("chat-stats");
+      if (statsEl) {
+        statsEl.classList.remove("hidden");
+        statsEl.textContent = usageText;
+      }
+    }
+  };
+
+  streamingGenerating(
+    messages,
+    updateLastMessage,
+    onFinishGenerating,
+    (err) => {
+      console.error(err);
+      updateLastMessage("error while generating: " + (err?.message || err));
+      if (sendBtn) {
+        sendBtn.disabled = false;
+      }
+      inputEl.setAttribute("placeholder", "type a message...");
+    },
+  );
+}
+
+// ========== ui binding ==========
+
+// populate model dropdown (even if hidden, for you dev-tweaking)
+const modelSelect = document.getElementById("model-selection");
+if (modelSelect) {
+  availableModels.forEach((modelId) => {
+    const option = document.createElement("option");
+    option.value = modelId;
+    option.textContent = modelId;
+    modelSelect.appendChild(option);
   });
-});
-document.getElementById("send").addEventListener("click", function () {
-  onMessageSend();
-});
+  // if your default is in the list, select it; else, fall back to first
+  if (availableModels.includes(selectedModel)) {
+    modelSelect.value = selectedModel;
+  } else {
+    selectedModel = availableModels[0];
+    modelSelect.value = selectedModel;
+  }
 
+  modelSelect.addEventListener("change", (e) => {
+    selectedModel = e.target.value;
+  });
+}
+
+const downloadBtn = document.getElementById("download");
+if (downloadBtn) {
+  downloadBtn.addEventListener("click", () => {
+    // hide start button
+    downloadBtn.classList.add("hidden");
+
+    // hide first <ul> and first <strong> (your "important" block)
+    const firstUl = document.querySelector("ul");
+    const firstStrong = document.querySelector("strong");
+    if (firstUl) firstUl.classList.add("hidden");
+    if (firstStrong) firstStrong.classList.add("hidden");
+
+    typeWriter("liberateme", "i am liberating my ai.", 50);
+
+    initializeWebLLMEngine();
+  });
+}
+
+const sendBtn = document.getElementById("send");
+if (sendBtn) {
+  sendBtn.addEventListener("click", () => {
+    onMessageSend();
+  });
+}
+
+// send on enter
+const inputEl = document.getElementById("user-input");
+if (inputEl) {
+  inputEl.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      onMessageSend();
+    }
+  });
+}
