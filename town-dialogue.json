@@ -1,0 +1,596 @@
+{
+  "levels": {
+    "1": {
+      "nodes": {
+        "start": {
+          "lines": [
+            {
+              "speaker": "tank",
+              "text": "I am so tired. Do you think we can go back home to eat?"
+            }
+          ],
+          "options": [
+            {
+              "text": "No",
+              "next": "after_first_choice"
+            },
+            {
+              "text": "We can't go back until we find mom",
+              "next": "after_first_choice"
+            }
+          ]
+        },
+        "after_first_choice": {
+          "lines": [
+            {
+              "speaker": "rogue",
+              "text": "We should continue. Your mom could be at the Red Palace. That is miles away. Or she could be in the Red Village, near here.."
+            }
+          ],
+          "options": [
+            {
+              "text": "Red Palace",
+              "next": "red_palace"
+            },
+            {
+              "text": "Red Village",
+              "next": "red_village"
+            }
+          ]
+        },
+        "red_palace": {
+          "lines": [
+            {
+              "speaker": "tank",
+              "text": "The Red Palace it is then. It's a long journey, but we'll make it."
+            },
+            {
+              "speaker": "rogue",
+              "text": "Let's gather supplies and head out. Stay sharp, everyone."
+            }
+          ],
+          "options": []
+        },
+        "red_village": {
+          "lines": [
+            {
+              "speaker": "tank",
+              "text": "Red Village sounds closer. Maybe we can rest there too."
+            },
+            {
+              "speaker": "rogue",
+              "text": "Good thinking. Let's move before it gets dark."
+            }
+          ],
+          "options": []
+        }
+      }
+    },
+    "2": {
+      "nodes": {
+        "start": {
+          "lines": [
+            {
+              "speaker": "rogue",
+              "text": "There. A city gate. Finally, walls that are not trying to kill us."
+            },
+            {
+              "speaker": "tank",
+              "text": "Smells like food. And smoke. And... coins."
+            },
+            {
+              "speaker": "merchant",
+              "text": "Travelers! Dusty, hungry, and carrying that 'about to spend money' look. Step right up."
+            }
+          ],
+          "options": [
+            {
+              "text": "Ask about supplies",
+              "next": "ask_supplies"
+            },
+            {
+              "text": "Ask about mom",
+              "next": "ask_mom"
+            },
+            {
+              "text": "Just browse",
+              "next": "browse"
+            }
+          ]
+        },
+        "ask_supplies": {
+          "lines": [
+            {
+              "speaker": "tank",
+              "text": "We need food, bandages, and anything that keeps us alive."
+            },
+            {
+              "speaker": "merchant",
+              "text": "Ah, the classic bundle. Rations, salves, and a little charm against bad luck. Luck not included."
+            },
+            {
+              "speaker": "rogue",
+              "text": "Show me what is small, useful, and does not explode."
+            },
+            {
+              "speaker": "merchant",
+              "text": "Then you want light blades, smoke pellets, and a lockpick kit. None of those explode on purpose."
+            }
+          ],
+          "options": [
+            {
+              "text": "Buy rations and bandages",
+              "next": "buy_basic"
+            },
+            {
+              "text": "Buy rogue tools",
+              "next": "buy_tools"
+            },
+            {
+              "text": "Never mind",
+              "next": "browse"
+            }
+          ]
+        },
+        "ask_mom": {
+          "lines": [
+            {
+              "speaker": "tank",
+              "text": "We are looking for my mom. Have you seen her? She would have passed through."
+            },
+            {
+              "speaker": "merchant",
+              "text": "Lots of mothers. Lots of trouble. Describe her."
+            },
+            {
+              "speaker": "rogue",
+              "text": "Do not say 'mother-shaped.'"
+            },
+            {
+              "speaker": "tank",
+              "text": "She wears a red scarf. And she always looks like she knows something you do not."
+            },
+            {
+              "speaker": "merchant",
+              "text": "Red scarf... I heard of one like that. Bought a map. Asked about the Red Palace road."
+            }
+          ],
+          "options": [
+            {
+              "text": "Ask where she went",
+              "next": "where_she_went"
+            },
+            {
+              "text": "Ask about the map",
+              "next": "about_map"
+            }
+          ]
+        },
+        "where_she_went": {
+          "lines": [
+            {
+              "speaker": "merchant",
+              "text": "She left at dawn with a caravan. Said something about not trusting the quiet path."
+            },
+            {
+              "speaker": "rogue",
+              "text": "Quiet paths are always loud with knives."
+            },
+            {
+              "speaker": "tank",
+              "text": "Then we take the caravan road."
+            }
+          ],
+          "options": [
+            {
+              "text": "Buy supplies and leave",
+              "next": "buy_basic"
+            },
+            {
+              "text": "Restock more first",
+              "next": "browse"
+            }
+          ]
+        },
+        "about_map": {
+          "lines": [
+            {
+              "speaker": "merchant",
+              "text": "A city map with a mark: an inn in the next city. Like she planned to stop there."
+            },
+            {
+              "speaker": "tank",
+              "text": "An inn. Good. She is alive enough to need sleep."
+            },
+            {
+              "speaker": "rogue",
+              "text": "Or alive enough to set a trap. Let us hope for the first one."
+            }
+          ],
+          "options": [
+            {
+              "text": "Ask which inn",
+              "next": "which_inn"
+            },
+            {
+              "text": "Thank him and leave",
+              "next": "leave_city"
+            }
+          ]
+        },
+        "which_inn": {
+          "lines": [
+            {
+              "speaker": "merchant",
+              "text": "The Lantern Inn. Near the river. Hard to miss. Unless you are trying to miss it."
+            },
+            {
+              "speaker": "tank",
+              "text": "We are not trying to miss it."
+            },
+            {
+              "speaker": "rogue",
+              "text": "Speak for yourself. But yes, we go."
+            }
+          ],
+          "options": [
+            {
+              "text": "Buy supplies and head out",
+              "next": "buy_basic"
+            }
+          ]
+        },
+        "browse": {
+          "lines": [
+            {
+              "speaker": "merchant",
+              "text": "Look with your eyes, not with your hands. Hands cost extra."
+            },
+            {
+              "speaker": "rogue",
+              "text": "I can afford hands. I prefer not to."
+            },
+            {
+              "speaker": "tank",
+              "text": "Do you have anything that makes walking feel like less walking?"
+            },
+            {
+              "speaker": "merchant",
+              "text": "Sure. Good shoes. That will be five coins and one prayer."
+            }
+          ],
+          "options": [
+            {
+              "text": "Buy good shoes",
+              "next": "buy_shoes"
+            },
+            {
+              "text": "Buy rations and bandages",
+              "next": "buy_basic"
+            },
+            {
+              "text": "Leave the shop",
+              "next": "leave_city"
+            }
+          ]
+        },
+        "buy_basic": {
+          "lines": [
+            {
+              "speaker": "merchant",
+              "text": "Pleasure doing business. Try not to bleed on the goods next time."
+            },
+            {
+              "speaker": "tank",
+              "text": "We will do our best. No promises."
+            },
+            {
+              "speaker": "rogue",
+              "text": "Let us move before I buy something irresponsible."
+            }
+          ],
+          "options": [
+            {
+              "text": "Leave the city",
+              "next": "leave_city"
+            }
+          ]
+        },
+        "buy_tools": {
+          "lines": [
+            {
+              "speaker": "merchant",
+              "text": "A refined choice. For refined crimes."
+            },
+            {
+              "speaker": "rogue",
+              "text": "For refined survival."
+            },
+            {
+              "speaker": "tank",
+              "text": "Same thing, honestly."
+            }
+          ],
+          "options": [
+            {
+              "text": "Leave the city",
+              "next": "leave_city"
+            }
+          ]
+        },
+        "buy_shoes": {
+          "lines": [
+            {
+              "speaker": "merchant",
+              "text": "These will carry you far. Or at least, farther than despair."
+            },
+            {
+              "speaker": "tank",
+              "text": "Finally, footwear that understands my emotional arc."
+            },
+            {
+              "speaker": "rogue",
+              "text": "We are leaving. Now."
+            }
+          ],
+          "options": [
+            {
+              "text": "Leave the city",
+              "next": "leave_city"
+            }
+          ]
+        },
+        "leave_city": {
+          "lines": [
+            {
+              "speaker": "rogue",
+              "text": "Next stop: the city by the river. The Lantern Inn."
+            },
+            {
+              "speaker": "tank",
+              "text": "If mom was there, we will find a clue. Or a warm meal. Ideally both."
+            }
+          ],
+          "options": []
+        }
+      }
+    },
+    "3": {
+      "nodes": {
+        "start": {
+          "lines": [
+            {
+              "speaker": "tank",
+              "text": "River city. I can hear water. I can also hear my stomach threatening rebellion."
+            },
+            {
+              "speaker": "rogue",
+              "text": "Keep your coins close. Crowds have fingers."
+            },
+            {
+              "speaker": "innkeeper",
+              "text": "Welcome to the Lantern Inn. If you are here to cause trouble, please do it quietly."
+            }
+          ],
+          "options": [
+            {
+              "text": "Ask for a room",
+              "next": "get_room"
+            },
+            {
+              "text": "Ask about a woman with a red scarf",
+              "next": "ask_red_scarf"
+            },
+            {
+              "text": "Eat first",
+              "next": "eat_first"
+            }
+          ]
+        },
+        "get_room": {
+          "lines": [
+            {
+              "speaker": "tank",
+              "text": "Two beds. And a door that locks."
+            },
+            {
+              "speaker": "innkeeper",
+              "text": "Two beds, one door, one key. Do not lose the key. The key has feelings."
+            },
+            {
+              "speaker": "rogue",
+              "text": "We will take it."
+            }
+          ],
+          "options": [
+            {
+              "text": "Ask about the red scarf",
+              "next": "ask_red_scarf"
+            },
+            {
+              "text": "Go upstairs",
+              "next": "upstairs"
+            }
+          ]
+        },
+        "ask_red_scarf": {
+          "lines": [
+            {
+              "speaker": "tank",
+              "text": "Did a woman with a red scarf stay here?"
+            },
+            {
+              "speaker": "innkeeper",
+              "text": "Maybe. Many guests, many scarves. Red stands out though."
+            },
+            {
+              "speaker": "rogue",
+              "text": "We are not here for poetry. Did she pay? Did she leave a message?"
+            },
+            {
+              "speaker": "innkeeper",
+              "text": "She did both. Paid for one night. Left at dusk. Asked me to give this to 'the tired one.'"
+            }
+          ],
+          "options": [
+            {
+              "text": "Take the message",
+              "next": "take_message"
+            },
+            {
+              "text": "Ask where she went",
+              "next": "where_next"
+            }
+          ]
+        },
+        "take_message": {
+          "lines": [
+            {
+              "speaker": "innkeeper",
+              "text": "A folded note. Smells like lamp oil and impatience."
+            },
+            {
+              "speaker": "tank",
+              "text": "That sounds like her."
+            },
+            {
+              "speaker": "rogue",
+              "text": "Read it. Out loud. Slowly. No dramatic pauses."
+            },
+            {
+              "speaker": "tank",
+              "text": "It says: 'do not go to the palace by the main road. find the stone bridge. trust the lantern.'"
+            },
+            {
+              "speaker": "rogue",
+              "text": "Stone bridge. Lantern. Either guidance or an elaborate pun."
+            }
+          ],
+          "options": [
+            {
+              "text": "Stay overnight",
+              "next": "upstairs"
+            },
+            {
+              "text": "Leave immediately",
+              "next": "leave_now"
+            }
+          ]
+        },
+        "where_next": {
+          "lines": [
+            {
+              "speaker": "innkeeper",
+              "text": "She asked about the stone bridge outside the city. Said it was safer than the main road."
+            },
+            {
+              "speaker": "tank",
+              "text": "She is always ten steps ahead."
+            },
+            {
+              "speaker": "rogue",
+              "text": "Then we sleep, and take those ten steps in the morning."
+            }
+          ],
+          "options": [
+            {
+              "text": "Stay overnight",
+              "next": "upstairs"
+            }
+          ]
+        },
+        "eat_first": {
+          "lines": [
+            {
+              "speaker": "innkeeper",
+              "text": "Stew is hot. Bread is warm. Questions are extra."
+            },
+            {
+              "speaker": "tank",
+              "text": "I will pay in silence and chewing."
+            },
+            {
+              "speaker": "rogue",
+              "text": "I will pay in watching everyone else chew."
+            }
+          ],
+          "options": [
+            {
+              "text": "Ask about the red scarf",
+              "next": "ask_red_scarf"
+            },
+            {
+              "text": "Go upstairs",
+              "next": "upstairs"
+            }
+          ]
+        },
+        "upstairs": {
+          "lines": [
+            {
+              "speaker": "tank",
+              "text": "Beds. Real beds. I could cry, but I will settle for sleeping."
+            },
+            {
+              "speaker": "rogue",
+              "text": "I will take first watch. You sleep. If the lantern means anything, we will need you alive tomorrow."
+            },
+            {
+              "speaker": "tank",
+              "text": "Wake me if you hear anything."
+            },
+            {
+              "speaker": "rogue",
+              "text": "I always hear everything."
+            }
+          ],
+          "options": [
+            {
+              "text": "Morning",
+              "next": "morning"
+            }
+          ]
+        },
+        "morning": {
+          "lines": [
+            {
+              "speaker": "rogue",
+              "text": "Dawn. No one stabbed us in our sleep. A productive night."
+            },
+            {
+              "speaker": "tank",
+              "text": "Stone bridge, then. And the Red Palace after that."
+            },
+            {
+              "speaker": "innkeeper",
+              "text": "Travel safe. And if you find the lady with the red scarf, tell her she still owes me a story."
+            }
+          ],
+          "options": []
+        },
+        "leave_now": {
+          "lines": [
+            {
+              "speaker": "rogue",
+              "text": "No. We sleep. Exhaustion makes idiots of heroes."
+            },
+            {
+              "speaker": "tank",
+              "text": "Fine. One night. Then we chase the lantern."
+            },
+            {
+              "speaker": "innkeeper",
+              "text": "Wise. Reckless guests pay more for sheets."
+            }
+          ],
+          "options": [
+            {
+              "text": "Stay overnight",
+              "next": "upstairs"
+            }
+          ]
+        }
+      }
+    }
+  }
+}
