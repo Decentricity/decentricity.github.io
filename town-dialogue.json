@@ -1,3 +1,4 @@
+
 {
   "levels": {
     "1": {
@@ -5,61 +6,244 @@
         "start": {
           "lines": [
             {
-              "speaker": "tank",
-              "text": "I am so tired. Do you think we can go back home to eat?"
+              "speaker": "wizard",
+              "text": "okay... Storybook rules. no one dies. they just get flipped."
+            },
+            {
+              "speaker": "wizard",
+              "text": "but i still lost my mom. she got flipped to The Red."
+            },
+            {
+              "speaker": "wizard",
+              "text": "and i'm really small. like, pocket-sized wizard small. so... um."
+            },
+            {
+              "speaker": "rogue",
+              "text": "i heard 'The Red' and 'lost mom' and i figured i'd either help or steal something. hi."
+            },
+            {
+              "speaker": "wizard",
+              "text": "hi... hi. sorry. i'm sorry. i know that's not a greeting."
+            },
+            {
+              "speaker": "rogue",
+              "text": "it is if you're a distressed hedgehog wizard."
+            },
+            {
+              "speaker": "wizard",
+              "text": "i have the Flipper. it's a hat. it's real. my mom found it, and now it's on my head, and i look ridiculous, and i don't care."
+            },
+            {
+              "speaker": "rogue",
+              "text": "a magic hat that flips The Red-corrupted characters back to normal. cool. also, it does suit you in a 'tiny menace' way."
+            },
+            {
+              "speaker": "wizard",
+              "text": "thank you. sorry."
+            },
+            {
+              "speaker": "rogue",
+              "text": "why are you apologizing for thank you."
+            },
+            {
+              "speaker": "wizard",
+              "text": "i'm sorry, i do that when i'm scared."
             }
           ],
           "options": [
             {
-              "text": "No",
-              "next": "after_first_choice"
+              "text": "ask for help nicely (very polite)",
+              "next": "ask_help_polite"
             },
             {
-              "text": "We can't go back until we find mom",
-              "next": "after_first_choice"
+              "text": "ask for help bravely (trying)",
+              "next": "ask_help_brave"
+            },
+            {
+              "text": "ask for help honestly (a little teary)",
+              "next": "ask_help_teary"
             }
           ]
         },
-        "after_first_choice": {
+        "ask_help_polite": {
           "lines": [
             {
+              "speaker": "wizard",
+              "text": "would you... maybe... help me? i can pay you in snacks and gratitude and not biting."
+            },
+            {
               "speaker": "rogue",
-              "text": "We should continue. Your mom could be at the Red Palace. That is miles away. Or she could be in the Red Village, near here.."
+              "text": "strong offer. low bite rate. tempting."
             }
           ],
           "options": [
             {
-              "text": "Red Palace",
-              "next": "red_palace"
-            },
-            {
-              "text": "Red Village",
-              "next": "red_village"
+              "text": "continue",
+              "next": "flip_rogue_bit"
             }
           ]
         },
-        "red_palace": {
+        "ask_help_brave": {
           "lines": [
             {
-              "speaker": "tank",
-              "text": "The Red Palace it is then. It's a long journey, but we'll make it."
+              "speaker": "wizard",
+              "text": "i need help. Storybook is getting taken by The Red, and my mom is Red now. i have the Flipper, but i can't do this alone."
             },
             {
               "speaker": "rogue",
-              "text": "Let's gather supplies and head out. Stay sharp, everyone."
+              "text": "that's... actually pretty brave for someone who could fit in a teacup."
             }
           ],
-          "options": []
+          "options": [
+            {
+              "text": "continue",
+              "next": "flip_rogue_bit"
+            }
+          ]
         },
-        "red_village": {
+        "ask_help_teary": {
           "lines": [
             {
-              "speaker": "tank",
-              "text": "Red Village sounds closer. Maybe we can rest there too."
+              "speaker": "wizard",
+              "text": "please help. i know i'm tiny and annoying and i say sorry too much."
             },
             {
               "speaker": "rogue",
-              "text": "Good thinking. Let's move before it gets dark."
+              "text": "you're not annoying. you're just... aggressively polite."
+            }
+          ],
+          "options": [
+            {
+              "text": "continue",
+              "next": "flip_rogue_bit"
+            }
+          ]
+        },
+        "flip_rogue_bit": {
+          "lines": [
+            {
+              "speaker": "rogue",
+              "text": "so what's the catch. there's always a catch in Storybook."
+            },
+            {
+              "speaker": "wizard",
+              "text": "the catch is... i already flipped you."
+            },
+            {
+              "speaker": "rogue",
+              "text": "you what."
+            },
+            {
+              "speaker": "wizard",
+              "text": "i'm sorry!! i panicked! you looked like you were going to say no and then vanish into a different page!"
+            },
+            {
+              "speaker": "rogue",
+              "text": "one moment i'm minding my business in 'Hedgehog and Pig Friends' and the next i am magically obligated to be helpful."
+            },
+            {
+              "speaker": "wizard",
+              "text": "i can unflip you after we find my mom. i promise. cross my tiny heart."
+            },
+            {
+              "speaker": "rogue",
+              "text": "that's the most illegal-sounding friendship pitch i've ever heard."
+            }
+          ],
+          "options": [
+            {
+              "text": "promise snacks forever (be sweet)",
+              "next": "worldbuilding"
+            },
+            {
+              "text": "promise you'll make it up to him (be sincere)",
+              "next": "worldbuilding"
+            },
+            {
+              "text": "promise you'll stop flipping friends (be hopeful)",
+              "next": "worldbuilding"
+            }
+          ]
+        },
+        "worldbuilding": {
+          "lines": [
+            {
+              "speaker": "wizard",
+              "text": "Storybook is supposed to be cozy. different books, stitched together like one big shelf."
+            },
+            {
+              "speaker": "rogue",
+              "text": "and now the shelf is on fire, metaphorically. mostly."
+            },
+            {
+              "speaker": "wizard",
+              "text": "The Red corruption flips people. makes them act wrong. like their cute little story got overwritten."
+            },
+            {
+              "speaker": "rogue",
+              "text": "yeah. they go from 'gentle side character' to 'evil monologue enjoyer' real fast."
+            },
+            {
+              "speaker": "wizard",
+              "text": "my mom got flipped, but i kept the Flipper. so i can flip Red people back."
+            },
+            {
+              "speaker": "wizard",
+              "text": "i just need... a team. a real team. not just me and my tiny hat."
+            },
+            {
+              "speaker": "rogue",
+              "text": "fine. i'm in. not because you flipped me. definitely not because you're adorable. purely business."
+            },
+            {
+              "speaker": "wizard",
+              "text": "thank you... sorry... thank you."
+            }
+          ],
+          "options": [
+            {
+              "text": "ask rogue for a plan (trust him)",
+              "next": "plan"
+            },
+            {
+              "text": "suggest a plan (try to lead)",
+              "next": "plan"
+            }
+          ]
+        },
+        "plan": {
+          "lines": [
+            {
+              "speaker": "rogue",
+              "text": "we find muscle. we find food. then we find clues."
+            },
+            {
+              "speaker": "wizard",
+              "text": "food is part of the plan?"
+            },
+            {
+              "speaker": "rogue",
+              "text": "it is if we recruit the right kind of muscle."
+            },
+            {
+              "speaker": "wizard",
+              "text": "a tank who likes to eat?"
+            },
+            {
+              "speaker": "rogue",
+              "text": "exactly. also, i would like to note i did not volunteer for this. you flipped me."
+            },
+            {
+              "speaker": "wizard",
+              "text": "i know. i'm sorry."
+            },
+            {
+              "speaker": "rogue",
+              "text": "say it one more time and i will flip myself back out of spite."
+            },
+            {
+              "speaker": "wizard",
+              "text": "okay. i will be... responsibly grateful."
             }
           ],
           "options": []
@@ -71,284 +255,144 @@
         "start": {
           "lines": [
             {
-              "speaker": "rogue",
-              "text": "There. A city gate. Finally, walls that are not trying to kill us."
+              "speaker": "tank",
+              "text": "stand aside. i am on a sacred quest."
+            },
+            {
+              "speaker": "wizard",
+              "text": "is the sacred quest... food?"
             },
             {
               "speaker": "tank",
-              "text": "Smells like food. And smoke. And... coins."
+              "text": "yes."
             },
             {
-              "speaker": "merchant",
-              "text": "Travelers! Dusty, hungry, and carrying that 'about to spend money' look. Step right up."
+              "speaker": "rogue",
+              "text": "perfect. we need you for a different sacred quest."
+            },
+            {
+              "speaker": "tank",
+              "text": "does it have food?"
+            },
+            {
+              "speaker": "wizard",
+              "text": "i can make sure it has food. i promise. sorry, i mean-- i promise."
+            },
+            {
+              "speaker": "tank",
+              "text": "acceptable."
+            },
+            {
+              "speaker": "rogue",
+              "text": "okay, wizard. do the thing."
+            },
+            {
+              "speaker": "wizard",
+              "text": "uhm. hi. sorry. i'm tiny. please don't be mad."
+            },
+            {
+              "speaker": "tank",
+              "text": "why are you apologizing while wearing a hat like that."
+            },
+            {
+              "speaker": "wizard",
+              "text": "because it's the Flipper and it solves arguments."
+            },
+            {
+              "speaker": "wizard",
+              "text": "flip."
+            },
+            {
+              "speaker": "tank",
+              "text": "oh. i suddenly feel like helping. suspicious."
+            },
+            {
+              "speaker": "rogue",
+              "text": "welcome to being on our team. i hate it here too."
             }
           ],
           "options": [
             {
-              "text": "Ask about supplies",
-              "next": "ask_supplies"
+              "text": "offer snacks immediately (tank happy)",
+              "next": "tank_terms"
             },
             {
-              "text": "Ask about mom",
-              "next": "ask_mom"
+              "text": "offer glory and adventure (tank confused)",
+              "next": "tank_terms"
             },
             {
-              "text": "Just browse",
-              "next": "browse"
+              "text": "offer both (tank delighted)",
+              "next": "tank_terms"
             }
           ]
         },
-        "ask_supplies": {
+        "tank_terms": {
           "lines": [
             {
-              "speaker": "tank",
-              "text": "We need food, bandages, and anything that keeps us alive."
+              "speaker": "wizard",
+              "text": "i need help finding my mom. she got flipped to The Red."
             },
             {
-              "speaker": "merchant",
-              "text": "Ah, the classic bundle. Rations, salves, and a little charm against bad luck. Luck not included."
+              "speaker": "tank",
+              "text": "The Red are messing up Storybook. i have seen cute places become weird and angry."
             },
             {
               "speaker": "rogue",
-              "text": "Show me what is small, useful, and does not explode."
+              "text": "she has the Flipper, so we can flip corrupted people back as we go."
             },
             {
-              "speaker": "merchant",
-              "text": "Then you want light blades, smoke pellets, and a lockpick kit. None of those explode on purpose."
+              "speaker": "tank",
+              "text": "a hat that fixes people. nice. can it flip soup into more soup?"
+            },
+            {
+              "speaker": "wizard",
+              "text": "not yet. but i'm working on it."
+            },
+            {
+              "speaker": "tank",
+              "text": "i will help, but i require food at regular heroic intervals."
+            },
+            {
+              "speaker": "rogue",
+              "text": "agreed. feeding you is cheaper than carrying you."
+            },
+            {
+              "speaker": "tank",
+              "text": "i am large, not luggage."
             }
           ],
           "options": [
             {
-              "text": "Buy rations and bandages",
-              "next": "buy_basic"
+              "text": "promise frequent food (be nurturing)",
+              "next": "end"
             },
             {
-              "text": "Buy rogue tools",
-              "next": "buy_tools"
+              "text": "promise strategic food (be practical)",
+              "next": "end"
             },
             {
-              "text": "Never mind",
-              "next": "browse"
+              "text": "promise emotional support only (be doomed)",
+              "next": "end"
             }
           ]
         },
-        "ask_mom": {
+        "end": {
           "lines": [
             {
-              "speaker": "tank",
-              "text": "We are looking for my mom. Have you seen her? She would have passed through."
-            },
-            {
-              "speaker": "merchant",
-              "text": "Lots of mothers. Lots of trouble. Describe her."
+              "speaker": "wizard",
+              "text": "okay. team assembled. wizard, rogue, tank."
             },
             {
               "speaker": "rogue",
-              "text": "Do not say 'mother-shaped.'"
+              "text": "from 'Hedgehog and Pig Friends' plus one guest star from some other book."
             },
             {
               "speaker": "tank",
-              "text": "She wears a red scarf. And she always looks like she knows something you do not."
+              "text": "i am the best guest star."
             },
             {
-              "speaker": "merchant",
-              "text": "Red scarf... I heard of one like that. Bought a map. Asked about the Red Palace road."
-            }
-          ],
-          "options": [
-            {
-              "text": "Ask where she went",
-              "next": "where_she_went"
-            },
-            {
-              "text": "Ask about the map",
-              "next": "about_map"
-            }
-          ]
-        },
-        "where_she_went": {
-          "lines": [
-            {
-              "speaker": "merchant",
-              "text": "She left at dawn with a caravan. Said something about not trusting the quiet path."
-            },
-            {
-              "speaker": "rogue",
-              "text": "Quiet paths are always loud with knives."
-            },
-            {
-              "speaker": "tank",
-              "text": "Then we take the caravan road."
-            }
-          ],
-          "options": [
-            {
-              "text": "Buy supplies and leave",
-              "next": "buy_basic"
-            },
-            {
-              "text": "Restock more first",
-              "next": "browse"
-            }
-          ]
-        },
-        "about_map": {
-          "lines": [
-            {
-              "speaker": "merchant",
-              "text": "A city map with a mark: an inn in the next city. Like she planned to stop there."
-            },
-            {
-              "speaker": "tank",
-              "text": "An inn. Good. She is alive enough to need sleep."
-            },
-            {
-              "speaker": "rogue",
-              "text": "Or alive enough to set a trap. Let us hope for the first one."
-            }
-          ],
-          "options": [
-            {
-              "text": "Ask which inn",
-              "next": "which_inn"
-            },
-            {
-              "text": "Thank him and leave",
-              "next": "leave_city"
-            }
-          ]
-        },
-        "which_inn": {
-          "lines": [
-            {
-              "speaker": "merchant",
-              "text": "The Lantern Inn. Near the river. Hard to miss. Unless you are trying to miss it."
-            },
-            {
-              "speaker": "tank",
-              "text": "We are not trying to miss it."
-            },
-            {
-              "speaker": "rogue",
-              "text": "Speak for yourself. But yes, we go."
-            }
-          ],
-          "options": [
-            {
-              "text": "Buy supplies and head out",
-              "next": "buy_basic"
-            }
-          ]
-        },
-        "browse": {
-          "lines": [
-            {
-              "speaker": "merchant",
-              "text": "Look with your eyes, not with your hands. Hands cost extra."
-            },
-            {
-              "speaker": "rogue",
-              "text": "I can afford hands. I prefer not to."
-            },
-            {
-              "speaker": "tank",
-              "text": "Do you have anything that makes walking feel like less walking?"
-            },
-            {
-              "speaker": "merchant",
-              "text": "Sure. Good shoes. That will be five coins and one prayer."
-            }
-          ],
-          "options": [
-            {
-              "text": "Buy good shoes",
-              "next": "buy_shoes"
-            },
-            {
-              "text": "Buy rations and bandages",
-              "next": "buy_basic"
-            },
-            {
-              "text": "Leave the shop",
-              "next": "leave_city"
-            }
-          ]
-        },
-        "buy_basic": {
-          "lines": [
-            {
-              "speaker": "merchant",
-              "text": "Pleasure doing business. Try not to bleed on the goods next time."
-            },
-            {
-              "speaker": "tank",
-              "text": "We will do our best. No promises."
-            },
-            {
-              "speaker": "rogue",
-              "text": "Let us move before I buy something irresponsible."
-            }
-          ],
-          "options": [
-            {
-              "text": "Leave the city",
-              "next": "leave_city"
-            }
-          ]
-        },
-        "buy_tools": {
-          "lines": [
-            {
-              "speaker": "merchant",
-              "text": "A refined choice. For refined crimes."
-            },
-            {
-              "speaker": "rogue",
-              "text": "For refined survival."
-            },
-            {
-              "speaker": "tank",
-              "text": "Same thing, honestly."
-            }
-          ],
-          "options": [
-            {
-              "text": "Leave the city",
-              "next": "leave_city"
-            }
-          ]
-        },
-        "buy_shoes": {
-          "lines": [
-            {
-              "speaker": "merchant",
-              "text": "These will carry you far. Or at least, farther than despair."
-            },
-            {
-              "speaker": "tank",
-              "text": "Finally, footwear that understands my emotional arc."
-            },
-            {
-              "speaker": "rogue",
-              "text": "We are leaving. Now."
-            }
-          ],
-          "options": [
-            {
-              "text": "Leave the city",
-              "next": "leave_city"
-            }
-          ]
-        },
-        "leave_city": {
-          "lines": [
-            {
-              "speaker": "rogue",
-              "text": "Next stop: the city by the river. The Lantern Inn."
-            },
-            {
-              "speaker": "tank",
-              "text": "If mom was there, we will find a clue. Or a warm meal. Ideally both."
+              "speaker": "wizard",
+              "text": "now we flip anyone The Red corrupted, and we follow the trail to my mom."
             }
           ],
           "options": []
@@ -360,235 +404,513 @@
         "start": {
           "lines": [
             {
+              "speaker": "wizard",
+              "text": "we flipped... a lot of people."
+            },
+            {
               "speaker": "tank",
-              "text": "River city. I can hear water. I can also hear my stomach threatening rebellion."
+              "text": "i flipped three. then i ate. then i flipped two more. excellent day."
             },
             {
               "speaker": "rogue",
-              "text": "Keep your coins close. Crowds have fingers."
+              "text": "The Red corruption is spreading. whole crowds are getting that blank stare."
             },
             {
-              "speaker": "innkeeper",
-              "text": "Welcome to the Lantern Inn. If you are here to cause trouble, please do it quietly."
+              "speaker": "healer",
+              "text": "and you three are making a mess of my clinic."
+            },
+            {
+              "speaker": "wizard",
+              "text": "oh! hi! sorry! you're a talking cat healer!"
+            },
+            {
+              "speaker": "healer",
+              "text": "yes. Storybook. keep up. also, you flipped my patients in the waiting room."
+            },
+            {
+              "speaker": "wizard",
+              "text": "i'm sorry. they were Red. i panicked. i'm very small."
+            },
+            {
+              "speaker": "rogue",
+              "text": "to be fair, they were trying to bite us."
+            },
+            {
+              "speaker": "healer",
+              "text": "to be fair, everyone is trying to bite everyone lately. The Red does that."
             }
           ],
           "options": [
             {
-              "text": "Ask for a room",
-              "next": "get_room"
+              "text": "apologize to the healer (be polite)",
+              "next": "healer_points"
             },
             {
-              "text": "Ask about a woman with a red scarf",
-              "next": "ask_red_scarf"
+              "text": "ask about The Red immediately (be urgent)",
+              "next": "healer_points"
             },
             {
-              "text": "Eat first",
-              "next": "eat_first"
+              "text": "ask for advice softly (be adorable)",
+              "next": "healer_points"
             }
           ]
         },
-        "get_room": {
+        "healer_points": {
           "lines": [
             {
-              "speaker": "tank",
-              "text": "Two beds. And a door that locks."
+              "speaker": "wizard",
+              "text": "we're looking for my mom. she was flipped to The Red. i'm trying to flip people back with the Flipper."
             },
             {
-              "speaker": "innkeeper",
-              "text": "Two beds, one door, one key. Do not lose the key. The key has feelings."
+              "speaker": "healer",
+              "text": "the Flipper. right. a hat that turns Red ink back into Storybook ink."
+            },
+            {
+              "speaker": "tank",
+              "text": "can it turn stew into more stew"
+            },
+            {
+              "speaker": "healer",
+              "text": "no."
+            },
+            {
+              "speaker": "tank",
+              "text": "tragic."
+            },
+            {
+              "speaker": "healer",
+              "text": "listen. if your mom is Red, she will be drawn toward where The Red pools."
             },
             {
               "speaker": "rogue",
-              "text": "We will take it."
+              "text": "where."
+            },
+            {
+              "speaker": "healer",
+              "text": "the Red Desert. all of The Red drift there eventually. like spilled ink finding the lowest page."
+            },
+            {
+              "speaker": "wizard",
+              "text": "the Red Desert... okay. okay. thank you. sorry. thank you."
+            },
+            {
+              "speaker": "healer",
+              "text": "bring water. bring bandages. bring patience. and please stop flipping people inside my clinic."
+            },
+            {
+              "speaker": "rogue",
+              "text": "no promises. but we'll try."
             }
           ],
           "options": [
             {
-              "text": "Ask about the red scarf",
-              "next": "ask_red_scarf"
+              "text": "thank the healer (warmly)",
+              "next": "end"
             },
             {
-              "text": "Go upstairs",
-              "next": "upstairs"
+              "text": "thank the healer (awkwardly)",
+              "next": "end"
+            },
+            {
+              "text": "thank the healer (dramatically)",
+              "next": "end"
             }
           ]
         },
-        "ask_red_scarf": {
+        "end": {
           "lines": [
             {
-              "speaker": "tank",
-              "text": "Did a woman with a red scarf stay here?"
-            },
-            {
-              "speaker": "innkeeper",
-              "text": "Maybe. Many guests, many scarves. Red stands out though."
-            },
-            {
-              "speaker": "rogue",
-              "text": "We are not here for poetry. Did she pay? Did she leave a message?"
-            },
-            {
-              "speaker": "innkeeper",
-              "text": "She did both. Paid for one night. Left at dusk. Asked me to give this to 'the tired one.'"
-            }
-          ],
-          "options": [
-            {
-              "text": "Take the message",
-              "next": "take_message"
-            },
-            {
-              "text": "Ask where she went",
-              "next": "where_next"
-            }
-          ]
-        },
-        "take_message": {
-          "lines": [
-            {
-              "speaker": "innkeeper",
-              "text": "A folded note. Smells like lamp oil and impatience."
+              "speaker": "wizard",
+              "text": "Red Desert it is. if The Red took my mom, i'm taking her back."
             },
             {
               "speaker": "tank",
-              "text": "That sounds like her."
+              "text": "i am taking snacks."
             },
             {
               "speaker": "rogue",
-              "text": "Read it. Out loud. Slowly. No dramatic pauses."
+              "text": "i am taking the lead. also, wizard, remember: you don't always have to flip people to make friends."
             },
             {
-              "speaker": "tank",
-              "text": "It says: 'do not go to the palace by the main road. find the stone bridge. trust the lantern.'"
+              "speaker": "wizard",
+              "text": "noted. but it really speeds things up. sorry."
             },
             {
-              "speaker": "rogue",
-              "text": "Stone bridge. Lantern. Either guidance or an elaborate pun."
-            }
-          ],
-          "options": [
-            {
-              "text": "Stay overnight",
-              "next": "upstairs"
-            },
-            {
-              "text": "Leave immediately",
-              "next": "leave_now"
-            }
-          ]
-        },
-        "where_next": {
-          "lines": [
-            {
-              "speaker": "innkeeper",
-              "text": "She asked about the stone bridge outside the city. Said it was safer than the main road."
-            },
-            {
-              "speaker": "tank",
-              "text": "She is always ten steps ahead."
-            },
-            {
-              "speaker": "rogue",
-              "text": "Then we sleep, and take those ten steps in the morning."
-            }
-          ],
-          "options": [
-            {
-              "text": "Stay overnight",
-              "next": "upstairs"
-            }
-          ]
-        },
-        "eat_first": {
-          "lines": [
-            {
-              "speaker": "innkeeper",
-              "text": "Stew is hot. Bread is warm. Questions are extra."
-            },
-            {
-              "speaker": "tank",
-              "text": "I will pay in silence and chewing."
-            },
-            {
-              "speaker": "rogue",
-              "text": "I will pay in watching everyone else chew."
-            }
-          ],
-          "options": [
-            {
-              "text": "Ask about the red scarf",
-              "next": "ask_red_scarf"
-            },
-            {
-              "text": "Go upstairs",
-              "next": "upstairs"
-            }
-          ]
-        },
-        "upstairs": {
-          "lines": [
-            {
-              "speaker": "tank",
-              "text": "Beds. Real beds. I could cry, but I will settle for sleeping."
-            },
-            {
-              "speaker": "rogue",
-              "text": "I will take first watch. You sleep. If the lantern means anything, we will need you alive tomorrow."
-            },
-            {
-              "speaker": "tank",
-              "text": "Wake me if you hear anything."
-            },
-            {
-              "speaker": "rogue",
-              "text": "I always hear everything."
-            }
-          ],
-          "options": [
-            {
-              "text": "Morning",
-              "next": "morning"
-            }
-          ]
-        },
-        "morning": {
-          "lines": [
-            {
-              "speaker": "rogue",
-              "text": "Dawn. No one stabbed us in our sleep. A productive night."
-            },
-            {
-              "speaker": "tank",
-              "text": "Stone bridge, then. And the Red Palace after that."
-            },
-            {
-              "speaker": "innkeeper",
-              "text": "Travel safe. And if you find the lady with the red scarf, tell her she still owes me a story."
+              "speaker": "healer",
+              "text": "go. and if you see my other patients out there, flip them gently."
             }
           ],
           "options": []
-        },
-        "leave_now": {
+        }
+      }
+    },
+    "4": {
+      "nodes": {
+        "start": {
           "lines": [
             {
               "speaker": "rogue",
-              "text": "No. We sleep. Exhaustion makes idiots of heroes."
+              "text": "okay, before we head toward the Red Desert, quick question."
+            },
+            {
+              "speaker": "healer",
+              "text": "if the question is 'may i pet you', the answer is no."
+            },
+            {
+              "speaker": "rogue",
+              "text": "i didn't even ask yet!"
+            },
+            {
+              "speaker": "healer",
+              "text": "your hands asked. your eyes asked. your entire vibe asked."
             },
             {
               "speaker": "tank",
-              "text": "Fine. One night. Then we chase the lantern."
+              "text": "i think the rogue is trying to flip the healer into being pettable."
             },
             {
-              "speaker": "innkeeper",
-              "text": "Wise. Reckless guests pay more for sheets."
+              "speaker": "rogue",
+              "text": "i am not. i am simply appreciating a talking cat healer. respectfully."
+            },
+            {
+              "speaker": "healer",
+              "text": "your 'respectfully' has grabby fingers."
+            },
+            {
+              "speaker": "wizard",
+              "text": "um. hi. sorry. please don't fight."
             }
           ],
           "options": [
             {
-              "text": "Stay overnight",
-              "next": "upstairs"
+              "text": "stop it. both of you. (rude)",
+              "next": "stop_rude"
+            },
+            {
+              "text": "haha. rogue, no. healer, please. (laughing)",
+              "next": "stop_laughing"
+            },
+            {
+              "text": "p-please... can we not? (timid)",
+              "next": "stop_timid"
             }
           ]
+        },
+        "stop_rude": {
+          "lines": [
+            {
+              "speaker": "wizard",
+              "text": "enough! we are literally chasing The Red and you are arguing about petting."
+            },
+            {
+              "speaker": "rogue",
+              "text": "fair."
+            },
+            {
+              "speaker": "healer",
+              "text": "finally, a tiny wizard with authority."
+            }
+          ],
+          "options": [
+            {
+              "text": "continue",
+              "next": "mom_talk"
+            }
+          ]
+        },
+        "stop_laughing": {
+          "lines": [
+            {
+              "speaker": "wizard",
+              "text": "okay okay okay, rogue, hands to yourself. healer, you're very majestic. everyone wins."
+            },
+            {
+              "speaker": "rogue",
+              "text": "i can be normal. i can be so normal."
+            },
+            {
+              "speaker": "healer",
+              "text": "prove it by not moving."
+            }
+          ],
+          "options": [
+            {
+              "text": "continue",
+              "next": "mom_talk"
+            }
+          ]
+        },
+        "stop_timid": {
+          "lines": [
+            {
+              "speaker": "wizard",
+              "text": "i'm sorry, i just... i can't handle fighting right now."
+            },
+            {
+              "speaker": "rogue",
+              "text": "okay. okay. i'm done. no petting. i will pet the air."
+            },
+            {
+              "speaker": "healer",
+              "text": "good. pet the air. heal the mood."
+            }
+          ],
+          "options": [
+            {
+              "text": "continue",
+              "next": "mom_talk"
+            }
+          ]
+        },
+        "mom_talk": {
+          "lines": [
+            {
+              "speaker": "wizard",
+              "text": "tank? can i tell you something about my mom?"
+            },
+            {
+              "speaker": "tank",
+              "text": "yes. and i will listen with my whole heart. and maybe my stomach."
+            }
+          ],
+          "options": [
+            {
+              "text": "she's the smartest wizard in Storybook. (admiring)",
+              "next": "mom_option_smart"
+            },
+            {
+              "text": "she made me feel safe, even when pages got dark. (soft)",
+              "next": "mom_option_safe"
+            },
+            {
+              "text": "she taught me magic like it was cooking. a pinch of this, a dash of that. (cute)",
+              "next": "mom_option_cooking"
+            }
+          ]
+        },
+        "mom_option_smart": {
+          "lines": [
+            {
+              "speaker": "wizard",
+              "text": "she reads spells like other people read picture books. like it's easy. like the ink listens."
+            },
+            {
+              "speaker": "tank",
+              "text": "then The Red picked the wrong wizard to mess with."
+            }
+          ],
+          "options": [
+            {
+              "text": "continue",
+              "next": "tank_reassure"
+            }
+          ]
+        },
+        "mom_option_safe": {
+          "lines": [
+            {
+              "speaker": "wizard",
+              "text": "when Storybook felt scary, she would just... sit with me. like her magic was being calm."
+            },
+            {
+              "speaker": "tank",
+              "text": "that is real magic."
+            }
+          ],
+          "options": [
+            {
+              "text": "continue",
+              "next": "tank_reassure"
+            }
+          ]
+        },
+        "mom_option_cooking": {
+          "lines": [
+            {
+              "speaker": "wizard",
+              "text": "she said spells are like recipes. if you rush, it burns. if you're patient, it becomes something warm."
+            },
+            {
+              "speaker": "tank",
+              "text": "i respect this philosophy deeply."
+            }
+          ],
+          "options": [
+            {
+              "text": "continue",
+              "next": "tank_reassure"
+            }
+          ]
+        },
+        "tank_reassure": {
+          "lines": [
+            {
+              "speaker": "tank",
+              "text": "We will save her."
+            },
+            {
+              "speaker": "wizard",
+              "text": "okay. okay. thank you. i believe you."
+            },
+            {
+              "speaker": "rogue",
+              "text": "we'll flip her back. and then, if i behave, maybe i get one single pet."
+            },
+            {
+              "speaker": "healer",
+              "text": "no."
+            }
+          ],
+          "options": []
+        }
+      }
+    },
+    "5": {
+      "nodes": {
+        "start": {
+          "lines": [
+            {
+              "speaker": "wizard",
+              "text": "i am trying so hard to be brave."
+            },
+            {
+              "speaker": "wizard",
+              "text": "but i'm getting really, really frustrated."
+            },
+            {
+              "speaker": "wizard",
+              "text": "because The Red keeps spreading, and everyone keeps needing flipping, and my legs are tiny, and this hat is heavy, and i miss my mom."
+            },
+            {
+              "speaker": "tank",
+              "text": "do you want snacks."
+            },
+            {
+              "speaker": "wizard",
+              "text": "yes. and also no. and also yes."
+            },
+            {
+              "speaker": "rogue",
+              "text": "okay. that's a real frustration cocktail."
+            },
+            {
+              "speaker": "healer",
+              "text": "symptoms include: stomping, huffing, and heroic despair."
+            },
+            {
+              "speaker": "wizard",
+              "text": "i don't even stomp loudly. i'm like a polite little pencil tapping."
+            }
+          ],
+          "options": [
+            {
+              "text": "snap at rogue (irritable)",
+              "next": "frustration_rogue"
+            },
+            {
+              "text": "snap at tank (hangry-adjacent)",
+              "next": "frustration_tank"
+            },
+            {
+              "text": "try to be nice but fail (adorable meltdown)",
+              "next": "frustration_fail_nice"
+            }
+          ]
+        },
+        "frustration_rogue": {
+          "lines": [
+            {
+              "speaker": "wizard",
+              "text": "and you keep joking and petting and acting like this is normal!"
+            },
+            {
+              "speaker": "rogue",
+              "text": "hey. i joke because if i don't, i start screaming."
+            },
+            {
+              "speaker": "wizard",
+              "text": "well i am one missed nap away from screaming."
+            }
+          ],
+          "options": [
+            {
+              "text": "continue",
+              "next": "team_response"
+            }
+          ]
+        },
+        "frustration_tank": {
+          "lines": [
+            {
+              "speaker": "wizard",
+              "text": "and you keep talking about food like my mom is a side dish!"
+            },
+            {
+              "speaker": "tank",
+              "text": "no. food is how i stay strong so i can help you save her."
+            },
+            {
+              "speaker": "wizard",
+              "text": "oh. sorry. i mean-- i heard that. thank you."
+            }
+          ],
+          "options": [
+            {
+              "text": "continue",
+              "next": "team_response"
+            }
+          ]
+        },
+        "frustration_fail_nice": {
+          "lines": [
+            {
+              "speaker": "wizard",
+              "text": "i'm fine! i'm totally fine! i'm just-- i'm just a tiny hedgehog carrying a world-saving hat while Storybook gets eaten by The Red!"
+            },
+            {
+              "speaker": "rogue",
+              "text": "that's not 'fine'. that's 'legendary'."
+            },
+            {
+              "speaker": "healer",
+              "text": "also that's called burnout."
+            }
+          ],
+          "options": [
+            {
+              "text": "continue",
+              "next": "team_response"
+            }
+          ]
+        },
+        "team_response": {
+          "lines": [
+            {
+              "speaker": "wizard",
+              "text": "i just want one thing to be easy."
+            },
+            {
+              "speaker": "healer",
+              "text": "then make one thing easy. drink water. breathe. accept help."
+            },
+            {
+              "speaker": "rogue",
+              "text": "and if The Red wants a fight, we give it a very organized fight."
+            },
+            {
+              "speaker": "tank",
+              "text": "with snacks."
+            },
+            {
+              "speaker": "wizard",
+              "text": "fine. yes. snacks. but also... thank you. all of you."
+            },
+            {
+              "speaker": "wizard",
+              "text": "okay. let's go. Red Desert. mom. Flipper. no more losing pages."
+            }
+          ],
+          "options": []
         }
       }
     }
