@@ -1,0 +1,40 @@
+{
+  "background_color": "#ffffff",
+  "description": "A turn-based tactics game where defeated units instantly switch teams, creating dramatic momentum swings",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "flipside",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "flipside",
+  "start_url": "/",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "https://flipside.ink/api/retrodiffusion/image/32/32/mc_item?prompt=website favicon for Flipside Tactics%3A A turn-based tactics game where defeated units instantly switch teams%2C creating dramatic momentum swings&amp;remove_bg=true",
+      "type": "image/png",
+      "sizes": "32x32",
+      "isSquare": true,
+      "isPng": true,
+      "isWebp": false,
+      "isJpg": false,
+      "width": 32,
+      "is512x512": false,
+      "is256x256": false,
+      "is192x192": false
+    },
+    {
+      "src": "https://berrry.app/apps/flipside/screenshot?version=114",
+      "type": "image/png",
+      "sizes": "1280x800",
+      "isSquare": false,
+      "isPng": true,
+      "isWebp": false,
+      "isJpg": false,
+      "width": 1280,
+      "is512x512": false,
+      "is256x256": false,
+      "is192x192": false
+    }
+  ]
+}
