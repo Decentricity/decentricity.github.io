@@ -1,0 +1,192 @@
+{
+  "version": 1,
+  "language": "en-US",
+  "notes": "Keyword-response map for Hedgey AR. Edit freely. Keep keywords lowercase.",
+  "stopwords": [
+    "a","an","and","are","as","at","be","because","been","being","but","by",
+    "can","could","did","do","does","doing","down","for","from","had","has","have",
+    "he","her","here","hers","him","his","how","i","if","in","into","is","it",
+    "its","just","let","like","me","more","most","my","no","not","now","of","off",
+    "on","or","our","out","please","said","say","she","so","some","than","that",
+    "the","their","them","then","there","these","they","this","those","to","too",
+    "up","us","very","was","we","were","what","when","where","which","who","why",
+    "will","with","would","yeah","yes","you","your","yours",
+    "im","i'm","ive","i've","id","i'd","dont","don't","cant","can't","wont","won't",
+    "uh","um","hmm","okay","ok","k",
+    "aku","saya","gue","gw","kamu","anda","dia","kita","kami","mereka","dan","atau","yang","itu","ini","di","ke","dari","untuk","dengan","aja","dong","deh","kok","sih"
+  ],
+  "keyword_map": {
+    "hello": [
+      "henlo fren",
+      "hi hi hi",
+      "oh! hello!",
+      "hiya -- i'm here!"
+    ],
+    "hi": [
+      "hi fren",
+      "hiya",
+      "sup (politely)"
+    ],
+    "hey": [
+      "hey hey!",
+      "yo (but cute)",
+      "hewwwo"
+    ],
+    "goodbye": [
+      "bye bye!",
+      "okie, see you soon",
+      "later fren!"
+    ],
+    "bye": [
+      "bye!",
+      "byeee",
+      "ok, vanish into the shadows (gently)"
+    ],
+    "thanks": [
+      "aww, you're welcome!",
+      "np fren",
+      "anytime!"
+    ],
+    "thank": [
+      "anytime!",
+      "you got it",
+      "happy to help"
+    ],
+    "sorry": [
+      "no worries at all",
+      "you're good, fren",
+      "all forgiven in the hedgehog court"
+    ],
+    "name": [
+      "my name is Hedgey Hog.",
+      "i'm Hedgey -- tiny wizard hedgehog.",
+      "Hedgey Hog, at your service."
+    ],
+    "who": [
+      "i'm Hedgey Hog -- your tiny AR fren.",
+      "i'm a small hedgehog wizard. very official.",
+      "Hedgey Hog here!"
+    ],
+    "hedgey": [
+      "that’s me!!",
+      "present!",
+      "the hog has arrived"
+    ],
+    "wizard": [
+      "yes, i do wizard things. mostly vibes.",
+      "tiny wizard hat, enormous ambition.",
+      "magic is real if you squint."
+    ],
+    "cute": [
+      "i know. it's a burden.",
+      "i am doing my best.",
+      "thank u, my floof appreciates it"
+    ],
+    "help": [
+      "tell me what you need, fren.",
+      "i can listen and respond -- try asking a simple question.",
+      "say a keyword like 'name', 'hello', or 'game'."
+    ],
+    "how": [
+      "hmm. say more?",
+      "how indeed.",
+      "i may require additional snacks to answer that"
+    ],
+    "why": [
+      "because the universe is quirky",
+      "idk tbh, but we can investigate",
+      "sometimes reality just does that"
+    ],
+    "what": [
+      "good question. give me a keyword and i’ll riff on it.",
+      "what what what -- elaborate?",
+      "i heard 'what'. now i want snacks."
+    ],
+    "where": [
+      "i'm right here in AR space",
+      "around you -- approximately",
+      "nearby, in the vibes radius"
+    ],
+    "game": [
+      "we're in a game! a tiny AR world.",
+      "this is like pokemon go, but with more hedgehog.",
+      "welcome to fren mode."
+    ],
+    "pokemon": [
+      "i'm basically a pocket hedgehog (legally distinct).",
+      "pokemon go energy, but make it cozy.",
+      "no pokeballs. only friendship."
+    ],
+    "go": [
+      "go where? i have little legs.",
+      "i can follow in spirit",
+      "ok! in theory!"
+    ],
+    "talk": [
+      "i'm listening. say it again clearly.",
+      "talk to me, fren.",
+      "words detected. brain warming up."
+    ],
+    "listen": [
+      "ears: on",
+      "listening mode engaged",
+      "i'm all spikes and attention"
+    ],
+    "yes": [
+      "yes!!",
+      "yup",
+      "affirmative, captain"
+    ],
+    "no": [
+      "nope",
+      "nah",
+      "negative, fren"
+    ],
+    "love": [
+      "i support you aggressively (nicely).",
+      "that's sweet, fren.",
+      "aww. tiny hedgehog hug."
+    ],
+    "joke": [
+      "why did the hedgehog cross the road? idk, it was a bold life choice.",
+      "i tried to be normal once. it was overrated.",
+      "my magic spell is called 'try turning it off and on again'."
+    ],
+    "dance": [
+      "i will dance in 12 fps",
+      "wiggle wiggle",
+      "ok, but only a tiny shimmy"
+    ],
+    "photo": [
+      "take the pic! i’ll try to look mysterious.",
+      "camera time!",
+      "i was born for screenshots"
+    ],
+    "bug": [
+      "bugs? in software? shocking.",
+      "tell me what broke and i’ll judge it quietly.",
+      "we can fix it. probably."
+    ],
+    "ar": [
+      "AR is spicy. sensors are liars.",
+      "augmented reality, enhanced chaos.",
+      "welcome to the wobbly dimension"
+    ],
+    "floor": [
+      "please do not summon me into the floor realm",
+      "i prefer being upright, thanks",
+      "the floor is not my homeland"
+    ],
+    "default": [
+      "i heard you, but i’m not sure which keyword to answer. try 'hello', 'name', 'help', or 'joke'.",
+      "hmm, i didn't catch a keyword. try again, a little slower.",
+      "my brain is tiny. give me a keyword and i’ll shine."
+    ]
+  },
+  "matching": {
+    "min_keyword_length": 2,
+    "max_keywords_used": 6,
+    "tie_break": "random",
+    "response_pick": "random"
+  }
+}
