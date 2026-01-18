@@ -3,11 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>OS9-ish UI + Menubar WM</title>
+  <title>HedgeyOS</title>
 
   <style>
     :root{
-      /* sizing */
       --font-size: clamp(12px, 2.8vw, 14px);
       --line: clamp(16px, 3.4vw, 18px);
       --pad: clamp(8px, 2.2vw, 18px);
@@ -37,6 +36,11 @@
 
       --border-thin: 1px;
       --border-thick: 2px;
+
+      --icon-cell-w: 92px;
+      --icon-cell-h: 86px;
+      --icon-pad: 10px;
+      --icon-size: 34px;
     }
 
     body.dark{
@@ -132,6 +136,7 @@
       padding: 0 6px;
       cursor: default;
       white-space: nowrap;
+      color: var(--os-black);
     }
     .menu.open{
       background: var(--os-blue);
@@ -143,7 +148,7 @@
       position: absolute;
       top: calc(var(--menubar-h) - 2px);
       left: 0;
-      min-width: 220px;
+      min-width: 240px;
       max-height: min(60vh, 520px);
       overflow: auto;
       display: none;
@@ -151,6 +156,7 @@
       box-sizing: border-box;
       background: var(--os-face);
       z-index: 10000;
+      color: var(--os-black);
     }
     .menu.open .menu-dropdown{ display: block; }
 
@@ -158,6 +164,10 @@
       padding: 4px 10px;
       cursor: default;
       white-space: nowrap;
+      color: var(--os-black);
+    }
+    body.dark .menu-item{
+      color: var(--os-black);
     }
     .menu-item:hover{
       background: var(--os-blue);
@@ -193,6 +203,7 @@
       box-shadow: inset 0 0 0 1px var(--os-dark);
       cursor: default;
       user-select: none;
+      color: var(--os-black);
     }
     .modebtn:active{
       border-top: 1px solid var(--os-shadow);
@@ -214,6 +225,67 @@
       touch-action: none;
     }
 
+    /* icon layer is behind windows */
+    .icon-layer{
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      pointer-events: none; /* icon wrappers re-enable */
+    }
+
+    .desk-icon{
+      position: absolute;
+      width: var(--icon-cell-w);
+      height: var(--icon-cell-h);
+      display: grid;
+      grid-template-rows: auto 1fr;
+      align-items: start;
+      justify-items: center;
+      gap: 6px;
+      pointer-events: auto;
+      user-select: none;
+      cursor: default;
+    }
+
+    .desk-icon .glyph{
+      width: calc(var(--icon-size) + 10px);
+      height: calc(var(--icon-size) + 10px);
+      display: grid;
+      place-items: center;
+      font-size: var(--icon-size);
+      line-height: 1;
+      background: transparent;
+      border-radius: 6px;
+    }
+
+    .desk-icon:active .glyph{
+      filter: brightness(0.9);
+    }
+
+    .desk-icon .label{
+      width: 100%;
+      text-align: center;
+      font-size: calc(var(--font-size) - 1px);
+      line-height: 1.1;
+      color: var(--os-black);
+      text-shadow: 0 1px 0 rgba(255,255,255,0.35);
+      padding: 0 4px;
+      box-sizing: border-box;
+      display: grid;
+      gap: 2px;
+    }
+
+    body.dark .desk-icon .label{
+      text-shadow: none;
+    }
+
+    .desk-icon .line{
+      width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
     /* ===== Windows ===== */
     .window{
       position: absolute;
@@ -223,6 +295,7 @@
       box-sizing: border-box;
       display: grid;
       grid-template-rows: 24px 1fr;
+      z-index: 20;
     }
 
     .window.inactive .titlebar{
@@ -280,6 +353,7 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      color: var(--os-black);
     }
     .title:before,
     .title:after{
@@ -316,6 +390,7 @@
       position: relative;
       padding: 0 10px;
       background: linear-gradient(var(--titlebar-top), var(--titlebar-bot));
+      color: var(--os-black);
     }
 
     .right{
@@ -426,6 +501,7 @@
       border-bottom: 1px solid var(--os-shadow);
       box-shadow: inset 0 0 0 1px var(--os-dark);
       cursor: default;
+      color: var(--os-black);
     }
     .btn:active{
       border-top: 1px solid var(--os-shadow);
@@ -477,6 +553,7 @@
       justify-content: space-between;
       gap: 10px;
       min-width: 0;
+      color: var(--os-black);
     }
     .statusbar span{
       overflow: hidden;
@@ -489,6 +566,7 @@
       height: 100%;
       background: var(--os-face2);
       overflow: hidden;
+      min-height: 0;
     }
     iframe.appframe{
       width: 100%;
@@ -496,6 +574,139 @@
       border: 0;
       display: block;
       background: #fff;
+    }
+
+    /* ===== Browser UI ===== */
+    .browserwrap{
+      height: 100%;
+      background: var(--os-face2);
+      display: grid;
+      grid-template-rows: auto 1fr;
+      min-height: 0;
+    }
+    .browserbar{
+      display:flex;
+      align-items:center;
+      gap: 6px;
+      padding: 6px;
+      border-bottom: 1px solid var(--os-shadow);
+      background: linear-gradient(var(--chrome-top), var(--chrome-bot));
+      flex-wrap: wrap;
+    }
+    .field{
+      flex: 1 1 180px;
+      min-width: 160px;
+      padding: 3px 6px;
+      font: inherit;
+      background: var(--os-face2);
+      color: var(--os-black);
+      border-top: 1px solid var(--os-shadow);
+      border-left: 1px solid var(--os-shadow);
+      border-right: 1px solid var(--os-white);
+      border-bottom: 1px solid var(--os-white);
+      box-shadow: inset 0 0 0 1px var(--os-dark);
+      outline: none;
+    }
+    .field:focus{
+      box-shadow: inset 0 0 0 1px var(--os-dark), 0 0 0 1px rgba(42,102,183,0.35);
+    }
+
+    /* ===== Notes ===== */
+    .noteswrap{
+      height: 100%;
+      background: var(--os-face2);
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      min-height: 0;
+    }
+    .notesbar{
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 6px;
+      border-bottom: 1px solid var(--os-shadow);
+      background: linear-gradient(var(--chrome-top), var(--chrome-bot));
+      flex-wrap: wrap;
+    }
+    .notehint{
+      opacity: 0.85;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .notestext{
+      width: 100%;
+      height: 100%;
+      resize: none;
+      box-sizing: border-box;
+      padding: 10px;
+      font: inherit;
+      line-height: var(--line);
+      color: var(--os-black);
+      background: var(--os-face2);
+      border: 0;
+      outline: none;
+    }
+
+    /* ===== Dialog ===== */
+    .modal{
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 20000;
+      background: rgba(0,0,0,0.15);
+      padding: 18px;
+      box-sizing: border-box;
+    }
+    .modal.open{ display: flex; }
+
+    .dialog{
+      width: min(460px, 92vw);
+      background: var(--os-face);
+      box-sizing: border-box;
+      color: var(--os-black);
+    }
+    .dialog .dtitle{
+      padding: 6px 8px;
+      font-weight: 700;
+      border-bottom: 1px solid var(--os-shadow);
+      background: linear-gradient(var(--titlebar-top), var(--titlebar-bot));
+    }
+    .dialog .dcontent{
+      padding: 10px;
+      display: grid;
+      gap: 10px;
+    }
+    .formrow{
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      gap: 8px;
+      align-items: center;
+    }
+    .label{ font-weight: 600; }
+    .ro{
+      padding: 3px 6px;
+      background: var(--os-face2);
+      border-top: 1px solid var(--os-shadow);
+      border-left: 1px solid var(--os-shadow);
+      border-right: 1px solid var(--os-white);
+      border-bottom: 1px solid var(--os-white);
+      box-shadow: inset 0 0 0 1px var(--os-dark);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--os-black);
+    }
+    .dbtns{
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 10px;
+      border-top: 1px solid var(--os-shadow);
+      background: linear-gradient(var(--chrome-top), var(--chrome-bot));
     }
 
     /* ===== Responsive tweaks ===== */
@@ -523,11 +734,21 @@
       table.list td:nth-child(4){
         display:none;
       }
+      :root{
+        --icon-cell-w: 86px;
+        --icon-cell-h: 82px;
+      }
     }
+
     @media (max-width: 480px){
       table.list th:nth-child(2),
       table.list td:nth-child(2){
         display:none;
+      }
+      .formrow{ grid-template-columns: 1fr; }
+      :root{
+        --icon-cell-w: 82px;
+        --icon-cell-h: 78px;
       }
     }
   </style>
@@ -535,10 +756,10 @@
 
 <body>
   <div class="menubar bevel-out hairline" id="menubar">
-    <div class="menu" data-menu="apple">
-      <span class="menu-label"></span>
+    <div class="menu" data-menu="hedgey">
+      <span class="menu-label">🦔</span>
       <div class="menu-dropdown bevel-out hairline">
-        <div class="menu-item" data-action="aboutSystem">About This Demo</div>
+        <div class="menu-item" data-action="aboutSystem">About HedgeyOS</div>
       </div>
     </div>
 
@@ -546,6 +767,7 @@
       <span class="menu-label">File</span>
       <div class="menu-dropdown bevel-out hairline">
         <div class="menu-item" data-action="newFiles">New Files Window</div>
+        <div class="menu-item" data-action="newNotes">New Notes</div>
       </div>
     </div>
 
@@ -553,6 +775,8 @@
       <span class="menu-label">Apps</span>
       <div class="menu-dropdown bevel-out hairline" id="appsDropdown">
         <div class="menu-item" data-app="files">Files</div>
+        <div class="menu-item" data-app="browser">Browser</div>
+        <div class="menu-item" data-app="notes">Notes</div>
         <div class="menu-sep"></div>
 
         <div class="menu-item" data-app="flipsideClassic">Flipside classic</div>
@@ -563,6 +787,12 @@
         <div class="menu-item" data-app="about">About</div>
 
         <div class="menu-sep"></div>
+
+        <div class="menu-item menu-title">Saved Apps</div>
+        <div id="savedAppsList"></div>
+
+        <div class="menu-sep"></div>
+
         <div class="menu-item menu-title">Open Windows</div>
         <div id="openWindowsList"></div>
       </div>
@@ -572,7 +802,30 @@
     <button class="modebtn" id="modebtn" title="Toggle dark mode" aria-label="Toggle dark mode">☾</button>
   </div>
 
-  <div class="desktop" id="desktop"></div>
+  <div class="desktop" id="desktop">
+    <div class="icon-layer" id="iconLayer"></div>
+  </div>
+
+  <!-- Save App Dialog -->
+  <div class="modal" id="saveModal" aria-hidden="true">
+    <div class="dialog bevel-out thick hairline">
+      <div class="dtitle">Add New App to HedgeyOS?</div>
+      <div class="dcontent">
+        <div class="formrow">
+          <div class="label">App Name:</div>
+          <input class="field" id="saveAppName" type="text" value="" />
+        </div>
+        <div class="formrow">
+          <div class="label">URL:</div>
+          <div class="ro" id="saveAppUrl"></div>
+        </div>
+      </div>
+      <div class="dbtns">
+        <button class="btn" id="saveNo">No</button>
+        <button class="btn" id="saveYes">Yes</button>
+      </div>
+    </div>
+  </div>
 
   <template id="finderTemplate">
     <div class="window bevel-out thick hairline" data-win>
@@ -687,6 +940,61 @@
     </div>
   </template>
 
+  <template id="browserTemplate">
+    <div class="window bevel-out thick hairline" data-win>
+      <div class="titlebar bevel-out hairline" data-titlebar>
+        <div class="controls">
+          <div class="os9-box" title="Close" data-close></div>
+          <div class="os9-box" title="Minimize" data-minimize></div>
+        </div>
+        <div class="title"><span data-titletext>Browser</span></div>
+        <div class="right">
+          <div class="os9-box" title="Zoom" data-zoom></div>
+        </div>
+      </div>
+
+      <div class="browserwrap">
+        <div class="browserbar">
+          <input class="field" data-urlfield type="text" value="https://flipside.ink" />
+          <button class="btn" data-go>Go</button>
+          <button class="btn" data-save>Save</button>
+        </div>
+        <iframe class="appframe" data-iframe src="about:blank"></iframe>
+      </div>
+
+      <div class="resize-grip" data-grip title="Resize"></div>
+    </div>
+  </template>
+
+  <template id="notesTemplate">
+    <div class="window bevel-out thick hairline" data-win>
+      <div class="titlebar bevel-out hairline" data-titlebar>
+        <div class="controls">
+          <div class="os9-box" title="Close" data-close></div>
+          <div class="os9-box" title="Minimize" data-minimize></div>
+        </div>
+        <div class="title"><span data-titletext>Notes</span></div>
+        <div class="right">
+          <div class="os9-box" title="Zoom" data-zoom></div>
+        </div>
+      </div>
+
+      <div class="noteswrap">
+        <div class="notesbar">
+          <div class="notehint" data-notehint>Autosaves after 1s idle</div>
+          <div class="notehint" data-notestatus>Not saved yet</div>
+        </div>
+        <textarea class="notestext" data-notes placeholder="Type here..."></textarea>
+        <div class="statusbar">
+          <span>Ready.</span>
+          <span>Notes</span>
+        </div>
+      </div>
+
+      <div class="resize-grip" data-grip title="Resize"></div>
+    </div>
+  </template>
+
   <script>
     // ===== Menu bar behavior =====
     (function(){
@@ -716,10 +1024,10 @@
       });
     })();
 
-    // ===== Dark mode // ===== Dark mode toggle =====
+    // ===== Dark mode toggle =====
     (function(){
       const btn = document.getElementById("modebtn");
-      const key = "os9_dark_mode";
+      const key = "hedgeyos_dark_mode";
 
       function apply(on){
         document.body.classList.toggle("dark", !!on);
@@ -737,8 +1045,8 @@
       });
     })();
 
-    // ===== App registry =====
-    const APPS = {
+    // ===== Default apps =====
+    const DEFAULT_APPS = {
       flipsideClassic: { title: "Flipside classic", url: "https://flipside.ink" },
       flipside3d:      { title: "Flipside 3D",      url: "https://cubewalker.berrry.app" },
       unconnectedChat: { title: "Unconnected AI Chat", url: "https://chat.unconnected.ai" },
@@ -747,16 +1055,272 @@
       about:           { title: "About",            url: "https://decentricity.github.io" },
     };
 
+    // ===== Saved apps persistence =====
+    const SAVED_KEY = "hedgeyos_saved_apps_v1";
+
+    function loadSavedApps(){
+      try{
+        const raw = localStorage.getItem(SAVED_KEY);
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return [];
+        return parsed
+          .filter(x => x && typeof x.name === "string" && typeof x.url === "string")
+          .map(x => ({ name: x.name.trim(), url: x.url.trim() }))
+          .filter(x => x.name && x.url);
+      } catch {
+        return [];
+      }
+    }
+
+    function saveSavedApps(list){
+      localStorage.setItem(SAVED_KEY, JSON.stringify(list));
+    }
+
+    function normalizeUrl(url){
+      const u = (url || "").trim();
+      if (!u) return "";
+      if (/^https?:\/\//i.test(u)) return u;
+      return "https://" + u;
+    }
+
+    function upsertSavedApp(name, url){
+      const n = (name || "").trim();
+      const u = normalizeUrl(url);
+      if (!n || !u) return false;
+
+      const list = loadSavedApps();
+
+      const idxByUrl = list.findIndex(x => x.url.toLowerCase() === u.toLowerCase());
+      if (idxByUrl >= 0){
+        list[idxByUrl].name = n;
+        list[idxByUrl].url = u;
+      } else {
+        let finalName = n;
+        const taken = new Set(list.map(x => x.name.toLowerCase()));
+        if (taken.has(finalName.toLowerCase())){
+          let i = 2;
+          while (taken.has((finalName + " " + i).toLowerCase())) i++;
+          finalName = finalName + " " + i;
+        }
+        list.push({ name: finalName, url: u });
+      }
+
+      saveSavedApps(list);
+      return true;
+    }
+
+    // ===== Save dialog controller =====
+    const SaveDialog = (() => {
+      const modal = document.getElementById("saveModal");
+      const nameField = document.getElementById("saveAppName");
+      const urlField = document.getElementById("saveAppUrl");
+      const btnNo = document.getElementById("saveNo");
+      const btnYes = document.getElementById("saveYes");
+
+      let currentUrl = "";
+      let onDone = null;
+
+      function open(url, suggestedName, doneCb){
+        currentUrl = url || "";
+        onDone = typeof doneCb === "function" ? doneCb : null;
+
+        urlField.textContent = currentUrl;
+        nameField.value = (suggestedName || "").trim() || "";
+
+        modal.classList.add("open");
+        modal.setAttribute("aria-hidden","false");
+
+        setTimeout(() => {
+          nameField.focus();
+          nameField.select();
+        }, 0);
+      }
+
+      function close(){
+        modal.classList.remove("open");
+        modal.setAttribute("aria-hidden","true");
+        currentUrl = "";
+        onDone = null;
+      }
+
+      btnNo.addEventListener("click", (e) => {
+        e.stopPropagation();
+        close();
+      });
+
+      btnYes.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const name = nameField.value.trim();
+        const ok = upsertSavedApp(name, currentUrl);
+        if (ok && onDone) onDone();
+        close();
+      });
+
+      modal.addEventListener("click", (e) => {
+        if (e.target === modal) close();
+      });
+
+      document.addEventListener("keydown", (e) => {
+        if (!modal.classList.contains("open")) return;
+        if (e.key === "Escape") close();
+        if (e.key === "Enter"){
+          e.preventDefault();
+          btnYes.click();
+        }
+      });
+
+      return { open, close };
+    })();
+
+    // ===== Icon system =====
+    const DesktopIcons = (() => {
+      const iconLayer = document.getElementById("iconLayer");
+      const desktop = document.getElementById("desktop");
+
+      // id -> iconEl
+      const icons = new Map();
+
+      function clearAll(){
+        icons.clear();
+        iconLayer.innerHTML = "";
+      }
+
+      function splitTitleTwoLines(title){
+        const t = (title || "").trim();
+        if (!t) return ["", ""];
+
+        const max1 = 14;
+        const max2 = 14;
+
+        if (t.length <= max1) return [t, ""];
+
+        // try split on last space <= max1
+        let cut = t.lastIndexOf(" ", max1);
+        if (cut < 6) cut = max1;
+
+        let line1 = t.slice(0, cut).trim();
+        let rest = t.slice(cut).trim();
+
+        if (rest.length <= max2) return [line1, rest];
+
+        // ellipsis on line2
+        let line2 = rest.slice(0, Math.max(0, max2 - 1)).trimEnd() + "…";
+        return [line1, line2];
+      }
+
+      function computePositions(count){
+        const cs = getComputedStyle(document.documentElement);
+        const cellW = parseInt(cs.getPropertyValue("--icon-cell-w"), 10) || 92;
+        const cellH = parseInt(cs.getPropertyValue("--icon-cell-h"), 10) || 86;
+        const pad = parseInt(cs.getPropertyValue("--icon-pad"), 10) || 10;
+
+        const dw = desktop.clientWidth;
+        const dh = desktop.clientHeight;
+
+        const cols = Math.max(1, Math.floor((dw - pad) / cellW));
+        const positions = [];
+
+        for (let i = 0; i < count; i++){
+          const col = i % cols;
+          const row = Math.floor(i / cols);
+
+          const x = pad + col * cellW;
+          const y = dh - pad - cellH - row * cellH; // bottom-up
+
+          positions.push({ x, y });
+        }
+        return positions;
+      }
+
+      function glyphForKind(kind){
+        if (kind === "files") return "📂";
+        if (kind === "notes") return "📑";
+        return "📔";
+      }
+
+      function ensureIcon(id, title, kind, onClick){
+        let el = icons.get(id);
+        if (!el){
+          el = document.createElement("div");
+          el.className = "desk-icon";
+          el.dataset.winId = id;
+
+          const glyph = document.createElement("div");
+          glyph.className = "glyph";
+          el.appendChild(glyph);
+
+          const label = document.createElement("div");
+          label.className = "label";
+          const l1 = document.createElement("div");
+          l1.className = "line";
+          const l2 = document.createElement("div");
+          l2.className = "line";
+          label.appendChild(l1);
+          label.appendChild(l2);
+          el.appendChild(label);
+
+          el.addEventListener("click", (e) => {
+            e.stopPropagation();
+            onClick?.(id);
+          });
+
+          iconLayer.appendChild(el);
+          icons.set(id, el);
+        }
+
+        el.querySelector(".glyph").textContent = glyphForKind(kind);
+        const [a, b] = splitTitleTwoLines(title);
+        const lines = el.querySelectorAll(".line");
+        lines[0].textContent = a;
+        lines[1].textContent = b;
+
+        return el;
+      }
+
+      function removeIcon(id){
+        const el = icons.get(id);
+        if (el) el.remove();
+        icons.delete(id);
+      }
+
+      function render(order, metaById, onClick){
+        // order: array of ids in desired icon placement order
+        // metaById: id -> {title, kind}
+        const positions = computePositions(order.length);
+
+        for (let i = 0; i < order.length; i++){
+          const id = order[i];
+          const meta = metaById.get(id);
+          if (!meta) continue;
+          const el = ensureIcon(id, meta.title, meta.kind, onClick);
+          el.style.left = positions[i].x + "px";
+          el.style.top = positions[i].y + "px";
+        }
+
+        // remove stray icons
+        for (const existingId of Array.from(icons.keys())){
+          if (!metaById.has(existingId)) removeIcon(existingId);
+        }
+      }
+
+      return { clearAll, render, removeIcon };
+    })();
+
     // ===== Tiny WM =====
     const WM = (() => {
       const desktop = document.getElementById("desktop");
       const finderTpl = document.getElementById("finderTemplate");
       const appTpl = document.getElementById("appTemplate");
+      const browserTpl = document.getElementById("browserTemplate");
+      const notesTpl = document.getElementById("notesTemplate");
       const openWindowsList = document.getElementById("openWindowsList");
 
       let zTop = 20;
       let idSeq = 1;
-      const state = new Map(); // id -> { win, minimized, maximized, restoreRect, title }
+
+      // id -> { win, minimized, maximized, restoreRect, title, kind, createdAt }
+      const state = new Map();
 
       function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
       function deskRect(){ return desktop.getBoundingClientRect(); }
@@ -800,6 +1364,21 @@
         }
       }
 
+      function refreshIcons(){
+        const metaById = new Map();
+        const order = Array.from(state.entries())
+          .sort((a,b) => a[1].createdAt - b[1].createdAt)
+          .map(([id, st]) => {
+            metaById.set(id, { title: st.title, kind: st.kind });
+            return id;
+          });
+
+        DesktopIcons.render(order, metaById, (id) => {
+          restore(id);
+          focus(id);
+        });
+      }
+
       function focus(id){
         for (const [wid, st] of state.entries()){
           st.win.classList.toggle("inactive", wid !== id);
@@ -816,6 +1395,7 @@
         st.minimized = true;
         st.win.style.display = "none";
         refreshOpenWindowsMenu();
+        refreshIcons();
       }
 
       function restore(id){
@@ -824,6 +1404,7 @@
         st.minimized = false;
         st.win.style.display = "grid";
         refreshOpenWindowsMenu();
+        refreshIcons();
       }
 
       function close(id){
@@ -831,9 +1412,13 @@
         if (!st) return;
         st.win.remove();
         state.delete(id);
+        DesktopIcons.removeIcon(id);
+
         const last = Array.from(state.keys()).pop();
         if (last) focus(last);
+
         refreshOpenWindowsMenu();
+        refreshIcons();
       }
 
       function applyDefaultSize(win){
@@ -878,13 +1463,33 @@
           st.maximized = false;
         }
         focus(id);
+        refreshIcons();
+      }
+
+      // allow dragging partially offscreen
+      function dragBounds(winW, winH){
+        const { w: dw, h: dh } = deskSize();
+
+        // allow 40% of window to go offscreen, but keep at least 40px area reachable
+        const keep = 40;
+        const offX = Math.floor(dw * 0.4);
+        const offY = Math.floor(dh * 0.4);
+
+        const minLeft = -offX;
+        const maxLeft = (dw - keep);
+
+        const minTop = -offY;
+        const maxTop = (dh - keep);
+
+        return { minLeft, maxLeft, minTop, maxTop };
       }
 
       function makeDraggable(id, win){
         const bar = win.querySelector("[data-titlebar]");
         let dragging = false, startX = 0, startY = 0, startLeft = 0, startTop = 0;
 
-        win.addEventListener("pointerdown", () => focus(id));
+        // focus from ANY click inside the window
+        win.addEventListener("pointerdown", () => focus(id), { capture: true });
 
         bar.addEventListener("pointerdown", (e) => {
           const onControl = e.target.closest("[data-close],[data-minimize],[data-zoom]");
@@ -912,13 +1517,13 @@
           const dx = e.clientX - startX;
           const dy = e.clientY - startY;
 
-          const { w: dw, h: dh } = deskSize();
           const rect = win.getBoundingClientRect();
           const w = rect.width;
           const h = rect.height;
 
-          const newLeft = clamp(startLeft + dx, 0, dw - w);
-          const newTop  = clamp(startTop + dy, 0, dh - h);
+          const b = dragBounds(w, h);
+          const newLeft = clamp(startLeft + dx, b.minLeft, b.maxLeft);
+          const newTop  = clamp(startTop + dy, b.minTop, b.maxTop);
 
           win.style.left = newLeft + "px";
           win.style.top  = newTop + "px";
@@ -962,11 +1567,13 @@
           const top  = rect.top - dr.top;
 
           const { w: dw, h: dh } = deskSize();
-          const maxW = dw - left;
-          const maxH = dh - top;
 
-          const newW = clamp(startW + dx, 320, maxW);
-          const newH = clamp(startH + dy, 240, maxH);
+          // allow resizing even if partially offscreen, but cap within a reasonable max
+          const maxW = dw + Math.max(0, -left);
+          const maxH = dh + Math.max(0, -top);
+
+          const newW = clamp(startW + dx, 320, Math.max(320, maxW));
+          const newH = clamp(startH + dy, 240, Math.max(240, maxH));
 
           win.style.width = newW + "px";
           win.style.height = newH + "px";
@@ -1005,6 +1612,87 @@
         iframe.src = url;
       }
 
+      function wireBrowserUI(win){
+        const field = win.querySelector("[data-urlfield]");
+        const goBtn = win.querySelector("[data-go]");
+        const saveBtn = win.querySelector("[data-save]");
+        const iframe = win.querySelector("[data-iframe]");
+
+        function setUrl(u){
+          const url = (u || "").trim();
+          if (!url) return;
+          const norm = /^https?:\/\//i.test(url) ? url : ("https://" + url);
+          field.value = norm;
+          iframe.src = norm;
+        }
+
+        goBtn.addEventListener("click", () => setUrl(field.value));
+        field.addEventListener("keydown", (e) => {
+          if (e.key === "Enter"){
+            e.preventDefault();
+            setUrl(field.value);
+          }
+        });
+
+        saveBtn.addEventListener("click", () => {
+          const current = (iframe.getAttribute("src") || field.value || "").trim();
+          const url = /^https?:\/\//i.test(current) ? current : ("https://" + current);
+
+          const guessName = (() => {
+            try{
+              const host = new URL(url).hostname.replace(/^www\./i,"");
+              return host || "New App";
+            } catch {
+              return "New App";
+            }
+          })();
+
+          SaveDialog.open(url, guessName, () => {
+            AppsMenu.renderSavedApps();
+          });
+        });
+
+        setUrl(field.value);
+      }
+
+      function wireNotesUI(win){
+        const ta = win.querySelector("[data-notes]");
+        const status = win.querySelector("[data-notestatus]");
+        const key = "hedgeyos_notes_v1";
+
+        const saved = localStorage.getItem(key);
+        if (typeof saved === "string") ta.value = saved;
+
+        let t = null;
+        function setStatus(txt){
+          if (status) status.textContent = txt;
+        }
+
+        function doSave(){
+          localStorage.setItem(key, ta.value);
+          const now = new Date();
+          const hh = String(now.getHours()).padStart(2, "0");
+          const mm = String(now.getMinutes()).padStart(2, "0");
+          const ss = String(now.getSeconds()).padStart(2, "0");
+          setStatus("Saved at " + hh + ":" + mm + ":" + ss);
+        }
+
+        function scheduleSave(){
+          setStatus("Typing...");
+          if (t) clearTimeout(t);
+          t = setTimeout(doSave, 1000);
+        }
+
+        ta.addEventListener("input", scheduleSave);
+        ta.addEventListener("blur", () => {
+          if (t) { clearTimeout(t); t = null; }
+          doSave();
+        });
+
+        setStatus(saved ? "Loaded" : "Not saved yet");
+        setTimeout(() => ta.focus(), 0);
+      }
+
       function spawn(tpl, title, extra){
         const id = "w" + (idSeq++);
         const frag = tpl.content.cloneNode(true);
@@ -1015,23 +1703,32 @@
 
         applyDefaultSize(win);
 
+        // initial placement slightly cascaded
         const { w: dw, h: dh } = deskSize();
         const wNow = parseFloat(win.style.width) || 400;
         const hNow = parseFloat(win.style.height) || 300;
 
-        const pad = 6;
-        const baseLeft = pad + 18 * (idSeq - 2);
-        const baseTop  = pad + 18 * (idSeq - 2);
+        const baseLeft = 6 + 18 * (idSeq - 2);
+        const baseTop  = 6 + 18 * (idSeq - 2);
 
-        win.style.left = clamp(baseLeft, 0, dw - wNow) + "px";
-        win.style.top  = clamp(baseTop, 0, dh - hNow) + "px";
+        // allow offscreen, but start in sane place
+        win.style.left = clamp(baseLeft, 0, Math.max(0, dw - wNow)) + "px";
+        win.style.top  = clamp(baseTop, 0, Math.max(0, dh - hNow)) + "px";
 
         const titleText = win.querySelector("[data-titletext]");
         if (titleText && title) titleText.textContent = title;
 
         desktop.appendChild(win);
 
-        const st = { win, minimized: false, maximized: false, restoreRect: null, title: getTitle(win) };
+        const st = {
+          win,
+          minimized: false,
+          maximized: false,
+          restoreRect: null,
+          title: getTitle(win),
+          kind: extra?.kind || "window",
+          createdAt: Date.now() + idSeq
+        };
         state.set(id, st);
 
         win.querySelector("[data-close]").addEventListener("click", () => close(id));
@@ -1043,77 +1740,133 @@
 
         if (tpl === finderTpl) wireFinderUI(win);
         if (tpl === appTpl) wireAppUI(win, extra?.url || "about:blank");
+        if (tpl === browserTpl) wireBrowserUI(win);
+        if (tpl === notesTpl) wireNotesUI(win);
 
         st.title = getTitle(win);
         focus(id);
         refreshOpenWindowsMenu();
+        refreshIcons();
 
         return id;
       }
 
       function createFilesWindow(){
-        return spawn(finderTpl, "Files");
+        return spawn(finderTpl, "Files", { kind: "files" });
       }
 
-      function createAppWindow(appKey){
-        const app = APPS[appKey];
-        if (!app) return null;
-        return spawn(appTpl, app.title, { url: app.url });
+      function createBrowserWindow(){
+        return spawn(browserTpl, "Browser", { kind: "browser" });
+      }
+
+      function createAppWindow(title, url){
+        return spawn(appTpl, title, { kind: "app", url });
+      }
+
+      function createNotesWindow(){
+        return spawn(notesTpl, "Notes", { kind: "notes" });
       }
 
       window.addEventListener("resize", () => {
-        const { w: dw, h: dh } = deskSize();
-        const dr = deskRect();
-
-        for (const [, st] of state.entries()){
-          if (st.minimized) continue;
-
-          const win = st.win;
-          const rect = win.getBoundingClientRect();
-          const left = rect.left - dr.left;
-          const top  = rect.top - dr.top;
-
-          win.style.left = clamp(left, 0, dw - rect.width) + "px";
-          win.style.top  = clamp(top, 0, dh - rect.height) + "px";
-        }
-
+        // Re-render icons since grid depends on viewport size
+        refreshIcons();
         refreshOpenWindowsMenu();
       });
 
       return {
         createFilesWindow,
+        createBrowserWindow,
+        createNotesWindow,
         createAppWindow,
-        refreshOpenWindowsMenu
+        refreshOpenWindowsMenu,
+        refreshIcons,
+        focus: (id) => focus(id),
+        restore: (id) => restore(id),
       };
+    })();
+
+    // ===== Apps menu renderer (defaults + saved) =====
+    const AppsMenu = (() => {
+      const savedAppsList = document.getElementById("savedAppsList");
+
+      function clearNode(node){
+        while (node.firstChild) node.removeChild(node.firstChild);
+      }
+
+      function renderSavedApps(){
+        clearNode(savedAppsList);
+        const saved = loadSavedApps();
+
+        if (!saved.length){
+          const empty = document.createElement("div");
+          empty.className = "menu-item";
+          empty.textContent = "(none)";
+          empty.style.pointerEvents = "none";
+          empty.style.opacity = "0.75";
+          savedAppsList.appendChild(empty);
+          return;
+        }
+
+        for (const item of saved){
+          const row = document.createElement("div");
+          row.className = "menu-item";
+          row.textContent = item.name;
+          row.setAttribute("data-saved-name", item.name);
+          row.setAttribute("data-saved-url", item.url);
+          savedAppsList.appendChild(row);
+        }
+      }
+
+      return { renderSavedApps };
     })();
 
     // ===== Menu actions =====
     (function(){
-      document.getElementById("menubar").addEventListener("click", (e) => {
+      const menubar = document.getElementById("menubar");
+
+      menubar.addEventListener("click", (e) => {
         const action = e.target.getAttribute("data-action");
         const app = e.target.getAttribute("data-app");
 
+        const savedRow = e.target.closest("[data-saved-url]");
+        if (savedRow){
+          const title = savedRow.getAttribute("data-saved-name") || "App";
+          const url = savedRow.getAttribute("data-saved-url") || "about:blank";
+          WM.createAppWindow(title, url);
+          e.stopPropagation();
+          return;
+        }
+
         if (action === "aboutSystem"){
-          WM.createAppWindow("about");
+          WM.createAppWindow("About", DEFAULT_APPS.about.url);
         }
         if (action === "newFiles"){
           WM.createFilesWindow();
         }
+        if (action === "newNotes"){
+          WM.createNotesWindow();
+        }
 
         if (app === "files"){
           WM.createFilesWindow();
-        } else if (app && APPS[app]){
-          WM.createAppWindow(app);
+        } else if (app === "browser"){
+          WM.createBrowserWindow();
+        } else if (app === "notes"){
+          WM.createNotesWindow();
+        } else if (app && DEFAULT_APPS[app]){
+          WM.createAppWindow(DEFAULT_APPS[app].title, DEFAULT_APPS[app].url);
         }
 
         if (e.target.closest("#appsMenu")){
           WM.refreshOpenWindowsMenu();
+          WM.refreshIcons();
         }
 
-        if (action || app) e.stopPropagation();
+        if (action || app || savedRow) e.stopPropagation();
       });
 
-      // Boot: one Files window
+      // boot
+      AppsMenu.renderSavedApps();
       WM.createFilesWindow();
     })();
   </script>
