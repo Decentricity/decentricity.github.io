@@ -716,7 +716,7 @@
       });
     })();
 
-    // ===== Dark mode toggle =====
+    // ===== Dark mode // ===== Dark mode toggle =====
     (function(){
       const btn = document.getElementById("modebtn");
       const key = "os9_dark_mode";
@@ -731,4 +731,391 @@
 
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
-        cons
+        const on = !document.body.classList.contains("dark");
+        apply(on);
+        localStorage.setItem(key, on ? "1" : "0");
+      });
+    })();
+
+    // ===== App registry =====
+    const APPS = {
+      flipsideClassic: { title: "Flipside classic", url: "https://flipside.ink" },
+      flipside3d:      { title: "Flipside 3D",      url: "https://cubewalker.berrry.app" },
+      unconnectedChat: { title: "Unconnected AI Chat", url: "https://chat.unconnected.ai" },
+      hedgeyTown:      { title: "3D Hedgey Town",   url: "https://blueprintwalk.berrry.app/" },
+      chordynaut:      { title: "Chordynaut",       url: "https://chordynaut.com" },
+      about:           { title: "About",            url: "https://decentricity.github.io" },
+    };
+
+    // ===== Tiny WM =====
+    const WM = (() => {
+      const desktop = document.getElementById("desktop");
+      const finderTpl = document.getElementById("finderTemplate");
+      const appTpl = document.getElementById("appTemplate");
+      const openWindowsList = document.getElementById("openWindowsList");
+
+      let zTop = 20;
+      let idSeq = 1;
+      const state = new Map(); // id -> { win, minimized, maximized, restoreRect, title }
+
+      function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
+      function deskRect(){ return desktop.getBoundingClientRect(); }
+      function deskSize(){ return { w: desktop.clientWidth, h: desktop.clientHeight }; }
+
+      function getTitle(win){
+        return win.querySelector("[data-titletext]")?.textContent?.trim() || "Window";
+      }
+
+      function refreshOpenWindowsMenu(){
+        openWindowsList.innerHTML = "";
+        const entries = Array.from(state.entries());
+
+        if (!entries.length){
+          const empty = document.createElement("div");
+          empty.className = "menu-item";
+          empty.textContent = "(none)";
+          empty.style.pointerEvents = "none";
+          empty.style.opacity = "0.75";
+          openWindowsList.appendChild(empty);
+          return;
+        }
+
+        entries.sort((a,b) => {
+          const za = parseInt(a[1].win.style.zIndex || "0", 10);
+          const zb = parseInt(b[1].win.style.zIndex || "0", 10);
+          return zb - za;
+        });
+
+        for (const [id, st] of entries){
+          const item = document.createElement("div");
+          item.className = "menu-item";
+          item.textContent = (st.minimized ? "◊ " : "") + st.title;
+          item.addEventListener("click", (e) => {
+            e.stopPropagation();
+            restore(id);
+            focus(id);
+            document.querySelectorAll("#menubar .menu").forEach(m => m.classList.remove("open"));
+          });
+          openWindowsList.appendChild(item);
+        }
+      }
+
+      function focus(id){
+        for (const [wid, st] of state.entries()){
+          st.win.classList.toggle("inactive", wid !== id);
+        }
+        const st = state.get(id);
+        if (!st) return;
+        st.win.style.zIndex = String(++zTop);
+        refreshOpenWindowsMenu();
+      }
+
+      function minimize(id){
+        const st = state.get(id);
+        if (!st || st.minimized) return;
+        st.minimized = true;
+        st.win.style.display = "none";
+        refreshOpenWindowsMenu();
+      }
+
+      function restore(id){
+        const st = state.get(id);
+        if (!st || !st.minimized) return;
+        st.minimized = false;
+        st.win.style.display = "grid";
+        refreshOpenWindowsMenu();
+      }
+
+      function close(id){
+        const st = state.get(id);
+        if (!st) return;
+        st.win.remove();
+        state.delete(id);
+        const last = Array.from(state.keys()).pop();
+        if (last) focus(last);
+        refreshOpenWindowsMenu();
+      }
+
+      function applyDefaultSize(win){
+        const { w: dw, h: dh } = deskSize();
+        const w = Math.max(320, Math.floor(dw * 0.8)); // 4/5 width
+        const h = Math.max(240, Math.floor(dh * 0.5)); // half height
+        win.style.width = w + "px";
+        win.style.height = h + "px";
+      }
+
+      function toggleZoom(id){
+        const st = state.get(id);
+        if (!st) return;
+
+        const { w: dw, h: dh } = deskSize();
+
+        if (!st.maximized){
+          const rect = st.win.getBoundingClientRect();
+          const dr = deskRect();
+          st.restoreRect = {
+            left: rect.left - dr.left,
+            top: rect.top - dr.top,
+            width: rect.width,
+            height: rect.height
+          };
+
+          const pad = 6;
+          st.win.style.left = pad + "px";
+          st.win.style.top = pad + "px";
+          st.win.style.width = Math.max(320, dw - pad * 2) + "px";
+          st.win.style.height = Math.max(240, dh - pad * 2) + "px";
+
+          st.maximized = true;
+        } else {
+          const r = st.restoreRect;
+          if (r){
+            st.win.style.left = r.left + "px";
+            st.win.style.top = r.top + "px";
+            st.win.style.width = r.width + "px";
+            st.win.style.height = r.height + "px";
+          }
+          st.maximized = false;
+        }
+        focus(id);
+      }
+
+      function makeDraggable(id, win){
+        const bar = win.querySelector("[data-titlebar]");
+        let dragging = false, startX = 0, startY = 0, startLeft = 0, startTop = 0;
+
+        win.addEventListener("pointerdown", () => focus(id));
+
+        bar.addEventListener("pointerdown", (e) => {
+          const onControl = e.target.closest("[data-close],[data-minimize],[data-zoom]");
+          if (onControl) return;
+          if (state.get(id)?.maximized) return;
+
+          e.preventDefault();
+
+          dragging = true;
+          bar.setPointerCapture(e.pointerId);
+          startX = e.clientX;
+          startY = e.clientY;
+
+          const rect = win.getBoundingClientRect();
+          const dr = deskRect();
+
+          startLeft = rect.left - dr.left;
+          startTop  = rect.top - dr.top;
+        }, { passive: false });
+
+        bar.addEventListener("pointermove", (e) => {
+          if (!dragging) return;
+          e.preventDefault();
+
+          const dx = e.clientX - startX;
+          const dy = e.clientY - startY;
+
+          const { w: dw, h: dh } = deskSize();
+          const rect = win.getBoundingClientRect();
+          const w = rect.width;
+          const h = rect.height;
+
+          const newLeft = clamp(startLeft + dx, 0, dw - w);
+          const newTop  = clamp(startTop + dy, 0, dh - h);
+
+          win.style.left = newLeft + "px";
+          win.style.top  = newTop + "px";
+        }, { passive: false });
+
+        bar.addEventListener("pointerup", () => dragging = false);
+        bar.addEventListener("pointercancel", () => dragging = false);
+
+        bar.addEventListener("dblclick", () => toggleZoom(id));
+      }
+
+      function makeResizable(id, win){
+        const grip = win.querySelector("[data-grip]");
+        let resizing = false, startX = 0, startY = 0, startW = 0, startH = 0;
+
+        grip.addEventListener("pointerdown", (e) => {
+          if (state.get(id)?.maximized) return;
+
+          e.preventDefault();
+
+          resizing = true;
+          grip.setPointerCapture(e.pointerId);
+          startX = e.clientX;
+          startY = e.clientY;
+
+          const rect = win.getBoundingClientRect();
+          startW = rect.width;
+          startH = rect.height;
+        }, { passive: false });
+
+        grip.addEventListener("pointermove", (e) => {
+          if (!resizing) return;
+          e.preventDefault();
+
+          const dx = e.clientX - startX;
+          const dy = e.clientY - startY;
+
+          const rect = win.getBoundingClientRect();
+          const dr = deskRect();
+          const left = rect.left - dr.left;
+          const top  = rect.top - dr.top;
+
+          const { w: dw, h: dh } = deskSize();
+          const maxW = dw - left;
+          const maxH = dh - top;
+
+          const newW = clamp(startW + dx, 320, maxW);
+          const newH = clamp(startH + dy, 240, maxH);
+
+          win.style.width = newW + "px";
+          win.style.height = newH + "px";
+        }, { passive: false });
+
+        grip.addEventListener("pointerup", () => resizing = false);
+        grip.addEventListener("pointercancel", () => resizing = false);
+      }
+
+      function wireFinderUI(win){
+        const nav = win.querySelector("[data-nav]");
+        const list = win.querySelector("[data-list]");
+        const status = win.querySelector("[data-status]");
+
+        nav.addEventListener("click", (e) => {
+          const li = e.target.closest(".navitem");
+          if (!li) return;
+          nav.querySelectorAll(".navitem").forEach(x => x.classList.remove("active"));
+          li.classList.add("active");
+        });
+
+        list.addEventListener("click", (e) => {
+          const tr = e.target.closest("tr.row");
+          if (!tr) return;
+          list.querySelectorAll("tr.row").forEach(r => r.classList.remove("selected"));
+          tr.classList.add("selected");
+          if (status) status.textContent = "Selected: " + tr.children[0].textContent;
+        });
+
+        const newWinBtn = win.querySelector("[data-newwin]");
+        if (newWinBtn) newWinBtn.addEventListener("click", () => createFilesWindow());
+      }
+
+      function wireAppUI(win, url){
+        const iframe = win.querySelector("[data-iframe]");
+        iframe.src = url;
+      }
+
+      function spawn(tpl, title, extra){
+        const id = "w" + (idSeq++);
+        const frag = tpl.content.cloneNode(true);
+        const win = frag.querySelector("[data-win]");
+
+        win.dataset.id = id;
+        win.style.zIndex = String(++zTop);
+
+        applyDefaultSize(win);
+
+        const { w: dw, h: dh } = deskSize();
+        const wNow = parseFloat(win.style.width) || 400;
+        const hNow = parseFloat(win.style.height) || 300;
+
+        const pad = 6;
+        const baseLeft = pad + 18 * (idSeq - 2);
+        const baseTop  = pad + 18 * (idSeq - 2);
+
+        win.style.left = clamp(baseLeft, 0, dw - wNow) + "px";
+        win.style.top  = clamp(baseTop, 0, dh - hNow) + "px";
+
+        const titleText = win.querySelector("[data-titletext]");
+        if (titleText && title) titleText.textContent = title;
+
+        desktop.appendChild(win);
+
+        const st = { win, minimized: false, maximized: false, restoreRect: null, title: getTitle(win) };
+        state.set(id, st);
+
+        win.querySelector("[data-close]").addEventListener("click", () => close(id));
+        win.querySelector("[data-minimize]").addEventListener("click", () => minimize(id));
+        win.querySelector("[data-zoom]").addEventListener("click", () => toggleZoom(id));
+
+        makeDraggable(id, win);
+        makeResizable(id, win);
+
+        if (tpl === finderTpl) wireFinderUI(win);
+        if (tpl === appTpl) wireAppUI(win, extra?.url || "about:blank");
+
+        st.title = getTitle(win);
+        focus(id);
+        refreshOpenWindowsMenu();
+
+        return id;
+      }
+
+      function createFilesWindow(){
+        return spawn(finderTpl, "Files");
+      }
+
+      function createAppWindow(appKey){
+        const app = APPS[appKey];
+        if (!app) return null;
+        return spawn(appTpl, app.title, { url: app.url });
+      }
+
+      window.addEventListener("resize", () => {
+        const { w: dw, h: dh } = deskSize();
+        const dr = deskRect();
+
+        for (const [, st] of state.entries()){
+          if (st.minimized) continue;
+
+          const win = st.win;
+          const rect = win.getBoundingClientRect();
+          const left = rect.left - dr.left;
+          const top  = rect.top - dr.top;
+
+          win.style.left = clamp(left, 0, dw - rect.width) + "px";
+          win.style.top  = clamp(top, 0, dh - rect.height) + "px";
+        }
+
+        refreshOpenWindowsMenu();
+      });
+
+      return {
+        createFilesWindow,
+        createAppWindow,
+        refreshOpenWindowsMenu
+      };
+    })();
+
+    // ===== Menu actions =====
+    (function(){
+      document.getElementById("menubar").addEventListener("click", (e) => {
+        const action = e.target.getAttribute("data-action");
+        const app = e.target.getAttribute("data-app");
+
+        if (action === "aboutSystem"){
+          WM.createAppWindow("about");
+        }
+        if (action === "newFiles"){
+          WM.createFilesWindow();
+        }
+
+        if (app === "files"){
+          WM.createFilesWindow();
+        } else if (app && APPS[app]){
+          WM.createAppWindow(app);
+        }
+
+        if (e.target.closest("#appsMenu")){
+          WM.refreshOpenWindowsMenu();
+        }
+
+        if (action || app) e.stopPropagation();
+      });
+
+      // Boot: one Files window
+      WM.createFilesWindow();
+    })();
+  </script>
+</body>
+</html>
