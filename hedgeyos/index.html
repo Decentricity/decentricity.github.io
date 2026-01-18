@@ -1,0 +1,1410 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>HedgeyOS</title>
+  <style>
+    :root{
+      --bg:#cfcfcf;
+      --ui:#d9d9d9;
+      --ui2:#ececec;
+      --ink:#111;
+      --muted:#666;
+      --shadow:#7a7a7a;
+      --hl:#ffffff;
+      --border:#000;
+      --menu-bg:#ededed;
+      --menu-ink:#111;
+      --accent:#2a66c8;
+      --accent-ink:#fff;
+      --win-bg:#e6e6e6;
+      --titlebar:#d8d8d8;
+      --titlebar2:#cfcfcf;
+      --title-ink:#111;
+      --content-bg:#f2f2f2;
+      --deskpad:10px;
+    }
+    [data-theme="dark"]{
+      --bg:#2a2a2a;
+      --ui:#3a3a3a;
+      --ui2:#4a4a4a;
+      --ink:#f1f1f1;
+      --muted:#bdbdbd;
+      --shadow:#000;
+      --hl:#6b6b6b;
+      --border:#111;
+      --menu-bg:#333;
+      --menu-ink:#f1f1f1;
+      --accent:#4e86ff;
+      --accent-ink:#0b0b0b;
+      --win-bg:#3b3b3b;
+      --titlebar:#3a3a3a;
+      --titlebar2:#2f2f2f;
+      --title-ink:#f1f1f1;
+      --content-bg:#262626;
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--ink);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif;
+      overflow:hidden;
+      user-select:none;
+      -webkit-user-select:none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Menubar */
+    #menubar{
+      height:42px;
+      background:linear-gradient(var(--ui2), var(--ui));
+      border-bottom:2px solid var(--border);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:0 8px;
+      position:relative;
+      z-index:9999;
+    }
+    .menu-left,.menu-right{
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .menu-item{
+      padding:6px 10px;
+      border:2px solid transparent;
+      border-radius:2px;
+      font-weight:600;
+      color:var(--menu-ink);
+      cursor:pointer;
+    }
+    .menu-item.logo{
+      padding:6px 8px;
+      font-weight:700;
+      width:auto;
+    }
+    .menu-item.active{
+      background:var(--accent);
+      color:var(--accent-ink);
+      border-color:var(--border);
+    }
+    #darkToggle{
+      width:34px;height:28px;
+      border:2px solid var(--border);
+      background:linear-gradient(var(--ui2), var(--ui));
+      box-shadow: inset 1px 1px 0 var(--hl), inset -1px -1px 0 var(--shadow);
+      border-radius:2px;
+      cursor:pointer;
+      font-weight:800;
+      color:var(--menu-ink);
+    }
+
+    /* Dropdown */
+    .dropdown{
+      position:absolute;
+      top:40px;
+      min-width:240px;
+      background:var(--menu-bg);
+      border:2px solid var(--border);
+      box-shadow: 3px 3px 0 rgba(0,0,0,0.2);
+      padding:6px 0;
+      z-index:9998;
+    }
+    .drop-row{
+      padding:8px 12px;
+      cursor:pointer;
+      color:var(--menu-ink);
+      font-weight:600;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .drop-row:hover{
+      background:var(--accent);
+      color:var(--accent-ink);
+    }
+    .drop-section{
+      padding:8px 12px 6px;
+      font-size:12px;
+      font-weight:800;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:.04em;
+      cursor:default;
+    }
+    .drop-hr{
+      height:0;
+      border:none;
+      border-top:2px solid var(--border);
+      margin:6px 0;
+      opacity:.35;
+    }
+
+    /* Desktop */
+    #desktop{
+      position:relative;
+      width:100%;
+      height:calc(100% - 42px);
+      overflow:hidden;
+    }
+    #iconsLayer{
+      position:absolute;
+      inset:0;
+      z-index:1;
+      pointer-events:auto;
+    }
+    #windowsLayer{
+      position:absolute;
+      inset:0;
+      z-index:2;
+      pointer-events:auto;
+    }
+
+    /* Desktop icons */
+    .desk-icon{
+      position:absolute;
+      width:88px;
+      height:80px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:flex-start;
+      gap:4px;
+      cursor:pointer;
+      padding:4px 2px;
+    }
+    .desk-icon .glyph{
+      font-size:28px;
+      line-height:1;
+      filter: drop-shadow(1px 1px 0 rgba(0,0,0,0.25));
+    }
+    .desk-icon .label{
+      width:100%;
+      text-align:center;
+      font-size:11px;
+      line-height:1.05;
+      color:var(--ink);
+      text-shadow: 1px 1px 0 rgba(0,0,0,0.10);
+      word-break:break-word;
+    }
+    .desk-icon .label .l2{ opacity:.95; }
+    .desk-icon:hover{
+      background:rgba(0,0,0,0.05);
+      border-radius:6px;
+    }
+    [data-theme="dark"] .desk-icon:hover{
+      background:rgba(255,255,255,0.06);
+    }
+
+    /* Windows */
+    .window{
+      position:absolute;
+      background:var(--win-bg);
+      border:2px solid var(--border);
+      box-shadow: 3px 3px 0 rgba(0,0,0,0.25);
+      min-width:260px;
+      min-height:160px;
+      touch-action:none; /* important for pointer dragging on mobile */
+    }
+    .window.focused{
+      box-shadow: 4px 4px 0 rgba(0,0,0,0.32);
+    }
+    .titlebar{
+      height:40px;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 8px;
+      background:linear-gradient(var(--titlebar), var(--titlebar2));
+      border-bottom:2px solid var(--border);
+      cursor:grab;
+    }
+    .titlebar:active{ cursor:grabbing; }
+
+    .closebox{
+      width:18px;height:18px;
+      border:2px solid var(--border);
+      background:linear-gradient(var(--ui2), var(--ui));
+      box-shadow: inset 1px 1px 0 var(--hl), inset -1px -1px 0 var(--shadow);
+      border-radius:2px;
+      cursor:pointer;
+      flex:0 0 auto;
+    }
+    .titlewrap{
+      flex:1 1 auto;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width:0;
+    }
+    .barlines{
+      flex:1 1 auto;
+      height:14px;
+      background:
+        repeating-linear-gradient(
+          to bottom,
+          rgba(0,0,0,0.25),
+          rgba(0,0,0,0.25) 1px,
+          rgba(255,255,255,0.25) 1px,
+          rgba(255,255,255,0.25) 2px
+        );
+      opacity:.55;
+    }
+    .titletext{
+      flex:0 1 auto;
+      font-weight:800;
+      color:var(--title-ink);
+      max-width:55%;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      text-align:center;
+    }
+    .content{
+      height:calc(100% - 40px);
+      background:var(--content-bg);
+      overflow:hidden;
+    }
+    .content-inner{
+      height:100%;
+      overflow:auto;
+      padding:10px;
+      user-select:text;
+      -webkit-user-select:text;
+    }
+
+    /* Finder-ish list */
+    .finder{
+      height:100%;
+      display:flex;
+      flex-direction:column;
+    }
+    .finder-toolbar{
+      padding:8px;
+      display:flex;
+      gap:8px;
+      align-items:center;
+      border-bottom:2px solid var(--border);
+      background:linear-gradient(var(--ui2), var(--ui));
+    }
+    .btn{
+      border:2px solid var(--border);
+      background:linear-gradient(var(--ui2), var(--ui));
+      box-shadow: inset 1px 1px 0 var(--hl), inset -1px -1px 0 var(--shadow);
+      padding:6px 10px;
+      font-weight:700;
+      cursor:pointer;
+      border-radius:2px;
+      color:var(--ink);
+    }
+    .finder-body{
+      display:flex;
+      flex:1 1 auto;
+      min-height:0;
+    }
+    .finder-sidebar{
+      width:120px;
+      border-right:2px solid var(--border);
+      padding:10px;
+      background:rgba(0,0,0,0.03);
+    }
+    [data-theme="dark"] .finder-sidebar{ background:rgba(255,255,255,0.05); }
+    .finder-sidebar h4{
+      margin:0 0 8px 0;
+      font-size:12px;
+      letter-spacing:.02em;
+      text-transform:uppercase;
+      color:var(--muted);
+    }
+    .finder-main{
+      flex:1 1 auto;
+      min-width:0;
+      display:flex;
+      flex-direction:column;
+    }
+    .finder-head{
+      display:flex;
+      padding:8px 10px;
+      border-bottom:2px solid var(--border);
+      font-weight:800;
+      background:rgba(0,0,0,0.03);
+    }
+    [data-theme="dark"] .finder-head{ background:rgba(255,255,255,0.05); }
+    .finder-row{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:9px 10px;
+      border-bottom:1px solid rgba(0,0,0,0.12);
+      cursor:pointer;
+      color:var(--ink);
+      font-weight:650;
+    }
+    [data-theme="dark"] .finder-row{ border-bottom:1px solid rgba(255,255,255,0.10); }
+    .finder-row:hover{ background:rgba(0,0,0,0.06); }
+    [data-theme="dark"] .finder-row:hover{ background:rgba(255,255,255,0.07); }
+    .finder-row .ico{
+      width:18px; text-align:center;
+      font-size:16px;
+    }
+    .finder-row .name{
+      flex:1 1 auto;
+      min-width:0;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    .finder-foot{
+      padding:8px 10px;
+      border-top:2px solid var(--border);
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      background:linear-gradient(var(--ui), var(--ui2));
+      font-weight:700;
+      color:var(--muted);
+    }
+
+    /* Browser */
+    .browser{
+      height:100%;
+      display:flex;
+      flex-direction:column;
+    }
+    .browser-toolbar{
+      padding:8px;
+      display:flex;
+      gap:8px;
+      align-items:center;
+      border-bottom:2px solid var(--border);
+      background:linear-gradient(var(--ui2), var(--ui));
+    }
+    .url{
+      flex:1 1 auto;
+      min-width:0;
+      border:2px solid var(--border);
+      padding:7px 8px;
+      background:var(--content-bg);
+      color:var(--ink);
+      font-weight:650;
+      outline:none;
+    }
+    .browser-frame{
+      flex:1 1 auto;
+      min-height:0;
+      background:#fff;
+    }
+    .browser-frame iframe{
+      width:100%;
+      height:100%;
+      border:0;
+      background:#fff;
+    }
+
+    /* Notes */
+    .notes{
+      height:100%;
+      display:flex;
+      flex-direction:column;
+    }
+    .notes-toolbar{
+      padding:8px;
+      border-bottom:2px solid var(--border);
+      background:linear-gradient(var(--ui2), var(--ui));
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .notes-toolbar .hint{
+      font-size:12px;
+      color:var(--muted);
+      font-weight:700;
+    }
+    .notes-area{
+      flex:1 1 auto;
+      min-height:0;
+      padding:10px;
+      background:var(--content-bg);
+    }
+    textarea{
+      width:100%;
+      height:100%;
+      resize:none;
+      border:2px solid var(--border);
+      background:#fff;
+      color:#111;
+      padding:10px;
+      font: 14px/1.35 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      outline:none;
+      user-select:text;
+      -webkit-user-select:text;
+    }
+    [data-theme="dark"] textarea{
+      background:#101010;
+      color:#f1f1f1;
+    }
+
+    /* Modal dialog */
+    #overlay{
+      position:absolute;
+      inset:0;
+      background:rgba(0,0,0,0.30);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:10000;
+      padding:18px;
+    }
+    #dialog{
+      width:min(460px, 96vw);
+      background:var(--menu-bg);
+      border:2px solid var(--border);
+      box-shadow: 4px 4px 0 rgba(0,0,0,0.3);
+      padding:14px;
+      user-select:none;
+    }
+    #dialog h3{
+      margin:0 0 10px 0;
+      font-size:16px;
+      color:var(--menu-ink);
+    }
+    .field{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      margin:10px 0;
+    }
+    .field label{
+      font-size:12px;
+      font-weight:800;
+      color:var(--muted);
+      letter-spacing:.02em;
+      text-transform:uppercase;
+    }
+    .field input{
+      border:2px solid var(--border);
+      padding:8px 9px;
+      font-weight:700;
+      background:var(--content-bg);
+      color:var(--ink);
+      outline:none;
+      user-select:text;
+      -webkit-user-select:text;
+    }
+    .field input[readonly]{
+      opacity:.85;
+    }
+    .actions{
+      display:flex;
+      justify-content:flex-end;
+      gap:10px;
+      margin-top:12px;
+    }
+
+    /* Mobile friendliness: avoid sideways scrolling, keep windows sane */
+    @media (max-width: 520px){
+      .menu-item{ padding:6px 8px; }
+      .dropdown{ min-width:210px; }
+      .titletext{ max-width:50%; }
+      .finder-sidebar{ width:96px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="menubar">
+    <div class="menu-left">
+      <div class="menu-item logo" id="logoMenu" data-menu="logo">🦔</div>
+      <div class="menu-item" id="fileMenuBtn" data-menu="file">File</div>
+      <div class="menu-item" id="appsMenuBtn" data-menu="apps">Apps</div>
+    </div>
+    <div class="menu-right">
+      <button id="darkToggle" title="Toggle Dark Mode">☾</button>
+    </div>
+  </div>
+
+  <div id="desktop">
+    <div id="iconsLayer"></div>
+    <div id="windowsLayer"></div>
+
+    <div id="overlay">
+      <div id="dialog" role="dialog" aria-modal="true">
+        <h3>Add New App to HedgeyOS?</h3>
+
+        <div class="field">
+          <label>App Name</label>
+          <input id="dlgName" type="text" autocomplete="off" />
+        </div>
+
+        <div class="field">
+          <label>URL</label>
+          <input id="dlgUrl" type="text" readonly />
+        </div>
+
+        <div class="actions">
+          <button class="btn" id="dlgNo">No</button>
+          <button class="btn" id="dlgYes">Yes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      "use strict";
+
+      /* ------------------------------
+         Storage keys
+      -------------------------------- */
+      const LS = {
+        theme: "hedgey_theme",
+        notes: "hedgey_notes",
+        savedApps: "hedgey_saved_apps"
+      };
+
+      /* ------------------------------
+         Default apps (including your new ones)
+      -------------------------------- */
+      const DEFAULT_APPS = [
+        { key:"flipsideClassic", title:"Flipside classic", url:"https://flipside.ink" },
+        { key:"flipside3d",      title:"Flipside 3D",      url:"https://cubewalker.berrry.app" },
+        { key:"unconnectedChat", title:"Unconnected AI Chat", url:"https://chat.unconnected.ai" },
+        { key:"hedgeyTown",      title:"3D Hedgey Town",   url:"https://blueprintwalk.berrry.app/" },
+        { key:"chordynaut",      title:"Chordynaut",       url:"https://chordynaut.com" },
+        { key:"about",           title:"About",            url:"https://decentricity.github.io" },
+
+        { key:"terminal",        title:"DecenTerminal",    url:"https://decentricityos.berrry.app/" },
+        { key:"python",          title:"PythonCity",       url:"https://pythoncity.berrry.app/" },
+        { key:"ocean",           title:"OceanBoat",        url:"https://oceanshader.berrry.app/" },
+        { key:"tetris",          title:"3dTetris",         url:"https://tetris3d.berrry.app/" },
+      ];
+
+      /* ------------------------------
+         Parody Files "folders"
+      -------------------------------- */
+      const FILES_ITEMS = [
+        { name:"Applications", kind:"folder" },
+        { name:"Documents", kind:"folder" },
+        { name:"System Folder", kind:"folder" },
+        { name:"Desktop", kind:"folder" },
+
+        { name:"Hedgehog", kind:"folder" },
+        { name:"Pig", kind:"folder" },
+        { name:"Boarbarian", kind:"folder" },
+        { name:"Flipside", kind:"folder" },
+        { name:"Lina", kind:"folder" },
+        { name:"Decentricity", kind:"folder" },
+        { name:"Ms. Pandu Sastrowardoyo", kind:"folder" },
+
+        { name:"mach_kernel", kind:"file" },
+        { name:"totally_real_passwords.txt", kind:"file" },
+        { name:"README (do not read)", kind:"file" },
+      ];
+
+      /* ------------------------------
+         DOM refs
+      -------------------------------- */
+      const desktop = document.getElementById("desktop");
+      const iconsLayer = document.getElementById("iconsLayer");
+      const windowsLayer = document.getElementById("windowsLayer");
+
+      const fileMenuBtn = document.getElementById("fileMenuBtn");
+      const appsMenuBtn = document.getElementById("appsMenuBtn");
+      const logoMenu = document.getElementById("logoMenu");
+      const darkToggle = document.getElementById("darkToggle");
+
+      const overlay = document.getElementById("overlay");
+      const dlgName = document.getElementById("dlgName");
+      const dlgUrl = document.getElementById("dlgUrl");
+      const dlgYes = document.getElementById("dlgYes");
+      const dlgNo = document.getElementById("dlgNo");
+
+      /* ------------------------------
+         State
+      -------------------------------- */
+      let zCounter = 20;
+      let winCounter = 0;
+      const windows = new Map(); // id -> { id, el, type, title, url, iconEl, appKey, notesTimer?, browserState? }
+      let openMenus = { file:null, apps:null, logo:null };
+      let dialogState = null; // { mode:"saveApp", fromWinId, url }
+
+      function getMenubarHeight(){
+        return 42;
+      }
+      function deskRect(){
+        const h = window.innerHeight - getMenubarHeight();
+        const w = window.innerWidth;
+        return { w, h };
+      }
+
+      /* ------------------------------
+         Theme
+      -------------------------------- */
+      function loadTheme(){
+        const t = localStorage.getItem(LS.theme) || "light";
+        document.documentElement.dataset.theme = (t === "dark") ? "dark" : "light";
+        darkToggle.textContent = (t === "dark") ? "☀" : "☾";
+      }
+      function toggleTheme(){
+        const cur = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+        const next = (cur === "dark") ? "light" : "dark";
+        document.documentElement.dataset.theme = next;
+        localStorage.setItem(LS.theme, next);
+        darkToggle.textContent = (next === "dark") ? "☀" : "☾";
+      }
+
+      /* ------------------------------
+         Saved apps
+      -------------------------------- */
+      function loadSavedApps(){
+        try{
+          const raw = localStorage.getItem(LS.savedApps);
+          const arr = raw ? JSON.parse(raw) : [];
+          return Array.isArray(arr) ? arr.filter(x => x && x.title && x.url) : [];
+        }catch(_e){
+          return [];
+        }
+      }
+      function saveSavedApps(arr){
+        localStorage.setItem(LS.savedApps, JSON.stringify(arr));
+      }
+
+      /* ------------------------------
+         Menus
+      -------------------------------- */
+      function closeAllMenus(){
+        for (const k of Object.keys(openMenus)){
+          if(openMenus[k]){
+            openMenus[k].remove();
+            openMenus[k] = null;
+          }
+        }
+        fileMenuBtn.classList.remove("active");
+        appsMenuBtn.classList.remove("active");
+        logoMenu.classList.remove("active");
+      }
+
+      function placeDropdown(anchorEl, dropdownEl){
+        const r = anchorEl.getBoundingClientRect();
+        dropdownEl.style.left = Math.max(6, Math.min(window.innerWidth - 260, r.left)) + "px";
+        dropdownEl.style.top = (getMenubarHeight() - 2) + "px";
+      }
+
+      function mkDropdown(){
+        const d = document.createElement("div");
+        d.className = "dropdown";
+        d.addEventListener("pointerdown", (e)=> e.stopPropagation());
+        return d;
+      }
+      function row(label, onClick){
+        const r = document.createElement("div");
+        r.className = "drop-row";
+        r.textContent = label;
+        r.addEventListener("click", ()=>{
+          closeAllMenus();
+          onClick && onClick();
+        });
+        return r;
+      }
+      function section(label){
+        const s = document.createElement("div");
+        s.className = "drop-section";
+        s.textContent = label;
+        return s;
+      }
+      function hr(){
+        const h = document.createElement("hr");
+        h.className = "drop-hr";
+        return h;
+      }
+
+      function buildLogoMenu(){
+        const d = mkDropdown();
+        d.appendChild(row("About HedgeyOS", ()=> openAboutWindow()));
+        d.appendChild(hr());
+        d.appendChild(row("New Files Window", ()=> openFilesWindow()));
+        d.appendChild(row("New Notes", ()=> openNotesWindow()));
+        d.appendChild(row("New Browser", ()=> openBrowserWindow()));
+        return d;
+      }
+
+      function buildFileMenu(){
+        const d = mkDropdown();
+        d.appendChild(row("New Files Window", ()=> openFilesWindow()));
+        d.appendChild(row("New Notes", ()=> openNotesWindow()));
+        d.appendChild(row("New Browser", ()=> openBrowserWindow()));
+        d.appendChild(hr());
+        d.appendChild(row("Close Front Window", ()=> closeFrontWindow()));
+        d.appendChild(row("Center Front Window", ()=> centerFrontWindow()));
+        return d;
+      }
+
+      function buildAppsMenu(){
+        const d = mkDropdown();
+
+        d.appendChild(row("Files", ()=> openFilesWindow()));
+        d.appendChild(row("Notes", ()=> openNotesWindow()));
+        d.appendChild(row("Browser", ()=> openBrowserWindow()));
+        d.appendChild(hr());
+
+        d.appendChild(section("Apps"));
+        for(const app of DEFAULT_APPS){
+          d.appendChild(row(app.title, ()=> openUrlApp(app.title, app.url)));
+        }
+
+        const saved = loadSavedApps();
+        d.appendChild(hr());
+        d.appendChild(section("Saved Apps"));
+        if(saved.length === 0){
+          const empty = document.createElement("div");
+          empty.className = "drop-row";
+          empty.style.cursor = "default";
+          empty.style.opacity = "0.7";
+          empty.textContent = "(none yet)";
+          d.appendChild(empty);
+        }else{
+          for(const s of saved){
+            d.appendChild(row(s.title, ()=> openUrlApp(s.title, s.url)));
+          }
+        }
+
+        d.appendChild(hr());
+        d.appendChild(section("Open Windows"));
+        const list = Array.from(windows.values()).sort((a,b)=> (a.id-b.id));
+        if(list.length === 0){
+          const none = document.createElement("div");
+          none.className = "drop-row";
+          none.style.cursor = "default";
+          none.style.opacity = "0.7";
+          none.textContent = "(none)";
+          d.appendChild(none);
+        }else{
+          for(const w of list){
+            d.appendChild(row(w.title, ()=> focusWindow(w.id)));
+          }
+        }
+
+        return d;
+      }
+
+      function toggleMenu(which){
+        const btnMap = { logo: logoMenu, file: fileMenuBtn, apps: appsMenuBtn };
+        const builder = { logo: buildLogoMenu, file: buildFileMenu, apps: buildAppsMenu };
+
+        if(openMenus[which]){
+          closeAllMenus();
+          return;
+        }
+        closeAllMenus();
+        const drop = builder[which]();
+        openMenus[which] = drop;
+        placeDropdown(btnMap[which], drop);
+        desktop.appendChild(drop);
+        btnMap[which].classList.add("active");
+      }
+
+      logoMenu.addEventListener("click", (e)=>{ e.stopPropagation(); toggleMenu("logo"); });
+      fileMenuBtn.addEventListener("click", (e)=>{ e.stopPropagation(); toggleMenu("file"); });
+      appsMenuBtn.addEventListener("click", (e)=>{ e.stopPropagation(); toggleMenu("apps"); });
+
+      document.addEventListener("pointerdown", ()=> closeAllMenus());
+
+      /* ------------------------------
+         Dialog for Save App
+      -------------------------------- */
+      function openSaveDialog(fromWinId, url){
+        dialogState = { mode:"saveApp", fromWinId, url };
+        dlgName.value = "";
+        dlgUrl.value = url || "";
+        overlay.style.display = "flex";
+        setTimeout(()=> dlgName.focus(), 0);
+      }
+      function closeDialog(){
+        overlay.style.display = "none";
+        dialogState = null;
+      }
+      dlgNo.addEventListener("click", ()=> closeDialog());
+      overlay.addEventListener("pointerdown", (e)=>{
+        if(e.target === overlay) closeDialog();
+      });
+
+      dlgYes.addEventListener("click", ()=>{
+        if(!dialogState || dialogState.mode !== "saveApp") return;
+        const name = (dlgName.value || "").trim();
+        const url = (dlgUrl.value || "").trim();
+        if(!name || !url){
+          return; // keep it brutally simple
+        }
+        const saved = loadSavedApps();
+        const exists = saved.some(s => (s.title||"").toLowerCase() === name.toLowerCase());
+        const next = exists
+          ? saved.map(s => ((s.title||"").toLowerCase() === name.toLowerCase()) ? { title:name, url } : s)
+          : saved.concat([{ title:name, url }]);
+
+        saveSavedApps(next);
+        closeDialog();
+      });
+
+      /* ------------------------------
+         Window manager core
+      -------------------------------- */
+      function nextZ(){
+        zCounter += 1;
+        return zCounter;
+      }
+      function frontWindow(){
+        let top = null;
+        for(const w of windows.values()){
+          if(!top) top = w;
+          else{
+            const z1 = parseInt(top.el.style.zIndex || "0", 10);
+            const z2 = parseInt(w.el.style.zIndex || "0", 10);
+            if(z2 > z1) top = w;
+          }
+        }
+        return top;
+      }
+      function closeFrontWindow(){
+        const w = frontWindow();
+        if(w) closeWindow(w.id);
+      }
+      function centerFrontWindow(){
+        const w = frontWindow();
+        if(!w) return;
+        const { w:dw, h:dh } = deskRect();
+        const ww = w.el.offsetWidth;
+        const wh = w.el.offsetHeight;
+        const x = Math.round((dw - ww)/2);
+        const y = Math.round((dh - wh)/2);
+        w.el.style.left = x + "px";
+        w.el.style.top  = y + "px";
+      }
+
+      function clampPos(x, y, ww, wh){
+        const { w:dw, h:dh } = deskRect();
+        const margin = 48; // always leave some grip visible
+        const minX = -ww + margin;
+        const maxX = dw - margin;
+        const minY = -wh + margin;
+        const maxY = dh - margin;
+        return {
+          x: Math.max(minX, Math.min(maxX, x)),
+          y: Math.max(minY, Math.min(maxY, y))
+        };
+      }
+
+      function focusWindow(id){
+        const w = windows.get(id);
+        if(!w) return;
+        for(const other of windows.values()){
+          other.el.classList.remove("focused");
+        }
+        w.el.classList.add("focused");
+        w.el.style.zIndex = String(nextZ());
+      }
+
+      function iconGlyphForType(type){
+        if(type === "files") return "📂";
+        if(type === "notes") return "📑";
+        return "📔";
+      }
+
+      function titleToTwoLines(title){
+        const t = (title || "").trim();
+        if(!t) return ["",""];
+        if(t.length <= 12) return [t,""];
+        const words = t.split(/\s+/).filter(Boolean);
+        if(words.length === 1){
+          return [t.slice(0,12), t.slice(12,24)];
+        }
+        let l1 = "";
+        let i = 0;
+        while(i < words.length){
+          const cand = (l1 ? (l1 + " " + words[i]) : words[i]);
+          if(cand.length > 12) break;
+          l1 = cand;
+          i++;
+        }
+        const l2 = words.slice(i).join(" ");
+        return [l1 || t.slice(0,12), l2.slice(0,14)];
+      }
+
+      function layoutIcons(){
+        const { w:dw, h:dh } = deskRect();
+        const iconW = 92;
+        const iconH = 86;
+        const pad = 10;
+
+        // bottom-left origin, go left->right, then move upward
+        const list = Array.from(windows.values()).sort((a,b)=> a.id - b.id);
+        let col = 0;
+        let row = 0;
+
+        const maxCols = Math.max(1, Math.floor((dw - pad) / iconW));
+        for(const w of list){
+          if(!w.iconEl) continue;
+          col = (w._iconIndex % maxCols);
+          row = Math.floor(w._iconIndex / maxCols);
+
+          const x = pad + col * iconW;
+          const y = dh - pad - iconH - row * iconH;
+
+          w.iconEl.style.left = x + "px";
+          w.iconEl.style.top = y + "px";
+        }
+      }
+
+      function attachIcon(winObj){
+        const icon = document.createElement("div");
+        icon.className = "desk-icon";
+        const glyph = document.createElement("div");
+        glyph.className = "glyph";
+        glyph.textContent = iconGlyphForType(winObj.type);
+        const label = document.createElement("div");
+        label.className = "label";
+
+        const [l1,l2] = titleToTwoLines(winObj.title);
+        const d1 = document.createElement("div");
+        d1.className = "l1";
+        d1.textContent = l1;
+        const d2 = document.createElement("div");
+        d2.className = "l2";
+        d2.textContent = l2;
+
+        label.appendChild(d1);
+        label.appendChild(d2);
+
+        icon.appendChild(glyph);
+        icon.appendChild(label);
+
+        icon.addEventListener("click", (e)=>{
+          e.stopPropagation();
+          focusWindow(winObj.id);
+        });
+
+        iconsLayer.appendChild(icon);
+        winObj.iconEl = icon;
+
+        // stable placement order
+        winObj._iconIndex = winObj.id - 1;
+        layoutIcons();
+      }
+
+      function closeWindow(id){
+        const w = windows.get(id);
+        if(!w) return;
+
+        if(w.type === "notes" && w._notesSaveTimer){
+          clearTimeout(w._notesSaveTimer);
+        }
+
+        if(w.iconEl){
+          w.iconEl.remove();
+        }
+        w.el.remove();
+        windows.delete(id);
+        layoutIcons();
+      }
+
+      function createWindow({ type, title, url }){
+        winCounter += 1;
+        const id = winCounter;
+
+        const { w:dw, h:dh } = deskRect();
+        const ww = Math.max(280, Math.floor(dw * 0.80));
+        const wh = Math.max(200, Math.floor(dh * 0.50));
+
+        // stagger positions a bit
+        const offset = 26 * ((id-1) % 6);
+        let x = Math.floor((dw - ww)/2) + offset;
+        let y = Math.floor((dh - wh)/6) + offset;
+
+        const pos = clampPos(x,y,ww,wh);
+        x = pos.x; y = pos.y;
+
+        const el = document.createElement("div");
+        el.className = "window";
+        el.style.left = x + "px";
+        el.style.top = y + "px";
+        el.style.width = ww + "px";
+        el.style.height = wh + "px";
+        el.style.zIndex = String(nextZ());
+
+        // focus on body click too
+        el.addEventListener("pointerdown", ()=> focusWindow(id));
+
+        const titlebar = document.createElement("div");
+        titlebar.className = "titlebar";
+
+        const closebox = document.createElement("div");
+        closebox.className = "closebox";
+        closebox.title = "Close";
+        closebox.addEventListener("click", (e)=>{
+          e.stopPropagation();
+          closeWindow(id);
+        });
+
+        const wrap = document.createElement("div");
+        wrap.className = "titlewrap";
+
+        const linesL = document.createElement("div");
+        linesL.className = "barlines";
+        const t = document.createElement("div");
+        t.className = "titletext";
+        t.textContent = title;
+        const linesR = document.createElement("div");
+        linesR.className = "barlines";
+
+        wrap.appendChild(linesL);
+        wrap.appendChild(t);
+        wrap.appendChild(linesR);
+
+        titlebar.appendChild(closebox);
+        titlebar.appendChild(wrap);
+
+        const content = document.createElement("div");
+        content.className = "content";
+
+        el.appendChild(titlebar);
+        el.appendChild(content);
+
+        windowsLayer.appendChild(el);
+
+        const winObj = { id, el, type, title, url, iconEl:null };
+        windows.set(id, winObj);
+        attachIcon(winObj);
+        focusWindow(id);
+
+        // Drag support (titlebar)
+        wireDrag(winObj, titlebar);
+
+        // Populate content
+        if(type === "files"){
+          content.appendChild(buildFilesUI());
+        }else if(type === "notes"){
+          content.appendChild(buildNotesUI(winObj));
+        }else if(type === "browser"){
+          content.appendChild(buildBrowserUI(winObj));
+        }else{
+          content.appendChild(buildIframeAppUI(winObj, url));
+        }
+
+        return winObj;
+      }
+
+      function wireDrag(winObj, handleEl){
+        let dragging = false;
+        let startX = 0, startY = 0;
+        let origX = 0, origY = 0;
+
+        function getPos(){
+          return {
+            x: parseFloat(winObj.el.style.left || "0"),
+            y: parseFloat(winObj.el.style.top || "0")
+          };
+        }
+
+        handleEl.addEventListener("pointerdown", (e)=>{
+          e.preventDefault();
+          e.stopPropagation();
+          focusWindow(winObj.id);
+
+          dragging = true;
+          startX = e.clientX;
+          startY = e.clientY;
+
+          const p = getPos();
+          origX = p.x;
+          origY = p.y;
+
+          try{ handleEl.setPointerCapture(e.pointerId); }catch(_e){}
+        });
+
+        handleEl.addEventListener("pointermove", (e)=>{
+          if(!dragging) return;
+          e.preventDefault();
+
+          const dx = e.clientX - startX;
+          const dy = e.clientY - startY;
+
+          const ww = winObj.el.offsetWidth;
+          const wh = winObj.el.offsetHeight;
+
+          const next = clampPos(origX + dx, origY + dy, ww, wh);
+          winObj.el.style.left = next.x + "px";
+          winObj.el.style.top  = next.y + "px";
+        });
+
+        function endDrag(){
+          dragging = false;
+        }
+        handleEl.addEventListener("pointerup", endDrag);
+        handleEl.addEventListener("pointercancel", endDrag);
+        handleEl.addEventListener("lostpointercapture", endDrag);
+      }
+
+      /* ------------------------------
+         Window content builders
+      -------------------------------- */
+      function buildFilesUI(){
+        const wrap = document.createElement("div");
+        wrap.className = "finder";
+
+        const tb = document.createElement("div");
+        tb.className = "finder-toolbar";
+        const b1 = document.createElement("button");
+        b1.className = "btn";
+        b1.textContent = "New Window";
+        b1.addEventListener("click", ()=> openFilesWindow());
+        const b2 = document.createElement("button");
+        b2.className = "btn";
+        b2.textContent = "Sort";
+        const b3 = document.createElement("button");
+        b3.className = "btn";
+        b3.textContent = "View";
+        tb.appendChild(b1);
+        tb.appendChild(b2);
+        tb.appendChild(b3);
+
+        const body = document.createElement("div");
+        body.className = "finder-body";
+
+        const side = document.createElement("div");
+        side.className = "finder-sidebar";
+        const h = document.createElement("h4");
+        h.textContent = "Places";
+        side.appendChild(h);
+
+        // quick fake shortcuts
+        const shortcuts = [
+          { ico:"🟪", name:"Applications" },
+          { ico:"🟪", name:"Documents" },
+          { ico:"🟪", name:"System Folder" },
+          { ico:"🟪", name:"Desktop" }
+        ];
+        for(const s of shortcuts){
+          const r = document.createElement("div");
+          r.className = "finder-row";
+          r.style.borderBottom = "none";
+          r.innerHTML = `<div class="ico">${s.ico}</div><div class="name">${s.name}</div>`;
+          side.appendChild(r);
+        }
+
+        const main = document.createElement("div");
+        main.className = "finder-main";
+
+        const head = document.createElement("div");
+        head.className = "finder-head";
+        head.textContent = "Name";
+
+        const list = document.createElement("div");
+        list.style.flex = "1 1 auto";
+        list.style.minHeight = "0";
+        list.style.overflow = "auto";
+
+        let selected = null;
+        function selectRow(el){
+          if(selected){
+            selected.style.background = "";
+            selected.style.color = "";
+          }
+          selected = el;
+          selected.style.background = "var(--accent)";
+          selected.style.color = "var(--accent-ink)";
+        }
+
+        for(const item of FILES_ITEMS){
+          const r = document.createElement("div");
+          r.className = "finder-row";
+          const ico = (item.kind === "folder") ? "🟪" : "📄";
+          r.innerHTML = `<div class="ico">${ico}</div><div class="name">${item.name}</div>`;
+          r.addEventListener("click", ()=> selectRow(r));
+          r.addEventListener("dblclick", ()=>{
+            // total parody: folders do nothing, files do less
+            selectRow(r);
+          });
+          list.appendChild(r);
+        }
+
+        const foot = document.createElement("div");
+        foot.className = "finder-foot";
+        foot.innerHTML = `<div>Ready.</div><div>Finder-ish</div>`;
+
+        main.appendChild(head);
+        main.appendChild(list);
+
+        body.appendChild(side);
+        body.appendChild(main);
+
+        wrap.appendChild(tb);
+        wrap.appendChild(body);
+        wrap.appendChild(foot);
+
+        return wrap;
+      }
+
+      function buildIframeAppUI(winObj, url){
+        const outer = document.createElement("div");
+        outer.className = "browser"; // reuse layout
+        const tb = document.createElement("div");
+        tb.className = "browser-toolbar";
+        const label = document.createElement("div");
+        label.style.fontWeight = "800";
+        label.style.color = "var(--muted)";
+        label.style.fontSize = "12px";
+        label.textContent = "App";
+        tb.appendChild(label);
+
+        const frame = document.createElement("div");
+        frame.className = "browser-frame";
+        const iframe = document.createElement("iframe");
+        iframe.referrerPolicy = "no-referrer";
+        iframe.loading = "lazy";
+        iframe.src = url || "about:blank";
+        frame.appendChild(iframe);
+
+        outer.appendChild(tb);
+        outer.appendChild(frame);
+        return outer;
+      }
+
+      function buildBrowserUI(winObj){
+        const outer = document.createElement("div");
+        outer.className = "browser";
+
+        const tb = document.createElement("div");
+        tb.className = "browser-toolbar";
+
+        const input = document.createElement("input");
+        input.className = "url";
+        input.type = "text";
+        input.spellcheck = false;
+        input.value = "https://decentricity.github.io";
+        winObj._browserUrl = input.value;
+
+        const go = document.createElement("button");
+        go.className = "btn";
+        go.textContent = "Go";
+
+        const save = document.createElement("button");
+        save.className = "btn";
+        save.textContent = "Save";
+
+        tb.appendChild(input);
+        tb.appendChild(go);
+        tb.appendChild(save);
+
+        const frame = document.createElement("div");
+        frame.className = "browser-frame";
+        const iframe = document.createElement("iframe");
+        iframe.referrerPolicy = "no-referrer";
+        iframe.loading = "lazy";
+        iframe.src = input.value;
+        frame.appendChild(iframe);
+
+        function nav(){
+          const u = (input.value || "").trim();
+          if(!u) return;
+          winObj._browserUrl = u;
+          iframe.src = u;
+        }
+
+        go.addEventListener("click", nav);
+        input.addEventListener("keydown", (e)=>{
+          if(e.key === "Enter") nav();
+        });
+
+        save.addEventListener("click", ()=>{
+          openSaveDialog(winObj.id, winObj._browserUrl || "");
+        });
+
+        outer.appendChild(tb);
+        outer.appendChild(frame);
+        return outer;
+      }
+
+      function buildNotesUI(winObj){
+        const outer = document.createElement("div");
+        outer.className = "notes";
+
+        const tb = document.createElement("div");
+        tb.className = "notes-toolbar";
+
+        const hint = document.createElement("div");
+        hint.className = "hint";
+        hint.textContent = "Autosaves after 1s idle";
+
+        const clearBtn = document.createElement("button");
+        clearBtn.className = "btn";
+        clearBtn.textContent = "Clear";
+        clearBtn.addEventListener("click", ()=>{
+          area.value = "";
+          localStorage.setItem(LS.notes, "");
+        });
+
+        tb.appendChild(hint);
+        tb.appendChild(clearBtn);
+
+        const wrap = document.createElement("div");
+        wrap.className = "notes-area";
+        const area = document.createElement("textarea");
+        area.placeholder = "type here. HedgeyOS will pretend it is 1999 but still autosave.";
+        area.value = localStorage.getItem(LS.notes) || "";
+
+        function scheduleSave(){
+          if(winObj._notesSaveTimer) clearTimeout(winObj._notesSaveTimer);
+          winObj._notesSaveTimer = setTimeout(()=>{
+            localStorage.setItem(LS.notes, area.value || "");
+          }, 1000);
+        }
+        area.addEventListener("input", scheduleSave);
+
+        wrap.appendChild(area);
+        outer.appendChild(tb);
+        outer.appendChild(wrap);
+        return outer;
+      }
+
+      function openFilesWindow(){
+        return createWindow({ type:"files", title:"Files" });
+      }
+      function openNotesWindow(){
+        return createWindow({ type:"notes", title:"Notes" });
+      }
+      function openBrowserWindow(){
+        return createWindow({ type:"browser", title:"Browser" });
+      }
+      function openUrlApp(title, url){
+        return createWindow({ type:"app", title, url });
+      }
+      function openAboutWindow(){
+        return createWindow({ type:"app", title:"About HedgeyOS", url:"https://decentricity.github.io" });
+      }
+
+      /* ------------------------------
+         Boot
+      -------------------------------- */
+      function boot(){
+        loadTheme();
+
+        darkToggle.addEventListener("click", (e)=>{
+          e.stopPropagation();
+          toggleTheme();
+        });
+
+        window.addEventListener("resize", ()=> layoutIcons());
+
+        // Default windows (feel free to tweak):
+        openFilesWindow();
+      }
+
+      boot();
+    })();
+  </script>
+</body>
+</html>
