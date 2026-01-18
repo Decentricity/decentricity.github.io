@@ -1,0 +1,734 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>OS9-ish UI + Menubar WM</title>
+
+  <style>
+    :root{
+      /* sizing */
+      --font-size: clamp(12px, 2.8vw, 14px);
+      --line: clamp(16px, 3.4vw, 18px);
+      --pad: clamp(8px, 2.2vw, 18px);
+      --menubar-h: 26px;
+
+      /* light theme */
+      --os-bg: #c9c9c9;
+      --os-face: #d7d7d7;
+      --os-face2: #ededed;
+      --os-shadow: #7b7b7b;
+      --os-dark: #3b3b3b;
+      --os-white: #ffffff;
+      --os-black: #000000;
+      --os-blue: #2a66b7;
+
+      --menubar-top: #e8e8e8;
+      --menubar-bot: #d6d6d6;
+
+      --titlebar-top: #e6e6e6;
+      --titlebar-bot: #cfcfcf;
+
+      --chrome-top: #e8e8e8;
+      --chrome-bot: #d6d6d6;
+
+      --inactive-top: #dddddd;
+      --inactive-bot: #c7c7c7;
+
+      --border-thin: 1px;
+      --border-thick: 2px;
+    }
+
+    body.dark{
+      --os-bg: #1f232a;
+      --os-face: #2c313a;
+      --os-face2: #252a33;
+      --os-shadow: #0f1217;
+      --os-dark: #cfd6e6;
+      --os-white: #515b6b;
+      --os-black: #eef2ff;
+      --os-blue: #4c84d6;
+
+      --menubar-top: #3a404b;
+      --menubar-bot: #2a2f38;
+
+      --titlebar-top: #3a404b;
+      --titlebar-bot: #2f343f;
+
+      --chrome-top: #3a404b;
+      --chrome-bot: #2a2f38;
+
+      --inactive-top: #323846;
+      --inactive-bot: #2a2f38;
+    }
+
+    @font-face{
+      font-family: "ChicagoKare";
+      src: url("fonts/ChicagoKare-Regular.woff2") format("woff2");
+      font-display: swap;
+    }
+
+    html, body { height: 100%; }
+    body{
+      margin: 0;
+      background: var(--os-bg);
+      color: var(--os-black);
+      font-family: "ChicagoKare","ChiKareGo2Web","Chicago","Charcoal","Geneva","Tahoma",system-ui,sans-serif;
+      font-size: var(--font-size);
+      line-height: var(--line);
+      -webkit-font-smoothing: none;
+      font-smooth: never;
+      overflow: hidden;
+      overscroll-behavior: none;
+    }
+
+    .bevel-out{
+      background: var(--os-face);
+      border-top: var(--border-thin) solid var(--os-white);
+      border-left: var(--border-thin) solid var(--os-white);
+      border-right: var(--border-thin) solid var(--os-shadow);
+      border-bottom: var(--border-thin) solid var(--os-shadow);
+    }
+    .bevel-out.thick{
+      border-top: var(--border-thick) solid var(--os-white);
+      border-left: var(--border-thick) solid var(--os-white);
+      border-right: var(--border-thick) solid var(--os-shadow);
+      border-bottom: var(--border-thick) solid var(--os-shadow);
+    }
+    .bevel-in{
+      background: var(--os-face2);
+      border-top: var(--border-thin) solid var(--os-shadow);
+      border-left: var(--border-thin) solid var(--os-shadow);
+      border-right: var(--border-thin) solid var(--os-white);
+      border-bottom: var(--border-thin) solid var(--os-white);
+    }
+    .hairline{
+      outline: 1px solid var(--os-dark);
+      outline-offset: -1px;
+    }
+
+    /* ===== Menu bar ===== */
+    .menubar{
+      position: fixed;
+      left: 0;
+      right: 0;
+      top: 0;
+      height: var(--menubar-h);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 8px;
+      box-sizing: border-box;
+      background: linear-gradient(var(--menubar-top), var(--menubar-bot));
+      z-index: 9999;
+      user-select: none;
+    }
+
+    .menu{
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      height: calc(var(--menubar-h) - 2px);
+      padding: 0 6px;
+      cursor: default;
+      white-space: nowrap;
+    }
+    .menu.open{
+      background: var(--os-blue);
+      color: #fff;
+    }
+    .menu-label{ font-weight: 600; }
+
+    .menu-dropdown{
+      position: absolute;
+      top: calc(var(--menubar-h) - 2px);
+      left: 0;
+      min-width: 220px;
+      max-height: min(60vh, 520px);
+      overflow: auto;
+      display: none;
+      padding: 2px;
+      box-sizing: border-box;
+      background: var(--os-face);
+      z-index: 10000;
+    }
+    .menu.open .menu-dropdown{ display: block; }
+
+    .menu-item{
+      padding: 4px 10px;
+      cursor: default;
+      white-space: nowrap;
+    }
+    .menu-item:hover{
+      background: var(--os-blue);
+      color: #fff;
+    }
+    .menu-sep{
+      height: 1px;
+      background: var(--os-shadow);
+      margin: 3px 6px;
+    }
+    .menu-title{
+      font-weight: 600;
+      opacity: 0.85;
+      pointer-events: none;
+    }
+
+    .menubar-spacer{ flex: 1; }
+
+    .modebtn{
+      width: 22px;
+      height: 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      font: inherit;
+      font-weight: 700;
+      background: var(--os-face);
+      border-top: 1px solid var(--os-white);
+      border-left: 1px solid var(--os-white);
+      border-right: 1px solid var(--os-shadow);
+      border-bottom: 1px solid var(--os-shadow);
+      box-shadow: inset 0 0 0 1px var(--os-dark);
+      cursor: default;
+      user-select: none;
+    }
+    .modebtn:active{
+      border-top: 1px solid var(--os-shadow);
+      border-left: 1px solid var(--os-shadow);
+      border-right: 1px solid var(--os-white);
+      border-bottom: 1px solid var(--os-white);
+    }
+
+    /* ===== Desktop area ===== */
+    .desktop{
+      position: absolute;
+      top: var(--menubar-h);
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: var(--pad);
+      box-sizing: border-box;
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    /* ===== Windows ===== */
+    .window{
+      position: absolute;
+      min-width: 320px;
+      min-height: 240px;
+      user-select: none;
+      box-sizing: border-box;
+      display: grid;
+      grid-template-rows: 24px 1fr;
+    }
+
+    .window.inactive .titlebar{
+      background: linear-gradient(var(--inactive-top), var(--inactive-bot));
+      filter: saturate(0.85);
+    }
+    .window.inactive .titlebar .title:before,
+    .window.inactive .titlebar .title:after{
+      opacity: 0.55;
+    }
+
+    .titlebar{
+      height: 24px;
+      display: grid;
+      grid-template-columns: 64px 1fr 64px;
+      align-items: center;
+      padding: 0 6px;
+      box-sizing: border-box;
+      background: linear-gradient(var(--titlebar-top), var(--titlebar-bot));
+      cursor: grab;
+      touch-action: none;
+    }
+    .titlebar:active{ cursor: grabbing; }
+
+    .controls{
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      justify-content: flex-start;
+    }
+
+    .os9-box{
+      width: 12px;
+      height: 12px;
+      background: var(--os-face);
+      border-top: 1px solid var(--os-white);
+      border-left: 1px solid var(--os-white);
+      border-right: 1px solid var(--os-shadow);
+      border-bottom: 1px solid var(--os-shadow);
+      box-shadow: inset 0 0 0 1px var(--os-dark);
+      cursor: default;
+    }
+    .os9-box:active{
+      border-top: 1px solid var(--os-shadow);
+      border-left: 1px solid var(--os-shadow);
+      border-right: 1px solid var(--os-white);
+      border-bottom: 1px solid var(--os-white);
+    }
+
+    .title{
+      position: relative;
+      text-align: center;
+      font-weight: 600;
+      padding: 0 12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .title:before,
+    .title:after{
+      content:"";
+      position:absolute;
+      top: 50%;
+      width: 44%;
+      height: 10px;
+      transform: translateY(-50%);
+      background:
+        repeating-linear-gradient(
+          to bottom,
+          rgba(255,255,255,0.9) 0px,
+          rgba(255,255,255,0.9) 1px,
+          rgba(123,123,123,0.9) 1px,
+          rgba(123,123,123,0.9) 2px
+        );
+      opacity: 0.9;
+    }
+    body.dark .title:before,
+    body.dark .title:after{
+      background:
+        repeating-linear-gradient(
+          to bottom,
+          rgba(220,230,255,0.25) 0px,
+          rgba(220,230,255,0.25) 1px,
+          rgba(0,0,0,0.35) 1px,
+          rgba(0,0,0,0.35) 2px
+        );
+    }
+    .title:before{ left: 0; margin-left: 6px; }
+    .title:after{ right: 0; margin-right: 6px; }
+    .title > span{
+      position: relative;
+      padding: 0 10px;
+      background: linear-gradient(var(--titlebar-top), var(--titlebar-bot));
+    }
+
+    .right{
+      display:flex;
+      justify-content:flex-end;
+      align-items:center;
+      gap:6px;
+    }
+
+    .resize-grip{
+      position: absolute;
+      right: 3px;
+      bottom: 3px;
+      width: 14px;
+      height: 14px;
+      background:
+        repeating-linear-gradient(135deg,
+          rgba(255,255,255,0.9) 0px,
+          rgba(255,255,255,0.9) 1px,
+          rgba(123,123,123,0.9) 1px,
+          rgba(123,123,123,0.9) 2px);
+      opacity: 0.9;
+      cursor: nwse-resize;
+      touch-action: none;
+    }
+    body.dark .resize-grip{
+      background:
+        repeating-linear-gradient(135deg,
+          rgba(220,230,255,0.25) 0px,
+          rgba(220,230,255,0.25) 1px,
+          rgba(0,0,0,0.35) 1px,
+          rgba(0,0,0,0.35) 2px);
+    }
+
+    /* ===== Finder-ish UI ===== */
+    .window-body{
+      height: 100%;
+      background: var(--os-face);
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      min-width: 0;
+    }
+
+    .sidebar{
+      height: 100%;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      border-right: 1px solid var(--os-shadow);
+      background: var(--os-face);
+      min-width: 0;
+    }
+    .section-title{
+      padding: 8px 10px;
+      font-weight: 600;
+    }
+    .navlist{
+      margin: 0;
+      padding: 0 6px 10px 6px;
+      list-style: none;
+      overflow: auto;
+      min-width: 0;
+    }
+    .navitem{
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 6px;
+      cursor: default;
+      white-space: nowrap;
+    }
+    .navitem.active{
+      background: var(--os-blue);
+      color: #fff;
+    }
+    .icon{
+      width: 14px;
+      height: 14px;
+      background: #9b9bff;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.35);
+      flex: 0 0 auto;
+    }
+
+    .main{
+      height: 100%;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      background: var(--os-face);
+      min-width: 0;
+    }
+
+    .toolbar{
+      display:flex;
+      align-items:center;
+      gap: 8px;
+      padding: 6px;
+      border-bottom: 1px solid var(--os-shadow);
+      background: linear-gradient(var(--chrome-top), var(--chrome-bot));
+      flex-wrap: wrap;
+    }
+
+    .btn{
+      padding: 3px 10px;
+      font: inherit;
+      background: var(--os-face);
+      border-top: 1px solid var(--os-white);
+      border-left: 1px solid var(--os-white);
+      border-right: 1px solid var(--os-shadow);
+      border-bottom: 1px solid var(--os-shadow);
+      box-shadow: inset 0 0 0 1px var(--os-dark);
+      cursor: default;
+    }
+    .btn:active{
+      border-top: 1px solid var(--os-shadow);
+      border-left: 1px solid var(--os-shadow);
+      border-right: 1px solid var(--os-white);
+      border-bottom: 1px solid var(--os-white);
+    }
+
+    .listwrap{
+      height: 100%;
+      overflow: auto;
+      background: var(--os-face2);
+      min-width: 0;
+    }
+
+    table.list{
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+    table.list thead th{
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: linear-gradient(var(--chrome-top), var(--chrome-bot));
+      border-bottom: 1px solid var(--os-shadow);
+      padding: 4px 6px;
+      text-align: left;
+      font-weight: 600;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.35);
+    }
+    table.list tbody td{
+      padding: 4px 6px;
+      border-bottom: 1px solid rgba(200,200,200,0.35);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    tr.row.selected{
+      background: var(--os-blue);
+      color: #fff;
+    }
+
+    .statusbar{
+      padding: 4px 8px;
+      border-top: 1px solid var(--os-shadow);
+      background: linear-gradient(var(--chrome-top), var(--chrome-bot));
+      display:flex;
+      justify-content: space-between;
+      gap: 10px;
+      min-width: 0;
+    }
+    .statusbar span{
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* ===== App iframe window body ===== */
+    .appwrap{
+      height: 100%;
+      background: var(--os-face2);
+      overflow: hidden;
+    }
+    iframe.appframe{
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display: block;
+      background: #fff;
+    }
+
+    /* ===== Responsive tweaks ===== */
+    @media (max-width: 760px){
+      .window-body{ grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+      .sidebar{
+        grid-template-rows: auto auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--os-shadow);
+      }
+      .sidebar .statusbar{ display:none; }
+      .navlist{
+        display:flex;
+        gap: 6px;
+        overflow-x: auto;
+        padding: 0 6px 6px 6px;
+      }
+      .navitem{ flex: 0 0 auto; }
+    }
+
+    @media (max-width: 640px){
+      table.list th:nth-child(3),
+      table.list td:nth-child(3),
+      table.list th:nth-child(4),
+      table.list td:nth-child(4){
+        display:none;
+      }
+    }
+    @media (max-width: 480px){
+      table.list th:nth-child(2),
+      table.list td:nth-child(2){
+        display:none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="menubar bevel-out hairline" id="menubar">
+    <div class="menu" data-menu="apple">
+      <span class="menu-label"></span>
+      <div class="menu-dropdown bevel-out hairline">
+        <div class="menu-item" data-action="aboutSystem">About This Demo</div>
+      </div>
+    </div>
+
+    <div class="menu" data-menu="file">
+      <span class="menu-label">File</span>
+      <div class="menu-dropdown bevel-out hairline">
+        <div class="menu-item" data-action="newFiles">New Files Window</div>
+      </div>
+    </div>
+
+    <div class="menu" data-menu="apps" id="appsMenu">
+      <span class="menu-label">Apps</span>
+      <div class="menu-dropdown bevel-out hairline" id="appsDropdown">
+        <div class="menu-item" data-app="files">Files</div>
+        <div class="menu-sep"></div>
+
+        <div class="menu-item" data-app="flipsideClassic">Flipside classic</div>
+        <div class="menu-item" data-app="flipside3d">Flipside 3D</div>
+        <div class="menu-item" data-app="unconnectedChat">Unconnected AI Chat</div>
+        <div class="menu-item" data-app="hedgeyTown">3D Hedgey Town</div>
+        <div class="menu-item" data-app="chordynaut">Chordynaut</div>
+        <div class="menu-item" data-app="about">About</div>
+
+        <div class="menu-sep"></div>
+        <div class="menu-item menu-title">Open Windows</div>
+        <div id="openWindowsList"></div>
+      </div>
+    </div>
+
+    <div class="menubar-spacer"></div>
+    <button class="modebtn" id="modebtn" title="Toggle dark mode" aria-label="Toggle dark mode">☾</button>
+  </div>
+
+  <div class="desktop" id="desktop"></div>
+
+  <template id="finderTemplate">
+    <div class="window bevel-out thick hairline" data-win>
+      <div class="titlebar bevel-out hairline" data-titlebar>
+        <div class="controls">
+          <div class="os9-box" title="Close" data-close></div>
+          <div class="os9-box" title="Minimize" data-minimize></div>
+        </div>
+        <div class="title"><span data-titletext>Files</span></div>
+        <div class="right">
+          <div class="os9-box" title="Zoom" data-zoom></div>
+        </div>
+      </div>
+
+      <div class="window-body">
+        <aside class="sidebar">
+          <div class="section-title">Places</div>
+          <ul class="navlist" data-nav>
+            <li class="navitem active"><div class="icon"></div> Applications</li>
+            <li class="navitem"><div class="icon"></div> Documents</li>
+            <li class="navitem"><div class="icon"></div> System Folder</li>
+            <li class="navitem"><div class="icon"></div> Desktop</li>
+            <li class="navitem"><div class="icon"></div> Library</li>
+          </ul>
+          <div class="statusbar">
+            <span>16 items</span>
+            <span>19.64 GB available</span>
+          </div>
+        </aside>
+
+        <main class="main">
+          <div class="toolbar">
+            <button class="btn" data-newwin>New Window</button>
+            <button class="btn">Sort</button>
+            <button class="btn">View</button>
+          </div>
+
+          <div class="listwrap">
+            <table class="list" data-list>
+              <thead>
+                <tr>
+                  <th style="width: 42%;">Name</th>
+                  <th style="width: 34%;">Date Modified</th>
+                  <th style="width: 12%;">Size</th>
+                  <th style="width: 12%;">Kind</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="row selected">
+                  <td>Applications</td>
+                  <td>Wed, Jul 23, 2003, 5:43 PM</td>
+                  <td>--</td>
+                  <td>folder</td>
+                </tr>
+                <tr class="row">
+                  <td>Applications (Mac OS 9)</td>
+                  <td>Thu, Jul 24, 2003, 4:53 PM</td>
+                  <td>--</td>
+                  <td>folder</td>
+                </tr>
+                <tr class="row">
+                  <td>Documents</td>
+                  <td>Fri, Jul 11, 2003, 12:28 PM</td>
+                  <td>--</td>
+                  <td>folder</td>
+                </tr>
+                <tr class="row">
+                  <td>System Folder</td>
+                  <td>Yesterday, 9:08 AM</td>
+                  <td>--</td>
+                  <td>folder</td>
+                </tr>
+                <tr class="row">
+                  <td>mach_kernel</td>
+                  <td>Thu, May 1, 2003, 11:49 PM</td>
+                  <td>3.5 MB</td>
+                  <td>document</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="statusbar">
+            <span data-status>Ready.</span>
+            <span>Finder-ish</span>
+          </div>
+        </main>
+      </div>
+
+      <div class="resize-grip" data-grip title="Resize"></div>
+    </div>
+  </template>
+
+  <template id="appTemplate">
+    <div class="window bevel-out thick hairline" data-win>
+      <div class="titlebar bevel-out hairline" data-titlebar>
+        <div class="controls">
+          <div class="os9-box" title="Close" data-close></div>
+          <div class="os9-box" title="Minimize" data-minimize></div>
+        </div>
+        <div class="title"><span data-titletext>App</span></div>
+        <div class="right">
+          <div class="os9-box" title="Zoom" data-zoom></div>
+        </div>
+      </div>
+
+      <div class="appwrap">
+        <iframe class="appframe" data-iframe src="about:blank"></iframe>
+      </div>
+
+      <div class="resize-grip" data-grip title="Resize"></div>
+    </div>
+  </template>
+
+  <script>
+    // ===== Menu bar behavior =====
+    (function(){
+      const menubar = document.getElementById("menubar");
+      const menus = Array.from(menubar.querySelectorAll(".menu"));
+
+      function closeAll(){
+        menus.forEach(m => m.classList.remove("open"));
+      }
+
+      menubar.addEventListener("click", (e) => {
+        const menu = e.target.closest(".menu");
+        if (!menu) return;
+
+        const already = menu.classList.contains("open");
+        closeAll();
+        if (!already) menu.classList.add("open");
+      });
+
+      document.addEventListener("click", (e) => {
+        if (e.target.closest("#menubar")) return;
+        closeAll();
+      });
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeAll();
+      });
+    })();
+
+    // ===== Dark mode toggle =====
+    (function(){
+      const btn = document.getElementById("modebtn");
+      const key = "os9_dark_mode";
+
+      function apply(on){
+        document.body.classList.toggle("dark", !!on);
+        btn.textContent = on ? "☀" : "☾";
+      }
+
+      const saved = localStorage.getItem(key);
+      apply(saved === "1");
+
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        cons
