@@ -1,0 +1,125 @@
+:root {
+    --bg: #f2efe6;
+    --ink: #1a1a1a;
+    --accent: #2d5a30;
+    --accent-2: #4a7c4e;
+    --panel: #ffffffcc;
+    --border: #1a1a1a33;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    font-family: "JetBrains Mono", "Fira Code", monospace;
+    background: var(--bg);
+    color: var(--ink);
+}
+
+#toolbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 58px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 14px;
+    background: var(--panel);
+    backdrop-filter: blur(6px);
+    border-bottom: 1px solid var(--border);
+    z-index: 10;
+}
+
+.toolbar-left, .toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.brand {
+    font-weight: 700;
+    letter-spacing: 0.2px;
+}
+
+.field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+}
+
+select {
+    font-family: inherit;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+}
+
+button {
+    font-family: inherit;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+    cursor: pointer;
+}
+
+button.primary {
+    background: var(--accent);
+    color: #fff;
+    border-color: #1a1a1a22;
+}
+
+#scene-container {
+    position: fixed;
+    top: 58px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+#context-menu {
+    position: fixed;
+    min-width: 180px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+    padding: 10px;
+    z-index: 20;
+}
+
+#context-menu.hidden { display: none; }
+
+#context-menu .menu-title {
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+#context-menu button {
+    width: 100%;
+    text-align: left;
+    margin: 4px 0;
+}
+
+#hint {
+    position: fixed;
+    left: 12px;
+    bottom: 12px;
+    font-size: 12px;
+    background: #ffffffcc;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    z-index: 10;
+}
+
+@media (max-width: 720px) {
+    .brand { display: none; }
+    #toolbar { height: 64px; }
+    #scene-container { top: 64px; }
+}
