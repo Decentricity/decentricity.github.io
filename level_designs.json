@@ -1,0 +1,19 @@
+{
+  "1": {
+    "buildingCubes": [
+      {"face": "+Z", "u": 1, "v": 1},
+      {"face": "+Z", "u": -1, "v": 1},
+      {"face": "-Z", "u": 1, "v": -1},
+      {"face": "+X", "u": 1, "v": 1},
+      {"face": "-X", "u": -1, "v": -1},
+      {"face": "+Y", "u": 0, "v": 1},
+      {"face": "-Y", "u": -1, "v": 0}
+    ],
+    "altCubes": [
+      {"face": "+Y", "u": 1, "v": 0, "type": "tree"},
+      {"face": "-X", "u": 1, "v": -1, "type": "rock"},
+      {"face": "-Z", "u": -1, "v": 1, "type": "tree"},
+      {"face": "+Z", "u": 1, "v": -1, "type": "rock"}
+    ]
+  }
+}
