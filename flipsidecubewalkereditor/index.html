@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Flipside Cubewalker Level Designer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="toolbar">
+        <div class="toolbar-left">
+            <div class="brand">Flipside Cubewalker Level Designer</div>
+            <label class="field">
+                <span>Level</span>
+                <select id="level-select"></select>
+            </label>
+        </div>
+        <div class="toolbar-right">
+            <button id="clear-level-btn">Clear Level</button>
+            <button id="save-btn" class="primary">Save JSON</button>
+        </div>
+    </div>
+
+    <div id="scene-container"></div>
+
+    <div id="context-menu" class="hidden">
+        <div class="menu-title">Place Item</div>
+        <button data-action="empty">Empty</button>
+        <button data-action="building">Building Cube</button>
+        <button data-action="alt:tree">Alt Cube: Tree</button>
+        <button data-action="alt:rock">Alt Cube: Rock</button>
+    </div>
+
+    <div id="hint">Click a tile to place an item. Drag to rotate.</div>
+
+    <script src="app.js"></script>
+</body>
+</html>
