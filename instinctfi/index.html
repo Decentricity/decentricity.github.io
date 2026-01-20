@@ -21,6 +21,25 @@
         <div class="rotate-icon">📱</div>
         <p>Please rotate your device to landscape mode</p>
     </div>
+    <div id="loading-overlay">
+        <div class="loading-card">
+            <div class="loading-spinner"></div>
+            <div class="loading-title">Initializing live market data</div>
+            <p class="loading-body">
+                This demo uses real-time orderbook feeds, so the first load can take
+                a minute while the worker warms up.
+            </p>
+            <p class="loading-note">
+                We also compute the initial price ladder from live ticks before the
+                chart can render. The production build is faster.
+            </p>
+            <div id="loading-error" class="loading-error" style="display: none;">
+                <div class="loading-error-title">Initialization Error</div>
+                <div id="loading-error-message" class="loading-error-message"></div>
+                <div id="loading-error-stack" class="loading-error-stack"></div>
+            </div>
+        </div>
+    </div>
     <div id="app-container">
         <header id="header">
             <img src="https://instinctfi.xyz/instinctfi%20spiky%20logo.png" alt="InstinctFi Logo" class="header-logo">
