@@ -110,80 +110,80 @@
     "buildingCubes": [
       {
         "face": "-Y",
-        "u": -1,
-        "v": 0
+        "u": 0,
+        "v": 1
       },
       {
         "face": "-Z",
-        "u": 0,
-        "v": 0
+        "u": 1,
+        "v": 1
       }
     ],
     "altCubes": [
       {
         "face": "-X",
-        "u": 0,
-        "v": -1,
+        "u": 1,
+        "v": 0,
         "type": "rock"
       },
       {
         "face": "-X",
+        "u": 1,
+        "v": 1,
+        "type": "rock"
+      },
+      {
+        "face": "+Y",
         "u": 0,
         "v": 0,
         "type": "rock"
       },
       {
         "face": "+Y",
-        "u": -1,
-        "v": -1,
-        "type": "rock"
-      },
-      {
-        "face": "+Y",
-        "u": 0,
-        "v": -1,
-        "type": "rock"
-      },
-      {
-        "face": "+X",
-        "u": -1,
+        "u": 1,
         "v": 0,
         "type": "rock"
       },
       {
         "face": "+X",
-        "u": -1,
-        "v": -1,
+        "u": 0,
+        "v": 1,
+        "type": "rock"
+      },
+      {
+        "face": "+X",
+        "u": 0,
+        "v": 0,
         "type": "rock"
       },
       {
         "face": "-Y",
-        "u": 0,
-        "v": 0,
+        "u": 1,
+        "v": 1,
         "type": "rock"
       },
       {
         "face": "+Y",
-        "u": -1,
-        "v": 0,
+        "u": 0,
+        "v": 1,
         "type": "tree"
       },
       {
         "face": "+X",
-        "u": 0,
-        "v": -1,
+        "u": 1,
+        "v": 0,
         "type": "tree"
       },
       {
         "face": "-Y",
-        "u": 0,
-        "v": -1,
+        "u": 1,
+        "v": 0,
         "type": "tree"
       },
       {
         "face": "-Z",
-        "u": -1,
-        "v": -1,
+        "u": 0,
+        "v": 0,
         "type": "tree"
       }
     ]
