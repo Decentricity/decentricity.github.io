@@ -59,40 +59,8 @@ function clamp(n, lo, hi) {
 function showErrorOverlay(message, stack) {
     console.error("App crashed:", message, stack);
     
-    var overlay = document.createElement("div");
-    overlay.id = "error-overlay";
-    overlay.style.cssText = [
-        "position: fixed",
-        "top: 0",
-        "left: 0",
-        "width: 100vw",
-        "height: 100vh",
-        "background: rgba(0, 0, 0, 0.95)",
-        "color: #00FFCC",
-        "font-family: monospace",
-        "padding: 40px",
-        "box-sizing: border-box",
-        "z-index: 9999",
-        "overflow: auto"
-    ].join(";");
-    
-    var title = document.createElement("h1");
-    title.textContent = "App crashed";
-    title.style.cssText = "color: #FF5555; margin-bottom: 20px;";
-    
-    var msgEl = document.createElement("p");
-    msgEl.textContent = message || "Unknown error";
-    msgEl.style.cssText = "color: #00FFCC; margin-bottom: 20px; font-size: 16px;";
-    
-    var stackEl = document.createElement("pre");
-    stackEl.textContent = stack || "No stack trace available";
-    stackEl.style.cssText = "color: #888; font-size: 12px; white-space: pre-wrap; word-break: break-all;";
-    
-    overlay.appendChild(title);
-    overlay.appendChild(msgEl);
-    overlay.appendChild(stackEl);
-    
-    document.body.appendChild(overlay);
+    showLoadingError(message, stack);
+    logDebug("ERROR: " + (message || "Unknown error"));
 }
 
 // Global error handlers
@@ -287,7 +255,14 @@ var STATE = {
         lines: [],
         maxLines: 200,
         lastMsgAt: 0
-    }
+    },
+
+    // Loading overlay state
+    loadingOverlayEl: null,
+    loadingErrorEl: null,
+    loadingErrorMessageEl: null,
+    loadingErrorStackEl: null,
+    loadingVisible: true
 };
 
 // ============================================================================
@@ -301,6 +276,10 @@ function initDOM() {
     STATE.canvas = mustGetEl("main-canvas");
     STATE.ctx = STATE.canvas.getContext("2d");
     assert(STATE.ctx !== null, "Failed to get 2D context from canvas");
+    STATE.loadingOverlayEl = document.getElementById("loading-overlay");
+    STATE.loadingErrorEl = document.getElementById("loading-error");
+    STATE.loadingErrorMessageEl = document.getElementById("loading-error-message");
+    STATE.loadingErrorStackEl = document.getElementById("loading-error-stack");
 }
 
 /**
@@ -666,17 +645,52 @@ function isDesktopDevice() {
 function checkDesktop() {
     var warning = document.getElementById("desktop-warning");
     var app = document.getElementById("app-container");
+    var loading = document.getElementById("loading-overlay");
     
     if (!warning || !app) return false;
     
     if (isDesktopDevice()) {
         warning.style.display = "flex";
         app.style.display = "none";
+        if (loading) {
+            loading.style.display = "none";
+        }
         return true;
     } else {
         warning.style.display = "none";
         return false;
     }
+}
+
+/**
+ * Show or hide the startup loading overlay
+ * @param {boolean} isVisible
+ */
+function setLoadingOverlayVisible(isVisible) {
+    if (!STATE.loadingOverlayEl) {
+        return;
+    }
+    STATE.loadingOverlayEl.style.display = isVisible ? "flex" : "none";
+    STATE.loadingVisible = isVisible;
+}
+
+/**
+ * Show error details inside the loading overlay for debugging
+ * @param {string} message
+ * @param {string} stack
+ */
+function showLoadingError(message, stack) {
+    if (!STATE.loadingOverlayEl || !STATE.loadingErrorEl) {
+        return;
+    }
+    if (STATE.loadingErrorMessageEl) {
+        STATE.loadingErrorMessageEl.textContent = message || "Unknown error";
+    }
+    if (STATE.loadingErrorStackEl) {
+        STATE.loadingErrorStackEl.textContent = stack || "";
+    }
+    STATE.loadingErrorEl.style.display = "block";
+    setLoadingOverlayVisible(true);
 }
 
 /**
@@ -1135,8 +1149,6 @@ function handleDlobMessage(event) {
                 STATE.lastGoodPriceTs = nowMs;
                 STATE.isOnline = true;
                 
-                // Update candlestick aggregator with new price tick
-                updateCandleAggregator(midPrice, nowMs);
             }
         } else if (msg.bids && msg.asks) {
             // Handle case where data might not be double-encoded
@@ -1159,8 +1171,6 @@ function handleDlobMessage(event) {
                 STATE.lastGoodPriceTs = nowMs;
                 STATE.isOnline = true;
                 
-                // Update candlestick aggregator with new price tick
-                updateCandleAggregator(midPrice, nowMs);
             }
         }
     } catch (err) {
@@ -1322,6 +1332,7 @@ function initializeWithRealPrice(realPrice) {
     initializeLadder(realPrice);
     
     STATE.hasReceivedFirstPrice = true;
+    setLoadingOverlayVisible(false);
     console.log("Initialized with real SOL-PERP price: $" + realPrice.toFixed(4));
 }
 
@@ -1339,6 +1350,9 @@ function updatePrice() {
         // STATE.targetPrice is already full precision float from WebSocket
         // STATE.currentPrice remains full precision float
         STATE.currentPrice += (STATE.targetPrice - STATE.currentPrice) * CONFIG.PRICE_EASE_ALPHA;
+
+        // Keep candles aligned with the rendered price line by using the same smoothed price.
+        updateCandleAggregator(STATE.currentPrice, nowMs);
         
         // Add to time-based history for zoom/range calculations (FULL PRECISION)
         STATE.priceHistory.push({ time: nowMs, price: STATE.currentPrice });
@@ -1372,9 +1386,9 @@ function updateTrailHistory(scrollDelta) {
     // Add trail points when we've scrolled enough
     var spacing = CONFIG.TRAIL_POINT_SPACING_PX;
     
-    // Initialize lastTrailScrollX on first trail point
-    if (STATE.trailHistory.length === 0 && STATE.scrolledSinceLastTrailPointPx >= spacing) {
-        STATE.lastTrailScrollX = STATE.hexScrollPosition;
+    // Initialize lastTrailScrollX once, anchored to current scroll position
+    if (STATE.trailHistory.length === 0 && STATE.lastTrailScrollX === 0) {
+        STATE.lastTrailScrollX = STATE.hexScrollPosition - STATE.scrolledSinceLastTrailPointPx;
     }
     
     while (STATE.scrolledSinceLastTrailPointPx >= spacing) {
@@ -1398,7 +1412,12 @@ function updateTrailHistory(scrollDelta) {
     // Calculate how much trail to keep based on screen width
     // Trail goes from lineHeadX (center) to lineTailX (left edge)
     // Keep enough history to cover the visible trail area plus some buffer
-    var trailWidthPx = (STATE.canvas.width / 2) - CONFIG.PADDING.left;
+    var trailWidthPx;
+    if (isPortraitMode()) {
+        trailWidthPx = (STATE.canvas.height / 2) - CONFIG.PADDING.top;
+    } else {
+        trailWidthPx = (STATE.canvas.width / 2) - CONFIG.PADDING.left;
+    }
     var maxTrailDistance = trailWidthPx + spacing * 10; // Add buffer
     var cutoffScrollX = STATE.hexScrollPosition - maxTrailDistance;
     
@@ -2095,6 +2114,10 @@ function drawHexagonFlatTop(x, y, size, price, isHighlighted, isPassed, isPink, 
 }
 
 /**
+ * Draw pointy-top hexagon (portrait mode)
+ */
+
+/**
  * Draw dialog bubble with fade effect
  */
 function drawDialogBubble(x, y, hexSize, name, timestamp, leverage) {
@@ -2225,9 +2248,10 @@ function screenYToWorldY(screenY, chartTop, chartHeight) {
  */
 function worldXToScreenYPortrait(worldX, lineHeadY, currentScrollX) {
     var worldOffset = worldX - currentScrollX;
+    var timeScale = STATE.WORLD_COL_SPACING ? (STATE.PX_PER_TICK / STATE.WORLD_COL_SPACING) : 1;
     // Positive offset (future) = below lineHeadY (larger screenY)
     // Negative offset (past) = above lineHeadY (smaller screenY)
-    return lineHeadY + (worldOffset * STATE.zoom);
+    return lineHeadY + (worldOffset * timeScale * STATE.zoom);
 }
 
 /**
@@ -2239,7 +2263,8 @@ function worldXToScreenYPortrait(worldX, lineHeadY, currentScrollX) {
  */
 function screenYToWorldXPortrait(screenY, lineHeadY, currentScrollX) {
     var screenOffset = screenY - lineHeadY;
-    return currentScrollX + (screenOffset / STATE.zoom);
+    var timeScale = STATE.WORLD_COL_SPACING ? (STATE.PX_PER_TICK / STATE.WORLD_COL_SPACING) : 1;
+    return currentScrollX + (screenOffset / (timeScale * STATE.zoom));
 }
 
 /**
@@ -3534,8 +3559,8 @@ function drawPriceLinePortrait(chartTop, chartHeight, chartLeft, chartWidth, lin
     }
     
     var trailHeightPx = lineHeadY - lineTailY;
-    var currentScrollX = STATE.hexScrollPosition;
-    var tailScrollX = currentScrollX - trailHeightPx;
+    var effectiveScrollX = STATE.hexScrollPosition - STATE.manualPan.x;
+    var tailWorldX = screenYToWorldXPortrait(lineTailY, lineHeadY, effectiveScrollX);
     var segments = 100;
     
     ctx.strokeStyle = "#F5F5F0";
@@ -3544,10 +3569,10 @@ function drawPriceLinePortrait(chartTop, chartHeight, chartLeft, chartWidth, lin
     
     for (var i = 0; i <= segments; i++) {
         var t = i / segments;
-        var sampleScrollX = tailScrollX + t * trailHeightPx;
-        var worldY = getWorldYAtScrollX(sampleScrollX);
+        var sampleWorldX = tailWorldX + t * (effectiveScrollX - tailWorldX);
+        var worldY = getWorldYAtScrollX(sampleWorldX);
         // In portrait: Y on screen = time position, X on screen = price position
-        var screenY = lineTailY + t * trailHeightPx;
+        var screenY = worldXToScreenYPortrait(sampleWorldX, lineHeadY, effectiveScrollX);
         var screenX = worldYToScreenXPortrait(worldY, chartLeft, chartWidth);
         
         if (i === 0) {
@@ -3570,9 +3595,9 @@ function drawPriceLinePortrait(chartTop, chartHeight, chartLeft, chartWidth, lin
     
     for (var j = 0; j <= segments; j++) {
         var t2 = j / segments;
-        var sampleScrollX2 = tailScrollX + t2 * trailHeightPx;
-        var worldY2 = getWorldYAtScrollX(sampleScrollX2);
-        var screenY2 = lineTailY + t2 * trailHeightPx;
+        var sampleWorldX2 = tailWorldX + t2 * (effectiveScrollX - tailWorldX);
+        var worldY2 = getWorldYAtScrollX(sampleWorldX2);
+        var screenY2 = worldXToScreenYPortrait(sampleWorldX2, lineHeadY, effectiveScrollX);
         var screenX2 = worldYToScreenXPortrait(worldY2, chartLeft, chartWidth);
         ctx.lineTo(screenX2, screenY2);
     }
@@ -3628,7 +3653,7 @@ function drawCandlesticksPortrait(chartTop, chartHeight, chartLeft, chartWidth, 
     var candleGap = CONFIG.CANDLE_GAP_PX;
     var wickWidth = CONFIG.CANDLE_WICK_WIDTH;
     
-    var currentScrollX = STATE.hexScrollPosition;
+    var effectiveScrollX = STATE.hexScrollPosition - STATE.manualPan.x;
     
     var bullishColor = "#00FFCC";
     var bearishColor = "#FF0044";
@@ -3637,15 +3662,14 @@ function drawCandlesticksPortrait(chartTop, chartHeight, chartLeft, chartWidth, 
     for (var i = 0; i < STATE.candleHistory.length; i++) {
         var candle = STATE.candleHistory[i];
         
-        var scrollOffset = currentScrollX - candle.scrollX;
-        // In portrait: scroll offset maps to vertical position
-        var screenY = lineHeadY - scrollOffset;
+        // In portrait: worldX (time) maps to screen Y
+        var screenY = worldXToScreenYPortrait(candle.scrollX, lineHeadY, effectiveScrollX);
         
-        if (screenY > chartTop + chartHeight + candleHeight) {
+        if (screenY > lineHeadY - candleHeight) {
             continue;
         }
         
-        if (screenY < lineHeadY - candleHeight) {
+        if (screenY < chartTop - candleHeight) {
             continue;
         }
         
@@ -3813,6 +3837,7 @@ function boot() {
     
     // Initialize DOM
     initDOM();
+    setLoadingOverlayVisible(true);
 
     // Initialize debug overlay early so it shows from the start
     initDebugOverlay();
