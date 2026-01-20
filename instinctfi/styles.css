@@ -328,6 +328,102 @@ body {
     text-shadow: 0 0 20px var(--cyan-glow), 0 0 40px var(--cyan-glow);
 }
 
+#loading-overlay {
+    display: flex;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.92);
+    align-items: center;
+    justify-content: center;
+    z-index: 1500;
+    padding: 24px;
+    box-sizing: border-box;
+    text-align: center;
+}
+
+.loading-card {
+    max-width: 420px;
+    width: 100%;
+    padding: 28px 24px;
+    border-radius: 18px;
+    border: 1px solid rgba(0, 255, 204, 0.35);
+    background: rgba(6, 8, 16, 0.95);
+    box-shadow: 0 0 30px rgba(0, 255, 204, 0.12);
+}
+
+.loading-spinner {
+    width: 44px;
+    height: 44px;
+    margin: 0 auto 18px;
+    border-radius: 50%;
+    border: 3px solid rgba(0, 255, 204, 0.2);
+    border-top-color: var(--cyan);
+    animation: loadingSpin 1.2s linear infinite;
+    box-shadow: 0 0 16px rgba(0, 255, 204, 0.35);
+}
+
+.loading-title {
+    color: var(--cyan);
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    margin-bottom: 12px;
+    text-shadow: 0 0 12px var(--cyan-glow);
+}
+
+.loading-body {
+    color: var(--text-muted);
+    font-size: 14px;
+    line-height: 1.5;
+    margin-bottom: 12px;
+}
+
+.loading-note {
+    color: #b7b7c2;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.loading-error {
+    margin-top: 16px;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 85, 85, 0.5);
+    background: rgba(40, 10, 12, 0.9);
+    color: #ffb3b3;
+    text-align: left;
+}
+
+.loading-error-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #ff7a7a;
+    margin-bottom: 6px;
+}
+
+.loading-error-message {
+    font-size: 12px;
+    line-height: 1.4;
+    margin-bottom: 6px;
+    word-break: break-word;
+}
+
+.loading-error-stack {
+    font-size: 11px;
+    line-height: 1.35;
+    color: #d19a9a;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+@keyframes loadingSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
 #app-container {
     display: flex;
     flex-direction: column;
