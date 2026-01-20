@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#000000">
+    <title>InstictFi DecenTrade</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="desktop-warning">
+        <div class="desktop-icon">💻</div>
+        <h2>Instinctfi is currently mobile-only.</h2>
+        <p>Please try again with a phone or tablet!</p>
+    </div>
+    <div id="orientation-warning" style="display: none;">
+        <div class="rotate-icon">📱</div>
+        <p>Please rotate your device to landscape mode</p>
+    </div>
+    <div id="app-container">
+        <header id="header">
+            <img src="https://instinctfi.xyz/instinctfi%20spiky%20logo.png" alt="InstinctFi Logo" class="header-logo">
+            <h1>InstictFi DecenTrade</h1>
+        </header>
+        <main id="main-content">
+            <canvas id="main-canvas"></canvas>
+        </main>
+        <aside id="trading-sidebar">
+            <div class="footer-row-1">
+                <div class="sidebar-section">
+                    <div class="sidebar-label">BALANCE</div>
+                    <div id="trading-balance" class="balance-display">$1,000.00</div>
+                </div>
+                <div class="sidebar-section">
+                    <div class="sidebar-label">ACTIVE BETS</div>
+                    <div id="active-bets-count">0</div>
+                </div>
+            </div>
+            <div class="sidebar-section">
+                <div class="sidebar-label">BET AMOUNT</div>
+                <div class="bet-controls">
+                    <button id="bet-decrease" class="bet-btn">−</button>
+                    <span id="bet-amount-display">$1</span>
+                    <button id="bet-increase" class="bet-btn">+</button>
+                </div>
+            </div>
+            <div class="sidebar-section">
+                <div class="sidebar-label">LEVERAGE</div>
+                <div class="leverage-buttons">
+                    <button class="leverage-btn" data-leverage="1">1x</button>
+                    <button class="leverage-btn active" data-leverage="2">2x</button>
+                    <button class="leverage-btn" data-leverage="3">3x</button>
+                    <button class="leverage-btn" data-leverage="5">5x</button>
+                </div>
+            </div>
+            <div id="insufficient-balance" class="error-message" style="display: none;">
+                Insufficient Balance
+            </div>
+        </aside>
+        <button id="fullscreen-btn" title="Enter Fullscreen">⛶</button>
+        <!-- D-pad controls are added dynamically by initDpadControls() -->
+        <footer id="footer">
+            <a href="/remix">Remix on Berrry</a>
+        </footer>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,763 @@
+/* ============================================================================
+   THEME VARIABLES - Cyber/Neon Dark Theme
+   ============================================================================ */
+:root {
+    /* Backgrounds */
+    --bg-0: #000000;
+    --bg-1: #0a0a0f;
+    --bg-card: rgba(10, 10, 20, 0.7);
+    
+    /* Text */
+    --text: #ffffff;
+    --text-muted: #8a8a9a;
+    
+    /* Accent colors */
+    --cyan: #00FFCC;
+    --cyan-glow: #00FFCC;
+    --cyan-dim: rgba(0, 255, 204, 0.3);
+    
+    --green: #00FF88;
+    --green-glow: #00FF88;
+    
+    --red: #FF5555;
+    --red-glow: #FF5555;
+    
+    --purple: #8B5CF6;
+    --purple-glow: #A78BFA;
+    --purple-dim: rgba(139, 92, 246, 0.3);
+    
+    --yellow: #FFD700;
+    --yellow-glow: #FFD700;
+    
+    --pink: #FF69B4;
+    --pink-glow: #FF69B4;
+    
+    /* Card styling */
+    --card-bg: rgba(15, 15, 25, 0.6);
+    --card-border: rgba(139, 92, 246, 0.3);
+    --card-border-hover: rgba(0, 255, 204, 0.5);
+    
+    /* Shadows and glows */
+    --shadow-glow: 0 0 30px rgba(0, 255, 204, 0.15);
+    --shadow-glow-intense: 0 0 40px rgba(0, 255, 204, 0.3);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--bg-0);
+    font-family: 'Orbitron', sans-serif;
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+    /* Support for notched devices and fullscreen */
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* Fullscreen button for mobile */
+#fullscreen-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
+    background: rgba(0, 0, 0, 0.85);
+    border: 3px solid var(--cyan);
+    border-radius: 12px;
+    color: var(--cyan);
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    z-index: 100;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 0 20px rgba(0, 255, 204, 0.5), 0 0 40px rgba(0, 255, 204, 0.3), inset 0 0 10px rgba(0, 255, 204, 0.2);
+    transition: all 0.3s ease;
+    text-shadow: 0 0 10px var(--cyan);
+}
+
+#fullscreen-btn:hover {
+    background: rgba(0, 255, 204, 0.3);
+    box-shadow: 0 0 30px rgba(0, 255, 204, 0.7), 0 0 60px rgba(0, 255, 204, 0.4), inset 0 0 15px rgba(0, 255, 204, 0.3);
+    transform: scale(1.05);
+}
+
+#fullscreen-btn:active {
+    transform: scale(0.95);
+}
+
+/* Hide button when in fullscreen */
+:fullscreen #fullscreen-btn,
+:-webkit-full-screen #fullscreen-btn,
+:-moz-full-screen #fullscreen-btn,
+:-ms-fullscreen #fullscreen-btn {
+    display: none;
+}
+
+/* Also hide on desktop */
+@media (min-width: 1024px) and (hover: hover) {
+    #fullscreen-btn {
+        display: none;
+    }
+}
+
+/* D-pad navigation controls */
+#dpad-container {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+}
+
+.dpad-grid {
+    display: grid;
+    grid-template-columns: 44px 44px 44px;
+    grid-template-rows: 44px 44px 44px;
+    gap: 4px;
+}
+
+.dpad-btn {
+    width: 44px;
+    height: 44px;
+    background: rgba(0, 0, 0, 0.85);
+    border: 2px solid var(--cyan);
+    border-radius: 8px;
+    color: var(--cyan);
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 0 12px rgba(0, 255, 204, 0.4), inset 0 0 6px rgba(0, 255, 204, 0.15);
+    transition: all 0.15s ease;
+    text-shadow: 0 0 8px var(--cyan);
+}
+
+.dpad-btn:hover {
+    background: rgba(0, 255, 204, 0.25);
+    box-shadow: 0 0 20px rgba(0, 255, 204, 0.6), inset 0 0 10px rgba(0, 255, 204, 0.25);
+}
+
+.dpad-btn:active {
+    transform: scale(0.92);
+    background: rgba(0, 255, 204, 0.4);
+}
+
+/* D-pad button positions */
+.dpad-up {
+    grid-column: 2;
+    grid-row: 1;
+}
+
+.dpad-left {
+    grid-column: 1;
+    grid-row: 2;
+}
+
+.dpad-center {
+    grid-column: 2;
+    grid-row: 2;
+    border-color: var(--yellow);
+    color: var(--yellow);
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.4), inset 0 0 6px rgba(255, 215, 0, 0.15);
+    text-shadow: 0 0 8px var(--yellow);
+    font-size: 16px;
+}
+
+.dpad-center:hover {
+    background: rgba(255, 215, 0, 0.25);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.6), inset 0 0 10px rgba(255, 215, 0, 0.25);
+}
+
+.dpad-center:active {
+    background: rgba(255, 215, 0, 0.4);
+}
+
+.dpad-right {
+    grid-column: 3;
+    grid-row: 2;
+}
+
+.dpad-down {
+    grid-column: 2;
+    grid-row: 3;
+}
+
+/* Zoom controls */
+.zoom-controls {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+}
+
+.zoom-btn {
+    width: 44px;
+    height: 36px;
+    background: rgba(0, 0, 0, 0.85);
+    border: 2px solid var(--purple);
+    border-radius: 8px;
+    color: var(--purple);
+    font-size: 22px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 0 12px rgba(139, 92, 246, 0.4), inset 0 0 6px rgba(139, 92, 246, 0.15);
+    transition: all 0.15s ease;
+    text-shadow: 0 0 8px var(--purple);
+}
+
+.zoom-btn:hover {
+    background: rgba(139, 92, 246, 0.25);
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.6), inset 0 0 10px rgba(139, 92, 246, 0.25);
+}
+
+.zoom-btn:active {
+    transform: scale(0.92);
+    background: rgba(139, 92, 246, 0.4);
+}
+
+/* Hide D-pad on very small screens in portrait (orientation warning shows) */
+@media (max-height: 400px) {
+    #dpad-container {
+        bottom: 10px;
+        left: 10px;
+    }
+    
+    .dpad-grid {
+        grid-template-columns: 36px 36px 36px;
+        grid-template-rows: 36px 36px 36px;
+        gap: 2px;
+    }
+    
+    .dpad-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 14px;
+    }
+    
+    .zoom-btn {
+        width: 36px;
+        height: 30px;
+        font-size: 18px;
+    }
+}
+
+#desktop-warning {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: var(--bg-0);
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+#desktop-warning .desktop-icon {
+    font-size: 100px;
+    margin-bottom: 20px;
+    filter: drop-shadow(0 0 20px var(--cyan-glow));
+}
+
+#desktop-warning h2 {
+    color: var(--cyan);
+    font-size: 28px;
+    font-weight: 700;
+    text-align: center;
+    padding: 0 40px;
+    margin-bottom: 15px;
+    text-shadow: 0 0 20px var(--cyan-glow), 0 0 40px var(--cyan-glow);
+}
+
+#desktop-warning p {
+    color: var(--text-muted);
+    font-size: 18px;
+    text-align: center;
+    padding: 0 40px;
+}
+
+#orientation-warning {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: var(--bg-0);
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+#orientation-warning .rotate-icon {
+    font-size: 80px;
+    animation: rotatePhone 2s ease-in-out infinite;
+}
+
+@keyframes rotatePhone {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(90deg); }
+    50% { transform: rotate(90deg); }
+    75% { transform: rotate(0deg); }
+}
+
+#orientation-warning p {
+    color: var(--cyan);
+    font-size: 18px;
+    margin-top: 30px;
+    text-align: center;
+    padding: 0 20px;
+    text-shadow: 0 0 20px var(--cyan-glow), 0 0 40px var(--cyan-glow);
+}
+
+#app-container {
+    display: flex;
+    flex-direction: column;
+    width: 100vw;
+    height: 100vh;
+    background: var(--bg-0);
+    position: relative;
+}
+
+/* Subtle grid background overlay */
+#app-container::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+        linear-gradient(rgba(139, 92, 246, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(139, 92, 246, 0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Radial vignette effect */
+#app-container::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(ellipse at center, transparent 0%, transparent 40%, rgba(0, 0, 0, 0.6) 100%);
+    pointer-events: none;
+    z-index: 1;
+}
+
+#header {
+    height: 60px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    background: linear-gradient(180deg, rgba(139, 92, 246, 0.08) 0%, transparent 100%);
+    border-bottom: 1px solid var(--purple-dim);
+    position: relative;
+    z-index: 10;
+}
+
+#header .header-logo {
+    height: 45px;
+    width: auto;
+    filter: drop-shadow(0 0 10px var(--cyan-glow)) drop-shadow(0 0 20px rgba(0, 255, 204, 0.3));
+}
+
+#header h1 {
+    color: var(--cyan);
+    font-size: 28px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 6px;
+    text-shadow: 
+        0 0 10px var(--cyan-glow), 
+        0 0 20px var(--cyan-glow), 
+        0 0 40px rgba(0, 255, 204, 0.5);
+    animation: glowCyan 2s ease-in-out infinite alternate;
+}
+
+@keyframes glowCyan {
+    from {
+        text-shadow: 
+            0 0 10px var(--cyan-glow), 
+            0 0 20px var(--cyan-glow), 
+            0 0 30px rgba(0, 255, 204, 0.4);
+        opacity: 0.95;
+    }
+    to {
+        text-shadow: 
+            0 0 15px var(--cyan-glow), 
+            0 0 30px var(--cyan-glow), 
+            0 0 50px rgba(0, 255, 204, 0.6);
+        opacity: 1;
+    }
+}
+
+#main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
+    position: relative;
+    z-index: 5;
+}
+
+/* Trading Sidebar - Right Side (default/landscape) */
+#trading-sidebar {
+    position: fixed;
+    top: 60px;
+    right: 0;
+    width: 140px;
+    height: calc(100vh - 60px);
+    background: rgba(0, 0, 0, 0.85);
+    border-left: 1px solid var(--purple-dim);
+    display: flex;
+    flex-direction: column;
+    padding: 15px 10px;
+    gap: 15px;
+    z-index: 50;
+    font-family: 'Orbitron', sans-serif;
+}
+
+/* In landscape/default mode, hide the footer-row-1 wrapper div itself 
+   but show the sections inside it normally */
+.landscape-mode .footer-row-1,
+body:not(.portrait-mode) .footer-row-1 {
+    display: contents; /* Makes the wrapper invisible, children flow normally */
+}
+
+.sidebar-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.sidebar-label {
+    font-size: 9px;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.balance-display {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--green);
+    text-shadow: 0 0 10px var(--green-glow);
+}
+
+.bet-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.bet-btn {
+    width: 28px;
+    height: 28px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid var(--cyan);
+    border-radius: 4px;
+    color: var(--cyan);
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.15s ease;
+}
+
+.bet-btn:hover {
+    background: rgba(0, 255, 204, 0.2);
+}
+
+.bet-btn:active {
+    transform: scale(0.92);
+}
+
+#bet-amount-display {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--cyan);
+    min-width: 40px;
+    text-align: center;
+}
+
+.leverage-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+}
+
+.leverage-btn {
+    padding: 6px 8px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid var(--purple-dim);
+    border-radius: 4px;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.leverage-btn:hover {
+    border-color: var(--purple);
+    color: var(--purple);
+}
+
+.leverage-btn.active {
+    background: rgba(139, 92, 246, 0.3);
+    border-color: var(--purple);
+    color: var(--purple);
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.4);
+}
+
+#active-bets-count {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--yellow);
+    text-shadow: 0 0 10px var(--yellow-glow);
+}
+
+.error-message {
+    font-size: 10px;
+    color: var(--red);
+    text-shadow: 0 0 8px var(--red-glow);
+    padding: 8px;
+    background: rgba(255, 85, 85, 0.1);
+    border: 1px solid var(--red);
+    border-radius: 4px;
+    text-align: center;
+    animation: fadeInOut 2s ease-in-out;
+}
+
+@keyframes fadeInOut {
+    0% { opacity: 0; }
+    10% { opacity: 1; }
+    80% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+/* Adjust canvas to not overlap sidebar - LANDSCAPE only */
+@media (min-width: 500px) {
+    .landscape-mode #main-canvas {
+        width: calc(100% - 140px) !important;
+    }
+}
+
+/* Hide sidebar on very small LANDSCAPE screens */
+.landscape-mode #trading-sidebar {
+    /* Keep default sidebar styles in landscape */
+}
+
+@media (max-width: 499px) {
+    .landscape-mode #trading-sidebar {
+        display: none;
+    }
+}
+
+/* ============================================================================
+   PORTRAIT MODE STYLES - Sidebar becomes footer, dpad stays above footer
+   ============================================================================ */
+
+/* Portrait mode: Sidebar becomes a footer at the bottom */
+.portrait-mode #trading-sidebar {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: auto;
+    max-height: 120px;
+    border-left: none;
+    border-top: 1px solid var(--purple-dim);
+    flex-direction: column;
+    padding: 6px 10px;
+    gap: 4px;
+    z-index: 50;
+}
+
+/* Portrait footer layout - reflow controls into rows */
+.portrait-mode #trading-sidebar .sidebar-section {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+}
+
+.portrait-mode #trading-sidebar .sidebar-label {
+    font-size: 7px;
+    min-width: 45px;
+    letter-spacing: 0.5px;
+}
+
+/* First row: Balance + Active bets side by side */
+.portrait-mode .footer-row-1 {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    gap: 15px;
+}
+
+.portrait-mode .footer-row-1 .sidebar-section {
+    flex: 1;
+}
+
+/* Second row: Bet amount controls - compact */
+.portrait-mode .bet-controls {
+    flex: 1;
+    justify-content: center;
+    gap: 6px;
+}
+
+/* Third row: Leverage buttons - horizontal compact row */
+.portrait-mode .leverage-buttons {
+    display: flex;
+    flex-direction: row;
+    gap: 3px;
+    flex-wrap: nowrap;
+}
+
+.portrait-mode .leverage-btn {
+    padding: 3px 6px;
+    font-size: 9px;
+    flex: 1;
+    min-width: 0;
+}
+
+.portrait-mode .balance-display {
+    font-size: 13px;
+}
+
+.portrait-mode #active-bets-count {
+    font-size: 14px;
+}
+
+.portrait-mode #bet-amount-display {
+    font-size: 11px;
+    min-width: 28px;
+}
+
+.portrait-mode .bet-btn {
+    width: 22px;
+    height: 22px;
+    font-size: 14px;
+}
+
+/* Compact D-pad in portrait */
+.portrait-mode .dpad-grid {
+    grid-template-columns: 38px 38px 38px;
+    grid-template-rows: 38px 38px 38px;
+    gap: 2px;
+}
+
+.portrait-mode .dpad-btn {
+    width: 38px;
+    height: 38px;
+    font-size: 14px;
+}
+
+.portrait-mode .zoom-btn {
+    width: 38px;
+    height: 30px;
+    font-size: 16px;
+}
+
+/* Portrait mode: D-pad stays bottom-left but above footer */
+.portrait-mode #dpad-container {
+    bottom: 130px; /* Above the footer */
+    left: 10px;
+    z-index: 100;
+}
+
+/* Portrait mode: Fullscreen button repositioned */
+.portrait-mode #fullscreen-btn {
+    bottom: 130px;
+    right: 10px;
+}
+
+/* Portrait mode: Adjust main content to not overlap footer */
+.portrait-mode #main-content {
+    height: calc(100vh - 60px - 120px); /* header - footer */
+}
+
+.portrait-mode #main-canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* Portrait mode: Error message styling */
+.portrait-mode #insufficient-balance {
+    position: absolute;
+    top: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+}
+
+#main-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+#footer {
+    display: none;
+}
+
+#footer a {
+    display: none;
+}
+
+#footer a:hover {
+    display: none;
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+    #header h1 {
+        animation: none;
+    }
+    
+    #orientation-warning .rotate-icon {
+        animation: none;
+    }
+    
+    * {
+        transition: none !important;
+    }
+}
+
+@media (max-width: 1024px) {
+    #header h1 {
+        font-size: 20px;
+        letter-spacing: 3px;
+    }
+}
