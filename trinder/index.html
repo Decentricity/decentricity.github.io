@@ -1,0 +1,1331 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dexscreener Latest Token Profiles</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Unbounded:wght@500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0f1115;
+      --bg-alt: #111b1f;
+      --card: #152127;
+      --ink: #e6f2f0;
+      --muted: #9ab0ab;
+      --accent: #f2b90c;
+      --accent-2: #20d3c2;
+      --ring: rgba(32, 211, 194, 0.35);
+      --shadow: rgba(0, 0, 0, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Space Grotesk", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: radial-gradient(circle at 15% 20%, rgba(32, 211, 194, 0.18), transparent 45%),
+        radial-gradient(circle at 85% 10%, rgba(242, 185, 12, 0.22), transparent 40%),
+        linear-gradient(145deg, #0c1217, #131b21 60%, #0c1116);
+      min-height: 100vh;
+      padding: 28px 20px 120px;
+      overflow: hidden;
+      overscroll-behavior: none;
+    }
+
+    .app {
+      position: relative;
+      z-index: 1;
+      contain: layout paint;
+    }
+
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 14px;
+      align-items: center;
+      text-align: center;
+    }
+
+    .logo {
+      max-width: min(60vw, 220px);
+      width: 100%;
+      height: auto;
+      display: block;
+      margin: 2px auto 0;
+    }
+
+    .subline {
+      color: var(--muted);
+      max-width: 560px;
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(21, 33, 39, 0.8);
+      border: 1px solid rgba(32, 211, 194, 0.25);
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .pill strong {
+      color: var(--ink);
+      font-weight: 600;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 18px;
+    }
+
+    .stage {
+      position: relative;
+      height: 80vh;
+      min-height: 80vh;
+      display: grid;
+      place-items: center;
+      overflow: visible;
+    }
+
+    .empty {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .card {
+      background: linear-gradient(145deg, rgba(21, 33, 39, 0.95), rgba(14, 22, 26, 0.95));
+      border: 1px solid rgba(150, 191, 185, 0.15);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 18px 35px var(--shadow);
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border 0.2s ease;
+      opacity: 0;
+      transform: translateY(12px);
+      animation: rise 0.5s ease forwards;
+      max-width: 520px;
+      width: min(92vw, 520px);
+      touch-action: none;
+      height: 80vh;
+      max-height: 80vh;
+      overflow: visible;
+    }
+
+    .card.owned {
+      border-color: rgba(255, 92, 208, 0.6);
+      background: linear-gradient(160deg, rgba(255, 92, 208, 0.25), rgba(21, 33, 39, 0.95));
+      box-shadow: 0 24px 50px rgba(255, 92, 208, 0.2);
+    }
+
+    .owned-banner {
+      position: relative;
+      z-index: 2;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: rgba(255, 203, 231, 0.9);
+      background: rgba(255, 92, 208, 0.18);
+      border: 1px solid rgba(255, 92, 208, 0.45);
+      padding: 6px 10px;
+      border-radius: 12px;
+      margin-bottom: 10px;
+    }
+
+    .card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top right, rgba(32, 211, 194, 0.12), transparent 55%);
+      pointer-events: none;
+    }
+
+    .card:not(.dragging):hover {
+      transform: translateY(-4px);
+      border-color: rgba(242, 185, 12, 0.4);
+      box-shadow: 0 24px 40px rgba(0, 0, 0, 0.45);
+    }
+
+    .card.dragging {
+      cursor: grabbing;
+      transition: none;
+    }
+
+    .tag {
+      position: absolute;
+      top: 16px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-weight: 600;
+      letter-spacing: 1.2px;
+      font-size: 12px;
+      text-transform: uppercase;
+      opacity: 0;
+      transform: rotate(-10deg);
+      z-index: 2;
+    }
+
+    .tag.like {
+      left: 16px;
+      border: 2px solid rgba(32, 211, 194, 0.9);
+      color: rgba(32, 211, 194, 0.9);
+    }
+
+    .tag.nope {
+      right: 16px;
+      border: 2px solid rgba(242, 83, 65, 0.9);
+      color: rgba(242, 83, 65, 0.9);
+      transform: rotate(10deg);
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .token {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      background: rgba(32, 211, 194, 0.18);
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      border: 1px solid rgba(242, 185, 12, 0.25);
+    }
+
+    .avatar img {
+      width: 100%;
+      height: 100%;
+      border-radius: 12px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .name {
+      font-weight: 600;
+      font-size: 18px;
+    }
+
+    .symbol {
+      font-size: 13px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+
+    .chain {
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(32, 211, 194, 0.16);
+      color: var(--ink);
+      border: 1px solid rgba(32, 211, 194, 0.3);
+      white-space: nowrap;
+    }
+
+    .links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .links a {
+      font-size: 12px;
+      color: var(--ink);
+      text-decoration: none;
+      padding: 6px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(9, 15, 18, 0.6);
+      transition: border 0.2s ease, color 0.2s ease;
+    }
+
+    .links a:hover {
+      border-color: rgba(242, 185, 12, 0.6);
+      color: var(--accent);
+    }
+
+    .meta {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+      position: relative;
+      z-index: 1;
+    }
+
+    .stats {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      font-size: 12px;
+      color: var(--muted);
+      position: relative;
+      z-index: 1;
+    }
+
+    .stats div {
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: rgba(9, 15, 18, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .stats strong {
+      color: var(--ink);
+      font-weight: 600;
+    }
+
+    .chart {
+      margin-top: 16px;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(9, 15, 18, 0.6);
+      height: 180px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .chart canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .chart-overlay {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      font-size: 12px;
+      background: linear-gradient(0deg, rgba(9, 15, 18, 0.85), rgba(9, 15, 18, 0.2));
+      pointer-events: none;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 12px;
+    }
+
+    .fixed-footer {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 8px 10px 12px;
+      background: rgba(15, 17, 21, 0.98);
+      z-index: 50;
+      height: 16vh;
+      display: flex;
+      align-items: center;
+      transform: translateZ(0);
+      will-change: transform;
+    }
+
+    .fx-layer {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 60;
+      overflow: hidden;
+    }
+
+    .fx-text {
+      position: absolute;
+      left: 50%;
+      top: 30%;
+      transform: translate(-50%, -50%) scale(0.8);
+      font-family: "Unbounded", "Space Grotesk", sans-serif;
+      font-size: clamp(20px, 5vw, 40px);
+      letter-spacing: 1px;
+      color: var(--accent);
+      text-shadow: 0 8px 30px rgba(242, 185, 12, 0.45);
+      opacity: 0;
+      animation: fx-pop 1s ease forwards;
+    }
+
+    .fx-chip {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(32, 211, 194, 0.9);
+      box-shadow: 0 0 12px rgba(32, 211, 194, 0.6);
+      animation: fx-fly 900ms ease-out forwards;
+    }
+
+    @keyframes fx-pop {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, -60%) scale(0.7);
+      }
+      35% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.05);
+      }
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -20%) scale(0.95);
+      }
+    }
+
+    @keyframes fx-fly {
+      0% {
+        transform: translate(0, 0) scale(1);
+        opacity: 1;
+      }
+      100% {
+        transform: translate(var(--dx), var(--dy)) scale(0.2);
+        opacity: 0;
+      }
+    }
+
+    .wallet {
+      max-width: 900px;
+      margin: 0 auto;
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .wallet-card {
+      background: rgba(12, 18, 23, 0.9);
+      border: 1px solid rgba(150, 191, 185, 0.18);
+      border-radius: 16px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .wallet-label {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .wallet-value {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .wallet-input,
+    .wallet-select {
+      background: rgba(9, 15, 18, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: var(--ink);
+      border-radius: 12px;
+      padding: 6px 8px;
+      font-size: 13px;
+      outline: none;
+    }
+
+    .wallet-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--accent-2);
+      box-shadow: 0 0 12px var(--ring);
+    }
+
+    @keyframes rise {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 720px) {
+      body {
+        padding: 22px 14px 120px;
+      }
+
+      .toolbar {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .stats {
+        grid-template-columns: 1fr;
+      }
+
+      footer {
+        height: 16vh;
+      }
+
+      .wallet {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+      }
+
+      .wallet-card {
+        padding: 8px 10px;
+      }
+
+      .wallet-value {
+        font-size: 14px;
+      }
+
+      .wallet-input,
+      .wallet-select {
+        font-size: 12px;
+        padding: 5px 6px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <div class="wrap">
+      <header>
+        <img class="logo" src="trinderlogotype.png" alt="Trinder" />
+        <div class="subline">Tinder for Traders.</div>
+        <div class="toolbar">
+          <div class="pill">Feed: <strong>Dexscreener latest token profiles</strong></div>
+          <div class="status"><span class="dot"></span><span id="updated">Loading...</span></div>
+        </div>
+      </header>
+
+      <section id="stage" class="stage" aria-live="polite">
+        <div class="empty">Loading tokens...</div>
+      </section>
+    </div>
+  </main>
+
+  <div class="fx-layer" id="fxLayer"></div>
+
+  <footer class="fixed-footer">
+    <div class="wallet">
+      <div class="wallet-card">
+        <div class="wallet-label">Account Balance</div>
+        <div class="wallet-value" id="balance">$6,900 USDT</div>
+      </div>
+      <div class="wallet-card">
+        <div class="wallet-label">Buy Size</div>
+        <div class="wallet-row">
+          <input class="wallet-input" id="buySize" type="number" min="1" value="250" />
+          <span class="wallet-label">USDT</span>
+        </div>
+      </div>
+      <div class="wallet-card">
+        <div class="wallet-label">Mode</div>
+        <select class="wallet-select" id="mode">
+          <option value="spot" selected>Spot</option>
+          <option value="leverage">Leverage</option>
+        </select>
+        <select class="wallet-select" id="leverage">
+          <option value="2">2x</option>
+          <option value="5">5x</option>
+          <option value="10" selected>10x</option>
+        </select>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const stage = document.getElementById("stage");
+    const updated = document.getElementById("updated");
+    const balanceEl = document.getElementById("balance");
+    const buySizeEl = document.getElementById("buySize");
+    const modeEl = document.getElementById("mode");
+    const leverageEl = document.getElementById("leverage");
+    const fxLayer = document.getElementById("fxLayer");
+    const cardMap = new Map();
+    const GEOCKO_NETWORKS = {
+      ethereum: "eth",
+      bsc: "bsc",
+      solana: "solana",
+      polygon: "polygon_pos",
+      avalanche: "avax",
+      arbitrum: "arbitrum",
+      optimism: "optimism",
+      base: "base",
+      fantom: "fantom",
+      cronos: "cronos",
+      celo: "celo",
+      moonbeam: "moonbeam",
+      moonriver: "moonriver",
+      linea: "linea",
+      blast: "blast",
+      scroll: "scroll",
+      sui: "sui",
+      aptos: "aptos",
+      zksync: "zksync",
+      tron: "tron",
+    };
+    const CHART_LIMIT = 60;
+    const CHART_TTL_MS = 20 * 60 * 1000;
+    const STAGGER_MS = 200;
+    let balance = 6900;
+    let nextOwnedIn = 0;
+    const invested = new Map();
+    let audioCtx;
+
+    const niceTime = (iso) => {
+      if (!iso) return "";
+      const date = new Date(iso);
+      if (Number.isNaN(date.getTime())) return "";
+      return date.toLocaleString(undefined, {
+        hour: "2-digit",
+        minute: "2-digit",
+        month: "short",
+        day: "2-digit",
+      });
+    };
+
+    const formatUsd = (value, opts = {}) => {
+      if (value === null || value === undefined || Number.isNaN(value)) return "—";
+      return new Intl.NumberFormat(undefined, {
+        style: "currency",
+        currency: "USD",
+        maximumFractionDigits: opts.compact ? 2 : 6,
+        notation: opts.compact ? "compact" : "standard",
+      }).format(value);
+    };
+
+    const initials = (name) => {
+      if (!name) return "?";
+      return name
+        .split(/\s+/)
+        .slice(0, 2)
+        .map((part) => part[0])
+        .join("")
+        .toUpperCase();
+    };
+
+    const shortAddress = (addr) => {
+      if (!addr || addr.length < 10) return addr || "";
+      return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
+    };
+
+    const renderCard = (token, index, options = {}) => {
+      const card = document.createElement("article");
+      const owned = options.owned || false;
+      card.className = owned ? "card owned" : "card";
+      card.style.animationDelay = `${index * 40}ms`;
+      card.dataset.address = token.tokenAddress || "";
+      card._token = token;
+
+      const tokenName =
+        token.name || token.symbol || shortAddress(token.tokenAddress) || "Unknown";
+      const symbol = token.symbol || token.tokenAddress || "";
+      const chain = token.chainId || token.chain || "";
+
+      const links = Array.isArray(token.links) ? token.links : [];
+      if (token.url) links.unshift({ label: "Dexscreener", url: token.url });
+      const description = token.description || "No description yet.";
+      const stats = token._enrich || {};
+
+      card.innerHTML = `
+        <div class="tag like">Like</div>
+        <div class="tag nope">Nope</div>
+        ${owned ? `<div class="owned-banner">You have this card! swipe left to sell, swipe right to buy more, swipe down to skip</div>` : ""}
+        <div class="row">
+          <div class="token">
+            <div class="avatar">
+              ${token.icon ? `<img src="${token.icon}" alt="${tokenName}" />` : initials(tokenName)}
+            </div>
+            <div>
+              <div class="name">${tokenName}</div>
+              <div class="symbol">${symbol}</div>
+            </div>
+          </div>
+          <div class="chain">${chain || "unknown"}</div>
+        </div>
+        <div class="links">
+          ${links
+            .map(
+              (link) =>
+                `<a href="${link.url}" target="_blank" rel="noopener noreferrer">${
+                  link.label || link.type || "Link"
+                }</a>`
+            )
+            .join("")}
+        </div>
+        <div class="meta">
+          ${description}
+        </div>
+        <div class="stats">
+          <div><span>Price</span><strong data-stat="price">${stats.price || "—"}</strong></div>
+          <div><span>Mcap/FDV</span><strong data-stat="mcap">${stats.mcap || "—"}</strong></div>
+          <div><span>Vol 24h</span><strong data-stat="vol">${stats.vol || "—"}</strong></div>
+          <div><span>Liquidity</span><strong data-stat="liq">${stats.liq || "—"}</strong></div>
+          <div><span>Launched</span><strong data-stat="launch">${stats.launch || "—"}</strong></div>
+        </div>
+        <div class="chart" data-chart>
+          <canvas></canvas>
+          <div class="chart-overlay">${stats.chartStatus || "Loading chart..."}</div>
+        </div>
+      `;
+
+      return card;
+    };
+
+    const attachSwipe = (card) => {
+      let startX = 0;
+      let startY = 0;
+      let currentX = 0;
+      let currentY = 0;
+      let dragging = false;
+      let activeType = "";
+      let lastX = 0;
+      let lastTime = 0;
+      let velocityX = 0;
+
+      const likeTag = card.querySelector(".tag.like");
+      const nopeTag = card.querySelector(".tag.nope");
+      card.style.willChange = "transform";
+
+      const isInteractive = (target) =>
+        Boolean(target && target.closest("a, button, input, select, textarea"));
+
+      const onMove = (event) => {
+        if (!dragging) return;
+        currentX = event.clientX - startX;
+        currentY = event.clientY - startY;
+        const now = performance.now();
+        const dt = now - lastTime || 16;
+        velocityX = (currentX - lastX) / dt;
+        lastX = currentX;
+        lastTime = now;
+
+        const rotation = currentX / 9 + currentY / 80;
+        card.style.transform = `translate3d(${currentX}px, ${currentY}px, 0) rotate(${rotation}deg)`;
+        const opacity = Math.min(Math.abs(currentX) / 120, 1);
+        if (currentX > 0) {
+          likeTag.style.opacity = opacity;
+          nopeTag.style.opacity = 0;
+        } else {
+          nopeTag.style.opacity = opacity;
+          likeTag.style.opacity = 0;
+        }
+      };
+
+      const onEnd = () => {
+        if (!dragging) return;
+        dragging = false;
+        activeType = "";
+        card.classList.remove("dragging");
+        const minDrag = 24;
+        const minDown = 70;
+        const fling = Math.abs(velocityX) > 0.25;
+        const absX = Math.abs(currentX);
+        const absY = Math.abs(currentY);
+        const isDown = currentY > minDown && absY > absX;
+        if (isDown) {
+          card.style.transition =
+            "transform 0.5s cubic-bezier(0.1, 0.8, 0.2, 1), opacity 0.35s ease";
+          card.style.opacity = "0";
+          card.style.transform = `translate3d(0, ${window.innerHeight}px, 0) scale(0.96)`;
+          const finish = () => {
+            if (!card.isConnected) return;
+            card.remove();
+            tickOwnedCounter();
+            showNextCard();
+          };
+          card.addEventListener("transitionend", finish, { once: true });
+          setTimeout(finish, 420);
+        } else if (absX > minDrag || fling) {
+          const direction = currentX > 0 ? 1 : -1;
+          if (direction > 0) {
+            applyBuy(card._token);
+          } else {
+            applySell(card._token);
+          }
+          const offscreenX = direction * (window.innerWidth + card.offsetWidth);
+          const offscreenY = currentY * 0.4 + direction * 160;
+          card.style.transition =
+            "transform 0.6s cubic-bezier(0.08, 0.85, 0.2, 1), opacity 0.4s ease";
+          card.style.opacity = "0";
+          card.style.transform = `translate3d(${offscreenX}px, ${offscreenY}px, 0) rotate(${direction * 36}deg)`;
+          const finish = () => {
+            if (!card.isConnected) return;
+            card.remove();
+            tickOwnedCounter();
+            showNextCard();
+          };
+          card.addEventListener("transitionend", finish, { once: true });
+          setTimeout(finish, 420);
+        } else {
+          card.style.transition = "transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)";
+          card.style.opacity = "1";
+          card.style.transform = "translate3d(0, 0, 0) rotate(0)";
+          likeTag.style.opacity = 0;
+          nopeTag.style.opacity = 0;
+        }
+      };
+
+      const onStart = (event) => {
+        if (isInteractive(event.target)) return;
+        dragging = true;
+        activeType = event.pointerType || activeType || "";
+        card.classList.add("dragging");
+        startX = event.clientX - currentX;
+        startY = event.clientY - currentY;
+        card.style.transition = "none";
+        card.style.opacity = "1";
+        card.style.animation = "none";
+        lastX = currentX;
+        lastTime = performance.now();
+        if (event.pointerId !== undefined) {
+          card.setPointerCapture(event.pointerId);
+        }
+      };
+
+      if (window.PointerEvent) {
+        card.addEventListener("pointerdown", (event) => {
+          if (isInteractive(event.target)) return;
+          event.preventDefault();
+          onStart(event);
+        });
+        card.addEventListener("pointermove", (event) => {
+          if (activeType && event.pointerType && activeType !== event.pointerType) return;
+          onMove(event);
+        });
+        card.addEventListener("pointerup", onEnd);
+        card.addEventListener("pointercancel", onEnd);
+      }
+
+      card.addEventListener("mousedown", (event) => {
+        if (activeType && activeType !== "mouse") return;
+        if (isInteractive(event.target)) return;
+        event.preventDefault();
+        onStart(event);
+      });
+      window.addEventListener("mousemove", onMove);
+      window.addEventListener("mouseup", onEnd);
+
+      card.addEventListener(
+        "touchstart",
+        (event) => {
+          if (activeType && activeType !== "touch") return;
+          if (isInteractive(event.target)) return;
+          event.preventDefault();
+          const touch = event.touches[0];
+          onStart({
+            clientX: touch.clientX,
+            clientY: touch.clientY,
+            pointerType: "touch",
+            target: event.target,
+          });
+        },
+        { passive: false }
+      );
+      card.addEventListener(
+        "touchmove",
+        (event) => {
+          if (!dragging) return;
+          if (activeType && activeType !== "touch") return;
+          event.preventDefault();
+          const touch = event.touches[0];
+          onMove({ clientX: touch.clientX, clientY: touch.clientY });
+        },
+        { passive: false }
+      );
+      card.addEventListener("touchend", onEnd);
+      card.addEventListener("touchcancel", onEnd);
+    };
+
+    const randomOwnedInterval = () => 3 + Math.floor(Math.random() * 8);
+
+    const resetOwnedCounter = () => {
+      nextOwnedIn = randomOwnedInterval();
+    };
+
+    const tickOwnedCounter = () => {
+      if (invested.size === 0) {
+        resetOwnedCounter();
+        return;
+      }
+      nextOwnedIn = Math.max(0, nextOwnedIn - 1);
+    };
+
+    const formatBalance = (value) =>
+      `$${new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(value)} USDT`;
+
+    const applyBuy = (token) => {
+      const buySize = Number(buySizeEl.value) || 0;
+      if (buySize <= 0) return;
+      balance = Math.max(0, balance - buySize);
+      balanceEl.textContent = formatBalance(balance);
+      if (token?.tokenAddress) {
+        const wasEmpty = invested.size === 0;
+        const entry = invested.get(token.tokenAddress) || { amount: 0, token };
+        entry.amount += buySize;
+        entry.token = token;
+        invested.set(token.tokenAddress, entry);
+        if (wasEmpty) resetOwnedCounter();
+      }
+      triggerSpendFx(buySize);
+    };
+
+    const applySell = (token) => {
+      if (!token?.tokenAddress) return;
+      const entry = invested.get(token.tokenAddress);
+      if (!entry) return;
+      balance += entry.amount;
+      balanceEl.textContent = formatBalance(balance);
+      invested.delete(token.tokenAddress);
+      triggerSellFx(entry.amount);
+    };
+
+    const initAudio = () => {
+      if (audioCtx) return;
+      try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      } catch (error) {
+        audioCtx = null;
+      }
+    };
+
+    const playSpendSound = () => {
+      if (!audioCtx) return;
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(520, now);
+      osc.frequency.exponentialRampToValueAtTime(220, now + 0.18);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.2, now + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.28);
+    };
+
+    const playSellSound = () => {
+      if (!audioCtx) return;
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(180, now);
+      osc.frequency.exponentialRampToValueAtTime(520, now + 0.18);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.18, now + 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.24);
+    };
+
+    const triggerSpendFx = (amount) => {
+      initAudio();
+      if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+      playSpendSound();
+
+      const mode = modeEl?.value || "spot";
+      const leverage = leverageEl?.value || "1";
+      const text = document.createElement("div");
+      text.className = "fx-text";
+      text.textContent =
+        mode === "leverage"
+          ? `Invested $${amount.toLocaleString()} USDT @ ${leverage}x`
+          : `Invested $${amount.toLocaleString()} USDT`;
+      fxLayer.appendChild(text);
+      text.addEventListener("animationend", () => text.remove(), { once: true });
+
+      const originX = window.innerWidth * 0.5;
+      const originY = window.innerHeight * 0.7;
+      for (let i = 0; i < 24; i += 1) {
+        const chip = document.createElement("div");
+        chip.className = "fx-chip";
+        const angle = Math.random() * Math.PI * 2;
+        const distance = 120 + Math.random() * 160;
+        chip.style.left = `${originX}px`;
+        chip.style.top = `${originY}px`;
+        chip.style.setProperty("--dx", `${Math.cos(angle) * distance}px`);
+        chip.style.setProperty("--dy", `${Math.sin(angle) * distance}px`);
+        fxLayer.appendChild(chip);
+        chip.addEventListener("animationend", () => chip.remove(), { once: true });
+      }
+    };
+
+    const triggerSellFx = (amount) => {
+      initAudio();
+      if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+      playSellSound();
+
+      const text = document.createElement("div");
+      text.className = "fx-text";
+      text.style.color = "rgba(255, 92, 208, 0.95)";
+      text.textContent = `Sold $${amount.toLocaleString()} USDT`;
+      fxLayer.appendChild(text);
+      text.addEventListener("animationend", () => text.remove(), { once: true });
+    };
+
+    let deck = [];
+
+    const pickInvestedToken = () => {
+      const list = Array.from(invested.values()).map((entry) => entry.token);
+      if (!list.length) return null;
+      return list[Math.floor(Math.random() * list.length)];
+    };
+
+    const showNextCard = () => {
+      cardMap.clear();
+      const shouldShowOwned = nextOwnedIn <= 0 && invested.size > 0;
+      let token = shouldShowOwned ? pickInvestedToken() : deck.pop();
+      let owned = Boolean(shouldShowOwned && token);
+      if (!token && deck.length) {
+        token = deck.pop();
+        owned = false;
+      }
+      if (!token && invested.size > 0) {
+        token = pickInvestedToken();
+        owned = true;
+      }
+      if (!token) {
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.textContent = "No more tokens. Refresh to pull more.";
+        stage.replaceChildren(empty);
+        return;
+      }
+      const card = renderCard(token, 0, { owned });
+      stage.replaceChildren(card);
+      attachSwipe(card);
+      if (token.tokenAddress) {
+        cardMap.set(token.tokenAddress, card);
+      }
+      if (owned) resetOwnedCounter();
+      if (token._enrich?.chartList) {
+        const canvas = card.querySelector(".chart canvas");
+        drawCandles(canvas, token._enrich.chartList);
+        setChartStatus(card, "");
+      }
+    };
+
+    const pickBestPair = (pairs) => {
+      if (!Array.isArray(pairs) || !pairs.length) return null;
+      return pairs.reduce((best, current) => {
+        const bestLiq = Number(best?.liquidity?.usd) || 0;
+        const currentLiq = Number(current?.liquidity?.usd) || 0;
+        return currentLiq > bestLiq ? current : best;
+      }, pairs[0]);
+    };
+
+    const setStat = (card, key, value) => {
+      const node = card.querySelector(`[data-stat="${key}"]`);
+      if (node) node.textContent = value;
+    };
+
+    const setChartStatus = (card, message) => {
+      const overlay = card.querySelector(".chart-overlay");
+      if (!overlay) return;
+      if (message) {
+        overlay.textContent = message;
+        overlay.style.display = "grid";
+      } else {
+        overlay.textContent = "";
+        overlay.style.display = "none";
+      }
+    };
+
+    const getNetworkId = (chainId) => GEOCKO_NETWORKS[chainId] || null;
+
+    const getCached = (key) => {
+      try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (Date.now() - parsed.timestamp > CHART_TTL_MS) return null;
+        return parsed.data;
+      } catch (error) {
+        return null;
+      }
+    };
+
+    const setCached = (key, data) => {
+      try {
+        localStorage.setItem(
+          key,
+          JSON.stringify({ timestamp: Date.now(), data })
+        );
+      } catch (error) {
+        // Ignore cache errors.
+      }
+    };
+
+    const fetchOhlcv = async (network, pairAddress) => {
+      const cacheKey = `gt:ohlcv:${network}:${pairAddress}:${CHART_LIMIT}`;
+      const cached = getCached(cacheKey);
+      if (cached) return cached;
+      const url = `https://api.geckoterminal.com/api/v2/networks/${network}/pools/${pairAddress}/ohlcv/minute?aggregate=1&limit=${CHART_LIMIT}`;
+      const response = await fetch(url, { headers: { Accept: "application/json" } });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      const list = data?.data?.attributes?.ohlcv_list;
+      if (!Array.isArray(list)) throw new Error("No OHLCV data");
+      setCached(cacheKey, list);
+      return list;
+    };
+
+    const drawCandles = (canvas, ohlcvList) => {
+      if (!canvas) return;
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      const width = Math.max(1, Math.floor(rect.width * dpr));
+      const height = Math.max(1, Math.floor(rect.height * dpr));
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, rect.width, rect.height);
+
+      const data = ohlcvList.slice().reverse();
+      if (!data.length) return;
+
+      const highs = data.map((entry) => entry[2]);
+      const lows = data.map((entry) => entry[3]);
+      const max = Math.max(...highs);
+      const min = Math.min(...lows);
+      const pad = 10;
+      const chartHeight = rect.height - pad * 2;
+      const range = max - min || 1;
+      const candleWidth = rect.width / data.length;
+
+      data.forEach((entry, index) => {
+        const open = entry[1];
+        const high = entry[2];
+        const low = entry[3];
+        const close = entry[4];
+        const isUp = close >= open;
+
+        const x = index * candleWidth + candleWidth / 2;
+        const yHigh = pad + ((max - high) / range) * chartHeight;
+        const yLow = pad + ((max - low) / range) * chartHeight;
+        const yOpen = pad + ((max - open) / range) * chartHeight;
+        const yClose = pad + ((max - close) / range) * chartHeight;
+        const bodyTop = Math.min(yOpen, yClose);
+        const bodyBottom = Math.max(yOpen, yClose);
+
+        ctx.strokeStyle = "rgba(230, 242, 240, 0.25)";
+        ctx.beginPath();
+        ctx.moveTo(x, yHigh);
+        ctx.lineTo(x, yLow);
+        ctx.stroke();
+
+        ctx.fillStyle = isUp ? "rgba(32, 211, 194, 0.7)" : "rgba(242, 83, 65, 0.7)";
+        const bodyWidth = Math.max(2, candleWidth * 0.55);
+        ctx.fillRect(
+          x - bodyWidth / 2,
+          bodyTop,
+          bodyWidth,
+          Math.max(1, bodyBottom - bodyTop)
+        );
+      });
+    };
+
+    const enrichToken = async (token) => {
+      if (!token.tokenAddress) return;
+      try {
+        const response = await fetch(
+          `https://api.dexscreener.com/latest/dex/tokens/${token.tokenAddress}`,
+          { headers: { Accept: "application/json" } }
+        );
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        const bestPair = pickBestPair(data.pairs);
+        if (!bestPair) {
+          token._enrich = { ...(token._enrich || {}), launch: "Unavailable" };
+          const card = cardMap.get(token.tokenAddress);
+          if (card) setStat(card, "launch", "Unavailable");
+          return;
+        }
+
+        const priceUsd = Number(bestPair.priceUsd);
+        const marketCap = Number(bestPair.marketCap ?? bestPair.fdv);
+        const volume24h = Number(bestPair.volume?.h24);
+        const liquidityUsd = Number(bestPair.liquidity?.usd);
+        const launchTime = bestPair.pairCreatedAt
+          ? niceTime(bestPair.pairCreatedAt)
+          : "Unavailable";
+
+        token._enrich = {
+          ...(token._enrich || {}),
+          price: formatUsd(priceUsd),
+          mcap: formatUsd(marketCap, { compact: true }),
+          vol: formatUsd(volume24h, { compact: true }),
+          liq: formatUsd(liquidityUsd, { compact: true }),
+          launch: launchTime,
+        };
+
+        const card = cardMap.get(token.tokenAddress);
+        if (card) {
+          setStat(card, "price", token._enrich.price);
+          setStat(card, "mcap", token._enrich.mcap);
+          setStat(card, "vol", token._enrich.vol);
+          setStat(card, "liq", token._enrich.liq);
+          setStat(card, "launch", token._enrich.launch);
+        }
+
+        const network = getNetworkId(bestPair.chainId || token.chainId);
+        const pairAddress = bestPair.pairAddress;
+        if (!network || !pairAddress) {
+          token._enrich = { ...(token._enrich || {}), chartStatus: "Chart unavailable" };
+          const card = cardMap.get(token.tokenAddress);
+          if (card) setChartStatus(card, "Chart unavailable");
+        } else {
+          try {
+            const list = await fetchOhlcv(network, pairAddress);
+            token._enrich = { ...(token._enrich || {}), chartStatus: "", chartList: list };
+            const card = cardMap.get(token.tokenAddress);
+            if (card) {
+              const canvas = card.querySelector(".chart canvas");
+              drawCandles(canvas, list);
+              setChartStatus(card, "");
+            }
+          } catch (error) {
+            token._enrich = { ...(token._enrich || {}), chartStatus: "Chart unavailable" };
+            const card = cardMap.get(token.tokenAddress);
+            if (card) setChartStatus(card, "Chart unavailable");
+          }
+        }
+
+        if (!token.name && bestPair.baseToken?.name) token.name = bestPair.baseToken.name;
+        if (!token.symbol && bestPair.baseToken?.symbol) token.symbol = bestPair.baseToken.symbol;
+        const cardForNames = cardMap.get(token.tokenAddress);
+        if (cardForNames) {
+          const nameEl = cardForNames.querySelector(".name");
+          const symbolEl = cardForNames.querySelector(".symbol");
+          if (nameEl && token.name) nameEl.textContent = token.name;
+          if (symbolEl && token.symbol) symbolEl.textContent = token.symbol;
+        }
+      } catch (error) {
+        const card = cardMap.get(token.tokenAddress);
+        if (card) setStat(card, "launch", "Unavailable");
+      }
+    };
+
+    const enrichTokens = async (tokens) => {
+      const queue = tokens.slice();
+      const limit = 4;
+      const workers = Array.from({ length: limit }, async () => {
+        while (queue.length) {
+          const token = queue.shift();
+          await enrichToken(token);
+          await new Promise((resolve) => setTimeout(resolve, STAGGER_MS));
+        }
+      });
+      await Promise.all(workers);
+    };
+
+    const loadFeed = async () => {
+      updated.textContent = "Fetching live feed...";
+      try {
+        const response = await fetch("https://api.dexscreener.com/token-profiles/latest/v1", {
+          headers: { Accept: "application/json" },
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        const data = await response.json();
+        if (!Array.isArray(data)) {
+          throw new Error("Unexpected response");
+        }
+        const sliced = data.slice(0, 30);
+        deck = sliced
+          .map((token) => ({ token, sort: Math.random() }))
+          .sort((a, b) => a.sort - b.sort)
+          .map((entry) => entry.token);
+        resetOwnedCounter();
+        showNextCard();
+        await enrichTokens(sliced);
+        updated.textContent = `Updated ${new Date().toLocaleTimeString()}`;
+      } catch (error) {
+        const errorCard = document.createElement("div");
+        errorCard.className = "card";
+        errorCard.textContent = `Failed to load feed. ${error.message}`;
+        stage.replaceChildren(errorCard);
+        updated.textContent = "Offline";
+      }
+    };
+
+    const updateModeUI = () => {
+      if (!modeEl) return;
+      document.body.dataset.mode = modeEl.value;
+      if (leverageEl) {
+        leverageEl.style.display = modeEl.value === "leverage" ? "inline-flex" : "none";
+      }
+    };
+
+    if (modeEl) {
+      modeEl.addEventListener("change", updateModeUI);
+      modeEl.addEventListener("input", updateModeUI);
+      updateModeUI();
+    }
+    loadFeed();
+  </script>
+</body>
+</html>
