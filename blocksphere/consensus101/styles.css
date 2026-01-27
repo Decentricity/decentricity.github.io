@@ -276,10 +276,41 @@ body {
     overflow: auto;
     display: block;
   }
+  .topbar {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+  .brand {
+    width: 100%;
+    justify-content: center;
+  }
+  .mode-group {
+    width: 100%;
+    justify-content: center;
+  }
+  .seed-box {
+    width: 100%;
+    justify-content: center;
+  }
   .layout {
     grid-template-columns: 1fr;
   }
+  .sidepanels {
+    order: 2;
+  }
+  .metrics {
+    order: 3;
+  }
+  .explainer-row {
+    height: auto;
+  }
+  .explainer {
+    height: auto;
+    max-height: none;
+  }
   .controls {
     grid-template-columns: 1fr;
+    height: auto;
   }
 }
