@@ -8,6 +8,7 @@ import {
   releaseAttack,
 } from "./sim.js";
 import { createViz } from "./viz.js";
+import { initDebugPanel } from "./debug.js";
 
 const seedValue = document.getElementById("seedValue");
 const rerollSeed = document.getElementById("rerollSeed");
@@ -286,6 +287,7 @@ setSeed(config.seed);
 parseParams();
 resetSim();
 bindUI();
+initDebugPanel();
 
 let lastTime = performance.now();
 function animate(time) {
