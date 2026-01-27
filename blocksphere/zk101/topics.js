@@ -38,15 +38,18 @@ def verify(commitment: str, secret: bytes, nonce: bytes) -> bool:
 
 
 def main():
-    secret = b"i know the secret"\\n    nonce = secrets.token_bytes(16)
+    secret = b"i know the secret"
+    nonce = secrets.token_bytes(16)
 
     c = commit(secret, nonce)
     print("Commitment (proof blob):", c)
 
-    print("\\nReveal secret + nonce to verify: ")
+    print("")
+    print("Reveal secret + nonce to verify:")
     print("Valid?", verify(c, secret, nonce))
 
-    print("\\nTakeaway:")
+    print("")
+    print("Takeaway:")
     print("- Prove knowledge without exposing the secret itself")
 
 
@@ -67,7 +70,6 @@ if __name__ == "__main__":
       "Concept mapping: Sigma protocol / Schnorr-family proofs.",
     ],
     code: `import random
-import math
 
 
 def run_round(knows_secret: bool) -> bool:
@@ -102,7 +104,8 @@ def main():
     print("Cheater wins:", cheater, "rounds")
     print("Cheat probability after", rounds, "rounds:", cheat_probability(rounds))
 
-    print("\\nTakeaway:")
+    print("")
+    print("Takeaway:")
     print("- Random challenges + repetition make cheating unlikely")
 
 
@@ -132,7 +135,8 @@ def place_waldo(grid):
     w = len(grid[0])
     x = random.randint(0, w - 1)
     y = random.randint(0, h - 1)
-    grid[y][x] = "W"\\n    return x, y
+    grid[y][x] = "W"
+    return x, y
 
 
 def reveal_window(grid, x, y, r=1):
@@ -158,7 +162,8 @@ def main():
     masked = reveal_window(grid, x, y, r=1)
     print_grid(masked)
 
-    print("\\nTakeaway:")
+    print("")
+    print("Takeaway:")
     print("- Selective reveal proves knowledge without leaking the rest")
 
 
@@ -208,7 +213,8 @@ def main():
     print("Secret transform: rot=", rot * 90, "deg, shift=", (dx, dy))
     print("Transformed waldo (what verifier sees):", (tx, ty))
 
-    print("\\nTakeaway:")
+    print("")
+    print("Takeaway:")
     print("- Verifier confirms Waldo in transformed space")
     print("- Original coordinates stay hidden without the secret transform")
 
@@ -253,7 +259,8 @@ def main():
     print("Theoretical cheat probability:", p)
     print("Simulated cheater success:", outcome)
 
-    print("\\nTakeaway:")
+    print("")
+    print("Takeaway:")
     print("- Random audits make cheating unlikely")
 
 
@@ -285,7 +292,8 @@ def main():
         p = cheat_probability(rounds)
         print(f"Rounds={rounds} -> cheat prob ~ {p:.6f}")
 
-    print("\\nChecklist:")
+    print("")
+    print("Checklist:")
     print("- Soundness: cheating is unlikely")
     print("- Zero-knowledge: no secret leakage")
     print("- Verifier randomness: prevents adaptive cheating")
