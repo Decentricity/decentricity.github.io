@@ -53,7 +53,7 @@ export function createViz(container) {
     return positions;
   }
 
-  function initNodes(nodes) {
+  function initNodes(nodes, mode) {
     nodeGroup.clear();
     tokenGroup.clear();
     roleLabels.clear();
@@ -87,9 +87,11 @@ export function createViz(container) {
 
       if (node.producer || node.delegate) {
         let role = "PRODUCER";
-        if (node.delegate) role = "DELEGATE";
-        else if (node.producer && node.adversary) role = "ADV PRODUCER";
-        else if (node.producer) role = "PRODUCER";
+        if (mode === "pow") role = node.adversary ? "ADV MINER" : "MINER";
+        if (mode === "pos") role = node.adversary ? "ADV VALIDATOR" : "VALIDATOR";
+        if (mode === "dpos") role = node.delegate ? "DELEGATE" : "VALIDATOR";
+        if (mode === "poa") role = node.adversary ? "ADV AUTH" : "AUTHORITY";
+        if (mode === "poet") role = node.adversary ? "ADV NODE" : "POET NODE";
         const label = makeLabelSprite(role);
         label.scale.set(2.2, 0.55, 1);
         label.position.copy(mesh.position).add(new THREE.Vector3(0, -1.4, 0));

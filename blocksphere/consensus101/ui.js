@@ -55,7 +55,7 @@ function reroll() {
 
 function resetSim() {
   state = createSimState({ ...config });
-  viz.initNodes(state.nodes);
+  viz.initNodes(state.nodes, config.mode);
   viz.updateTokenStacks(state.nodes, config.mode === "pos" || config.mode === "dpos");
   txStatus.textContent = "—";
   confirmations.textContent = "0";

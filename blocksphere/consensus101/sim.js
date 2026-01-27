@@ -53,12 +53,8 @@ function makeNodes(config, rng) {
   }
 
   const producers = nodes.filter((n) => n.producer);
-  const nonProducers = nodes.filter((n) => !n.producer);
   const advProducers = Math.max(0, Math.round(producers.length * adversaryShare));
-  const advNon = Math.max(0, Math.round(nonProducers.length * (adversaryShare * 0.5)));
-
   producers.slice(0, advProducers).forEach((n) => (n.adversary = true));
-  nonProducers.slice(0, advNon).forEach((n) => (n.adversary = true));
 
   return nodes;
 }
