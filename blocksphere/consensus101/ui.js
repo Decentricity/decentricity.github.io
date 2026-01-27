@@ -113,7 +113,7 @@ function tick() {
     const fromNode = viz.nodeMeshes.get(msg.from);
     const toNode = viz.nodeMeshes.get(msg.to);
     if (!fromNode || !toNode) return;
-    const color = msg.type === \"tx\" ? 0x3ddc97 : 0xffc857;
+    const color = msg.type === "tx" ? 0x3ddc97 : 0xffc857;
     viz.spawnPacket(fromNode.position, toNode.position, color);
   });
 
