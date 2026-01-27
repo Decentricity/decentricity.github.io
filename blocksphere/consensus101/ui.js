@@ -23,6 +23,7 @@ const attackResult = document.getElementById("attackResult");
 const nodesSplit = document.getElementById("nodesSplit");
 const propMedian = document.getElementById("propMedian");
 const finalized = document.getElementById("finalized");
+const explainer = document.getElementById("explainer");
 
 const container = document.getElementById("threeRoot");
 const viz = createViz(container);
@@ -91,6 +92,24 @@ function updateUI() {
   nodesSplit.textContent = overlay.split;
   propMedian.textContent = overlay.propagation;
   finalized.textContent = overlay.finalized;
+
+  explainer.textContent = buildExplainerText();
+}
+
+function buildExplainerText() {
+  const latencyText = config.latency === "low" ? "low latency" : config.latency === "med" ? "medium latency" : "high latency";
+  const centralText = config.centralization === "top" ? "top-heavy distribution" : "decentralized distribution";
+  const advText = `${config.adversary}% adversary power`;
+  const splitText = nodesSplit.textContent && nodesSplit.textContent !== "—" ? nodesSplit.textContent : "no visible split yet";
+  const propText = propMedian.textContent && propMedian.textContent !== "—" ? propMedian.textContent : "propagation still warming up";
+
+  if (config.mode === "pow") {
+    return `PoW is active, so miners race to extend the longest chain. With ${latencyText}, blocks gossip as pulses; delays cause temporary forks and node disagreement (${splitText}). Reorgs can happen if a longer branch arrives. TX★ is unsafe until it reaches 6 confirmations. Propagation median: ${propText}.`;
+  }
+  if (config.mode === "pos") {
+    return `PoS is active, so validators propose by stake and vote in epochs. With ${centralText} and ${advText}, gossip delays affect who sees the checkpoint in time, which impacts finality. When enough votes propagate, blocks become FINALIZED (locked). Current split: ${splitText}. Propagation median: ${propText}.`;
+  }
+  return `PoA is active, so authorities take turns (round-robin) and finality is immediate. With ${centralText} and ${latencyText}, gossip is still visible but forks are rare. If enough authorities are compromised, censorship or a 1-block rewrite can occur. Current split: ${splitText}. Propagation median: ${propText}.`;
 }
 
 function tick() {
