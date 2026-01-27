@@ -101,7 +101,7 @@ function tick() {
     return;
   }
 
-  const { headCounts, delivered, events } = stepSimulation(state, 0.2);
+  const { headCounts, delivered, events = [] } = stepSimulation(state, 0.2);
   lastHeadCounts = headCounts;
 
   releaseAttack(state);
