@@ -41,11 +41,8 @@
     <section class="canvas-wrap">
       <div id="threeRoot" class="three-root"></div>
       <div class="overlay">
-        <div class="tabs">
-          <button class="tab-btn active" data-tab="run">Run</button>
-          <button class="tab-btn" data-tab="break">Break it</button>
-        </div>
-        <div class="tab-panel active" id="tab-run">
+        <div class="panel-box" id="runBox">
+          <div class="panel-title">Run</div>
           <button id="runBtn" class="primary">Run (60s)</button>
           <div class="status">
             <div><strong>TX★ status:</strong> <span id="txStatus">—</span></div>
@@ -57,7 +54,8 @@
             </div>
           </div>
         </div>
-        <div class="tab-panel" id="tab-break">
+        <div class="panel-box" id="breakBox">
+          <div class="panel-title">Break it</div>
           <div class="attack-row">
             <button id="reorgBtn" class="secondary">Reorg Attempt</button>
             <button id="censorBtn" class="secondary">Censorship Attempt</button>

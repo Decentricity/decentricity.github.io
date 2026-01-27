@@ -39,6 +39,7 @@ let config = {
 let state = createSimState(config);
 let running = false;
 let lastHeadCounts = new Map();
+let lastAttackMessage = "";
 
 function setSeed(seed) {
   config.seed = seed >>> 0;
@@ -62,7 +63,9 @@ function resetSim() {
   propMedian.textContent = "—";
   finalized.textContent = "—";
   attackResult.textContent = "No attack run yet.";
+  lastAttackMessage = "";
   running = false;
+  explainer.textContent = buildExplainerText();
 }
 
 function updateUI() {
@@ -102,14 +105,15 @@ function buildExplainerText() {
   const advText = `${config.adversary}% adversary power`;
   const splitText = nodesSplit.textContent && nodesSplit.textContent !== "—" ? nodesSplit.textContent : "no visible split yet";
   const propText = propMedian.textContent && propMedian.textContent !== "—" ? propMedian.textContent : "propagation still warming up";
+  const attackText = lastAttackMessage ? ` ${lastAttackMessage}` : "";
 
   if (config.mode === "pow") {
-    return `PoW is active, so miners race to extend the longest chain. With ${latencyText}, blocks gossip as pulses; delays cause temporary forks and node disagreement (${splitText}). Reorgs can happen if a longer branch arrives. TX★ is unsafe until it reaches 6 confirmations. Propagation median: ${propText}.`;
+    return `PoW is active, so miners race to extend the longest chain. With ${latencyText}, blocks gossip as pulses; delays cause temporary forks and node disagreement (${splitText}). Reorgs can happen if a longer branch arrives. TX★ is unsafe until it reaches 6 confirmations. Propagation median: ${propText}.${attackText}`;
   }
   if (config.mode === "pos") {
-    return `PoS is active, so validators propose by stake and vote in epochs. With ${centralText} and ${advText}, gossip delays affect who sees the checkpoint in time, which impacts finality. When enough votes propagate, blocks become FINALIZED (locked). Current split: ${splitText}. Propagation median: ${propText}.`;
+    return `PoS is active, so validators propose by stake and vote in epochs. With ${centralText} and ${advText}, gossip delays affect who sees the checkpoint in time, which impacts finality. When enough votes propagate, blocks become FINALIZED (locked). Current split: ${splitText}. Propagation median: ${propText}.${attackText}`;
   }
-  return `PoA is active, so authorities take turns (round-robin) and finality is immediate. With ${centralText} and ${latencyText}, gossip is still visible but forks are rare. If enough authorities are compromised, censorship or a 1-block rewrite can occur. Current split: ${splitText}. Propagation median: ${propText}.`;
+  return `PoA is active, so authorities take turns (round-robin) and finality is immediate. With ${centralText} and ${latencyText}, gossip is still visible but forks are rare. If enough authorities are compromised, censorship or a 1-block rewrite can occur. Current split: ${splitText}. Propagation median: ${propText}.${attackText}`;
 }
 
 function tick() {
@@ -166,15 +170,6 @@ function runSimulation() {
   tick();
 }
 
-function applyTab(tab) {
-  document.querySelectorAll(".tab-btn").forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.tab === tab);
-  });
-  document.querySelectorAll(".tab-panel").forEach((panel) => {
-    panel.classList.toggle("active", panel.id === `tab-${tab}`);
-  });
-}
-
 function applyMode(mode) {
   config.mode = mode;
   document.querySelectorAll(".mode-btn").forEach((btn) => {
@@ -199,15 +194,20 @@ function applyKnob(groupId, key) {
 function runAttack(type) {
   if (!state.canonicalHead) {
     attackResult.textContent = "Run the simulation first.";
+    lastAttackMessage = " Attack not executed because the simulation is not running.";
+    explainer.textContent = buildExplainerText();
     return;
   }
   if (type === "reorg") {
     attemptReorg(state);
     attackResult.textContent = "Reorg Attempt: adversary withholding blocks, will release soon. Mitigation: wait for finality / confirmations.";
+    lastAttackMessage = " Reorg attempt active: adversary withholds blocks, then releases them to race the honest chain.";
   } else {
     attemptCensorship(state);
     attackResult.textContent = "Censorship Attempt: adversarial producers ignoring TX★. Mitigation: decentralize producers + diversify relay.";
+    lastAttackMessage = " Censorship attempt active: adversarial producers ignore TX★, slowing inclusion through the gossip network.";
   }
+  explainer.textContent = buildExplainerText();
 }
 
 function parseParams() {
@@ -225,9 +225,6 @@ function parseParams() {
 }
 
 function bindUI() {
-  document.querySelectorAll(".tab-btn").forEach((btn) => {
-    btn.addEventListener("click", () => applyTab(btn.dataset.tab));
-  });
   document.querySelectorAll(".mode-btn").forEach((btn) => {
     btn.addEventListener("click", () => applyMode(btn.dataset.mode));
   });
