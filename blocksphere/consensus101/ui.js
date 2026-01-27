@@ -1,4 +1,11 @@
-import { createSimState, stepSimulation, computeRisk, attemptReorg, attemptCensorship } from "./sim.js";
+import {
+  createSimState,
+  stepSimulation,
+  computeOverlay,
+  attemptReorg,
+  attemptCensorship,
+  releaseAttack,
+} from "./sim.js";
 import { createViz } from "./viz.js";
 
 const seedValue = document.getElementById("seedValue");
@@ -12,6 +19,9 @@ const metricLive = document.getElementById("metricLive");
 const reorgBtn = document.getElementById("reorgBtn");
 const censorBtn = document.getElementById("censorBtn");
 const attackResult = document.getElementById("attackResult");
+const nodesSplit = document.getElementById("nodesSplit");
+const propMedian = document.getElementById("propMedian");
+const finalized = document.getElementById("finalized");
 
 const container = document.getElementById("threeRoot");
 const viz = createViz(container);
@@ -26,6 +36,7 @@ let config = {
 
 let state = createSimState(config);
 let running = false;
+let lastHeadCounts = new Map();
 
 function setSeed(seed) {
   config.seed = seed >>> 0;
@@ -39,52 +50,44 @@ function reroll() {
 
 function resetSim() {
   state = createSimState({ ...config });
-  viz.group.clear();
-  viz.blocks.clear();
+  viz.initNodes(state.nodes);
   txStatus.textContent = "—";
   confirmations.textContent = "0";
   metricSafe.textContent = "—";
   metricRisk.textContent = "—";
   metricLive.textContent = "OK";
+  nodesSplit.textContent = "—";
+  propMedian.textContent = "—";
+  finalized.textContent = "—";
   attackResult.textContent = "No attack run yet.";
   running = false;
 }
 
 function updateUI() {
-  confirmations.textContent = state.confirmations.toString();
-  if (!state.txIncluded) {
+  confirmations.textContent = state.txIncludedBlock
+    ? Math.max(0, (state.blocks.get(state.canonicalHead)?.height || 0) - (state.blocks.get(state.txIncludedBlock)?.height || 0) + 1)
+    : "0";
+
+  if (!state.txIncludedBlock) {
     txStatus.textContent = "Pending";
   } else if (config.mode === "pow") {
-    txStatus.textContent = state.confirmations >= 6 ? "Safe" : "Unsafe";
+    txStatus.textContent = confirmations.textContent >= 6 ? "Safe" : "Unsafe";
   } else if (config.mode === "pos") {
     txStatus.textContent = state.finalizedHeight >= 0 ? "Finalized" : "Unfinalized";
   } else {
     txStatus.textContent = "Final";
   }
 
-  metricRisk.textContent = computeRisk(state);
-  metricLive.textContent = state.metrics.liveness;
-
   if (state.metrics.safeTime !== null) {
     metricSafe.textContent = `${state.metrics.safeTime.toFixed(1)}s`;
   }
-}
+  metricRisk.textContent = state.metrics.risk;
+  metricLive.textContent = state.metrics.liveness;
 
-function markFinality() {
-  if (config.mode === "pos") {
-    state.blocks.forEach((b) => {
-      if (b.height <= state.finalizedHeight) {
-        b.finalized = true;
-      }
-    });
-  }
-  if (config.mode === "poa") {
-    state.blocks.forEach((b) => {
-      if (b.height <= state.finalizedHeight) {
-        b.finalized = true;
-      }
-    });
-  }
+  const overlay = computeOverlay(state, lastHeadCounts);
+  nodesSplit.textContent = overlay.split;
+  propMedian.textContent = overlay.propagation;
+  finalized.textContent = overlay.finalized;
 }
 
 function tick() {
@@ -94,16 +97,39 @@ function tick() {
     updateUI();
     return;
   }
-  const interval = stepSimulation(state);
-  const latest = state.blocks[state.blocks.length - 1];
+
+  const headCounts = stepSimulation(state, 0.2);
+  lastHeadCounts = headCounts;
+
+  releaseAttack(state);
+
+  const latest = state.blockOrder[state.blockOrder.length - 1];
   if (latest) {
-    viz.addBlock(latest);
-    markFinality();
-    state.blocks.forEach((b) => viz.updateBlock(b));
-    viz.updateMarkers(state);
+    viz.addChainBlock(latest);
+    state.blockOrder.forEach((b) => viz.updateChainBlock(b));
   }
+
+  headCounts.forEach((count, headId) => {
+    // spawn packets for any new block receptions
+    const block = state.blocks.get(headId);
+    if (block && block.receivedTimes && block.receivedTimes.length > 0) {
+      const fromNode = state.nodes.find((n) => n.id === block.producer);
+      if (fromNode) {
+        state.nodes.forEach((n) => {
+          if (n.id !== fromNode.id && n.known.has(block.id)) {
+            const from = viz.nodeMeshes.get(fromNode.id).position;
+            const to = viz.nodeMeshes.get(n.id).position;
+            viz.spawnPacket(from, to);
+          }
+        });
+      }
+    }
+  });
+
+  viz.updateNodeMarkers(state.nodes, headCounts);
   updateUI();
-  setTimeout(tick, interval * 300);
+
+  setTimeout(tick, 200);
 }
 
 function runSimulation() {
@@ -143,27 +169,17 @@ function applyKnob(groupId, key) {
 }
 
 function runAttack(type) {
-  if (!state.head) {
+  if (!state.canonicalHead) {
     attackResult.textContent = "Run the simulation first.";
     return;
   }
-  const success = type === "reorg" ? attemptReorg(state) : attemptCensorship(state);
-  const mode = config.mode.toUpperCase();
-  const successText = success ? "SUCCESS" : "FAIL";
-  const assumption = config.mode === "pow"
-    ? "Assumes enough hashpower + network delays."
-    : config.mode === "pos"
-      ? "Assumes >1/3 stake or equivocation under high latency."
-      : "Assumes compromised authorities at threshold.";
-  const mitigation = config.mode === "pow"
-    ? "Mitigation: wait for more confirmations + reduce latency."
-    : config.mode === "pos"
-      ? "Mitigation: slashing + honest quorum + client diversity."
-      : "Mitigation: increase authority set + key security.";
-
-  attackResult.textContent = `${type === "reorg" ? "Reorg" : "Censorship"} Attempt: ${successText}. ${assumption} ${mitigation}`;
-  viz.updateMarkers(state);
-  updateUI();
+  if (type === "reorg") {
+    attemptReorg(state);
+    attackResult.textContent = "Reorg Attempt: adversary withholding blocks, will release soon. Mitigation: wait for finality / confirmations.";
+  } else {
+    attemptCensorship(state);
+    attackResult.textContent = "Censorship Attempt: adversarial producers ignoring TX★. Mitigation: decentralize producers + diversify relay.";
+  }
 }
 
 function parseParams() {
@@ -206,9 +222,13 @@ parseParams();
 resetSim();
 bindUI();
 
-function animate() {
-  requestAnimationFrame(animate);
+let lastTime = performance.now();
+function animate(time) {
+  const delta = (time - lastTime) / 1000;
+  lastTime = time;
+  viz.updatePackets(delta);
   viz.render();
+  requestAnimationFrame(animate);
 }
 
-animate();
+requestAnimationFrame(animate);

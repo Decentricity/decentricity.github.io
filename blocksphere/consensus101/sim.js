@@ -8,246 +8,328 @@ export function mulberry32(seed) {
   };
 }
 
+function latencyDelay(latency, rng) {
+  if (latency === "low") return 0.2 + rng() * 0.6;
+  if (latency === "med") return 0.6 + rng() * 1.0;
+  return 1.2 + rng() * 1.8;
+}
+
+function weightedPick(items, rng) {
+  const total = items.reduce((acc, i) => acc + i.weight, 0);
+  let r = rng() * total;
+  for (const item of items) {
+    r -= item.weight;
+    if (r <= 0) return item;
+  }
+  return items[items.length - 1];
+}
+
+function makeNodes(config, rng) {
+  const count = 16;
+  const nodes = [];
+  const adversaryShare = Number(config.adversary) / 100;
+  const topHeavy = config.centralization === "top";
+
+  const producerCount = config.mode === "poa" ? (topHeavy ? 3 : 5) : 6;
+  const adversaryCount = Math.max(1, Math.round(count * adversaryShare));
+
+  for (let i = 0; i < count; i++) {
+    const isProducer = i < producerCount;
+    const adversary = i < adversaryCount;
+    const baseWeight = isProducer ? 1 : 0.2;
+    const skew = topHeavy && isProducer ? (i === 0 ? 3.5 : 0.8) : 1;
+    nodes.push({
+      id: i,
+      producer: isProducer,
+      adversary,
+      weight: baseWeight * skew,
+      stake: baseWeight * skew,
+      head: null,
+      known: new Set(),
+      mempool: false,
+      txSeen: false,
+    });
+  }
+  return nodes;
+}
+
 export function createSimState(config) {
+  const rng = mulberry32(config.seed);
   return {
     config,
-    rng: mulberry32(config.seed),
+    rng,
     time: 0,
-    blocks: [],
-    head: null,
-    tipByHeight: new Map(),
-    txBlockId: null,
-    confirmations: 0,
-    finalizedHeight: -1,
-    checkpoints: [],
-    metrics: { safeTime: null, risk: "—", liveness: "OK" },
+    blocks: new Map(),
+    blockOrder: [],
+    messages: [],
+    nodes: makeNodes(config, rng),
+    nextBlockTime: 0,
     nextBlockId: 1,
-    pendingForks: [],
-    authorityIndex: 0,
-    livenessStalled: false,
-    txIncluded: false,
-    txInclusionTime: null,
+    txId: "TXSTAR",
+    txAnnounced: false,
+    txIncludedBlock: null,
+    finalizedHeight: -1,
+    canonicalHead: null,
+    propagationStats: { lastMedian: null },
+    attack: { type: null, active: false, releaseAt: null, withheld: [] },
   };
 }
 
-function blockIntervalSeconds(mode, rng) {
-  if (mode === "poa") return 2.0;
-  const base = mode === "pos" ? 2.5 : 3.0;
-  return base + (rng() - 0.5) * 1.2;
+function addGenesis(state) {
+  if (state.blocks.size > 0) return;
+  const genesis = {
+    id: 0,
+    parent: null,
+    height: 0,
+    time: 0,
+    producer: null,
+    includesTx: false,
+    finalized: state.config.mode !== "pow",
+  };
+  state.blocks.set(0, genesis);
+  state.blockOrder.push(genesis);
+  state.nodes.forEach((n) => {
+    n.head = genesis.id;
+    n.known.add(genesis.id);
+  });
+  state.canonicalHead = 0;
 }
 
-function latencyForkChance(latency) {
-  if (latency === "low") return 0.05;
-  if (latency === "med") return 0.12;
-  return 0.22;
+function blockInterval(state) {
+  if (state.config.mode === "poa") return 2;
+  if (state.config.mode === "pos") return 2.6 + (state.rng() - 0.5) * 1.2;
+  return 3 + (state.rng() - 0.5) * 1.6;
 }
 
-function adversaryShare(config) {
-  return Number(config.adversary) / 100;
+function pickProducer(state) {
+  const producers = state.nodes.filter((n) => n.producer);
+  return weightedPick(
+    producers.map((n) => ({ node: n, weight: n.weight })),
+    state.rng
+  ).node;
 }
 
-function centralizationSkew(config) {
-  return config.centralization === "top" ? 0.65 : 0.25;
+function gossipBlock(state, blockId, fromNode) {
+  state.nodes.forEach((node) => {
+    if (node.id === fromNode.id) return;
+    const delay = latencyDelay(state.config.latency, state.rng);
+    state.messages.push({
+      type: "block",
+      blockId,
+      from: fromNode.id,
+      to: node.id,
+      deliverAt: state.time + delay,
+    });
+  });
 }
 
-function pickBranchTarget(state, newHeight) {
-  if (state.pendingForks.length === 0) return state.head;
-  const fork = state.pendingForks[0];
-  if (fork.height < newHeight) return fork.block;
-  return state.head;
+function gossipTx(state, fromNode) {
+  state.nodes.forEach((node) => {
+    if (node.id === fromNode.id) return;
+    const delay = latencyDelay(state.config.latency, state.rng);
+    state.messages.push({
+      type: "tx",
+      txId: state.txId,
+      from: fromNode.id,
+      to: node.id,
+      deliverAt: state.time + delay,
+    });
+  });
 }
 
-function addBlock(state, parent, height, flags) {
-  const id = state.nextBlockId++;
+function computeHead(node, state) {
+  let best = null;
+  for (const id of node.known) {
+    const block = state.blocks.get(id);
+    if (!block) continue;
+    if (!best || block.height > best.height || (block.height === best.height && block.time < best.time)) {
+      best = block;
+    }
+  }
+  node.head = best ? best.id : null;
+}
+
+function processMessage(state, msg) {
+  const node = state.nodes[msg.to];
+  if (!node) return;
+  if (msg.type === "block") {
+    if (!node.known.has(msg.blockId)) {
+      node.known.add(msg.blockId);
+      computeHead(node, state);
+      const block = state.blocks.get(msg.blockId);
+      if (block) {
+        block.receivedTimes = block.receivedTimes || [];
+        block.receivedTimes.push(state.time);
+        updatePropagation(state, block);
+      }
+    }
+  } else if (msg.type === "tx") {
+    node.mempool = true;
+    node.txSeen = true;
+  }
+}
+
+function updatePropagation(state, block) {
+  const count = block.receivedTimes.length + 1; // + producer
+  const threshold = Math.ceil(state.nodes.length * 0.67);
+  if (count >= threshold && !block.propagationRecorded) {
+    const times = [...block.receivedTimes, block.time].sort((a, b) => a - b);
+    const median = times[Math.floor(times.length / 2)] - block.time;
+    block.propagationRecorded = true;
+    state.propagationStats.lastMedian = median;
+  }
+}
+
+function updateCanonicalHead(state) {
+  const headCounts = new Map();
+  state.nodes.forEach((n) => {
+    if (n.head === null) return;
+    headCounts.set(n.head, (headCounts.get(n.head) || 0) + 1);
+  });
+  let best = null;
+  headCounts.forEach((count, headId) => {
+    const block = state.blocks.get(headId);
+    if (!block) return;
+    if (!best || count > best.count || (count === best.count && block.height > best.height)) {
+      best = { headId, count, height: block.height };
+    }
+  });
+  state.canonicalHead = best ? best.headId : state.canonicalHead;
+  return headCounts;
+}
+
+function finalizePos(state) {
+  if (state.config.mode !== "pos") return;
+  const checkpoint = 5;
+  const candidates = [];
+  state.blocks.forEach((b) => {
+    if (b.height > 0 && b.height % checkpoint === 0) candidates.push(b);
+  });
+  if (candidates.length === 0) return;
+  const latest = candidates[candidates.length - 1];
+  let stakeSeen = 0;
+  let totalStake = 0;
+  state.nodes.forEach((n) => {
+    totalStake += n.stake;
+    if (n.known.has(latest.id)) stakeSeen += n.stake;
+  });
+  if (stakeSeen / totalStake >= 0.67) {
+    state.finalizedHeight = Math.max(state.finalizedHeight, latest.height - 1);
+  }
+}
+
+function setFinality(state) {
+  if (state.config.mode === "pow") return;
+  state.blocks.forEach((b) => {
+    if (b.height <= state.finalizedHeight) b.finalized = true;
+  });
+}
+
+function includeTxInBlock(state, block, producer) {
+  if (state.time < 5) return;
+  if (producer.adversary) return;
+  if (producer.mempool) {
+    block.includesTx = true;
+    state.txIncludedBlock = block.id;
+  }
+}
+
+function produceBlock(state) {
+  const producer = pickProducer(state);
+  const headId = producer.head ?? 0;
+  const parent = state.blocks.get(headId);
+  const height = parent ? parent.height + 1 : 1;
+
   const block = {
-    id,
-    parent,
+    id: state.nextBlockId++,
+    parent: headId,
     height,
     time: state.time,
-    fork: flags.fork || false,
+    producer: producer.id,
+    includesTx: false,
     finalized: false,
-    includesTx: flags.includesTx || false,
-    mode: state.config.mode,
-    authority: flags.authority || null,
-    honest: !flags.adversary,
+    receivedTimes: [],
   };
-  state.blocks.push(block);
-  state.tipByHeight.set(height, block);
-  return block;
-}
 
-function updateHead(state, candidate) {
-  if (!state.head || candidate.height > state.head.height) {
-    state.head = candidate;
-  } else if (candidate.height === state.head.height && candidate.time < state.head.time) {
-    state.head = candidate;
-  }
-}
+  includeTxInBlock(state, block, producer);
+  state.blocks.set(block.id, block);
+  state.blockOrder.push(block);
 
-function includeTx(state, block) {
-  if (!state.txIncluded && state.time >= 5) {
-    block.includesTx = true;
-    state.txIncluded = true;
-    state.txBlockId = block.id;
-    state.txInclusionTime = state.time;
-  }
-}
+  producer.known.add(block.id);
+  computeHead(producer, state);
 
-function updateConfirmations(state) {
-  if (!state.txBlockId) {
-    state.confirmations = 0;
-    return;
-  }
-  const txBlock = state.blocks.find((b) => b.id === state.txBlockId);
-  if (!txBlock) return;
-  if (state.head) {
-    state.confirmations = Math.max(0, state.head.height - txBlock.height + 1);
-  }
-}
-
-function tryFinalize(state) {
-  if (state.config.mode !== "pos") return;
-  const epoch = 5;
-  if (state.head && state.head.height % epoch === 0) {
-    const adv = adversaryShare(state.config);
-    const latency = state.config.latency;
-    const quorum = latency === "high" ? 0.67 : 0.6;
-    const honest = 1 - adv;
-    if (honest >= quorum) {
-      const finalizeHeight = state.head.height - 2;
-      state.finalizedHeight = Math.max(state.finalizedHeight, finalizeHeight);
-    } else {
-      state.livenessStalled = true;
-      state.metrics.liveness = "Stalled";
-    }
-  }
-}
-
-function maybeFork(state) {
-  const chance = latencyForkChance(state.config.latency);
-  if (state.rng() < chance) {
-    const forkHeight = state.head ? state.head.height - 1 : 0;
-    const forkBlock = state.head && state.head.parent ? state.head.parent : state.head;
-    if (forkBlock) {
-      state.pendingForks.push({ block: forkBlock, height: forkHeight });
-    }
-  }
-}
-
-function shouldAdversaryWin(state) {
-  const adv = adversaryShare(state.config);
-  const skew = centralizationSkew(state.config);
-  return state.rng() < adv + skew * 0.1;
-}
-
-function stepPow(state) {
-  if (!state.head) {
-    state.head = addBlock(state, null, 0, { includesTx: false });
-    return;
-  }
-  maybeFork(state);
-  const newHeight = state.head.height + 1;
-  const useFork = state.pendingForks.length > 0 && state.rng() < 0.4;
-  let parent = state.head;
-  if (useFork) {
-    parent = pickBranchTarget(state, newHeight);
-  }
-  const block = addBlock(state, parent, newHeight, { adversary: shouldAdversaryWin(state) });
-  if (state.rng() < 0.8) includeTx(state, block);
-  updateHead(state, block);
-}
-
-function stepPos(state) {
-  if (!state.head) {
-    state.head = addBlock(state, null, 0, { includesTx: false });
-    return;
-  }
-  if (state.config.latency === "high" && state.rng() < 0.1) {
-    state.livenessStalled = true;
-    state.metrics.liveness = "Stalled";
-    return;
-  }
-  maybeFork(state);
-  const newHeight = state.head.height + 1;
-  const parent = state.pendingForks.length > 0 && state.rng() < 0.2 ? pickBranchTarget(state, newHeight) : state.head;
-  const block = addBlock(state, parent, newHeight, { adversary: shouldAdversaryWin(state) });
-  if (state.rng() < 0.85) includeTx(state, block);
-  updateHead(state, block);
-  tryFinalize(state);
-}
-
-function stepPoa(state) {
-  if (!state.head) {
-    state.head = addBlock(state, null, 0, { includesTx: false, authority: 0 });
-    return;
-  }
-  const authorities = state.config.centralization === "top" ? 3 : 5;
-  const authority = state.authorityIndex % authorities;
-  state.authorityIndex += 1;
-  const newHeight = state.head.height + 1;
-  const block = addBlock(state, state.head, newHeight, { authority });
-  includeTx(state, block);
-  updateHead(state, block);
-  state.finalizedHeight = newHeight;
-}
-
-export function stepSimulation(state) {
-  const interval = blockIntervalSeconds(state.config.mode, state.rng);
-  state.time += interval;
-
-  if (state.config.mode === "pow") stepPow(state);
-  if (state.config.mode === "pos") stepPos(state);
-  if (state.config.mode === "poa") stepPoa(state);
-
-  updateConfirmations(state);
-
-  if (state.config.mode === "pow") {
-    if (state.confirmations >= 6 && state.metrics.safeTime === null) {
-      state.metrics.safeTime = state.time;
-    }
-  } else if (state.config.mode === "pos") {
-    if (state.finalizedHeight >= 0 && state.metrics.safeTime === null) {
-      state.metrics.safeTime = state.time;
-    }
+  if (state.attack.active && state.attack.type === "reorg" && producer.adversary) {
+    state.attack.withheld.push(block.id);
   } else {
-    if (state.txIncluded && state.metrics.safeTime === null) {
-      state.metrics.safeTime = state.time;
-    }
+    gossipBlock(state, block.id, producer);
   }
-
-  return interval;
 }
 
-export function computeRisk(state) {
-  const adv = adversaryShare(state.config);
-  if (state.config.mode === "poa") {
-    return adv >= 0.4 ? "High" : adv >= 0.2 ? "Med" : "Low";
+function maybeAnnounceTx(state) {
+  if (state.txAnnounced || state.time < 5) return;
+  state.txAnnounced = true;
+  const origin = state.nodes[0];
+  origin.mempool = true;
+  origin.txSeen = true;
+  gossipTx(state, origin);
+}
+
+export function stepSimulation(state, dt) {
+  addGenesis(state);
+  state.time += dt;
+  maybeAnnounceTx(state);
+
+  if (state.time >= state.nextBlockTime) {
+    produceBlock(state);
+    state.nextBlockTime = state.time + blockInterval(state);
   }
-  const latency = state.config.latency;
-  const risk = adv + (latency === "high" ? 0.2 : latency === "med" ? 0.1 : 0.05);
-  if (risk > 0.45) return "High";
-  if (risk > 0.25) return "Med";
-  return "Low";
+
+  const due = state.messages.filter((m) => m.deliverAt <= state.time);
+  state.messages = state.messages.filter((m) => m.deliverAt > state.time);
+  due.forEach((msg) => processMessage(state, msg));
+
+  const headCounts = updateCanonicalHead(state);
+  finalizePos(state);
+  setFinality(state);
+
+  return headCounts;
+}
+
+export function computeOverlay(state, headCounts) {
+  const total = state.nodes.length;
+  const sorted = [...headCounts.entries()].sort((a, b) => b[1] - a[1]);
+  const top = sorted.slice(0, 2).map(([id, count]) => {
+    const pct = Math.round((count / total) * 100);
+    return { id, pct };
+  });
+
+  const propagation = state.propagationStats.lastMedian;
+  const propText = propagation ? `${propagation.toFixed(1)}s` : "—";
+
+  return {
+    split: top.map((t, i) => `Head ${i + 1}: ${t.pct}%`).join(" / ") || "—",
+    propagation: propText,
+    finalized: state.config.mode === "pow" ? "Confs" : state.finalizedHeight >= 0 ? "Yes" : "No",
+  };
 }
 
 export function attemptReorg(state) {
-  const adv = adversaryShare(state.config);
-  const successChance = state.config.mode === "poa" ? adv * 1.2 : adv * 1.1;
-  const success = state.rng() < successChance;
-  if (success && state.head && state.head.parent) {
-    state.head = state.head.parent;
-  }
-  return success;
+  state.attack = { type: "reorg", active: true, releaseAt: state.time + 6, withheld: [] };
 }
 
 export function attemptCensorship(state) {
-  const adv = adversaryShare(state.config);
-  const skew = centralizationSkew(state.config);
-  const success = state.rng() < adv + skew * 0.2;
-  if (success) {
-    state.txIncluded = false;
-    state.txBlockId = null;
-    state.confirmations = 0;
-  }
-  return success;
+  state.nodes.forEach((n) => {
+    if (n.adversary) n.mempool = false;
+  });
+}
+
+export function releaseAttack(state) {
+  if (!state.attack.active) return false;
+  if (state.time < state.attack.releaseAt) return false;
+  state.attack.active = false;
+  const released = state.attack.withheld.slice();
+  state.attack.withheld = [];
+  const producer = state.nodes.find((n) => n.adversary) || state.nodes[0];
+  released.forEach((id) => gossipBlock(state, id, producer));
+  return released.length > 0;
 }

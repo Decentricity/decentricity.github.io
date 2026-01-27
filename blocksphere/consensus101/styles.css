@@ -185,6 +185,12 @@ body {
   color: var(--muted);
 }
 
+.netview {
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: #4b6b77;
+}
+
 .attack-row {
   display: flex;
   gap: 8px;
