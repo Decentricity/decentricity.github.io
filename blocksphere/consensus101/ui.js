@@ -2,6 +2,7 @@ import {
   createSimState,
   stepSimulation,
   computeOverlay,
+  computeRisk,
   attemptReorg,
   attemptCensorship,
   releaseAttack,
@@ -81,7 +82,7 @@ function updateUI() {
   if (state.metrics.safeTime !== null) {
     metricSafe.textContent = `${state.metrics.safeTime.toFixed(1)}s`;
   }
-  metricRisk.textContent = state.metrics.risk;
+  metricRisk.textContent = state.metrics.risk || computeRisk(state);
   metricLive.textContent = state.metrics.liveness;
 
   const overlay = computeOverlay(state, lastHeadCounts);

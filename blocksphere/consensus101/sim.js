@@ -72,6 +72,7 @@ export function createSimState(config) {
     canonicalHead: null,
     propagationStats: { lastMedian: null },
     attack: { type: null, active: false, releaseAt: null, withheld: [] },
+    metrics: { safeTime: null, risk: "—", liveness: "OK" },
   };
 }
 
@@ -292,6 +293,22 @@ export function stepSimulation(state, dt) {
   finalizePos(state);
   setFinality(state);
 
+  const confs = confirmations(state);
+  if (state.config.mode === "pow") {
+    if (confs >= 6 && state.metrics.safeTime === null) state.metrics.safeTime = state.time;
+  } else if (state.config.mode === "pos") {
+    if (state.finalizedHeight >= 0 && state.metrics.safeTime === null) state.metrics.safeTime = state.time;
+  } else {
+    if (state.txIncludedBlock && state.metrics.safeTime === null) state.metrics.safeTime = state.time;
+  }
+
+  state.metrics.risk = computeRisk(state);
+  if (state.config.mode === "pos" && state.time > 20 && state.finalizedHeight < 0) {
+    state.metrics.liveness = "Stalled";
+  } else {
+    state.metrics.liveness = "OK";
+  }
+
   return { headCounts, delivered: due };
 }
 
@@ -311,6 +328,24 @@ export function computeOverlay(state, headCounts) {
     propagation: propText,
     finalized: state.config.mode === "pow" ? "Confs" : state.finalizedHeight >= 0 ? "Yes" : "No",
   };
+}
+
+export function computeRisk(state) {
+  const adv = Number(state.config.adversary) / 100;
+  const latency = state.config.latency;
+  let risk = adv + (latency === "high" ? 0.2 : latency === "med" ? 0.1 : 0.05);
+  if (state.config.centralization === "top") risk += 0.1;
+  if (risk >= 0.45) return "High";
+  if (risk >= 0.25) return "Med";
+  return "Low";
+}
+
+function confirmations(state) {
+  if (!state.txIncludedBlock || state.canonicalHead === null) return 0;
+  const head = state.blocks.get(state.canonicalHead);
+  const txBlock = state.blocks.get(state.txIncludedBlock);
+  if (!head || !txBlock) return 0;
+  return Math.max(0, head.height - txBlock.height + 1);
 }
 
 export function attemptReorg(state) {
