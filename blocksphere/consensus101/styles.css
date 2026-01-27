@@ -207,7 +207,10 @@ body {
 .explainer {
   font-size: 0.92rem;
   color: #3b5f6b;
-  margin: 12px;
+}
+
+.explainer-row {
+  padding: 8px 20px 0;
 }
 
 .metrics {
@@ -238,7 +241,7 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 12px;
-  padding: 8px 16px 12px;
+  padding: 8px 20px 12px;
 }
 
 .knob {
