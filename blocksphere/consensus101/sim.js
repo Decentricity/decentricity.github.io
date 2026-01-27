@@ -365,16 +365,22 @@ function confirmations(state) {
 
 export function attemptReorg(state) {
   state.attack = { type: "reorg", active: true, releaseAt: state.time + 6, withheld: [] };
-  const adv = state.nodes.find((n) => n.adversary) || state.nodes[0];
-  state.events.push({ type: "reorg_attempt", time: state.time, nodeId: adv.id });
+  const adversaries = state.nodes.filter((n) => n.adversary);
+  if (adversaries.length === 0) adversaries.push(state.nodes[0]);
+  adversaries.forEach((adv) => {
+    state.events.push({ type: "reorg_attempt", time: state.time, nodeId: adv.id });
+  });
 }
 
 export function attemptCensorship(state) {
   state.nodes.forEach((n) => {
     if (n.adversary) n.mempool = false;
   });
-  const adv = state.nodes.find((n) => n.adversary) || state.nodes[0];
-  state.events.push({ type: "censor_attempt", time: state.time, nodeId: adv.id });
+  const adversaries = state.nodes.filter((n) => n.adversary);
+  if (adversaries.length === 0) adversaries.push(state.nodes[0]);
+  adversaries.forEach((adv) => {
+    state.events.push({ type: "censor_attempt", time: state.time, nodeId: adv.id });
+  });
 }
 
 export function releaseAttack(state) {
