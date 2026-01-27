@@ -228,6 +228,54 @@ body {
   font-weight: 700;
 }
 
+.legend {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(19, 76, 96, 0.12);
+  font-size: 0.82rem;
+  color: #47636f;
+}
+
+.legend-title {
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.swatch-block {
+  background: #ffc857;
+}
+
+.swatch-tx {
+  background: #3ddc97;
+}
+
+.swatch-adv {
+  background: #ff4d4d;
+}
+
+.swatch-withheld {
+  background: #ff4d4d;
+  box-shadow: 0 0 6px rgba(255, 77, 77, 0.6);
+}
+
+.swatch-final {
+  background: #2f8aa0;
+}
+
 .explainer-row {
   padding: 6px 16px 0;
   height: 110px;
