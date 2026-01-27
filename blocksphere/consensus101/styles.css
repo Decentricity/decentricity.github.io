@@ -236,7 +236,7 @@ body {
 .explainer {
   font-size: 0.86rem;
   color: #3b5f6b;
-  max-height: 86px;
+  max-height: 120px;
   overflow: auto;
 }
 

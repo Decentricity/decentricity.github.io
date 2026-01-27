@@ -79,7 +79,11 @@ export function createViz(container) {
     });
   }
 
-  function updateTokenStacks(nodes) {
+  function updateTokenStacks(nodes, enabled) {
+    if (!enabled) {
+      tokenStacks.forEach((stack) => stack.clear());
+      return;
+    }
     nodes.forEach((node) => {
       const stack = tokenStacks.get(node.id);
       if (!stack) return;
