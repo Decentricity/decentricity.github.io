@@ -38,16 +38,15 @@ def verify(commitment: str, secret: bytes, nonce: bytes) -> bool:
 
 
 def main():
-    secret = b"i know the secret"
-    nonce = secrets.token_bytes(16)
+    secret = b"i know the secret"\\n    nonce = secrets.token_bytes(16)
 
     c = commit(secret, nonce)
     print("Commitment (proof blob):", c)
 
-    print("\nReveal secret + nonce to verify: ")
+    print("\\nReveal secret + nonce to verify: ")
     print("Valid?", verify(c, secret, nonce))
 
-    print("\nTakeaway:")
+    print("\\nTakeaway:")
     print("- Prove knowledge without exposing the secret itself")
 
 
@@ -103,7 +102,7 @@ def main():
     print("Cheater wins:", cheater, "rounds")
     print("Cheat probability after", rounds, "rounds:", cheat_probability(rounds))
 
-    print("\nTakeaway:")
+    print("\\nTakeaway:")
     print("- Random challenges + repetition make cheating unlikely")
 
 
@@ -133,8 +132,7 @@ def place_waldo(grid):
     w = len(grid[0])
     x = random.randint(0, w - 1)
     y = random.randint(0, h - 1)
-    grid[y][x] = "W"
-    return x, y
+    grid[y][x] = "W"\\n    return x, y
 
 
 def reveal_window(grid, x, y, r=1):
@@ -160,7 +158,7 @@ def main():
     masked = reveal_window(grid, x, y, r=1)
     print_grid(masked)
 
-    print("\nTakeaway:")
+    print("\\nTakeaway:")
     print("- Selective reveal proves knowledge without leaking the rest")
 
 
@@ -210,7 +208,7 @@ def main():
     print("Secret transform: rot=", rot * 90, "deg, shift=", (dx, dy))
     print("Transformed waldo (what verifier sees):", (tx, ty))
 
-    print("\nTakeaway:")
+    print("\\nTakeaway:")
     print("- Verifier confirms Waldo in transformed space")
     print("- Original coordinates stay hidden without the secret transform")
 
@@ -255,7 +253,7 @@ def main():
     print("Theoretical cheat probability:", p)
     print("Simulated cheater success:", outcome)
 
-    print("\nTakeaway:")
+    print("\\nTakeaway:")
     print("- Random audits make cheating unlikely")
 
 
@@ -287,7 +285,7 @@ def main():
         p = cheat_probability(rounds)
         print(f"Rounds={rounds} -> cheat prob ~ {p:.6f}")
 
-    print("\nChecklist:")
+    print("\\nChecklist:")
     print("- Soundness: cheating is unlikely")
     print("- Zero-knowledge: no secret leakage")
     print("- Verifier randomness: prevents adaptive cheating")
