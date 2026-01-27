@@ -86,10 +86,10 @@ export function createViz(container) {
       tokenStacks.set(node.id, stack);
 
       if (node.producer || node.delegate) {
-        let role = \"PRODUCER\";
-        if (node.delegate) role = \"DELEGATE\";
-        else if (node.producer && node.adversary) role = \"ADV PRODUCER\";
-        else if (node.producer) role = \"PRODUCER\";
+        let role = "PRODUCER";
+        if (node.delegate) role = "DELEGATE";
+        else if (node.producer && node.adversary) role = "ADV PRODUCER";
+        else if (node.producer) role = "PRODUCER";
         const label = makeLabelSprite(role);
         label.scale.set(2.2, 0.55, 1);
         label.position.copy(mesh.position).add(new THREE.Vector3(0, -1.4, 0));
