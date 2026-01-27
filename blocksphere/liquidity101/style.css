@@ -1,13 +1,13 @@
 :root {
-  --bg: #0b0e14;
-  --card: #141a24;
-  --accent: #ff9f1c;
-  --accent-2: #3ddc97;
-  --text: #f6f8ff;
-  --muted: #a6b0c5;
+  --bg: #eef6fb;
+  --card: #ffffff;
+  --accent: #2f8aa0;
+  --accent-2: #1f6f86;
+  --text: #0b3a4a;
+  --muted: #5a7a87;
   --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  --sans: "Space Grotesk", "Trebuchet MS", "Segoe UI", sans-serif;
-  --shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+  --sans: "Poppins", "Trebuchet MS", "Segoe UI", sans-serif;
+  --shadow: 0 18px 40px rgba(14, 52, 68, 0.12);
 }
 
 * {
@@ -30,34 +30,13 @@ body {
   z-index: -1;
 }
 
-.orb {
-  position: absolute;
-  width: 480px;
-  height: 480px;
-  border-radius: 50%;
-  filter: blur(40px);
-  opacity: 0.6;
-}
-
-.orb-a {
-  top: -140px;
-  left: -80px;
-  background: radial-gradient(circle at 30% 30%, #ff9f1c, #ff6b6b 60%, transparent 70%);
-}
-
-.orb-b {
-  bottom: -180px;
-  right: -120px;
-  background: radial-gradient(circle at 30% 30%, #3ddc97, #4ea8ff 60%, transparent 70%);
-}
-
 .grid {
   position: absolute;
   inset: 0;
-  background-image: linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
-  background-size: 48px 48px;
-  opacity: 0.35;
+  background-image: linear-gradient(rgba(19, 76, 96, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(19, 76, 96, 0.05) 1px, transparent 1px);
+  background-size: 52px 52px;
+  opacity: 0.4;
 }
 
 .hero {
@@ -68,19 +47,35 @@ body {
   max-width: 980px;
   margin: 0 auto;
   padding: 32px;
-  background: rgba(20, 26, 36, 0.75);
+  background: rgba(255, 255, 255, 0.9);
   border-radius: 28px;
   box-shadow: var(--shadow);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(19, 76, 96, 0.12);
   animation: fadeIn 800ms ease;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-logo {
+  width: 36px;
+  height: 36px;
+}
+
+.brand-name {
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 .badge {
   display: inline-block;
   padding: 8px 14px;
   border-radius: 999px;
-  background: rgba(255, 159, 28, 0.15);
-  border: 1px solid rgba(255, 159, 28, 0.55);
+  background: rgba(47, 138, 160, 0.12);
+  border: 1px solid rgba(47, 138, 160, 0.35);
   font-weight: 600;
   letter-spacing: 0.04em;
 }
@@ -120,13 +115,13 @@ button:hover {
 
 .primary {
   background: var(--accent);
-  color: #1a0e06;
+  color: #f4fbff;
 }
 
 .secondary {
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: var(--text);
+  border: 1px solid rgba(19, 76, 96, 0.25);
+  color: var(--accent-2);
 }
 
 .app {
@@ -136,8 +131,8 @@ button:hover {
 }
 
 .topic-card {
-  background: rgba(20, 26, 36, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--card);
+  border: 1px solid rgba(19, 76, 96, 0.12);
   border-radius: 24px;
   padding: 28px;
   margin-bottom: 24px;
@@ -180,8 +175,8 @@ button:hover {
 }
 
 .panel {
-  background: #0b1018;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #f7fbff;
+  border: 1px solid rgba(19, 76, 96, 0.12);
   border-radius: 16px;
   padding: 16px;
 }
@@ -189,7 +184,7 @@ button:hover {
 .panel h4 {
   margin: 0 0 10px 0;
   font-size: 1rem;
-  color: #f9d4a3;
+  color: #1c7187;
 }
 
 .code-actions {
@@ -206,13 +201,13 @@ button:hover {
 }
 
 .code-block {
-  background: #0a0d14;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #ffffff;
+  border: 1px solid rgba(19, 76, 96, 0.12);
   border-radius: 14px;
   padding: 12px;
   font-family: var(--mono);
   font-size: 0.9rem;
-  color: #cfe5ff;
+  color: #123a49;
   white-space: pre-wrap;
 }
 
