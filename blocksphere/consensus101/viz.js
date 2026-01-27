@@ -5,8 +5,14 @@ export function createViz(container) {
   scene.background = new THREE.Color(0xf7fbff);
 
   const camera = new THREE.PerspectiveCamera(55, container.clientWidth / container.clientHeight, 0.1, 200);
-  camera.position.set(0, 10, 16);
-  camera.lookAt(0, 0, 0);
+  let yaw = 0;
+  const radius = 16;
+  const baseY = 10;
+  function updateCamera() {
+    camera.position.set(Math.sin(yaw) * radius, baseY, Math.cos(yaw) * radius);
+    camera.lookAt(0, 0, 0);
+  }
+  updateCamera();
 
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(container.clientWidth, container.clientHeight);
@@ -266,11 +272,34 @@ export function createViz(container) {
     camera.aspect = container.clientWidth / container.clientHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(container.clientWidth, container.clientHeight);
+    updateCamera();
   }
 
   function render() {
     renderer.render(scene, camera);
   }
+
+  let dragging = false;
+  let lastX = 0;
+  function onDown(e) {
+    dragging = true;
+    lastX = e.clientX;
+  }
+  function onMove(e) {
+    if (!dragging) return;
+    const dx = e.clientX - lastX;
+    lastX = e.clientX;
+    yaw += dx * 0.005;
+    updateCamera();
+  }
+  function onUp() {
+    dragging = false;
+  }
+
+  renderer.domElement.style.touchAction = "none";
+  renderer.domElement.addEventListener("pointerdown", onDown);
+  window.addEventListener("pointermove", onMove);
+  window.addEventListener("pointerup", onUp);
 
   return {
     initNodes,
