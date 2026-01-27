@@ -262,6 +262,7 @@ function produceBlock(state) {
 
   producer.known.add(block.id);
   computeHead(producer, state);
+  state.events.push({ type: "broadcast", time: state.time, nodeId: producer.id });
 
   if (state.config.mode === "poa") {
     state.finalizedHeight = block.height;
@@ -270,7 +271,7 @@ function produceBlock(state) {
 
   if (state.attack.active && state.attack.type === "reorg" && producer.adversary) {
     state.attack.withheld.push(block.id);
-    state.events.push({ type: "withheld", time: state.time, blockId: block.id });
+    state.events.push({ type: "withheld", time: state.time, blockId: block.id, nodeId: producer.id });
   } else {
     gossipBlock(state, block.id, producer);
   }
@@ -364,14 +365,16 @@ function confirmations(state) {
 
 export function attemptReorg(state) {
   state.attack = { type: "reorg", active: true, releaseAt: state.time + 6, withheld: [] };
-  state.events.push({ type: "reorg_attempt", time: state.time });
+  const adv = state.nodes.find((n) => n.adversary) || state.nodes[0];
+  state.events.push({ type: "reorg_attempt", time: state.time, nodeId: adv.id });
 }
 
 export function attemptCensorship(state) {
   state.nodes.forEach((n) => {
     if (n.adversary) n.mempool = false;
   });
-  state.events.push({ type: "censor_attempt", time: state.time });
+  const adv = state.nodes.find((n) => n.adversary) || state.nodes[0];
+  state.events.push({ type: "censor_attempt", time: state.time, nodeId: adv.id });
 }
 
 export function releaseAttack(state) {

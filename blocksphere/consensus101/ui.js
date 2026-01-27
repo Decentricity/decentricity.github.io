@@ -155,10 +155,24 @@ function tick() {
       reorg_release: "REORG RELEASE",
       censor_attempt: "CENSOR",
       withheld: "WITHHELD",
+      broadcast: "BROADCAST",
     };
     const text = labelMap[evt.type];
     if (!text) return;
-    viz.addEventLabel(text, { x: -2, y: 3.5, z: -3 });
+    if (evt.nodeId !== undefined) {
+      const nodeMesh = viz.nodeMeshes.get(evt.nodeId);
+      if (nodeMesh) {
+        viz.addEventLabel(text, {
+          x: nodeMesh.position.x,
+          y: nodeMesh.position.y + 1.2,
+          z: nodeMesh.position.z,
+        });
+      } else {
+        viz.addEventLabel(text, { x: -2, y: 3.5, z: -3 });
+      }
+    } else {
+      viz.addEventLabel(text, { x: -2, y: 3.5, z: -3 });
+    }
   });
 
   events.filter((e) => e.type === "withheld").forEach((e) => {
