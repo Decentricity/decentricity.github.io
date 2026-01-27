@@ -35,26 +35,41 @@ function pickAdversaries(nodes, share, rng) {
   return shuffled.slice(0, count);
 }
 
+function clampProducerCount(total, requested) {
+  const maxProducers = Math.min(15, total);
+  return Math.max(1, Math.min(maxProducers, requested));
+}
+
+function producerWeights(count, topHeavy) {
+  const weights = new Array(count).fill(1);
+  if (!topHeavy || count === 0) return weights;
+  weights[0] = 4.5;
+  if (count > 1) weights[1] = 2.2;
+  for (let i = 2; i < count; i++) weights[i] = 0.6;
+  return weights;
+}
+
 function makeNodes(config, rng) {
-  const count = 18;
+  const count = Math.max(6, Math.min(60, Number(config.totalNodes) || 12));
   const nodes = [];
   const adversaryProducers = Number(config.adversaryProducers ?? config.adversary ?? 0) / 100;
   const adversaryNonProducers = Number(config.adversaryNonProducers ?? 0) / 100;
   const topHeavy = config.centralization === "top";
 
-  const producerCount = config.mode === "poa" ? (topHeavy ? 3 : 5) : 6;
+  const requestedProducers = Number(config.producers) || 4;
+  const producerCount = clampProducerCount(count, requestedProducers);
+  const weights = producerWeights(producerCount, topHeavy);
 
   for (let i = 0; i < count; i++) {
     const isProducer = i < producerCount;
     const adversary = false;
-    const baseWeight = isProducer ? 1 : 0.2;
-    const skew = topHeavy && isProducer ? (i === 0 ? 3.5 : 0.8) : 1;
+    const baseWeight = isProducer ? weights[i] : 0.2;
     nodes.push({
       id: i,
       producer: isProducer,
       adversary,
-      weight: baseWeight * skew,
-      stake: baseWeight * skew,
+      weight: baseWeight,
+      stake: baseWeight,
       head: null,
       known: new Set(),
       mempool: false,
@@ -96,7 +111,7 @@ export function createSimState(config) {
   };
 
   if (config.mode === "dpos") {
-    const delegates = state.nodes.slice(0, 5);
+    const delegates = state.nodes.filter((n) => n.producer);
     delegates.forEach((n) => (n.delegate = true));
     state.delegates = delegates.map((n) => n.id);
   }
@@ -398,15 +413,55 @@ export function computeOverlay(state, headCounts) {
   };
 }
 
+function producerStats(state) {
+  const producers = state.nodes.filter((n) => n.producer);
+  const total = producers.reduce((acc, n) => acc + n.weight, 0) || 1;
+  const sorted = producers.map((n) => n.weight).sort((a, b) => b - a);
+  const top1Share = sorted.length ? sorted[0] / total : 0;
+  const top2Share = sorted.length > 1 ? (sorted[0] + sorted[1]) / total : top1Share;
+  return { top1Share, top2Share, producerCount: producers.length, totalWeight: total };
+}
+
+export function computeSecuritySummary(state) {
+  const { top1Share, producerCount } = producerStats(state);
+  const quorum = Math.ceil((2 * producerCount) / 3);
+  const f = Math.floor((producerCount - 1) / 3);
+  return { top1Share, producerCount, quorum, f };
+}
+
 export function computeRisk(state) {
   const advProducers = Number(state.config.adversaryProducers ?? state.config.adversary ?? 0) / 100;
   const advNonProducers = Number(state.config.adversaryNonProducers ?? 0) / 100;
   const latency = state.config.latency;
+  const { top1Share, producerCount } = producerStats(state);
   let risk = advProducers + advNonProducers * 0.3 + (latency === "high" ? 0.2 : latency === "med" ? 0.1 : 0.05);
-  if (state.config.centralization === "top") risk += 0.1;
+  if (state.config.centralization === "top") risk += 0.15 + top1Share * 0.25;
+  if (producerCount <= 4) risk += 0.15;
+  else if (producerCount <= 7) risk += 0.08;
   if (risk >= 0.45) return "High";
   if (risk >= 0.25) return "Med";
   return "Low";
+}
+
+function attackChance(state, type) {
+  const latency = state.config.latency;
+  const advProducers = Number(state.config.adversaryProducers ?? state.config.adversary ?? 0) / 100;
+  const { top1Share, producerCount } = producerStats(state);
+  let chance = type === "censor" ? 0.1 : 0.12;
+  chance += latency === "high" ? 0.2 : latency === "med" ? 0.1 : 0.05;
+  chance += top1Share * (type === "censor" ? 0.6 : 0.4);
+  if (state.config.centralization === "top") chance += 0.18;
+  if (producerCount <= 4) chance += type === "censor" ? 0.25 : 0.18;
+  else if (producerCount <= 7) chance += type === "censor" ? 0.12 : 0.1;
+  chance += advProducers * (type === "censor" ? 0.35 : 0.25);
+  if (type === "censor" && (state.config.mode === "dpos" || state.config.mode === "poa")) chance += 0.1;
+  return Math.max(0.05, Math.min(0.95, chance));
+}
+
+export function evaluateAttack(state, type) {
+  const chance = attackChance(state, type);
+  const success = state.rng() < chance;
+  return { success, chance };
 }
 
 function confirmations(state) {
@@ -418,15 +473,18 @@ function confirmations(state) {
 }
 
 export function attemptReorg(state) {
-  state.attack = { type: "reorg", active: true, releaseAt: state.time + 6, withheld: [] };
+  const outcome = evaluateAttack(state, "reorg");
+  state.attack = { type: "reorg", active: true, releaseAt: state.time + 6, withheld: [], success: outcome.success };
   const adversaries = state.nodes.filter((n) => n.adversary);
   if (adversaries.length === 0) adversaries.push(state.nodes[0]);
   adversaries.forEach((adv) => {
     state.events.push({ type: "reorg_attempt", time: state.time, nodeId: adv.id });
   });
+  return outcome;
 }
 
 export function attemptCensorship(state) {
+  const outcome = evaluateAttack(state, "censor");
   state.nodes.forEach((n) => {
     if (n.adversary) n.mempool = false;
   });
@@ -435,6 +493,7 @@ export function attemptCensorship(state) {
   adversaries.forEach((adv) => {
     state.events.push({ type: "censor_attempt", time: state.time, nodeId: adv.id });
   });
+  return outcome;
 }
 
 export function releaseAttack(state) {

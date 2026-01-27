@@ -80,6 +80,7 @@
         <div class="label">Liveness</div>
         <div class="value" id="metricLive">—</div>
       </div>
+      <div class="security-readout" id="securityReadout">—</div>
       <div class="legend">
         <div class="legend-title">Legend</div>
         <div class="legend-item"><span class="swatch swatch-block"></span> Block gossip</div>
@@ -118,6 +119,21 @@
           <div class="adv-label">Non-producers</div>
           <input type="range" id="advNon" min="0" max="80" step="5" value="0" />
           <div class="adv-value"><span id="advNonValue">0</span>%</div>
+        </div>
+      </div>
+    </div>
+    <div class="knob">
+      <label>Node count</label>
+      <div class="adv-columns">
+        <div class="adv-column">
+          <div class="adv-label">Total nodes</div>
+          <input type="range" id="totalNodes" min="6" max="60" step="1" value="12" />
+          <div class="adv-value"><span id="totalNodesValue">12</span></div>
+        </div>
+        <div class="adv-column">
+          <div class="adv-label">Producers</div>
+          <input type="range" id="producers" min="1" max="12" step="1" value="3" />
+          <div class="adv-value"><span id="producersValue">3</span></div>
         </div>
       </div>
     </div>

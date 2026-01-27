@@ -45,7 +45,7 @@ export function createViz(container) {
 
   function layoutNodes(count) {
     const positions = [];
-    const radius = 5.5;
+    const radius = 4.5 + Math.min(4, count * 0.05);
     for (let i = 0; i < count; i++) {
       const angle = (i / count) * Math.PI * 2;
       positions.push(new THREE.Vector3(Math.cos(angle) * radius, 0, Math.sin(angle) * radius));

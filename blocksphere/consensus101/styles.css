@@ -228,6 +228,13 @@ body {
   font-weight: 700;
 }
 
+.security-readout {
+  margin-top: 8px;
+  font-size: 0.78rem;
+  color: #4b6a76;
+  line-height: 1.3;
+}
+
 .explainer-row {
   padding: 6px 16px 0;
   height: 110px;

@@ -3,6 +3,7 @@ import {
   stepSimulation,
   computeOverlay,
   computeRisk,
+  computeSecuritySummary,
   attemptReorg,
   attemptCensorship,
   releaseAttack,
@@ -25,10 +26,15 @@ const nodesSplit = document.getElementById("nodesSplit");
 const propMedian = document.getElementById("propMedian");
 const finalized = document.getElementById("finalized");
 const explainer = document.getElementById("explainer");
+const securityReadout = document.getElementById("securityReadout");
 const advProdSlider = document.getElementById("advProd");
 const advProdValue = document.getElementById("advProdValue");
 const advNonSlider = document.getElementById("advNon");
 const advNonValue = document.getElementById("advNonValue");
+const totalNodesSlider = document.getElementById("totalNodes");
+const totalNodesValue = document.getElementById("totalNodesValue");
+const producersSlider = document.getElementById("producers");
+const producersValue = document.getElementById("producersValue");
 
 const container = document.getElementById("threeRoot");
 const viz = createViz(container);
@@ -39,6 +45,8 @@ let config = {
   latency: "low",
   adversaryProducers: 0,
   adversaryNonProducers: 0,
+  totalNodes: 12,
+  producers: 3,
   centralization: "decentralized",
 };
 
@@ -76,6 +84,8 @@ function resetSim() {
   running = false;
   explainer.textContent = buildExplainerText();
   syncAdversaryUI();
+  syncNodeUI();
+  updateSecurityReadout();
 }
 
 function updateUI() {
@@ -109,6 +119,18 @@ function updateUI() {
   finalized.textContent = overlay.finalized;
 
   explainer.textContent = buildExplainerText();
+  updateSecurityReadout();
+}
+
+function updateSecurityReadout() {
+  if (!securityReadout) return;
+  const summary = computeSecuritySummary(state);
+  const top1 = Math.round(summary.top1Share * 100);
+  if (config.mode === "pow") {
+    securityReadout.textContent = `Majority threshold = >50% of miners · Top-1 miner share: ${top1}%`;
+  } else {
+    securityReadout.textContent = `Byzantine tolerance f = ${summary.f} · Quorum = ${summary.quorum} (of ${summary.producerCount} producers) · Top-1 share: ${top1}%`;
+  }
 }
 
 function buildExplainerText() {
@@ -218,6 +240,7 @@ function applyMode(mode) {
   document.querySelectorAll(".mode-btn").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.mode === mode);
   });
+  applyModeDefaults(mode);
   resetSim();
 }
 
@@ -233,6 +256,20 @@ function applyKnob(groupId, key) {
   });
 }
 
+function applyModeDefaults(mode) {
+  const presets = {
+    pow: { total: 12, producers: 3 },
+    pos: { total: 12, producers: 4 },
+    dpos: { total: 20, producers: 7 },
+    poa: { total: 12, producers: 4 },
+    poet: { total: 12, producers: 4 },
+  };
+  const preset = presets[mode];
+  if (!preset) return;
+  config.totalNodes = preset.total;
+  config.producers = preset.producers;
+}
+
 function syncAdversaryUI() {
   if (advProdSlider && advProdValue) {
     advProdSlider.value = config.adversaryProducers;
@@ -241,6 +278,47 @@ function syncAdversaryUI() {
   if (advNonSlider && advNonValue) {
     advNonSlider.value = config.adversaryNonProducers;
     advNonValue.textContent = config.adversaryNonProducers;
+  }
+}
+
+function syncNodeUI() {
+  if (!totalNodesSlider || !totalNodesValue || !producersSlider || !producersValue) return;
+  totalNodesSlider.value = config.totalNodes;
+  totalNodesValue.textContent = config.totalNodes;
+  const maxProducers = Math.min(15, Number(totalNodesSlider.value));
+  producersSlider.max = String(maxProducers);
+  if (config.producers > maxProducers) config.producers = maxProducers;
+  if (config.producers < 1) config.producers = 1;
+  producersSlider.value = config.producers;
+  producersValue.textContent = config.producers;
+}
+
+function bindNodeSliders() {
+  if (totalNodesSlider && totalNodesValue && producersSlider && producersValue) {
+    totalNodesSlider.addEventListener("input", () => {
+      totalNodesValue.textContent = totalNodesSlider.value;
+      const maxProducers = Math.min(15, Number(totalNodesSlider.value));
+      producersSlider.max = String(maxProducers);
+      if (Number(producersSlider.value) > maxProducers) {
+        producersSlider.value = String(maxProducers);
+        producersValue.textContent = producersSlider.value;
+      }
+    });
+    totalNodesSlider.addEventListener("change", () => {
+      config.totalNodes = Number(totalNodesSlider.value);
+      const maxProducers = Math.min(15, config.totalNodes);
+      if (config.producers > maxProducers) config.producers = maxProducers;
+      resetSim();
+    });
+  }
+  if (producersSlider && producersValue) {
+    producersSlider.addEventListener("input", () => {
+      producersValue.textContent = producersSlider.value;
+    });
+    producersSlider.addEventListener("change", () => {
+      config.producers = Number(producersSlider.value);
+      resetSim();
+    });
   }
 }
 
@@ -264,13 +342,21 @@ function runAttack(type) {
   }
   const adversaryIds = state.nodes.filter((n) => n.adversary).map((n) => n.id);
   if (type === "reorg") {
-    attemptReorg(state);
-    attackResult.textContent = "Reorg Attempt: adversary withholding blocks, will release soon. Mitigation: wait for finality / confirmations.";
+    const outcome = attemptReorg(state);
+    const verdict = outcome.success ? "Success" : "Failed";
+    const reason = outcome.success
+      ? "Small committee / skewed control made the reorg easy."
+      : "Producer diversity blunted the reorg attempt.";
+    attackResult.textContent = `Reorg Attempt (${verdict}): adversary withholding blocks, will release soon. ${reason} Mitigation: wait for finality / confirmations.`;
     lastAttackMessage = " Reorg attempt active: adversary nodes pulse red; withheld blocks glow red, then release in a burst to race the honest chain.";
     attackPulse = { type: "reorg", until: state.time + 6 };
   } else {
-    attemptCensorship(state);
-    attackResult.textContent = "Censorship Attempt: adversarial producers ignoring TX★. Mitigation: decentralize producers + diversify relay.";
+    const outcome = attemptCensorship(state);
+    const verdict = outcome.success ? "Success" : "Failed";
+    const reason = outcome.success
+      ? "Small committee + top-heavy control made censorship easy."
+      : "Wider producer set reduced censorship power.";
+    attackResult.textContent = `Censorship Attempt (${verdict}): adversarial producers ignoring TX★. ${reason} Mitigation: decentralize producers + diversify relay.`;
     lastAttackMessage = " Censorship attempt active: adversary nodes pulse red and ignore TX★ gossip pulses, delaying inclusion.";
     attackPulse = { type: "censor", until: state.time + 6 };
   }
@@ -286,6 +372,8 @@ function parseParams() {
   const adv = params.get("adv");
   const advP = params.get("advp");
   const advN = params.get("advn");
+  const nodes = params.get("nodes");
+  const producers = params.get("producers");
   const central = params.get("central");
   if (mode) applyMode(mode);
   if (seed) setSeed(Number(seed));
@@ -293,6 +381,8 @@ function parseParams() {
   if (adv) config.adversaryProducers = Number(adv);
   if (advP) config.adversaryProducers = Number(advP);
   if (advN) config.adversaryNonProducers = Number(advN);
+  if (nodes) config.totalNodes = Number(nodes);
+  if (producers) config.producers = Number(producers);
   if (central) config.centralization = central;
 }
 
@@ -308,6 +398,7 @@ function bindUI() {
   applyKnob("centralKnob", "centralization");
   bindAdversarySlider(advProdSlider, advProdValue, "adversaryProducers");
   bindAdversarySlider(advNonSlider, advNonValue, "adversaryNonProducers");
+  bindNodeSliders();
 
   window.addEventListener("resize", () => {
     viz.resize();
