@@ -61,14 +61,8 @@ body {
 }
 
 .brand-logo {
-  width: 36px;
-  height: 36px;
 }
 
-.brand-name {
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
 
 .badge {
   display: inline-block;
