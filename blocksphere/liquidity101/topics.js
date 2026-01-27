@@ -87,6 +87,14 @@ const TOPICS = [
       "npm run deploy:local    # Terminal B",
     ],
     studentTodo: "Implement in contracts/FactoringContract.sol",
+    studentCode: `// Student version (TODO)
+function requestEarlyPayment(uint256 _invoiceId)
+    external
+    onlySupplier(_invoiceId)
+    inStatus(_invoiceId, InvoiceStatus.Approved)
+{
+    revert("TODO: requestEarlyPayment");
+}`,
     referenceCode: `function requestEarlyPayment(uint256 _invoiceId)
     external
     onlySupplier(_invoiceId)
@@ -136,6 +144,14 @@ require(ok, "Transfer failed");`,
       "npm run deploy:local    # Terminal B",
     ],
     studentTodo: "Implement in contracts/FactoringContract.sol",
+    studentCode: `// Student version (TODO)
+function fund(uint256 _invoiceId)
+    external
+    payable
+    inStatus(_invoiceId, InvoiceStatus.FinancingRequested)
+{
+    revert("TODO: fund");
+}`,
     referenceCode: `function fund(uint256 _invoiceId)
     external
     payable
@@ -172,6 +188,10 @@ require(ok, "Transfer failed");`,
       "npm run deploy:local    # Terminal B",
     ],
     studentTodo: "Implement in contracts/FactoringContract.sol",
+    studentCode: `// Student version (TODO)
+function calculateDiscount(uint256 amount) public pure returns (uint256) {
+    revert("TODO: calculateDiscount");
+}`,
     referenceCode: `function calculateDiscount(uint256 amount)
     public
     pure
@@ -199,6 +219,15 @@ require(ok, "Transfer failed");`,
       "npm run deploy:local    # Terminal B",
     ],
     studentTodo: "Implement in contracts/FactoringContract.sol",
+    studentCode: `// Student version (TODO)
+function settlePayment(uint256 _invoiceId)
+    external
+    payable
+    onlyBuyer(_invoiceId)
+    inStatus(_invoiceId, InvoiceStatus.Funded)
+{
+    revert("TODO: settlePayment");
+}`,
     referenceCode: `function settlePayment(uint256 _invoiceId)
     external
     payable
@@ -234,6 +263,16 @@ require(ok, "Transfer failed");`,
       "npm run deploy:local    # Terminal B",
     ],
     studentTodo: "Implement in contracts/FactoringContract.sol",
+    studentCode: `// Student version (TODO)
+function authorizeSupplier(address _supplier) external onlyAdmin {
+    revert("TODO: authorizeSupplier");
+}
+function authorizeBuyer(address _buyer) external onlyAdmin {
+    revert("TODO: authorizeBuyer");
+}
+function revokeSupplier(address _supplier) external onlyAdmin {
+    revert("TODO: revokeSupplier");
+}`,
     referenceCode: `function authorizeSupplier(address _supplier) external onlyAdmin {
     authorizedSuppliers[_supplier] = true;
 }

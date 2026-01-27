@@ -8,7 +8,7 @@ function block(title, content) {
   return `
     <div class="panel">
       <h4>${title}</h4>
-      <div class="code-block">${content}</div>
+      <div class="code-block">${escapeHtml(content)}</div>
     </div>
   `;
 }
@@ -18,7 +18,31 @@ function list(title, items) {
   return `
     <div class="panel">
       <h4>${title}</h4>
-      <div class="code-block">${items.join("\n")}</div>
+      <div class="code-block">${escapeHtml(items.join("\n"))}</div>
+    </div>
+  `;
+}
+
+function escapeHtml(text) {
+  return text
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function codePanel(title, code, label) {
+  if (!code) return "";
+  return `
+    <div class="panel">
+      <h4>${title}</h4>
+      <div class="code-actions">
+        <button class="secondary copy-btn" data-copy="${encodeURIComponent(code)}" data-label="${label}">Copy ${label}</button>
+        <button class="secondary remix-btn">Open Remix</button>
+      </div>
+      <div class="code-hint">Paste into Remix editor (browser VM).</div>
+      <div class="code-block">${escapeHtml(code)}</div>
     </div>
   `;
 }
@@ -46,8 +70,9 @@ function renderTopic(topic, index, total) {
       <div class="topic-copy">
         <h3>Terminal Steps</h3>
         ${block("Commands", commands)}
-        ${topic.studentTodo ? `<div class="panel"><h4>Student TODO</h4><div class="code-block">${topic.studentTodo}</div></div>` : ""}
-        ${topic.referenceCode ? block("Reference (Complete)", topic.referenceCode) : ""}
+        ${topic.studentTodo ? `<div class="panel"><h4>Student TODO</h4><div class="code-block">${escapeHtml(topic.studentTodo)}</div></div>` : ""}
+        ${codePanel("Student Version", topic.studentCode, "Student")}
+        ${codePanel("Reference (Complete)", topic.referenceCode, "Complete")}
         ${topic.notes ? list("Notes", topic.notes) : ""}
       </div>
     </div>
@@ -59,6 +84,24 @@ function renderTopic(topic, index, total) {
 
   card.querySelector(".prev-btn").addEventListener("click", () => goTo(index - 1));
   card.querySelector(".next-btn").addEventListener("click", () => goTo(index + 1));
+
+  card.querySelectorAll(".copy-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const code = decodeURIComponent(btn.getAttribute("data-copy"));
+      const label = btn.getAttribute("data-label") || "Code";
+      await navigator.clipboard.writeText(code);
+      btn.textContent = "Copied!";
+      setTimeout(() => {
+        btn.textContent = `Copy ${label}`;
+      }, 1200);
+    });
+  });
+
+  card.querySelectorAll(".remix-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      window.open("https://remix.ethereum.org", "_blank", "noopener");
+    });
+  });
 
   return card;
 }

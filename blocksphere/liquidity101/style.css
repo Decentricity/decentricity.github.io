@@ -192,6 +192,19 @@ button:hover {
   color: #f9d4a3;
 }
 
+.code-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.code-hint {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+}
+
 .code-block {
   background: #0a0d14;
   border: 1px solid rgba(255, 255, 255, 0.08);
