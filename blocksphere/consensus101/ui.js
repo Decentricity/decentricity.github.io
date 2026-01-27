@@ -81,10 +81,12 @@ function updateUI() {
     txStatus.textContent = "Pending";
   } else if (config.mode === "pow") {
     txStatus.textContent = confs >= 6 ? "Safe" : "Unsafe";
-  } else if (config.mode === "pos") {
+  } else if (config.mode === "pos" || config.mode === "dpos") {
     txStatus.textContent = state.finalizedHeight >= 0 ? "Finalized" : "Unfinalized";
-  } else {
+  } else if (config.mode === "poa") {
     txStatus.textContent = "Final";
+  } else {
+    txStatus.textContent = confs >= 3 ? "Safe" : "Unstable";
   }
 
   if (state.metrics.safeTime !== null) {
@@ -115,7 +117,13 @@ function buildExplainerText() {
   if (config.mode === "pos") {
     return `PoS is active, so validators propose by stake and vote in epochs. With ${centralText} and ${advText}, gossip delays affect who sees the checkpoint in time, which impacts finality. When enough votes propagate, blocks become FINALIZED (locked). Current split: ${splitText}. Propagation median: ${propText}.${attackText}`;
   }
-  return `PoA is active, so authorities take turns (round-robin) and finality is immediate. With ${centralText} and ${latencyText}, gossip is still visible but forks are rare. If enough authorities are compromised, censorship or a 1-block rewrite can occur. Current split: ${splitText}. Propagation median: ${propText}.${attackText}`;
+  if (config.mode === "dpos") {
+    return `dPoS is active, so a small delegate set produces blocks in a fixed schedule. With ${centralText} and ${advText}, fewer producers mean faster finality but higher cartel risk. Delegates gossip blocks quickly, and finality depends on delegate votes reaching quorum. Current split: ${splitText}. Propagation median: ${propText}.${attackText}`;
+  }
+  if (config.mode === "poa") {
+    return `PoA is active, so authorities take turns (round-robin) and finality is immediate. With ${centralText} and ${latencyText}, gossip is still visible but forks are rare. If enough authorities are compromised, censorship or a 1-block rewrite can occur. Current split: ${splitText}. Propagation median: ${propText}.${attackText}`;
+  }
+  return `PoET is active, so nodes win leadership by verifiable random timers (shorter waits win). With ${latencyText}, timers fire at different times and gossip determines who sees the winning block first. This reduces energy use but still allows forks under high latency. Current split: ${splitText}. Propagation median: ${propText}.${attackText}`;
 }
 
 function tick() {

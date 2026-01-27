@@ -25,7 +25,7 @@ function weightedPick(items, rng) {
 }
 
 function makeNodes(config, rng) {
-  const count = 16;
+  const count = 18;
   const nodes = [];
   const adversaryShare = Number(config.adversary) / 100;
   const topHeavy = config.centralization === "top";
@@ -48,6 +48,7 @@ function makeNodes(config, rng) {
       known: new Set(),
       mempool: false,
       txSeen: false,
+      delegate: false,
     });
   }
   return nodes;
@@ -55,7 +56,7 @@ function makeNodes(config, rng) {
 
 export function createSimState(config) {
   const rng = mulberry32(config.seed);
-  return {
+  const state = {
     config,
     rng,
     time: 0,
@@ -74,7 +75,16 @@ export function createSimState(config) {
     attack: { type: null, active: false, releaseAt: null, withheld: [] },
     metrics: { safeTime: null, risk: "—", liveness: "OK" },
     events: [],
+    delegates: [],
   };
+
+  if (config.mode === "dpos") {
+    const delegates = state.nodes.slice(0, 5);
+    delegates.forEach((n) => (n.delegate = true));
+    state.delegates = delegates.map((n) => n.id);
+  }
+
+  return state;
 }
 
 function addGenesis(state) {
@@ -99,11 +109,24 @@ function addGenesis(state) {
 
 function blockInterval(state) {
   if (state.config.mode === "poa") return 2;
+  if (state.config.mode === "poet") return 2 + state.rng() * 1.5;
+  if (state.config.mode === "dpos") return 2.2;
   if (state.config.mode === "pos") return 2.6 + (state.rng() - 0.5) * 1.2;
   return 3 + (state.rng() - 0.5) * 1.6;
 }
 
 function pickProducer(state) {
+  if (state.config.mode === "dpos") {
+    const id = state.delegates[state.nextBlockId % state.delegates.length];
+    return state.nodes.find((n) => n.id === id) || state.nodes[0];
+  }
+  if (state.config.mode === "poet") {
+    const candidates = state.nodes.filter((n) => n.producer);
+    return weightedPick(
+      candidates.map((n) => ({ node: n, weight: n.weight })),
+      state.rng
+    ).node;
+  }
   const producers = state.nodes.filter((n) => n.producer);
   return weightedPick(
     producers.map((n) => ({ node: n, weight: n.weight })),
@@ -172,7 +195,7 @@ function processMessage(state, msg) {
 }
 
 function updatePropagation(state, block) {
-  const count = block.receivedTimes.length + 1; // + producer
+  const count = block.receivedTimes.length + 1;
   const threshold = Math.ceil(state.nodes.length * 0.67);
   if (count >= threshold && !block.propagationRecorded) {
     const times = [...block.receivedTimes, block.time].sort((a, b) => a - b);
@@ -201,7 +224,7 @@ function updateCanonicalHead(state) {
 }
 
 function finalizePos(state) {
-  if (state.config.mode !== "pos") return;
+  if (state.config.mode !== "pos" && state.config.mode !== "dpos") return;
   const checkpoint = 5;
   const candidates = [];
   state.blocks.forEach((b) => {
@@ -222,7 +245,7 @@ function finalizePos(state) {
 }
 
 function setFinality(state) {
-  if (state.config.mode === "pow") return;
+  if (state.config.mode === "pow" || state.config.mode === "poet") return;
   state.blocks.forEach((b) => {
     if (b.height <= state.finalizedHeight) b.finalized = true;
   });
@@ -277,7 +300,7 @@ function produceBlock(state) {
   }
 
   if (producer.adversary && state.config.mode === "pos" && Math.random() < 0.05) {
-    state.events.push({ type: "slash", time: state.time });
+    state.events.push({ type: "slash", time: state.time, nodeId: producer.id });
   }
 }
 
@@ -311,14 +334,16 @@ export function stepSimulation(state, dt) {
   const confs = confirmations(state);
   if (state.config.mode === "pow") {
     if (confs >= 6 && state.metrics.safeTime === null) state.metrics.safeTime = state.time;
-  } else if (state.config.mode === "pos") {
+  } else if (state.config.mode === "pos" || state.config.mode === "dpos") {
     if (state.finalizedHeight >= 0 && state.metrics.safeTime === null) state.metrics.safeTime = state.time;
-  } else {
+  } else if (state.config.mode === "poa") {
     if (state.txIncludedBlock && state.metrics.safeTime === null) state.metrics.safeTime = state.time;
+  } else if (state.config.mode === "poet") {
+    if (confs >= 3 && state.metrics.safeTime === null) state.metrics.safeTime = state.time;
   }
 
   state.metrics.risk = computeRisk(state);
-  if (state.config.mode === "pos" && state.time > 20 && state.finalizedHeight < 0) {
+  if ((state.config.mode === "pos" || state.config.mode === "dpos") && state.time > 20 && state.finalizedHeight < 0) {
     state.metrics.liveness = "Stalled";
   } else {
     state.metrics.liveness = "OK";
@@ -341,7 +366,7 @@ export function computeOverlay(state, headCounts) {
   return {
     split: top.map((t, i) => `Head ${i + 1}: ${t.pct}%`).join(" / ") || "—",
     propagation: propText,
-    finalized: state.config.mode === "pow" ? "Confs" : state.finalizedHeight >= 0 ? "Yes" : "No",
+    finalized: state.config.mode === "pow" || state.config.mode === "poet" ? "Confs" : state.finalizedHeight >= 0 ? "Yes" : "No",
   };
 }
 
@@ -392,7 +417,7 @@ export function releaseAttack(state) {
   const producer = state.nodes.find((n) => n.adversary) || state.nodes[0];
   released.forEach((id) => gossipBlock(state, id, producer));
   if (released.length > 0) {
-    state.events.push({ type: "reorg_release", time: state.time });
+    state.events.push({ type: "reorg_release", time: state.time, nodeId: producer.id });
   }
   return released.length > 0;
 }
