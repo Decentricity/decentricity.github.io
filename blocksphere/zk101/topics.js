@@ -9,19 +9,21 @@ const GLOSSARY = [
   { term: "zero-knowledge", def: "Verifier learns nothing beyond validity." },
   { term: "challenge", def: "Verifier’s random question used to test honesty." },
   { term: "commitment", def: "A sealed value: binding and hiding." },
+  { term: "Sigma protocol", def: "A 3-move challenge-response proof (commit, challenge, respond)." },
+  { term: "Fiat-Shamir", def: "Transform that makes interactive proofs non-interactive using a hash." },
   { term: "cut-and-choose", def: "Verifier audits random commitments to force honesty." }
 ];
 
 const TOPICS = [
   {
     id: "zk-vibe",
-    title: "ZK in One Sentence",
-    subtitle: "Prove you know it, without showing it.",
+    title: "Zero-Knowledge Proofs (ZKPs)",
+    subtitle: "The 1-sentence vibe.",
     overview:
-      "A zero-knowledge proof convinces a verifier that a statement is true, without revealing the secret witness.",
+      "Prove you know something or did something correctly without revealing the secret or underlying data.",
     points: [
-      "You reveal only validity, not the underlying data.",
-      "In practice, ZK uses commitments, challenges, and math to make cheating unlikely.",
+      "Verifier learns only: the statement is true.",
+      "Cheating becomes unlikely through challenges and repetition.",
     ],
     code: `import hashlib
 import secrets
@@ -36,18 +38,17 @@ def verify(commitment: str, secret: bytes, nonce: bytes) -> bool:
 
 
 def main():
-    secret = b"my hidden value"
+    secret = b"i know the secret"
     nonce = secrets.token_bytes(16)
 
     c = commit(secret, nonce)
-    print("Commitment:", c)
+    print("Commitment (proof blob):", c)
 
-    print("Verifier learns only the commitment.")
-    print("Reveal secret + nonce to verify:")
+    print("\nReveal secret + nonce to verify: ")
     print("Valid?", verify(c, secret, nonce))
 
     print("\nTakeaway:")
-    print("- Prove knowledge without revealing the secret itself")
+    print("- Prove knowledge without exposing the secret itself")
 
 
 if __name__ == "__main__":
@@ -56,15 +57,18 @@ if __name__ == "__main__":
   },
   {
     id: "cave",
-    title: "The ZK Cave",
-    subtitle: "Challenge/response and repetition.",
+    title: "The ZK Cave (Ali Baba)",
+    subtitle: "Challenge-response and repetition.",
     overview:
-      "A prover claims she can open a magic door. The verifier challenges her to exit a chosen path.",
+      "Cave has two paths. The verifier challenges the prover to exit Left or Right.",
     points: [
-      "If the prover knows the secret, she always succeeds.",
+      "If the prover knows the secret door, she always succeeds.",
       "If she is faking, she succeeds with 50% probability per round.",
+      "Repeating rounds amplifies soundness (cheating probability drops as (1/2)^n).",
+      "Concept mapping: Sigma protocol / Schnorr-family proofs.",
     ],
     code: `import random
+import math
 
 
 def run_round(knows_secret: bool) -> bool:
@@ -73,6 +77,10 @@ def run_round(knows_secret: bool) -> bool:
         return True
     entry = random.choice(["left", "right"])
     return entry == challenge
+
+
+def cheat_probability(rounds: int) -> float:
+    return 0.5 ** rounds
 
 
 def simulate(rounds: int, knows_secret: bool) -> int:
@@ -93,39 +101,10 @@ def main():
     print("Rounds:", rounds)
     print("Honest prover wins:", honest, "rounds")
     print("Cheater wins:", cheater, "rounds")
+    print("Cheat probability after", rounds, "rounds:", cheat_probability(rounds))
 
     print("\nTakeaway:")
-    print("- Challenge randomness makes cheating hard")
-
-
-if __name__ == "__main__":
-    main()
-`,
-  },
-  {
-    id: "repetition",
-    title: "Repetition Lowers Cheating Odds",
-    subtitle: "Cheat probability shrinks exponentially.",
-    overview:
-      "Repeat the cave game n times. A cheater succeeds with probability (1/2)^n.",
-    points: [
-      "Each round halves the cheating probability.",
-      "A few rounds make cheating very unlikely.",
-    ],
-    code: `import math
-
-
-def cheat_probability(rounds: int) -> float:
-    return 0.5 ** rounds
-
-
-def main():
-    for rounds in [1, 2, 5, 10, 20]:
-        p = cheat_probability(rounds)
-        print(f"Rounds={rounds:2d}  cheat prob={p:.6f}")
-
-    print("\nTakeaway:")
-    print("- Repetition drives cheating probability toward zero")
+    print("- Random challenges + repetition make cheating unlikely")
 
 
 if __name__ == "__main__":
@@ -135,12 +114,12 @@ if __name__ == "__main__":
   {
     id: "waldo-mask",
     title: "Where's Waldo (Mask)",
-    subtitle: "Reveal only what is needed.",
+    subtitle: "Show only Waldo.",
     overview:
-      "Prover reveals only a small window around Waldo, hiding the rest of the page.",
+      "Prover covers the page with a mask that reveals only Waldo.",
     points: [
-      "Verifier sees Waldo clearly.",
-      "Verifier learns nothing about the rest of the page.",
+      "Verifier sees Waldo clearly but learns nothing about the rest.",
+      "Concept mapping: commitments + selective disclosure.",
     ],
     code: `import random
 
@@ -182,7 +161,7 @@ def main():
     print_grid(masked)
 
     print("\nTakeaway:")
-    print("- Selective reveal proves knowledge without showing everything")
+    print("- Selective reveal proves knowledge without leaking the rest")
 
 
 if __name__ == "__main__":
@@ -192,12 +171,12 @@ if __name__ == "__main__":
   {
     id: "waldo-rerand",
     title: "Waldo B1: Secret Re-randomization",
-    subtitle: "Hide coordinates with a secret transform.",
+    subtitle: "Hide the coordinates.",
     overview:
-      "Prover applies a secret rotation + shift to the page, then reveals Waldo in the transformed page.",
+      "Prover makes a secretly transformed copy of the page and reveals Waldo only there.",
     points: [
-      "Verifier can confirm Waldo, but cannot map back to original coordinates.",
-      "The hidden transform preserves zero-knowledge.",
+      "Verifier confirms Waldo but can’t map back to the original page.",
+      "Concept mapping: blinding/randomization + commitments.",
     ],
     code: `import random
 
@@ -232,7 +211,7 @@ def main():
     print("Transformed waldo (what verifier sees):", (tx, ty))
 
     print("\nTakeaway:")
-    print("- Verifier confirms Waldo in the transformed page")
+    print("- Verifier confirms Waldo in transformed space")
     print("- Original coordinates stay hidden without the secret transform")
 
 
@@ -245,10 +224,11 @@ if __name__ == "__main__":
     title: "Waldo B2: Cut-and-Choose",
     subtitle: "Audit one, prove with another.",
     overview:
-      "Prover prepares multiple sealed setups. Verifier opens a random one to check honesty.",
+      "Prover prepares multiple sealed setups; verifier opens one at random to audit honesty.",
     points: [
       "Random inspection forces the prover to commit before the challenge.",
       "Cheating probability drops quickly with more rounds.",
+      "Concept mapping: cut-and-choose auditing.",
     ],
     code: `import random
 
@@ -285,14 +265,15 @@ if __name__ == "__main__":
   },
   {
     id: "wrap",
-    title: "What the Analogies Teach",
-    subtitle: "Soundness, zero-knowledge, and verifier randomness.",
+    title: "What These Analogies Are Teaching",
+    subtitle: "Soundness, zero-knowledge, verifier randomness.",
     overview:
-      "All the stories map to three key properties of a ZK proof: soundness, zero-knowledge, and randomness.",
+      "All the stories map to three core ZK properties and to real-world proof systems.",
     points: [
-      "Soundness: cheaters get caught with high probability.",
-      "Zero-knowledge: verifier learns nothing but validity.",
-      "Random challenges stop adaptive cheating.",
+      "Soundness: fakers get caught with high probability.",
+      "Zero-knowledge: verifier learns nothing beyond validity.",
+      "Verifier randomness prevents adaptive cheating.",
+      "Mapping examples: cave -> Sigma protocols/Schnorr, offline cave -> Fiat-Shamir, Waldo mask -> selective disclosure, secret shift -> blinding, cut-and-choose -> audit-based security.",
     ],
     code: `import math
 
