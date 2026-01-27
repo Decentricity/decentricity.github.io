@@ -691,16 +691,14 @@ if __name__ == "__main__":
     subtitle: "Prove knowledge without revealing the secret.",
     overview:
       "This demo shows a Schnorr proof, the Fiat-Shamir transform, and transcript simulation to build ZK intuition.",
+      + '<div class="zk-cta-wrap">'
+      + '<a class="primary zk-cta" href="/blocksphere/zk101/">Click here for ZK deep dive</a>'
+      + '</div>',
     points: [
       "Verifier learns that you know x, not x itself.",
       "Fiat-Shamir makes the proof non-interactive.",
-      "Want the full ZK walkthrough? Open the ZK101 deep dive.",
     ],
-    code: `print("Click here for the ZK deep dive: https://decentricity.github.io/blocksphere/zk101/")
-print("\nThen return here for the Schnorr demo.")
-
-# --- Schnorr demo below (unchanged) ---
-import secrets
+    code: `import secrets
 import hashlib
 from dataclasses import dataclass
 
