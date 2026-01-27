@@ -65,14 +65,16 @@ function resetSim() {
 }
 
 function updateUI() {
-  confirmations.textContent = state.txIncludedBlock
-    ? Math.max(0, (state.blocks.get(state.canonicalHead)?.height || 0) - (state.blocks.get(state.txIncludedBlock)?.height || 0) + 1)
-    : "0";
+  const headBlock = state.blocks.get(state.canonicalHead || 0);
+  const txBlock = state.blocks.get(state.txIncludedBlock || -1);
+  const confs = headBlock && txBlock ? Math.max(0, headBlock.height - txBlock.height + 1) : 0;
+
+  confirmations.textContent = confs.toString();
 
   if (!state.txIncludedBlock) {
     txStatus.textContent = "Pending";
   } else if (config.mode === "pow") {
-    txStatus.textContent = confirmations.textContent >= 6 ? "Safe" : "Unsafe";
+    txStatus.textContent = confs >= 6 ? "Safe" : "Unsafe";
   } else if (config.mode === "pos") {
     txStatus.textContent = state.finalizedHeight >= 0 ? "Finalized" : "Unfinalized";
   } else {
@@ -99,15 +101,15 @@ function tick() {
     return;
   }
 
-  const { headCounts, delivered } = stepSimulation(state, 0.2);
+  const { headCounts, delivered, events } = stepSimulation(state, 0.2);
   lastHeadCounts = headCounts;
 
   releaseAttack(state);
 
   const latest = state.blockOrder[state.blockOrder.length - 1];
   if (latest) {
-    viz.addChainBlock(latest);
-    state.blockOrder.forEach((b) => viz.updateChainBlock(b));
+    viz.addChainBlock(latest, config.mode);
+    state.blockOrder.forEach((b) => viz.updateChainBlock(b, config.mode));
   }
 
   delivered.forEach((msg) => {
@@ -118,9 +120,24 @@ function tick() {
     viz.spawnPacket(fromNode.position, toNode.position, color);
   });
 
-  viz.updateNodeMarkers(state.nodes, headCounts);
-  updateUI();
+  viz.updateNodeMarkers(state.nodes, headCounts, config.mode);
 
+  events.forEach((evt) => {
+    const labelMap = {
+      finalized: "FINALIZED",
+      poa_final: "FINAL",
+      tx_included: "TX★ IN",
+      slash: "SLASH",
+      reorg_attempt: "REORG ATTEMPT",
+      reorg_release: "REORG RELEASE",
+      censor_attempt: "CENSOR",
+    };
+    const text = labelMap[evt.type];
+    if (!text) return;
+    viz.addEventLabel(text, { x: -2, y: 3.5, z: -3 });
+  });
+
+  updateUI();
   setTimeout(tick, 200);
 }
 
@@ -219,6 +236,7 @@ function animate(time) {
   const delta = (time - lastTime) / 1000;
   lastTime = time;
   viz.updatePackets(delta);
+  viz.updateLabels(delta);
   viz.render();
   requestAnimationFrame(animate);
 }

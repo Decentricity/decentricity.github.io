@@ -23,12 +23,14 @@ export function createViz(container) {
   const nodeGroup = new THREE.Group();
   const chainGroup = new THREE.Group();
   const packetGroup = new THREE.Group();
-  group.add(nodeGroup, chainGroup, packetGroup);
+  const labelGroup = new THREE.Group();
+  group.add(nodeGroup, chainGroup, packetGroup, labelGroup);
 
   const nodeMeshes = new Map();
   const headMarkers = new Map();
   const packetMeshes = [];
   const chainBlocks = new Map();
+  const eventLabels = [];
 
   function layoutNodes(count) {
     const positions = [];
@@ -48,7 +50,7 @@ export function createViz(container) {
     nodes.forEach((node, i) => {
       const color = node.adversary ? 0xf76c6c : node.producer ? 0x2f8aa0 : 0x8bb7c6;
       const mesh = new THREE.Mesh(
-        new THREE.SphereGeometry(node.producer ? 0.32 : 0.24, 16, 16),
+        new THREE.SphereGeometry(node.producer ? 0.34 : 0.24, 16, 16),
         new THREE.MeshStandardMaterial({ color })
       );
       mesh.position.copy(positions[i]);
@@ -65,27 +67,30 @@ export function createViz(container) {
     });
   }
 
-  function addChainBlock(block) {
+  function addChainBlock(block, mode) {
     const geometry = new THREE.BoxGeometry(0.4, 0.3, 0.4);
     const material = new THREE.MeshStandardMaterial({ color: 0x88b9c8 });
     const mesh = new THREE.Mesh(geometry, material);
-    const offsetY = block.height % 2 === 0 ? 0.5 : -0.5;
+    const offsetY = block.height % 2 === 0 ? 0.6 : -0.6;
     mesh.position.set(-6 + block.height * 0.5, offsetY, -4);
+    if (mode === "pow" && block.fork) {
+      mesh.position.y *= 1.5;
+    }
     chainGroup.add(mesh);
     chainBlocks.set(block.id, mesh);
   }
 
-  function updateChainBlock(block) {
+  function updateChainBlock(block, mode) {
     const mesh = chainBlocks.get(block.id);
     if (!mesh) return;
     if (block.finalized) {
       mesh.material.color.set(0x2f8aa0);
       mesh.material.emissive.set(0x1f6f86);
-      mesh.material.emissiveIntensity = 0.6;
+      mesh.material.emissiveIntensity = 0.7;
     } else if (block.includesTx) {
       mesh.material.color.set(0x3ddc97);
     } else {
-      mesh.material.color.set(0x88b9c8);
+      mesh.material.color.set(mode === "pow" ? 0x93b9c7 : 0x88b9c8);
       mesh.material.emissive.set(0x000000);
       mesh.material.emissiveIntensity = 0;
     }
@@ -115,15 +120,52 @@ export function createViz(container) {
     }
   }
 
-  function updateNodeMarkers(nodes, headCounts) {
+  function updateNodeMarkers(nodes, headCounts, mode) {
     const headIds = [...headCounts.keys()];
-    const colors = [0xff8a3d, 0x6c8ef7, 0x3ddc97];
+    const colors = mode === "pow" ? [0xff8a3d, 0xf76c6c, 0x6c8ef7] : [0x2f8aa0, 0x6c8ef7, 0x3ddc97];
     nodes.forEach((node) => {
       const marker = headMarkers.get(node.id);
       if (!marker) return;
       const idx = Math.max(0, headIds.indexOf(node.head));
       marker.material.color.set(colors[idx % colors.length]);
     });
+  }
+
+  function makeLabelSprite(text) {
+    const canvas = document.createElement("canvas");
+    canvas.width = 256;
+    canvas.height = 64;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "rgba(255,255,255,0.9)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#1f6f86";
+    ctx.font = "bold 24px Poppins";
+    ctx.fillText(text, 12, 40);
+    const texture = new THREE.CanvasTexture(canvas);
+    const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+    const sprite = new THREE.Sprite(material);
+    sprite.scale.set(2.8, 0.7, 1);
+    return sprite;
+  }
+
+  function addEventLabel(text, position) {
+    const sprite = makeLabelSprite(text);
+    const pos = new THREE.Vector3(position.x, position.y, position.z);
+    sprite.position.copy(pos);
+    labelGroup.add(sprite);
+    eventLabels.push({ sprite, ttl: 2.4 });
+  }
+
+  function updateLabels(delta) {
+    for (let i = eventLabels.length - 1; i >= 0; i--) {
+      const label = eventLabels[i];
+      label.ttl -= delta;
+      label.sprite.position.y += delta * 0.4;
+      if (label.ttl <= 0) {
+        labelGroup.remove(label.sprite);
+        eventLabels.splice(i, 1);
+      }
+    }
   }
 
   function resize() {
@@ -143,6 +185,8 @@ export function createViz(container) {
     spawnPacket,
     updatePackets,
     updateNodeMarkers,
+    addEventLabel,
+    updateLabels,
     render,
     resize,
     scene,
