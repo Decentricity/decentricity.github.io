@@ -694,8 +694,13 @@ if __name__ == "__main__":
     points: [
       "Verifier learns that you know x, not x itself.",
       "Fiat-Shamir makes the proof non-interactive.",
+      "Want the full ZK walkthrough? Open the ZK101 deep dive.",
     ],
-    code: `import secrets
+    code: `print("Click here for the ZK deep dive: https://decentricity.github.io/blocksphere/zk101/")
+print("\nThen return here for the Schnorr demo.")
+
+# --- Schnorr demo below (unchanged) ---
+import secrets
 import hashlib
 from dataclasses import dataclass
 
