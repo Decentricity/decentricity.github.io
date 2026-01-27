@@ -152,11 +152,14 @@ body {
   border: 1px solid rgba(19, 76, 96, 0.12);
   box-shadow: var(--shadow);
   min-height: 520px;
+  display: flex;
+  flex-direction: column;
 }
 
 .three-root {
   height: 100%;
   width: 100%;
+  flex: 1;
 }
 
 .panel-box {
@@ -200,6 +203,7 @@ body {
 .explainer {
   font-size: 0.92rem;
   color: #3b5f6b;
+  margin: 12px;
 }
 
 .metrics {
