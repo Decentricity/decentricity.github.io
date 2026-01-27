@@ -24,14 +24,25 @@ function weightedPick(items, rng) {
   return items[items.length - 1];
 }
 
+function pickAdversaries(nodes, share, rng) {
+  const count = Math.max(0, Math.round(nodes.length * share));
+  if (count === 0) return [];
+  const shuffled = nodes.slice();
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled.slice(0, count);
+}
+
 function makeNodes(config, rng) {
   const count = 18;
   const nodes = [];
-  const adversaryShare = Number(config.adversary) / 100;
+  const adversaryProducers = Number(config.adversaryProducers ?? config.adversary ?? 0) / 100;
+  const adversaryNonProducers = Number(config.adversaryNonProducers ?? 0) / 100;
   const topHeavy = config.centralization === "top";
 
   const producerCount = config.mode === "poa" ? (topHeavy ? 3 : 5) : 6;
-  const adversaryCount = Math.max(1, Math.round(count * adversaryShare));
 
   for (let i = 0; i < count; i++) {
     const isProducer = i < producerCount;
@@ -53,8 +64,9 @@ function makeNodes(config, rng) {
   }
 
   const producers = nodes.filter((n) => n.producer);
-  const advProducers = Math.max(0, Math.round(producers.length * adversaryShare));
-  producers.slice(0, advProducers).forEach((n) => (n.adversary = true));
+  const nonProducers = nodes.filter((n) => !n.producer);
+  pickAdversaries(producers, adversaryProducers, rng).forEach((n) => (n.adversary = true));
+  pickAdversaries(nonProducers, adversaryNonProducers, rng).forEach((n) => (n.adversary = true));
 
   return nodes;
 }
@@ -387,9 +399,10 @@ export function computeOverlay(state, headCounts) {
 }
 
 export function computeRisk(state) {
-  const adv = Number(state.config.adversary) / 100;
+  const advProducers = Number(state.config.adversaryProducers ?? state.config.adversary ?? 0) / 100;
+  const advNonProducers = Number(state.config.adversaryNonProducers ?? 0) / 100;
   const latency = state.config.latency;
-  let risk = adv + (latency === "high" ? 0.2 : latency === "med" ? 0.1 : 0.05);
+  let risk = advProducers + advNonProducers * 0.3 + (latency === "high" ? 0.2 : latency === "med" ? 0.1 : 0.05);
   if (state.config.centralization === "top") risk += 0.1;
   if (risk >= 0.45) return "High";
   if (risk >= 0.25) return "Med";

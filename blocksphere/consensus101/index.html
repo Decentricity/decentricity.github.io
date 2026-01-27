@@ -108,10 +108,17 @@
     </div>
     <div class="knob">
       <label>Adversary power</label>
-      <div class="pill-group" id="adversaryKnob">
-        <button class="pill active" data-value="0">0%</button>
-        <button class="pill" data-value="20">20%</button>
-        <button class="pill" data-value="40">40%</button>
+      <div class="adv-columns">
+        <div class="adv-column">
+          <div class="adv-label">Producers</div>
+          <input type="range" id="advProd" min="0" max="80" step="5" value="0" />
+          <div class="adv-value"><span id="advProdValue">0</span>%</div>
+        </div>
+        <div class="adv-column">
+          <div class="adv-label">Non-producers</div>
+          <input type="range" id="advNon" min="0" max="80" step="5" value="0" />
+          <div class="adv-value"><span id="advNonValue">0</span>%</div>
+        </div>
       </div>
     </div>
     <div class="knob">

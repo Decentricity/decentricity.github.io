@@ -25,6 +25,10 @@ const nodesSplit = document.getElementById("nodesSplit");
 const propMedian = document.getElementById("propMedian");
 const finalized = document.getElementById("finalized");
 const explainer = document.getElementById("explainer");
+const advProdSlider = document.getElementById("advProd");
+const advProdValue = document.getElementById("advProdValue");
+const advNonSlider = document.getElementById("advNon");
+const advNonValue = document.getElementById("advNonValue");
 
 const container = document.getElementById("threeRoot");
 const viz = createViz(container);
@@ -33,7 +37,8 @@ let config = {
   mode: "pow",
   seed: Date.now() & 0xffffffff,
   latency: "low",
-  adversary: 0,
+  adversaryProducers: 0,
+  adversaryNonProducers: 0,
   centralization: "decentralized",
 };
 
@@ -70,6 +75,7 @@ function resetSim() {
   attackPulse = { type: null, until: 0 };
   running = false;
   explainer.textContent = buildExplainerText();
+  syncAdversaryUI();
 }
 
 function updateUI() {
@@ -108,7 +114,7 @@ function updateUI() {
 function buildExplainerText() {
   const latencyText = config.latency === "low" ? "low latency" : config.latency === "med" ? "medium latency" : "high latency";
   const centralText = config.centralization === "top" ? "top-heavy distribution" : "decentralized distribution";
-  const advText = `${config.adversary}% adversary power`;
+  const advText = `${config.adversaryProducers}% adversary producers + ${config.adversaryNonProducers}% adversary non-producers`;
   const splitText = nodesSplit.textContent && nodesSplit.textContent !== "—" ? nodesSplit.textContent : "no visible split yet";
   const propText = propMedian.textContent && propMedian.textContent !== "—" ? propMedian.textContent : "propagation still warming up";
   const attackText = lastAttackMessage ? ` ${lastAttackMessage}` : "";
@@ -223,7 +229,28 @@ function applyKnob(groupId, key) {
     group.querySelectorAll(".pill").forEach((p) => p.classList.remove("active"));
     btn.classList.add("active");
     config[key] = btn.dataset.value;
-    if (key === "adversary") config[key] = Number(config[key]);
+    resetSim();
+  });
+}
+
+function syncAdversaryUI() {
+  if (advProdSlider && advProdValue) {
+    advProdSlider.value = config.adversaryProducers;
+    advProdValue.textContent = config.adversaryProducers;
+  }
+  if (advNonSlider && advNonValue) {
+    advNonSlider.value = config.adversaryNonProducers;
+    advNonValue.textContent = config.adversaryNonProducers;
+  }
+}
+
+function bindAdversarySlider(slider, valueEl, key) {
+  if (!slider || !valueEl) return;
+  slider.addEventListener("input", () => {
+    valueEl.textContent = slider.value;
+  });
+  slider.addEventListener("change", () => {
+    config[key] = Number(slider.value);
     resetSim();
   });
 }
@@ -257,11 +284,15 @@ function parseParams() {
   const seed = params.get("seed");
   const latency = params.get("latency");
   const adv = params.get("adv");
+  const advP = params.get("advp");
+  const advN = params.get("advn");
   const central = params.get("central");
   if (mode) applyMode(mode);
   if (seed) setSeed(Number(seed));
   if (latency) config.latency = latency;
-  if (adv) config.adversary = Number(adv);
+  if (adv) config.adversaryProducers = Number(adv);
+  if (advP) config.adversaryProducers = Number(advP);
+  if (advN) config.adversaryNonProducers = Number(advN);
   if (central) config.centralization = central;
 }
 
@@ -274,8 +305,9 @@ function bindUI() {
   reorgBtn.addEventListener("click", () => runAttack("reorg"));
   censorBtn.addEventListener("click", () => runAttack("censor"));
   applyKnob("latencyKnob", "latency");
-  applyKnob("adversaryKnob", "adversary");
   applyKnob("centralKnob", "centralization");
+  bindAdversarySlider(advProdSlider, advProdValue, "adversaryProducers");
+  bindAdversarySlider(advNonSlider, advNonValue, "adversaryNonProducers");
 
   window.addEventListener("resize", () => {
     viz.resize();
