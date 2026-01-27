@@ -32,37 +32,16 @@
     </div>
   </header>
 
-  <main class="app" aria-live="polite">
-    <section class="topic-card">
-      <div class="topic-header">
-        <div>
-          <h2 class="topic-title">Zero-Knowledge Deep Dive</h2>
-          <div class="topic-meta">Explore the ZK companion lab</div>
-        </div>
-        <div class="topic-meta">Blocksphere</div>
-      </div>
-      <div class="topic-body">
-        <div class="topic-copy">
-          <h3>Looking for ZK?</h3>
-          <p>
-            The Zero-Knowledge walkthrough lives in its own dedicated lab.
-            Click below to open the ZK101 companion page.
-          </p>
-        </div>
-        <div class="editor">
-          <h3>Open ZK101</h3>
-          <div class="topic-actions">
-            <a class="primary" href="/blocksphere/zk101/">Click here for ZK deep dive</a>
-          </div>
-        </div>
-      </div>
-    </section>
+  <main id="app" class="app" aria-live="polite">
+    <!-- Topic pages render here -->
   </main>
 
   <footer class="footer">
     <div>Educational toy code only. Do not use these constructions in production.</div>
   </footer>
 
-  <script></script>
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
+  <script src="topics.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
