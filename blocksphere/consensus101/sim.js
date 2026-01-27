@@ -292,7 +292,7 @@ export function stepSimulation(state, dt) {
   finalizePos(state);
   setFinality(state);
 
-  return headCounts;
+  return { headCounts, delivered: due };
 }
 
 export function computeOverlay(state, headCounts) {

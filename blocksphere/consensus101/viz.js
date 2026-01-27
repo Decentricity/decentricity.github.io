@@ -91,10 +91,10 @@ export function createViz(container) {
     }
   }
 
-  function spawnPacket(from, to) {
+  function spawnPacket(from, to, color = 0xffc857) {
     const sphere = new THREE.Mesh(
       new THREE.SphereGeometry(0.08, 8, 8),
-      new THREE.MeshStandardMaterial({ color: 0xffc857 })
+      new THREE.MeshStandardMaterial({ color })
     );
     sphere.userData = { from, to, progress: 0 };
     packetGroup.add(sphere);

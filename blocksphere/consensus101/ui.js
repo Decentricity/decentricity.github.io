@@ -98,7 +98,7 @@ function tick() {
     return;
   }
 
-  const headCounts = stepSimulation(state, 0.2);
+  const { headCounts, delivered } = stepSimulation(state, 0.2);
   lastHeadCounts = headCounts;
 
   releaseAttack(state);
@@ -109,21 +109,12 @@ function tick() {
     state.blockOrder.forEach((b) => viz.updateChainBlock(b));
   }
 
-  headCounts.forEach((count, headId) => {
-    // spawn packets for any new block receptions
-    const block = state.blocks.get(headId);
-    if (block && block.receivedTimes && block.receivedTimes.length > 0) {
-      const fromNode = state.nodes.find((n) => n.id === block.producer);
-      if (fromNode) {
-        state.nodes.forEach((n) => {
-          if (n.id !== fromNode.id && n.known.has(block.id)) {
-            const from = viz.nodeMeshes.get(fromNode.id).position;
-            const to = viz.nodeMeshes.get(n.id).position;
-            viz.spawnPacket(from, to);
-          }
-        });
-      }
-    }
+  delivered.forEach((msg) => {
+    const fromNode = viz.nodeMeshes.get(msg.from);
+    const toNode = viz.nodeMeshes.get(msg.to);
+    if (!fromNode || !toNode) return;
+    const color = msg.type === \"tx\" ? 0x3ddc97 : 0xffc857;
+    viz.spawnPacket(fromNode.position, toNode.position, color);
   });
 
   viz.updateNodeMarkers(state.nodes, headCounts);
