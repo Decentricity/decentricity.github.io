@@ -40,6 +40,7 @@ let state = createSimState(config);
 let running = false;
 let lastHeadCounts = new Map();
 let lastAttackMessage = "";
+let attackPulse = { type: null, until: 0 };
 
 function setSeed(seed) {
   config.seed = seed >>> 0;
@@ -64,6 +65,7 @@ function resetSim() {
   finalized.textContent = "—";
   attackResult.textContent = "No attack run yet.";
   lastAttackMessage = "";
+  attackPulse = { type: null, until: 0 };
   running = false;
   explainer.textContent = buildExplainerText();
 }
@@ -217,16 +219,20 @@ function runAttack(type) {
     explainer.textContent = buildExplainerText();
     return;
   }
+  const adversaryIds = state.nodes.filter((n) => n.adversary).map((n) => n.id);
   if (type === "reorg") {
     attemptReorg(state);
     attackResult.textContent = "Reorg Attempt: adversary withholding blocks, will release soon. Mitigation: wait for finality / confirmations.";
-    lastAttackMessage = " Reorg attempt active: withheld blocks glow red, then release in a burst to race the honest chain.";
+    lastAttackMessage = " Reorg attempt active: adversary nodes pulse red; withheld blocks glow red, then release in a burst to race the honest chain.";
+    attackPulse = { type: "reorg", until: state.time + 6 };
   } else {
     attemptCensorship(state);
     attackResult.textContent = "Censorship Attempt: adversarial producers ignoring TX★. Mitigation: decentralize producers + diversify relay.";
-    lastAttackMessage = " Censorship attempt active: TX★ gossip pulses appear, but adversarial producers ignore it, delaying inclusion.";
+    lastAttackMessage = " Censorship attempt active: adversary nodes pulse red and ignore TX★ gossip pulses, delaying inclusion.";
+    attackPulse = { type: "censor", until: state.time + 6 };
   }
   explainer.textContent = buildExplainerText();
+  viz.setAttackPulse(adversaryIds, attackPulse.type, 0.1);
 }
 
 function parseParams() {
@@ -273,6 +279,15 @@ function animate(time) {
   viz.updatePackets(delta);
   viz.updateLabels(delta);
   viz.updateWithheld(delta);
+
+  if (attackPulse.type && state.time <= attackPulse.until) {
+    const adversaryIds = state.nodes.filter((n) => n.adversary).map((n) => n.id);
+    viz.setAttackPulse(adversaryIds, attackPulse.type, delta);
+  } else if (attackPulse.type) {
+    attackPulse = { type: null, until: 0 };
+    viz.setAttackPulse([], null, delta);
+  }
+
   viz.render();
   requestAnimationFrame(animate);
 }

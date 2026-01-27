@@ -27,6 +27,7 @@ export function createViz(container) {
   group.add(nodeGroup, chainGroup, packetGroup, labelGroup);
 
   const nodeMeshes = new Map();
+  const nodeBase = new Map();
   const headMarkers = new Map();
   const packetMeshes = [];
   const chainBlocks = new Map();
@@ -57,6 +58,7 @@ export function createViz(container) {
       mesh.position.copy(positions[i]);
       nodeGroup.add(mesh);
       nodeMeshes.set(node.id, mesh);
+      nodeBase.set(node.id, { color, emissive: 0x000000 });
 
       const marker = new THREE.Mesh(
         new THREE.CylinderGeometry(0.08, 0.08, 0.4, 8),
@@ -145,6 +147,34 @@ export function createViz(container) {
     }
   }
 
+  function setAttackPulse(adversaryIds, activeType, delta) {
+    if (!activeType) {
+      nodeMeshes.forEach((mesh, id) => {
+        const base = nodeBase.get(id);
+        if (!base) return;
+        mesh.material.color.set(base.color);
+        mesh.material.emissive.set(0x000000);
+        mesh.material.emissiveIntensity = 0;
+      });
+      return;
+    }
+
+    const pulse = 0.5 + Math.sin(Date.now() * 0.008) * 0.5;
+    nodeMeshes.forEach((mesh, id) => {
+      const base = nodeBase.get(id);
+      if (!base) return;
+      if (adversaryIds.includes(id)) {
+        mesh.material.color.set(0xff4d4d);
+        mesh.material.emissive.set(0xff1f1f);
+        mesh.material.emissiveIntensity = 0.6 + pulse * 0.6;
+      } else {
+        mesh.material.color.set(base.color);
+        mesh.material.emissive.set(0x000000);
+        mesh.material.emissiveIntensity = 0;
+      }
+    });
+  }
+
   function updateNodeMarkers(nodes, headCounts, mode) {
     const headIds = [...headCounts.keys()];
     const colors = mode === "pow" ? [0xff8a3d, 0xf76c6c, 0x6c8ef7] : [0x2f8aa0, 0x6c8ef7, 0x3ddc97];
@@ -209,6 +239,7 @@ export function createViz(container) {
     updateChainBlock,
     markWithheld,
     updateWithheld,
+    setAttackPulse,
     spawnPacket,
     updatePackets,
     updateNodeMarkers,
