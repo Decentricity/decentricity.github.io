@@ -38,34 +38,34 @@
   </header>
 
   <main class="layout">
-    <section class="canvas-wrap">
-      <div id="threeRoot" class="three-root"></div>
-      <div class="overlay">
-        <div class="panel-box" id="runBox">
-          <div class="panel-title">Run</div>
-          <button id="runBtn" class="primary">Run (60s)</button>
-          <div class="status">
-            <div><strong>TX★ status:</strong> <span id="txStatus">—</span></div>
-            <div><strong>Confirmations:</strong> <span id="confirmations">0</span></div>
-            <div class="netview">
-              <div><strong>Nodes split:</strong> <span id="nodesSplit">—</span></div>
-              <div><strong>Propagation (2/3):</strong> <span id="propMedian">—</span></div>
-              <div><strong>Finalized?</strong> <span id="finalized">—</span></div>
-            </div>
+    <aside class="sidepanels">
+      <div class="panel-box" id="runBox">
+        <div class="panel-title">Run</div>
+        <button id="runBtn" class="primary">Run (60s)</button>
+        <div class="status">
+          <div><strong>TX★ status:</strong> <span id="txStatus">—</span></div>
+          <div><strong>Confirmations:</strong> <span id="confirmations">0</span></div>
+          <div class="netview">
+            <div><strong>Nodes split:</strong> <span id="nodesSplit">—</span></div>
+            <div><strong>Propagation (2/3):</strong> <span id="propMedian">—</span></div>
+            <div><strong>Finalized?</strong> <span id="finalized">—</span></div>
           </div>
-        </div>
-        <div class="panel-box" id="breakBox">
-          <div class="panel-title">Break it</div>
-          <div class="attack-row">
-            <button id="reorgBtn" class="secondary">Reorg Attempt</button>
-            <button id="censorBtn" class="secondary">Censorship Attempt</button>
-          </div>
-          <div class="attack-result" id="attackResult">No attack run yet.</div>
         </div>
       </div>
-      <div class="explainer" id="explainer">
+      <div class="panel-box" id="breakBox">
+        <div class="panel-title">Break it</div>
+        <div class="attack-row">
+          <button id="reorgBtn" class="secondary">Reorg Attempt</button>
+          <button id="censorBtn" class="secondary">Censorship Attempt</button>
+        </div>
+        <div class="attack-result" id="attackResult">No attack run yet.</div>
+      </div>
+      <div class="panel-box explainer" id="explainer">
         Select a mode and click Run to see how nodes gossip blocks and converge on a head.
       </div>
+    </aside>
+    <section class="canvas-wrap">
+      <div id="threeRoot" class="three-root"></div>
     </section>
     <aside class="metrics">
       <h3>Metrics</h3>
