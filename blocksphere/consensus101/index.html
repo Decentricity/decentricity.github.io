@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Consensus Crash Lab (Consensus101)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="bg">
+    <div class="grid"></div>
+  </div>
+
+  <header class="topbar">
+    <div class="brand">
+      <img src="assets/blocksphere.png" alt="BlockSphere" class="brand-logo" />
+      <div>
+        <div class="title">Consensus Crash Lab</div>
+        <div class="subtitle">Consensus101</div>
+      </div>
+    </div>
+    <div class="mode-group">
+      <label class="mode-label">Mode</label>
+      <div class="mode-buttons" role="tablist" aria-label="Consensus mode">
+        <button class="mode-btn active" data-mode="pow">PoW</button>
+        <button class="mode-btn" data-mode="pos">PoS</button>
+        <button class="mode-btn" data-mode="poa">PoA</button>
+      </div>
+    </div>
+    <div class="seed-box">
+      <div class="seed-label">Seed</div>
+      <div class="seed-value" id="seedValue">—</div>
+      <button id="rerollSeed" class="secondary">Reroll</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="canvas-wrap">
+      <div id="threeRoot" class="three-root"></div>
+      <div class="overlay">
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="run">Run</button>
+          <button class="tab-btn" data-tab="break">Break it</button>
+        </div>
+        <div class="tab-panel active" id="tab-run">
+          <button id="runBtn" class="primary">Run (60s)</button>
+          <div class="status">
+            <div><strong>TX★ status:</strong> <span id="txStatus">—</span></div>
+            <div><strong>Confirmations:</strong> <span id="confirmations">0</span></div>
+          </div>
+        </div>
+        <div class="tab-panel" id="tab-break">
+          <div class="attack-row">
+            <button id="reorgBtn" class="secondary">Reorg Attempt</button>
+            <button id="censorBtn" class="secondary">Censorship Attempt</button>
+          </div>
+          <div class="attack-result" id="attackResult">No attack run yet.</div>
+        </div>
+      </div>
+    </section>
+    <aside class="metrics">
+      <h3>Metrics</h3>
+      <div class="metric">
+        <div class="label">Time to safe</div>
+        <div class="value" id="metricSafe">—</div>
+      </div>
+      <div class="metric">
+        <div class="label">Reorg risk</div>
+        <div class="value" id="metricRisk">—</div>
+      </div>
+      <div class="metric">
+        <div class="label">Liveness</div>
+        <div class="value" id="metricLive">—</div>
+      </div>
+    </aside>
+  </main>
+
+  <section class="controls">
+    <div class="knob">
+      <label>Network latency</label>
+      <div class="pill-group" id="latencyKnob">
+        <button class="pill active" data-value="low">Low</button>
+        <button class="pill" data-value="med">Medium</button>
+        <button class="pill" data-value="high">High</button>
+      </div>
+    </div>
+    <div class="knob">
+      <label>Adversary power</label>
+      <div class="pill-group" id="adversaryKnob">
+        <button class="pill active" data-value="0">0%</button>
+        <button class="pill" data-value="20">20%</button>
+        <button class="pill" data-value="40">40%</button>
+      </div>
+    </div>
+    <div class="knob">
+      <label>Centralization</label>
+      <div class="pill-group" id="centralKnob">
+        <button class="pill active" data-value="decentralized">Decentralized</button>
+        <button class="pill" data-value="top">Top-heavy</button>
+      </div>
+    </div>
+  </section>
+
+  <script type="module" src="ui.js"></script>
+</body>
+</html>
