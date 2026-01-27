@@ -41,6 +41,7 @@ export function createViz(container) {
   const eventLabels = [];
   const withheldGlow = new Map();
   const tokenStacks = new Map();
+  const roleLabels = new Map();
 
   function layoutNodes(count) {
     const positions = [];
@@ -55,6 +56,7 @@ export function createViz(container) {
   function initNodes(nodes) {
     nodeGroup.clear();
     tokenGroup.clear();
+    roleLabels.clear();
     nodeMeshes.clear();
     headMarkers.clear();
     tokenStacks.clear();
@@ -82,6 +84,18 @@ export function createViz(container) {
       stack.position.copy(mesh.position).add(new THREE.Vector3(0, -0.7, 0));
       tokenGroup.add(stack);
       tokenStacks.set(node.id, stack);
+
+      if (node.producer || node.delegate) {
+        let role = \"PRODUCER\";
+        if (node.delegate) role = \"DELEGATE\";
+        else if (node.producer && node.adversary) role = \"ADV PRODUCER\";
+        else if (node.producer) role = \"PRODUCER\";
+        const label = makeLabelSprite(role);
+        label.scale.set(2.2, 0.55, 1);
+        label.position.copy(mesh.position).add(new THREE.Vector3(0, -1.4, 0));
+        labelGroup.add(label);
+        roleLabels.set(node.id, label);
+      }
     });
   }
 
@@ -104,6 +118,10 @@ export function createViz(container) {
         coin.position.set(0, i * 0.06, 0);
         stack.add(coin);
       }
+      const label = roleLabels.get(node.id);
+      if (label) {
+        label.position.y = stack.position.y - 0.3 - coins * 0.06;
+      }
     });
   }
 
@@ -114,6 +132,8 @@ export function createViz(container) {
     mesh.material.opacity = 0.25;
     const stack = tokenStacks.get(nodeId);
     if (stack) stack.visible = false;
+    const label = roleLabels.get(nodeId);
+    if (label) label.visible = false;
   }
 
   function addChainBlock(block, mode) {
