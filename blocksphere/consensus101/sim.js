@@ -35,7 +35,7 @@ function makeNodes(config, rng) {
 
   for (let i = 0; i < count; i++) {
     const isProducer = i < producerCount;
-    const adversary = i < adversaryCount;
+    const adversary = false;
     const baseWeight = isProducer ? 1 : 0.2;
     const skew = topHeavy && isProducer ? (i === 0 ? 3.5 : 0.8) : 1;
     nodes.push({
@@ -51,6 +51,15 @@ function makeNodes(config, rng) {
       delegate: false,
     });
   }
+
+  const producers = nodes.filter((n) => n.producer);
+  const nonProducers = nodes.filter((n) => !n.producer);
+  const advProducers = Math.max(0, Math.round(producers.length * adversaryShare));
+  const advNon = Math.max(0, Math.round(nonProducers.length * (adversaryShare * 0.5)));
+
+  producers.slice(0, advProducers).forEach((n) => (n.adversary = true));
+  nonProducers.slice(0, advNon).forEach((n) => (n.adversary = true));
+
   return nodes;
 }
 
