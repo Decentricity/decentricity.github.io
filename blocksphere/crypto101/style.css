@@ -116,6 +116,11 @@ button:hover {
   color: #f4fbff;
 }
 
+a.primary {
+  display: inline-block;
+  text-decoration: none;
+}
+
 .secondary {
   background: transparent;
   border: 1px solid rgba(19, 76, 96, 0.25);
