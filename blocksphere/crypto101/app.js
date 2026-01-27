@@ -54,6 +54,11 @@ function createTopicCard(topic, index, total) {
         <ul>
           ${topic.points.map((p) => `<li>${annotateText(p)}</li>`).join("")}
         </ul>
+        ${topic.cta ? `
+        <div class="zk-cta-wrap">
+          <a class="primary zk-cta" href="${topic.cta.href}">${topic.cta.label}</a>
+          ${topic.cta.note ? `<div class="topic-meta zk-cta-note">${annotateText(topic.cta.note)}</div>` : ""}
+        </div>` : ""}
       </div>
       <div class="editor">
         <h3>Python Lab</h3>

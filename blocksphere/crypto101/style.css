@@ -116,6 +116,25 @@ button:hover {
   color: #f4fbff;
 }
 
+.zk-cta-wrap {
+  margin-top: 16px;
+}
+
+.zk-cta {
+  display: block;
+  width: 100%;
+  text-align: center;
+  font-size: 1.1rem;
+  padding: 16px 18px;
+  border-radius: 16px;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+}
+
+.zk-cta-note {
+  margin-top: 8px;
+}
+
 .secondary {
   background: transparent;
   border: 1px solid rgba(19, 76, 96, 0.25);
