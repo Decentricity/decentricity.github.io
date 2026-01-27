@@ -73,6 +73,7 @@ export function createSimState(config) {
     propagationStats: { lastMedian: null },
     attack: { type: null, active: false, releaseAt: null, withheld: [] },
     metrics: { safeTime: null, risk: "—", liveness: "OK" },
+    events: [],
   };
 }
 
@@ -216,6 +217,7 @@ function finalizePos(state) {
   });
   if (stakeSeen / totalStake >= 0.67) {
     state.finalizedHeight = Math.max(state.finalizedHeight, latest.height - 1);
+    state.events.push({ type: "finalized", time: state.time });
   }
 }
 
@@ -232,6 +234,7 @@ function includeTxInBlock(state, block, producer) {
   if (producer.mempool) {
     block.includesTx = true;
     state.txIncludedBlock = block.id;
+    state.events.push({ type: "tx_included", time: state.time });
   }
 }
 
@@ -250,6 +253,7 @@ function produceBlock(state) {
     includesTx: false,
     finalized: false,
     receivedTimes: [],
+    fork: producer.head !== state.canonicalHead,
   };
 
   includeTxInBlock(state, block, producer);
@@ -259,10 +263,20 @@ function produceBlock(state) {
   producer.known.add(block.id);
   computeHead(producer, state);
 
+  if (state.config.mode === "poa") {
+    state.finalizedHeight = block.height;
+    state.events.push({ type: "poa_final", time: state.time });
+  }
+
   if (state.attack.active && state.attack.type === "reorg" && producer.adversary) {
     state.attack.withheld.push(block.id);
+    state.events.push({ type: "withheld", time: state.time, blockId: block.id });
   } else {
     gossipBlock(state, block.id, producer);
+  }
+
+  if (producer.adversary && state.config.mode === "pos" && Math.random() < 0.05) {
+    state.events.push({ type: "slash", time: state.time });
   }
 }
 
@@ -309,13 +323,13 @@ export function stepSimulation(state, dt) {
     state.metrics.liveness = "OK";
   }
 
-  return { headCounts, delivered: due };
+  return { headCounts, delivered: due, events: state.events.splice(0, state.events.length) };
 }
 
 export function computeOverlay(state, headCounts) {
   const total = state.nodes.length;
   const sorted = [...headCounts.entries()].sort((a, b) => b[1] - a[1]);
-  const top = sorted.slice(0, 2).map(([id, count]) => {
+  const top = sorted.slice(0, 3).map(([id, count]) => {
     const pct = Math.round((count / total) * 100);
     return { id, pct };
   });
@@ -350,12 +364,14 @@ function confirmations(state) {
 
 export function attemptReorg(state) {
   state.attack = { type: "reorg", active: true, releaseAt: state.time + 6, withheld: [] };
+  state.events.push({ type: "reorg_attempt", time: state.time });
 }
 
 export function attemptCensorship(state) {
   state.nodes.forEach((n) => {
     if (n.adversary) n.mempool = false;
   });
+  state.events.push({ type: "censor_attempt", time: state.time });
 }
 
 export function releaseAttack(state) {
@@ -366,5 +382,8 @@ export function releaseAttack(state) {
   state.attack.withheld = [];
   const producer = state.nodes.find((n) => n.adversary) || state.nodes[0];
   released.forEach((id) => gossipBlock(state, id, producer));
+  if (released.length > 0) {
+    state.events.push({ type: "reorg_release", time: state.time });
+  }
   return released.length > 0;
 }

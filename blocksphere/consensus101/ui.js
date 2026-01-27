@@ -154,10 +154,15 @@ function tick() {
       reorg_attempt: "REORG ATTEMPT",
       reorg_release: "REORG RELEASE",
       censor_attempt: "CENSOR",
+      withheld: "WITHHELD",
     };
     const text = labelMap[evt.type];
     if (!text) return;
     viz.addEventLabel(text, { x: -2, y: 3.5, z: -3 });
+  });
+
+  events.filter((e) => e.type === "withheld").forEach((e) => {
+    viz.markWithheld(e.blockId);
   });
 
   updateUI();
@@ -201,11 +206,11 @@ function runAttack(type) {
   if (type === "reorg") {
     attemptReorg(state);
     attackResult.textContent = "Reorg Attempt: adversary withholding blocks, will release soon. Mitigation: wait for finality / confirmations.";
-    lastAttackMessage = " Reorg attempt active: adversary withholds blocks, then releases them to race the honest chain.";
+    lastAttackMessage = " Reorg attempt active: withheld blocks glow red, then release in a burst to race the honest chain.";
   } else {
     attemptCensorship(state);
     attackResult.textContent = "Censorship Attempt: adversarial producers ignoring TX★. Mitigation: decentralize producers + diversify relay.";
-    lastAttackMessage = " Censorship attempt active: adversarial producers ignore TX★, slowing inclusion through the gossip network.";
+    lastAttackMessage = " Censorship attempt active: TX★ gossip pulses appear, but adversarial producers ignore it, delaying inclusion.";
   }
   explainer.textContent = buildExplainerText();
 }
@@ -253,6 +258,7 @@ function animate(time) {
   lastTime = time;
   viz.updatePackets(delta);
   viz.updateLabels(delta);
+  viz.updateWithheld(delta);
   viz.render();
   requestAnimationFrame(animate);
 }

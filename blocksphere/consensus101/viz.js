@@ -31,6 +31,7 @@ export function createViz(container) {
   const packetMeshes = [];
   const chainBlocks = new Map();
   const eventLabels = [];
+  const withheldGlow = new Map();
 
   function layoutNodes(count) {
     const positions = [];
@@ -94,6 +95,30 @@ export function createViz(container) {
       mesh.material.emissive.set(0x000000);
       mesh.material.emissiveIntensity = 0;
     }
+  }
+
+  function markWithheld(blockId) {
+    const mesh = chainBlocks.get(blockId);
+    if (!mesh) return;
+    mesh.material.color.set(0xff4d4d);
+    mesh.material.emissive.set(0xff4d4d);
+    mesh.material.emissiveIntensity = 0.9;
+    withheldGlow.set(blockId, 2.8);
+  }
+
+  function updateWithheld(delta) {
+    withheldGlow.forEach((ttl, id) => {
+      const mesh = chainBlocks.get(id);
+      if (!mesh) return;
+      const next = ttl - delta;
+      if (next <= 0) {
+        withheldGlow.delete(id);
+        mesh.material.emissiveIntensity = 0;
+      } else {
+        mesh.material.emissiveIntensity = 0.5 + Math.sin((2.8 - next) * 4) * 0.4;
+        withheldGlow.set(id, next);
+      }
+    });
   }
 
   function spawnPacket(from, to, color = 0xffc857) {
@@ -182,6 +207,8 @@ export function createViz(container) {
     initNodes,
     addChainBlock,
     updateChainBlock,
+    markWithheld,
+    updateWithheld,
     spawnPacket,
     updatePackets,
     updateNodeMarkers,
