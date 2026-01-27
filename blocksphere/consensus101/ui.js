@@ -288,6 +288,10 @@ parseParams();
 resetSim();
 bindUI();
 initDebugPanel();
+setTimeout(() => {
+  viz.resize();
+  viz.render();
+}, 50);
 
 let lastTime = performance.now();
 function animate(time) {

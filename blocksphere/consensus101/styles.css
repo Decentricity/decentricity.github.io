@@ -384,7 +384,8 @@ body {
     order: 3;
   }
   .canvas-wrap {
-    min-height: 320px;
+    height: 45vh;
+    min-height: 260px;
   }
   .explainer-row {
     height: auto;
