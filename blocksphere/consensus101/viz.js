@@ -24,7 +24,8 @@ export function createViz(container) {
   const chainGroup = new THREE.Group();
   const packetGroup = new THREE.Group();
   const labelGroup = new THREE.Group();
-  group.add(nodeGroup, chainGroup, packetGroup, labelGroup);
+  const tokenGroup = new THREE.Group();
+  group.add(nodeGroup, chainGroup, packetGroup, labelGroup, tokenGroup);
 
   const nodeMeshes = new Map();
   const nodeBase = new Map();
@@ -33,6 +34,7 @@ export function createViz(container) {
   const chainBlocks = new Map();
   const eventLabels = [];
   const withheldGlow = new Map();
+  const tokenStacks = new Map();
 
   function layoutNodes(count) {
     const positions = [];
@@ -46,8 +48,10 @@ export function createViz(container) {
 
   function initNodes(nodes) {
     nodeGroup.clear();
+    tokenGroup.clear();
     nodeMeshes.clear();
     headMarkers.clear();
+    tokenStacks.clear();
     const positions = layoutNodes(nodes.length);
     nodes.forEach((node, i) => {
       const color = node.adversary ? 0xf76c6c : node.producer ? 0x2f8aa0 : 0x8bb7c6;
@@ -67,7 +71,38 @@ export function createViz(container) {
       marker.position.copy(mesh.position).add(new THREE.Vector3(0, 0.6, 0));
       nodeGroup.add(marker);
       headMarkers.set(node.id, marker);
+
+      const stack = new THREE.Group();
+      stack.position.copy(mesh.position).add(new THREE.Vector3(0, -0.7, 0));
+      tokenGroup.add(stack);
+      tokenStacks.set(node.id, stack);
     });
+  }
+
+  function updateTokenStacks(nodes) {
+    nodes.forEach((node) => {
+      const stack = tokenStacks.get(node.id);
+      if (!stack) return;
+      stack.clear();
+      const coins = Math.max(0, Math.round(node.stake * 4));
+      for (let i = 0; i < coins; i++) {
+        const coin = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.16, 0.16, 0.05, 16),
+          new THREE.MeshStandardMaterial({ color: 0xffc857, emissive: 0x7a5a00, emissiveIntensity: 0.2 })
+        );
+        coin.position.set(0, i * 0.06, 0);
+        stack.add(coin);
+      }
+    });
+  }
+
+  function fadeNode(nodeId) {
+    const mesh = nodeMeshes.get(nodeId);
+    if (!mesh) return;
+    mesh.material.transparent = true;
+    mesh.material.opacity = 0.25;
+    const stack = tokenStacks.get(nodeId);
+    if (stack) stack.visible = false;
   }
 
   function addChainBlock(block, mode) {
@@ -147,34 +182,6 @@ export function createViz(container) {
     }
   }
 
-  function setAttackPulse(adversaryIds, activeType, delta) {
-    if (!activeType) {
-      nodeMeshes.forEach((mesh, id) => {
-        const base = nodeBase.get(id);
-        if (!base) return;
-        mesh.material.color.set(base.color);
-        mesh.material.emissive.set(0x000000);
-        mesh.material.emissiveIntensity = 0;
-      });
-      return;
-    }
-
-    const pulse = 0.5 + Math.sin(Date.now() * 0.008) * 0.5;
-    nodeMeshes.forEach((mesh, id) => {
-      const base = nodeBase.get(id);
-      if (!base) return;
-      if (adversaryIds.includes(id)) {
-        mesh.material.color.set(0xff4d4d);
-        mesh.material.emissive.set(0xff1f1f);
-        mesh.material.emissiveIntensity = 0.6 + pulse * 0.6;
-      } else {
-        mesh.material.color.set(base.color);
-        mesh.material.emissive.set(0x000000);
-        mesh.material.emissiveIntensity = 0;
-      }
-    });
-  }
-
   function updateNodeMarkers(nodes, headCounts, mode) {
     const headIds = [...headCounts.keys()];
     const colors = mode === "pow" ? [0xff8a3d, 0xf76c6c, 0x6c8ef7] : [0x2f8aa0, 0x6c8ef7, 0x3ddc97];
@@ -223,6 +230,34 @@ export function createViz(container) {
     }
   }
 
+  function setAttackPulse(adversaryIds, activeType) {
+    if (!activeType) {
+      nodeMeshes.forEach((mesh, id) => {
+        const base = nodeBase.get(id);
+        if (!base) return;
+        mesh.material.color.set(base.color);
+        mesh.material.emissive.set(0x000000);
+        mesh.material.emissiveIntensity = 0;
+      });
+      return;
+    }
+
+    const pulse = 0.5 + Math.sin(Date.now() * 0.008) * 0.5;
+    nodeMeshes.forEach((mesh, id) => {
+      const base = nodeBase.get(id);
+      if (!base) return;
+      if (adversaryIds.includes(id)) {
+        mesh.material.color.set(0xff4d4d);
+        mesh.material.emissive.set(0xff1f1f);
+        mesh.material.emissiveIntensity = 0.6 + pulse * 0.6;
+      } else {
+        mesh.material.color.set(base.color);
+        mesh.material.emissive.set(0x000000);
+        mesh.material.emissiveIntensity = 0;
+      }
+    });
+  }
+
   function resize() {
     camera.aspect = container.clientWidth / container.clientHeight;
     camera.updateProjectionMatrix();
@@ -235,6 +270,8 @@ export function createViz(container) {
 
   return {
     initNodes,
+    updateTokenStacks,
+    fadeNode,
     addChainBlock,
     updateChainBlock,
     markWithheld,

@@ -55,6 +55,7 @@ function reroll() {
 function resetSim() {
   state = createSimState({ ...config });
   viz.initNodes(state.nodes);
+  viz.updateTokenStacks(state.nodes);
   txStatus.textContent = "—";
   confirmations.textContent = "0";
   metricSafe.textContent = "—";
@@ -115,10 +116,10 @@ function buildExplainerText() {
     return `PoW is active, so miners race to extend the longest chain. With ${latencyText}, blocks gossip as pulses; delays cause temporary forks and node disagreement (${splitText}). Reorgs can happen if a longer branch arrives. TX★ is unsafe until it reaches 6 confirmations. Propagation median: ${propText}.${attackText}`;
   }
   if (config.mode === "pos") {
-    return `PoS is active, so validators propose by stake and vote in epochs. With ${centralText} and ${advText}, gossip delays affect who sees the checkpoint in time, which impacts finality. When enough votes propagate, blocks become FINALIZED (locked). Current split: ${splitText}. Propagation median: ${propText}.${attackText}`;
+    return `PoS is active, so validators stake tokens to earn slots. Gold coin stacks show stake; losing tokens can remove a validator seat. With ${centralText} and ${advText}, gossip delays affect who sees the checkpoint in time, which impacts finality. Current split: ${splitText}. Propagation median: ${propText}.${attackText}`;
   }
   if (config.mode === "dpos") {
-    return `dPoS is active, so a small delegate set produces blocks in a fixed schedule. With ${centralText} and ${advText}, fewer producers mean faster finality but higher cartel risk. Delegates gossip blocks quickly, and finality depends on delegate votes reaching quorum. Current split: ${splitText}. Propagation median: ${propText}.${attackText}`;
+    return `dPoS is active, so a small delegate set produces blocks in a fixed schedule. Delegates hold visible token stacks; if a delegate loses stake, they fade and lose their seat. Current split: ${splitText}. Propagation median: ${propText}.${attackText}`;
   }
   if (config.mode === "poa") {
     return `PoA is active, so authorities take turns (round-robin) and finality is immediate. With ${centralText} and ${latencyText}, gossip is still visible but forks are rare. If enough authorities are compromised, censorship or a 1-block rewrite can occur. Current split: ${splitText}. Propagation median: ${propText}.${attackText}`;
@@ -154,6 +155,7 @@ function tick() {
   });
 
   viz.updateNodeMarkers(state.nodes, headCounts, config.mode);
+  viz.updateTokenStacks(state.nodes);
 
   events.forEach((evt) => {
     const labelMap = {
@@ -161,6 +163,7 @@ function tick() {
       poa_final: "FINAL",
       tx_included: "TX★ IN",
       slash: "SLASH",
+      seat_lost: "SEAT LOST",
       reorg_attempt: "REORG ATTEMPT",
       reorg_release: "REORG RELEASE",
       censor_attempt: "CENSOR",
@@ -187,6 +190,10 @@ function tick() {
 
   events.filter((e) => e.type === "withheld").forEach((e) => {
     viz.markWithheld(e.blockId);
+  });
+
+  events.filter((e) => e.type === "seat_lost").forEach((e) => {
+    viz.fadeNode(e.nodeId);
   });
 
   updateUI();

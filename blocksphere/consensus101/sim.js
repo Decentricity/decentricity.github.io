@@ -261,6 +261,19 @@ function includeTxInBlock(state, block, producer) {
   }
 }
 
+function maybeSlash(state, producer) {
+  if (state.config.mode !== "pos" && state.config.mode !== "dpos") return;
+  if (!producer.adversary) return;
+  if (state.rng() < 0.08) {
+    producer.stake = Math.max(0, producer.stake - 0.6);
+    state.events.push({ type: "slash", time: state.time, nodeId: producer.id });
+    if (producer.stake < 0.4 && producer.producer) {
+      producer.producer = false;
+      state.events.push({ type: "seat_lost", time: state.time, nodeId: producer.id });
+    }
+  }
+}
+
 function produceBlock(state) {
   const producer = pickProducer(state);
   const headId = producer.head ?? 0;
@@ -299,9 +312,7 @@ function produceBlock(state) {
     gossipBlock(state, block.id, producer);
   }
 
-  if (producer.adversary && state.config.mode === "pos" && Math.random() < 0.05) {
-    state.events.push({ type: "slash", time: state.time, nodeId: producer.id });
-  }
+  maybeSlash(state, producer);
 }
 
 function maybeAnnounceTx(state) {
