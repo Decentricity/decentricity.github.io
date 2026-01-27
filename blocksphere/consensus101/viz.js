@@ -94,7 +94,8 @@ export function createViz(container) {
       const stack = tokenStacks.get(node.id);
       if (!stack) return;
       stack.clear();
-      const coins = Math.max(0, Math.round(node.stake * 4));
+      const isStaker = node.producer || node.delegate;
+      const coins = isStaker ? Math.max(0, Math.round(node.stake * 4)) : 0;
       for (let i = 0; i < coins; i++) {
         const coin = new THREE.Mesh(
           new THREE.CylinderGeometry(0.16, 0.16, 0.05, 16),
