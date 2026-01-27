@@ -328,6 +328,7 @@ body {
     flex-wrap: wrap;
     justify-content: center;
     gap: 8px;
+    position: static;
   }
   .brand {
     width: 100%;
@@ -337,12 +338,23 @@ body {
     width: 100%;
     justify-content: center;
   }
+  .mode-buttons {
+    width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    padding-bottom: 4px;
+  }
+  .mode-btn {
+    flex: 0 0 auto;
+  }
   .seed-box {
     width: 100%;
     justify-content: center;
   }
   .layout {
     grid-template-columns: 1fr;
+    padding: 10px 12px 0;
   }
   .sidepanels {
     order: 2;
@@ -350,8 +362,12 @@ body {
   .metrics {
     order: 3;
   }
+  .canvas-wrap {
+    min-height: 320px;
+  }
   .explainer-row {
     height: auto;
+    padding: 6px 12px 0;
   }
   .explainer {
     height: auto;
@@ -360,5 +376,6 @@ body {
   .controls {
     grid-template-columns: 1fr;
     height: auto;
+    padding: 6px 12px 12px;
   }
 }
