@@ -225,15 +225,15 @@
         sectionNote: "Why contracts need on-chain facts, not just UI claims.",
         title: "Slide 0J — Oracles instead of APIs",
         tag: "Frontends inform humans; oracles inform contracts",
-        overview: "Frontends can lie, disappear, or be bypassed. A frontend API call is a UI claiming something happened; an oracle update writes that fact into chain state so contracts can enforce it.",
+        overview: "A frontend calling a non-blockchain backend API can lie, be intercepted, or be compromised. That API response is not shared truth; it is just a claim by one server.",
         liquidity: [
-          "Contracts only act on on-chain state — off-chain data cannot trigger enforcement.",
-          "Oracles turn real-world events into enforceable on-chain facts.",
-          "Shared truth lets all parties verify the same state independently.",
-          "Oracle attestations can be signed, timestamped, replay-protected.",
-          "On-chain records persist even if frontends or companies change."
+          "Contracts only enforce what is on-chain — off-chain API replies are unenforceable.",
+          "Oracles publish signed, timestamped data into chain state.",
+          "On-chain facts become shared truth for all parties.",
+          "Competing backends can’t fork reality if the oracle is the source of truth.",
+          "On-chain records persist even if frontends or backends change."
         ],
-        scf: "If delivery or milestone data stays off-chain, contracts cannot auto-release funds or unlock collateral. Oracles let on-chain logic enforce settlement, penalties, and audit trails.",
+        scf: "If delivery or milestone data only lives in a backend API, contracts can’t auto-release funds or unlock collateral. Oracles put those facts on-chain so settlement and penalties can be enforced.",
         links: [{ badge: "Concept slide" }],
         contracts: [],
         explorer: null
