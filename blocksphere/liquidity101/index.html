@@ -698,6 +698,9 @@
         </div>
       `;
       wireTabs(labHead);
+      if (window.renderLab) {
+        window.renderLab();
+      }
       labSection.scrollIntoView({ behavior: "smooth", block: "start" });
     };
 

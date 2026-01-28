@@ -136,5 +136,6 @@
     });
   }
 
+  window.renderLab = render;
   render();
 })();
