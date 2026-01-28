@@ -655,16 +655,50 @@
       return block;
     };
 
+    const deckSection = document.querySelector(".section.deck");
+    const labSection = document.getElementById("lab");
+
+    const sectionStarts = {
+      "Prelude": slides.findIndex((slide) => slide.section.startsWith("Prelude")),
+      "Onchain Liquidity DApps": slides.findIndex((slide) => slide.section.startsWith("Section A")),
+      "SCF Adjacent DApps": slides.findIndex((slide) => slide.section.startsWith("Section B")),
+      "Labs": -1
+    };
+
+    const showDeck = (index) => {
+      labSection.style.display = "none";
+      deckSection.style.display = "block";
+      if (typeof index === "number" && index >= 0) {
+        renderSlide(index);
+      }
+    };
+
+    const goToLab = () => {
+      deckSection.style.display = "none";
+      labSection.style.display = "block";
+      labSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+
     const renderSlide = (index) => {
       const slide = slides[index];
       if (!slide) return;
 
       sectionHead.innerHTML = `
-        <div class="section-brand">
-          <img src="assets/blocksphere.png" alt="BlockSphere logo" class="section-logo" />
+        <div class="section-top">
+          <div class="section-brand">
+            <img src="assets/blocksphere.png" alt="BlockSphere logo" class="section-logo" />
+          </div>
+          <nav class="section-tabs" aria-label="Sections">
+            <button class="tab" type="button" data-tab="Prelude">Prelude</button>
+            <button class="tab" type="button" data-tab="Onchain Liquidity DApps">Onchain Liquidity DApps</button>
+            <button class="tab" type="button" data-tab="SCF Adjacent DApps">SCF Adjacent DApps</button>
+            <button class="tab" type="button" data-tab="Labs">Labs</button>
+          </nav>
         </div>
-        <h2>${slide.section}</h2>
-        <p>${slide.sectionNote}</p>
+        <div class="section-text">
+          <h2>${slide.section}</h2>
+          <p>${slide.sectionNote}</p>
+        </div>
       `;
 
       slideView.innerHTML = `
@@ -735,21 +769,33 @@
 
       document.title = `${slide.title} — Liquidity 101`;
       window.location.hash = slide.id;
+
+      sectionHead.querySelectorAll(".tab").forEach((tab) => {
+        const name = tab.getAttribute("data-tab");
+        if (name === "Prelude" && slide.section.startsWith("Prelude")) tab.classList.add("active");
+        if (name === "Onchain Liquidity DApps" && slide.section.startsWith("Section A")) tab.classList.add("active");
+        if (name === "SCF Adjacent DApps" && slide.section.startsWith("Section B")) tab.classList.add("active");
+      });
+
+      sectionHead.querySelectorAll(".tab").forEach((tab) => {
+        tab.addEventListener("click", () => {
+          const name = tab.getAttribute("data-tab");
+          if (name === "Labs") {
+            goToLab();
+            return;
+          }
+          const targetIndex = sectionStarts[name];
+          if (typeof targetIndex === "number" && targetIndex >= 0) {
+            showDeck(targetIndex);
+          }
+        });
+      });
     };
 
     const getIndexFromHash = () => {
       const hash = window.location.hash.replace("#", "");
       const index = slides.findIndex((slide) => slide.id === hash);
       return index === -1 ? 0 : index;
-    };
-
-    const deckSection = document.querySelector(".section.deck");
-    const labSection = document.getElementById("lab");
-
-    const goToLab = () => {
-      deckSection.style.display = "none";
-      labSection.style.display = "block";
-      labSection.scrollIntoView({ behavior: "smooth", block: "start" });
     };
 
     let currentIndex = getIndexFromHash();

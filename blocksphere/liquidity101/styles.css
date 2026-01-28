@@ -73,6 +73,14 @@ main {
   margin-bottom: 0;
 }
 
+.section-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
 .section-brand {
   display: flex;
   align-items: center;
@@ -92,6 +100,36 @@ main {
 .section-head h2 {
   margin: 0;
   font-size: clamp(1.6rem, 2.5vw, 2.2rem);
+}
+
+.section-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tab {
+  border-radius: 999px;
+  border: 1px solid rgba(19, 76, 96, 0.25);
+  background: #ffffff;
+  color: var(--accent-2);
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+  font-family: var(--sans);
+}
+
+.tab:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 16px rgba(15, 76, 92, 0.12);
+}
+
+.tab.active {
+  background: rgba(47, 138, 160, 0.12);
+  border-color: rgba(47, 138, 160, 0.35);
+  color: var(--accent);
 }
 
 .section-head p {
