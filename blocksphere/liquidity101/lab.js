@@ -2,10 +2,9 @@
   let currentIndex = 0;
 
   const appEl = document.getElementById("labApp");
-  const startBtn = document.getElementById("labStartBtn");
   const jumpBtn = document.getElementById("jumpToLab");
 
-  if (!appEl || !startBtn || typeof TOPICS === "undefined") {
+  if (!appEl || typeof TOPICS === "undefined") {
     return;
   }
 
@@ -130,11 +129,6 @@
     currentIndex = index;
     render();
   }
-
-  startBtn.addEventListener("click", () => {
-    currentIndex = 0;
-    render();
-  });
 
   if (jumpBtn) {
     jumpBtn.addEventListener("click", () => {
