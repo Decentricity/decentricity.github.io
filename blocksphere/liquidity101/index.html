@@ -221,9 +221,28 @@
       },
       {
         id: "slide-0j",
+        section: "Prelude — Oracles & Truth",
+        sectionNote: "Why contracts need on-chain facts, not just UI claims.",
+        title: "Slide 0J — Oracles instead of APIs",
+        tag: "Frontends inform humans; oracles inform contracts",
+        overview: "Frontends can lie, disappear, or be bypassed. A frontend API call is a UI claiming something happened; an oracle update writes that fact into chain state so contracts can enforce it.",
+        liquidity: [
+          "Contracts only act on on-chain state — off-chain data cannot trigger enforcement.",
+          "Oracles turn real-world events into enforceable on-chain facts.",
+          "Shared truth lets all parties verify the same state independently.",
+          "Oracle attestations can be signed, timestamped, replay-protected.",
+          "On-chain records persist even if frontends or companies change."
+        ],
+        scf: "If delivery or milestone data stays off-chain, contracts cannot auto-release funds or unlock collateral. Oracles let on-chain logic enforce settlement, penalties, and audit trails.",
+        links: [{ badge: "Concept slide" }],
+        contracts: [],
+        explorer: null
+      },
+      {
+        id: "slide-0k",
         section: "Prelude — Framework",
         sectionNote: "Use this checklist to explain any protocol.",
-        title: "Slide 0J — The Component Checklist",
+        title: "Slide 0K — The Component Checklist",
         tag: "Reusable explanation structure",
         overview: "A consistent structure makes complex protocols easy to explain and compare.",
         liquidity: [
@@ -240,10 +259,10 @@
         explorer: null
       },
       {
-        id: "slide-0k",
+        id: "slide-0l",
         section: "Prelude — Framework",
         sectionNote: "Use this checklist to explain any protocol.",
-        title: "Slide 0K — Sample Talk Track",
+        title: "Slide 0L — Sample Talk Track",
         tag: "How to narrate the stack",
         overview: "Start from consensus, then move upward to stablecoins, trading, credit, RWAs, and staking derivatives.",
         liquidity: [
