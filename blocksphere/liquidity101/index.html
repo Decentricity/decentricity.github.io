@@ -3,42 +3,744 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Blocksphere Liquidity 101</title>
+  <title>Liquidity 101</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <div class="bg">
     <div class="grid"></div>
   </div>
+  <main>
+    <section class="section deck">
+      <div class="section-head" id="sectionHead"></div>
+      <article class="slide" id="slideView"></article>
+    </section>
 
-  <header class="hero">
-    <div class="hero-inner">
-      <div class="brand">
-        <img src="assets/blocksphere.png" alt="BlockSphere logo" class="brand-logo" />
-      </div>
-      <div class="badge">Liquidity 101</div>
-      <h1>Automating liquidity with smart contracts, step by step.</h1>
-      <p>
-        This self-study kit mirrors the NobleProg lab. Each topic matches a slide with
-        commands, student TODOs, and the complete reference.
-      </p>
-      <div class="cta-row">
-        <button id="start-btn" class="primary">Start the lab</button>
-        <span class="note">Run everything in your own terminal.</span>
-      </div>
-    </div>
-  </header>
+    <section class="section lab" id="lab" style="display: none;">
+      <header class="hero lab-hero">
+        <div class="hero-inner">
+          <div class="brand">
+            <img src="assets/blocksphere.png" alt="BlockSphere logo" class="brand-logo" />
+          </div>
+          <div class="badge">Liquidity 101 Lab</div>
+          <h2>Automating liquidity with smart contracts, step by step.</h2>
+          <p>
+            This self-study kit mirrors the NobleProg lab. Each topic matches a slide with
+            commands, student TODOs, and the complete reference.
+          </p>
+          <div class="cta-row">
+            <button id="labStartBtn" class="primary" type="button">Start the lab</button>
+            <span class="note">Run everything in your own terminal.</span>
+          </div>
+        </div>
+      </header>
 
-  <main id="app" class="app" aria-live="polite"></main>
+      <div id="labApp" class="app" aria-live="polite"></div>
 
-  <footer class="footer">
-    <div>Solidity examples are educational. Use audited patterns for production.</div>
-  </footer>
+      <footer class="footer">
+        <div>Solidity examples are educational. Use audited patterns for production.</div>
+      </footer>
+    </section>
+  </main>
 
+  <script>
+    const slides = [
+      {
+        id: "slide-0a",
+        section: "Prelude — Foundations",
+        sectionNote: "Start with the base layer that every liquidity system depends on.",
+        title: "Slide 0A — Consensus & Settlement",
+        tag: "Base layer of liquidity",
+        overview: "Consensus is the legal system of DeFi: it defines when state is final, how fast transactions settle, and what it costs to move liquidity.",
+        liquidity: [
+          "Consensus model (PoS/PoW/BFT) defines safety + liveness.",
+          "Validators and staking security bond the ledger.",
+          "Block time and finality determine settlement speed.",
+          "Transaction ordering creates MEV risk/opportunity.",
+          "Gas fees price access to execution."
+        ],
+        scf: "Consensus yield (staking) becomes the baseline rate; finality defines when trades/loans are truly settled; ordering affects execution risk.",
+        links: [{ badge: "Concept slide" }],
+        contracts: [],
+        explorer: null
+      },
+      {
+        id: "slide-0b",
+        section: "Prelude — Foundations",
+        sectionNote: "Start with the base layer that every liquidity system depends on.",
+        title: "Slide 0B — Stablecoins (Liquidity Anchor)",
+        tag: "Unit of account + settlement rail",
+        overview: "Stablecoins are the settlement asset of on-chain liquidity. Most pools, loans, and trades route through a stable unit of account.",
+        liquidity: [
+          "Fiat-backed: redeemable claims on off-chain reserves.",
+          "Crypto-collateralized: over-collateralized by on-chain assets.",
+          "Hybrid/algorithmic: mixes collateral + stabilization rules.",
+          "Issuance/redemption gates liquidity in or out.",
+          "Peg mechanisms and oracles stabilize pricing."
+        ],
+        scf: "Peg stability and redemption reliability cascade through every liquidity venue; chain finality determines when stable transfers are settled.",
+        links: [{ badge: "Concept slide" }],
+        contracts: [],
+        explorer: null
+      },
+      {
+        id: "slide-0c",
+        section: "Prelude — Liquidity Architectures",
+        sectionNote: "Map the primary on-chain liquidity structures.",
+        title: "Slide 0C — AMM / DEX Pools",
+        tag: "Always-on swap liquidity",
+        overview: "AMMs pool asset pairs and use pricing curves to offer continuous liquidity without explicit orderbooks.",
+        liquidity: [
+          "Pool vaults custody the assets.",
+          "LPs supply inventory and earn fees.",
+          "Pricing curve sets the swap price from reserves.",
+          "Routers aggregate across pools for best execution.",
+          "Fee tiers and incentives guide liquidity placement."
+        ],
+        scf: "Consensus ordering and MEV shape execution; arbitrage enforces price alignment once blocks finalize.",
+        links: [{ badge: "Concept slide" }],
+        contracts: [],
+        explorer: null
+      },
+      {
+        id: "slide-0d",
+        section: "Prelude — Liquidity Architectures",
+        sectionNote: "Map the primary on-chain liquidity structures.",
+        title: "Slide 0D — Orderbooks, RFQ, Intent Systems",
+        tag: "Explicit prices + optimized execution",
+        overview: "Order-based liquidity uses signed intents, relayers, and batch settlement to improve pricing and reduce MEV.",
+        liquidity: [
+          "Traders sign orders or intents (price/size/expiry).",
+          "Relayers or solvers match and route orders.",
+          "RFQ quotes provide off-chain price discovery.",
+          "Batch auctions net order flow before settlement.",
+          "Settlement contracts finalize the execution."
+        ],
+        scf: "Batch settlement relies on finality guarantees; auction design reduces ordering risk from validators.",
+        links: [{ badge: "Concept slide" }],
+        contracts: [],
+        explorer: null
+      },
+      {
+        id: "slide-0e",
+        section: "Prelude — Liquidity Architectures",
+        sectionNote: "Map the primary on-chain liquidity structures.",
+        title: "Slide 0E — Lending & Borrowing Markets",
+        tag: "Credit liquidity with collateral",
+        overview: "Money markets pool assets, let suppliers earn yield, and let borrowers draw liquidity against collateral.",
+        liquidity: [
+          "Suppliers deposit into asset pools.",
+          "Receipt tokens track claims on the pool.",
+          "Borrowers post collateral with LTV limits.",
+          "Rate model adjusts pricing by utilization.",
+          "Liquidations and oracles preserve solvency."
+        ],
+        scf: "Oracle updates and liquidation ordering depend on consensus; staking yield sets a baseline rate for lenders.",
+        links: [{ badge: "Concept slide" }],
+        contracts: [],
+        explorer: null
+      },
+      {
+        id: "slide-0f",
+        section: "Prelude — Liquidity Architectures",
+        sectionNote: "Map the primary on-chain liquidity structures.",
+        title: "Slide 0F — Stablecoin Money Markets",
+        tag: "Short-term stable liquidity",
+        overview: "Stablecoin-focused pools concentrate liquidity for settlement, treasury parking, and short-duration credit.",
+        liquidity: [
+          "Stable-only pools reduce volatility risk.",
+          "Rate curves track demand for stable leverage.",
+          "Peg-risk buffers handle de-peg events.",
+          "Borrowers use stables for leverage or working capital.",
+          "Liquidity buffers manage withdrawals."
+        ],
+        scf: "Stable money markets anchor working capital; consensus finality dictates transfer and redemption certainty.",
+        links: [{ badge: "Concept slide" }],
+        contracts: [],
+        explorer: null
+      },
+      {
+        id: "slide-0g",
+        section: "Prelude — Liquidity Architectures",
+        sectionNote: "Map the primary on-chain liquidity structures.",
+        title: "Slide 0G — RWA / Centrifuge-Style Pools",
+        tag: "Real-world assets into DeFi",
+        overview: "RWA protocols tokenize off-chain cashflows and create tranche-based liquidity pools on-chain.",
+        liquidity: [
+          "Originators supply real-world assets (invoices/loans).",
+          "Legal wrappers link off-chain claims to tokens.",
+          "Tokenized assets enter on-chain pools.",
+          "Tranches split risk (senior/junior).",
+          "Cashflow waterfalls distribute repayments."
+        ],
+        scf: "On-chain settlement depends on off-chain attestations; finality provides investor certainty for cashflows.",
+        links: [{ badge: "Concept slide" }],
+        contracts: [],
+        explorer: null
+      },
+      {
+        id: "slide-0h",
+        section: "Prelude — Liquidity Architectures",
+        sectionNote: "Map the primary on-chain liquidity structures.",
+        title: "Slide 0H — Derivatives (Perps / Options)",
+        tag: "Leverage and risk transfer",
+        overview: "Derivative venues create liquidity for leveraged exposure and hedging, often using pooled collateral.",
+        liquidity: [
+          "Margin vaults custody collateral.",
+          "Oracles provide the reference price.",
+          "Funding rates balance long/short demand.",
+          "Liquidation engines protect solvency.",
+          "Risk parameters cap exposure."
+        ],
+        scf: "Oracle latency and block finality drive liquidation risk; MEV can affect execution ordering.",
+        links: [{ badge: "Concept slide" }],
+        contracts: [],
+        explorer: null
+      },
+      {
+        id: "slide-0i",
+        section: "Prelude — Liquidity Architectures",
+        sectionNote: "Map the primary on-chain liquidity structures.",
+        title: "Slide 0I — Liquid Staking & Restaking",
+        tag: "Consensus yield becomes liquid",
+        overview: "Liquid staking turns locked staking positions into tradeable assets, enabling liquidity on top of consensus rewards.",
+        liquidity: [
+          "Validators secure the chain and earn staking yield.",
+          "LSTs represent claims on staked assets + rewards.",
+          "LSTs are used as collateral across DeFi.",
+          "Restaking extends security to new protocols.",
+          "Slashing risk is shared across holders."
+        ],
+        scf: "LSTs are direct claims on consensus rewards; staking yield competes with all other liquidity returns.",
+        links: [{ badge: "Concept slide" }],
+        contracts: [],
+        explorer: null
+      },
+      {
+        id: "slide-0j",
+        section: "Prelude — Framework",
+        sectionNote: "Use this checklist to explain any protocol.",
+        title: "Slide 0J — The Component Checklist",
+        tag: "Reusable explanation structure",
+        overview: "A consistent structure makes complex protocols easy to explain and compare.",
+        liquidity: [
+          "Assets: what is being traded or lent?",
+          "Suppliers: who provides liquidity and why?",
+          "Pricing/Risk: how is price set and risk controlled?",
+          "Execution: how are trades or loans finalized?",
+          "Incentives/Governance: who sets parameters?",
+          "Consensus link: where does base-layer risk show up?"
+        ],
+        scf: "Use this as a repeatable template to connect every design back to consensus and settlement.",
+        links: [{ badge: "Concept slide" }],
+        contracts: [],
+        explorer: null
+      },
+      {
+        id: "slide-0k",
+        section: "Prelude — Framework",
+        sectionNote: "Use this checklist to explain any protocol.",
+        title: "Slide 0K — Sample Talk Track",
+        tag: "How to narrate the stack",
+        overview: "Start from consensus, then move upward to stablecoins, trading, credit, RWAs, and staking derivatives.",
+        liquidity: [
+          "Consensus: finality + staking yield define the base rate.",
+          "Stablecoins: unit of account and settlement rail.",
+          "DEXs/AMMs: instant conversion liquidity.",
+          "Lending: credit liquidity with collateral.",
+          "RWA pools: real cashflows into on-chain liquidity.",
+          "Liquid staking: consensus yield turned liquid."
+        ],
+        scf: "This arc ties every liquidity venue back to the chain’s settlement guarantees.",
+        links: [{ badge: "Concept slide" }],
+        contracts: [],
+        explorer: null
+      },
+      {
+        id: "slide-a1",
+        section: "Section A — Onchain Liquidity DApps",
+        sectionNote: "How the crypto folks do it.",
+        title: "Slide A1 — Uniswap v3",
+        tag: "Concentrated-liquidity AMM",
+        overview: "Uniswap is an always-on swap counterparty. LPs deposit token pairs into pools; v3 lets LPs choose a price range, concentrating liquidity where they think trades happen.",
+        liquidity: [
+          "Liquidity = token pairs deposited into a pool.",
+          "Price moves as trades move pool balances.",
+          "LPs earn fees proportional to active-range liquidity."
+        ],
+        scf: "Think “commodity FX desk”: instant conversion and price discovery. Show stablecoin settlement speed and how thin liquidity widens spreads.",
+        links: [
+          { label: "DApp", href: "https://app.uniswap.org/" },
+          { badge: "Testnet: Sepolia (enable testnet mode)" },
+          { label: "GitHub — Core", href: "https://github.com/Uniswap/v3-core" },
+          { label: "GitHub — Periphery", href: "https://github.com/Uniswap/v3-periphery" },
+          { label: "GitHub — Interface", href: "https://github.com/Uniswap/interface" }
+        ],
+        contracts: [
+          "UniswapV3Factory.sol — deploys and registers pools for token pairs + fee tiers.",
+          "UniswapV3Pool.sol — swaps, liquidity accounting, fee growth, ticks.",
+          "SwapRouter.sol — swap entrypoint that routes trades into pools.",
+          "NonfungiblePositionManager.sol — manages LP NFT positions (mint/burn/collect)."
+        ],
+        explorer: {
+          label: "UniswapV3Factory — Mainnet",
+          href: "https://etherscan.io/address/0x1f98431c8ad98523631ae4a59f267346ea31f984"
+        }
+      },
+      {
+        id: "slide-a2",
+        section: "Section A — Onchain Liquidity DApps",
+        sectionNote: "How the crypto folks do it.",
+        title: "Slide A2 — Curve",
+        tag: "Stablecoin / pegged-asset AMMs",
+        overview: "Curve is tuned for assets that should trade near the same price. It keeps slippage tiny near the peg and rises as pools de-peg.",
+        liquidity: [
+          "LPs deposit a basket of similar assets.",
+          "Traders swap with low slippage near the peg."
+        ],
+        scf: "The stablecoin liquidity layer for settlement; shows why deep stable liquidity matters for reliable settlement.",
+        links: [
+          { label: "DApp", href: "https://curve.fi/" },
+          { badge: "Testnet: none" },
+          { label: "GitHub — Org", href: "https://github.com/curvefi" },
+          { label: "GitHub — Contracts", href: "https://github.com/curvefi/curve-contract" }
+        ],
+        contracts: [
+          "StableSwap*.vy — swap math + pool state.",
+          "LiquidityGauge*.sol — staking/reward gauges.",
+          "AddressProvider.sol — resolves core system addresses."
+        ],
+        explorer: {
+          label: "Curve 3pool — Mainnet",
+          href: "https://etherscan.io/address/0xbebc44782c7db0a1a60cb6fe97d0b483032ff1c7"
+        }
+      },
+      {
+        id: "slide-a3",
+        section: "Section A — Onchain Liquidity DApps",
+        sectionNote: "How the crypto folks do it.",
+        title: "Slide A3 — Balancer v2",
+        tag: "DEX + generalized liquidity vault",
+        overview: "Balancer pools can be custom (80/20, multi-token, bespoke AMMs). The v2 Vault centralizes custody for efficient multi-hop swaps.",
+        liquidity: [
+          "LPs deposit into pools with custom weights.",
+          "Vault holds assets; pools define pricing logic."
+        ],
+        scf: "Great for “treasury portfolio pools” or inventory-backed baskets; show controlled exposure via weights.",
+        links: [
+          { label: "DApp", href: "https://app.balancer.fi/" },
+          { badge: "Testnet: Sepolia" },
+          { label: "GitHub — Monorepo", href: "https://github.com/balancer/balancer-v2-monorepo" },
+          { label: "Docs", href: "https://docs-v2.balancer.fi/" }
+        ],
+        contracts: [
+          "Vault.sol — custody + swap router + accounting.",
+          "WeightedPool.sol — standard weighted pool logic.",
+          "WeightedPoolFactory.sol — deploys weighted pools.",
+          "BalancerHelpers.sol — offchain quoting + batch swap simulation."
+        ],
+        explorer: {
+          label: "Balancer Vault — Mainnet",
+          href: "https://etherscan.io/address/0xba12222222228d8ba445958a75a0704d566bf2c8"
+        }
+      },
+      {
+        id: "slide-a4",
+        section: "Section A — Onchain Liquidity DApps",
+        sectionNote: "How the crypto folks do it.",
+        title: "Slide A4 — Aave v3",
+        tag: "Liquidity markets (lend / borrow)",
+        overview: "Aave is a money market. Depositors supply assets into pools; borrowers lock collateral and borrow. Rates adjust by utilization.",
+        liquidity: [
+          "Liquidity = supplied deposits.",
+          "Borrowing consumes liquidity; high utilization raises rates.",
+          "Liquidations keep the system solvent."
+        ],
+        scf: "Maps to a credit facility with automated risk controls: collateral, LTV, health factor, and variable rates.",
+        links: [
+          { label: "DApp", href: "https://app.aave.com/" },
+          { badge: "Testnet: Sepolia" },
+          { label: "GitHub — Core", href: "https://github.com/aave/aave-v3-core" },
+          { label: "GitHub — Periphery", href: "https://github.com/aave/aave-v3-periphery" },
+          { label: "GitHub — Protocol", href: "https://github.com/aave/aave-v3-origin" }
+        ],
+        contracts: [
+          "Pool.sol — supply, withdraw, borrow, repay, liquidation.",
+          "PoolConfigurator.sol — list assets and risk params.",
+          "AToken.sol — interest-bearing receipt token.",
+          "VariableDebtToken.sol / StableDebtToken.sol — tracks borrower debt."
+        ],
+        explorer: {
+          label: "Aave Pool — Mainnet",
+          href: "https://etherscan.io/address/0x87870bca3f3fd6335c3f4ce8392d69350b4fa4e2"
+        }
+      },
+      {
+        id: "slide-a5",
+        section: "Section A — Onchain Liquidity DApps",
+        sectionNote: "How the crypto folks do it.",
+        title: "Slide A5 — CoW Swap / CoW Protocol",
+        tag: "Intent-based trading + MEV protection",
+        overview: "Users sign trade intents; solvers compete to execute, batch orders, and route across DEXs for better prices and MEV protection.",
+        liquidity: [
+          "Liquidity aggregated across many venues.",
+          "Solvers execute and can match users against each other."
+        ],
+        scf: "Request-for-quote style swaps; predictable settlement with reduced sandwich risk.",
+        links: [
+          { label: "DApp", href: "https://swap.cow.fi/" },
+          { badge: "Testnet: Sepolia" },
+          { label: "GitHub — Contracts", href: "https://github.com/cowprotocol/contracts" },
+          { label: "Docs", href: "https://docs.cow.fi/" },
+          { label: "GitHub — Interface", href: "https://github.com/cowprotocol/cowswap" }
+        ],
+        contracts: [
+          "GPv2Settlement.sol — verifies and settles batches of orders.",
+          "GPv2VaultRelayer.sol — safe token transfer helper.",
+          "GPv2AllowListAuthentication.sol — auth for settlement callers."
+        ],
+        explorer: {
+          label: "GPv2Settlement — Mainnet",
+          href: "https://etherscan.io/address/0x9008d19f58aabd9ed0d60971565aa8510560ab41"
+        }
+      },
+      {
+        id: "slide-b1",
+        section: "Section B — SCF-Adjacent / RWA / Credit DApps",
+        sectionNote: "Business cases near supply chain finance.",
+        title: "Slide B1 — Centrifuge Tinlake",
+        tag: "RWA securitization on Ethereum",
+        overview: "Tinlake tokenizes real-world assets into NFTs, deposits them into a pool, and investors fund the pool via tranches.",
+        liquidity: [
+          "Liquidity = investor deposits into tranche pools.",
+          "Borrowers draw funds against tokenized collateral.",
+          "Repayments flow back to investors."
+        ],
+        scf: "Closest DeFi analog to invoice financing: invoices become collateral; tranches model risk layering.",
+        links: [
+          { label: "DApp — Legacy Tinlake", href: "https://legacy.tinlake.centrifuge.io/" },
+          { label: "Centrifuge App", href: "https://app.centrifuge.io/" },
+          { badge: "Testnet: none" },
+          { label: "GitHub — Core", href: "https://github.com/centrifuge/tinlake" },
+          { label: "GitHub — Deploy", href: "https://github.com/centrifuge/tinlake-deploy" },
+          { label: "GitHub — Apps (archived)", href: "https://github.com/centrifuge/tinlake-apps" }
+        ],
+        contracts: [
+          "src/Root.sol — system root and permissions hub.",
+          "src/token/Tranche.sol — tranche token (senior/junior shares).",
+          "src/lender/Reserve.sol — liquidity vault and cash movements.",
+          "src/borrower/Pile.sol — debt accounting + interest buckets.",
+          "src/lender/Coordinator.sol — tranche investment/redemption logic."
+        ],
+        explorer: {
+          label: "Tinlake Tranche Token — Mainnet",
+          href: "https://etherscan.io/address/0x8c213ee79581ff4984583c6a801e5263418c4b86"
+        }
+      },
+      {
+        id: "slide-b2",
+        section: "Section B — SCF-Adjacent / RWA / Credit DApps",
+        sectionNote: "Business cases near supply chain finance.",
+        title: "Slide B2 — Goldfinch",
+        tag: "Onchain private credit",
+        overview: "Goldfinch funds real-world lending without crypto collateral. Capital routes into borrower pools or senior pools; investors earn yield.",
+        liquidity: [
+          "Liquidity = deposits into senior/pooled vehicles and borrower pools.",
+          "Borrowers draw down and repay over time."
+        ],
+        scf: "Matches trade credit / SME lending narratives with underwriting and identity gating.",
+        links: [
+          { label: "DApp", href: "https://app.goldfinch.finance/" },
+          { badge: "Testnet: none" },
+          { label: "GitHub — Monorepo", href: "https://github.com/goldfinch-eng/mono" },
+          { label: "GitHub — Contracts", href: "https://github.com/goldfinch-eng/goldfinch-contracts" },
+          { label: "Docs", href: "https://docs.goldfinch.finance/" }
+        ],
+        contracts: [
+          "SeniorPool.sol — pooled capital allocator.",
+          "TranchedPool.sol — borrower pools with tranches.",
+          "CreditLine.sol — repayment schedule + interest accounting.",
+          "PoolTokens.sol — receipt tokens for depositors.",
+          "GoldfinchConfig.sol — global config registry."
+        ],
+        explorer: {
+          label: "SeniorPool — Mainnet",
+          href: "https://etherscan.io/address/0x8481a6ebaf5c7dabc3f7e09e44a89531fd31f822"
+        }
+      },
+      {
+        id: "slide-b3",
+        section: "Section B — SCF-Adjacent / RWA / Credit DApps",
+        sectionNote: "Business cases near supply chain finance.",
+        title: "Slide B3 — Maple Finance",
+        tag: "Institutional lending pools",
+        overview: "Maple is an institutional credit marketplace with delegate-managed pools that issue onchain loans.",
+        liquidity: [
+          "Liquidity = deposits into pool vaults.",
+          "Delegates originate loans; borrowers pay interest; LPs withdraw per rules."
+        ],
+        scf: "Onchain credit fund / warehouse facility narrative with delegated underwriting.",
+        links: [
+          { label: "DApp", href: "https://app.maple.finance/" },
+          { badge: "Testnet: Sepolia" },
+          { label: "GitHub — Org", href: "https://github.com/maple-labs" },
+          { label: "GitHub — Pools v2", href: "https://github.com/maple-labs/pool-v2" },
+          { label: "GitHub — Loan module", href: "https://github.com/maple-labs/fixed-term-loan" },
+          { label: "GitHub — Withdrawal manager", href: "https://github.com/maple-labs/withdrawal-manager-cyclical" }
+        ],
+        contracts: [
+          "Pool.sol — ERC-4626-style vault (LP deposits/withdrawals).",
+          "PoolManager.sol — pool configuration + loan orchestration.",
+          "WithdrawalManager*.sol — withdrawal queues/cycles.",
+          "MapleLoan.sol / FixedTermLoan*.sol — loan lifecycle."
+        ],
+        explorer: {
+          label: "Maple Syrup Vault — Mainnet",
+          href: "https://etherscan.io/address/0x356b8d89c1e1239cbbb9de4815c39a1474d5ba7d"
+        }
+      },
+      {
+        id: "slide-b4",
+        section: "Section B — SCF-Adjacent / RWA / Credit DApps",
+        sectionNote: "Business cases near supply chain finance.",
+        title: "Slide B4 — TrueFi",
+        tag: "Uncollateralized lending + credit vaults",
+        overview: "TrueFi offers undercollateralized lending and vault-based products managed under DAO governance.",
+        liquidity: [
+          "Liquidity = deposits into vaults/pools.",
+          "Borrowers and strategies deploy capital; yield comes from repayments."
+        ],
+        scf: "Similar to invoice factoring funds: risk-managed pools with manager governance controls.",
+        links: [
+          { label: "DApp", href: "https://app.truefi.io/" },
+          { badge: "Testnet: none" },
+          { label: "GitHub — Contracts", href: "https://github.com/smartcontractkit/trusttoken-smart-contracts" },
+          { label: "Docs", href: "https://docs.truefi.io/" }
+        ],
+        contracts: [
+          "TrueFiPool*.sol — pooled lending vault.",
+          "LoanToken*.sol — issued loan tokens and repayments.",
+          "Vault manager contracts — capital deployment logic (varies by product)."
+        ],
+        explorer: {
+          label: "tfUSDC Token — Mainnet",
+          href: "https://etherscan.io/token/0xa991356d261fbaf194463af6df8f0464f8f1c742"
+        }
+      },
+      {
+        id: "slide-x1",
+        section: "Optional Bonus Slides",
+        sectionNote: "Extra liquidity building blocks if you want more depth.",
+        title: "Slide X1 — 0x / Matcha",
+        tag: "DEX aggregation as an API primitive",
+        overview: "Matcha is a front-end for 0x aggregation; liquidity is treated as a service across venues.",
+        liquidity: [],
+        scf: "Useful for settlement conversions when you want the best route without building swaps yourself.",
+        links: [
+          { label: "DApp", href: "https://matcha.xyz/" },
+          { label: "GitHub — 0x Project", href: "https://github.com/0xProject" }
+        ],
+        contracts: [],
+        explorer: null
+      },
+      {
+        id: "slide-x2",
+        section: "Optional Bonus Slides",
+        sectionNote: "Extra liquidity building blocks if you want more depth.",
+        title: "Slide X2 — Morpho",
+        tag: "Aave/Compound liquidity optimization",
+        overview: "Morpho re-lends and optimizes liquidity across major money markets.",
+        liquidity: [],
+        scf: "Shows how liquidity can be optimized across venues to reduce cost of capital.",
+        links: [
+          { label: "DApp", href: "https://app.morpho.org/" },
+          { label: "GitHub — Morpho Org", href: "https://github.com/morpho-org" }
+        ],
+        contracts: [],
+        explorer: null
+      },
+      {
+        id: "slide-x3",
+        section: "Optional Bonus Slides",
+        sectionNote: "Extra liquidity building blocks if you want more depth.",
+        title: "Slide X3 — Centrifuge Liquidity Pools",
+        tag: "Multi-chain RWA liquidity adapters",
+        overview: "Modern Centrifuge liquidity pools bridge RWAs into DeFi liquidity across chains.",
+        liquidity: [],
+        scf: "Brings real-world assets into DeFi liquidity venues with broader distribution.",
+        links: [
+          { label: "GitHub — Centrifuge", href: "https://github.com/centrifuge" }
+        ],
+        contracts: [],
+        explorer: null
+      }
+    ];
+
+    const sectionHead = document.getElementById("sectionHead");
+    const slideView = document.getElementById("slideView");
+
+    const renderBlock = (title, content, type = "text") => {
+      if (type === "links" && (!content || !content.some((item) => item.href))) {
+        return document.createDocumentFragment();
+      }
+      const block = document.createElement("div");
+      block.className = "block";
+      const heading = document.createElement("h4");
+      heading.textContent = title;
+      block.appendChild(heading);
+
+      if (type === "list") {
+        const list = document.createElement("ul");
+        content.forEach((item) => {
+          const li = document.createElement("li");
+          li.textContent = item;
+          list.appendChild(li);
+        });
+        block.appendChild(list);
+      } else if (type === "ordered") {
+        const list = document.createElement("ol");
+        content.forEach((item) => {
+          const li = document.createElement("li");
+          li.textContent = item;
+          list.appendChild(li);
+        });
+        block.appendChild(list);
+      } else if (type === "links") {
+        const container = document.createElement("div");
+        container.className = "buttons";
+        content.forEach((item) => {
+          if (item.badge) {
+            const badge = document.createElement("span");
+            badge.className = "badge";
+            badge.textContent = item.badge;
+            container.appendChild(badge);
+          } else {
+            const link = document.createElement("a");
+            link.className = "btn";
+            link.href = item.href;
+            link.target = "_blank";
+            link.rel = "noopener";
+            link.textContent = item.label;
+            container.appendChild(link);
+          }
+        });
+        block.appendChild(container);
+      } else {
+        const p = document.createElement("p");
+        p.textContent = content;
+        block.appendChild(p);
+      }
+      return block;
+    };
+
+    const renderSlide = (index) => {
+      const slide = slides[index];
+      if (!slide) return;
+
+      sectionHead.innerHTML = `
+        <h2>${slide.section}</h2>
+        <p>${slide.sectionNote}</p>
+      `;
+
+      slideView.innerHTML = `
+        <div class="slide-header">
+          <h3>${slide.title}</h3>
+          <span class="tag">${slide.tag}</span>
+        </div>
+        <div class="slide-body" id="slideBody"></div>
+      `;
+
+      const slideBody = document.getElementById("slideBody");
+      slideBody.appendChild(renderBlock("Wordcel overview", slide.overview));
+
+      if (slide.liquidity && slide.liquidity.length) {
+        slideBody.appendChild(renderBlock("Liquidity mechanics", slide.liquidity, "list"));
+      }
+
+      slideBody.appendChild(renderBlock("Why it matters for SCF", slide.scf));
+      slideBody.appendChild(renderBlock("Links", slide.links, "links"));
+
+      if (slide.contracts && slide.contracts.length) {
+        slideBody.appendChild(renderBlock("Primary smart contracts", slide.contracts, "ordered"));
+      }
+
+      if (slide.explorer) {
+        const explorerBlock = document.createElement("div");
+        explorerBlock.className = "block";
+        const heading = document.createElement("h4");
+        heading.textContent = "Explorer";
+        const link = document.createElement("a");
+        link.className = "btn";
+        link.href = slide.explorer.href;
+        link.target = "_blank";
+        link.rel = "noopener";
+        link.textContent = slide.explorer.label;
+        explorerBlock.appendChild(heading);
+        explorerBlock.appendChild(link);
+        slideBody.appendChild(explorerBlock);
+      }
+
+      const nav = document.createElement("div");
+      nav.className = "slide-nav";
+
+      const prev = document.createElement("button");
+      prev.className = "btn ghost";
+      prev.type = "button";
+      prev.textContent = "← Prev";
+      prev.disabled = index === 0;
+      prev.addEventListener("click", () => {
+        renderSlide(Math.max(0, index - 1));
+      });
+
+      const next = document.createElement("button");
+      next.className = "btn";
+      next.type = "button";
+      next.textContent = "Next →";
+      next.addEventListener("click", () => {
+        if (index === slides.length - 1) {
+          goToLab();
+          return;
+        }
+        renderSlide(Math.min(slides.length - 1, index + 1));
+      });
+
+      nav.appendChild(prev);
+      nav.appendChild(next);
+      slideView.appendChild(nav);
+
+      document.title = `${slide.title} — Liquidity 101`;
+      window.location.hash = slide.id;
+    };
+
+    const getIndexFromHash = () => {
+      const hash = window.location.hash.replace("#", "");
+      const index = slides.findIndex((slide) => slide.id === hash);
+      return index === -1 ? 0 : index;
+    };
+
+    const deckSection = document.querySelector(".section.deck");
+    const labSection = document.getElementById("lab");
+
+    const goToLab = () => {
+      deckSection.style.display = "none";
+      labSection.style.display = "block";
+      labSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+
+    let currentIndex = getIndexFromHash();
+    renderSlide(currentIndex);
+
+    window.addEventListener("hashchange", () => {
+      currentIndex = getIndexFromHash();
+      renderSlide(currentIndex);
+    });
+
+    // Height is handled by CSS layout (grid + flex).
+  </script>
   <script src="topics.js"></script>
-  <script src="app.js"></script>
+  <script src="lab.js"></script>
 </body>
 </html>

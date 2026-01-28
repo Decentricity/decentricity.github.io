@@ -8,10 +8,16 @@
   --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   --sans: "Poppins", "Trebuchet MS", "Segoe UI", sans-serif;
   --shadow: 0 18px 40px rgba(14, 52, 68, 0.12);
+  --radius: 18px;
 }
 
 * {
   box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
 }
 
 body {
@@ -39,8 +45,171 @@ body {
   opacity: 0.4;
 }
 
+main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 12px 20px 40px;
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 16px;
+}
+
+.section {
+  margin-bottom: 0;
+}
+
+.section.deck {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.section-head {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 0;
+}
+
+.section-head h2 {
+  margin: 0;
+  font-size: clamp(1.6rem, 2.5vw, 2.2rem);
+}
+
+.section-head p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.slide {
+  background: var(--card);
+  border-radius: 24px;
+  padding: 24px;
+  border: 1px solid rgba(19, 76, 96, 0.12);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+  min-height: 0;
+  height: auto;
+  overflow-y: auto;
+  animation: rise 500ms ease;
+}
+
+.slide-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.slide-header h3 {
+  margin: 0;
+  font-size: 1.6rem;
+}
+
+.tag {
+  align-self: flex-start;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(47, 138, 160, 0.12);
+  border: 1px solid rgba(47, 138, 160, 0.35);
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+.slide-body {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.block {
+  background: #f7fbff;
+  border-radius: 16px;
+  padding: 14px 16px;
+  border: 1px solid rgba(19, 76, 96, 0.12);
+}
+
+.block h4 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  color: var(--accent-2);
+}
+
+.block p,
+.block li {
+  margin: 0 0 8px;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.block ul,
+.block ol {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.slide-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.btn {
+  background: var(--accent);
+  color: #f4fbff;
+  text-decoration: none;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  font-family: var(--sans);
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(15, 76, 92, 0.2);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn.ghost {
+  background: rgba(47, 138, 160, 0.12);
+  border: 1px solid rgba(47, 138, 160, 0.35);
+  color: var(--accent-2);
+}
+
+.badge {
+  display: inline-block;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(47, 138, 160, 0.12);
+  border: 1px solid rgba(47, 138, 160, 0.35);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
 .hero {
-  padding: 48px 24px 16px;
+  padding: 32px 0 16px;
 }
 
 .hero-inner {
@@ -67,19 +236,13 @@ body {
   object-fit: contain;
 }
 
-
-.badge {
-  display: inline-block;
-  padding: 8px 14px;
-  border-radius: 999px;
-  background: rgba(47, 138, 160, 0.12);
-  border: 1px solid rgba(47, 138, 160, 0.35);
-  font-weight: 600;
-  letter-spacing: 0.04em;
-}
-
 h1 {
   font-size: clamp(2rem, 3.6vw, 3.2rem);
+  margin: 18px 0 12px;
+}
+
+.hero h2 {
+  font-size: clamp(1.8rem, 3vw, 2.6rem);
   margin: 18px 0 12px;
 }
 
@@ -120,6 +283,10 @@ button:hover {
   background: transparent;
   border: 1px solid rgba(19, 76, 96, 0.25);
   color: var(--accent-2);
+}
+
+.note {
+  color: var(--muted);
 }
 
 .app {
@@ -224,6 +391,11 @@ button:hover {
   padding: 24px;
 }
 
+code {
+  font-family: var(--mono);
+  font-size: 0.9em;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -253,5 +425,15 @@ button:hover {
 
   .topic-card {
     padding: 20px;
+  }
+}
+
+@media (max-width: 700px) {
+  .slide {
+    padding: 18px;
+  }
+
+  .slide-body {
+    grid-template-columns: 1fr;
   }
 }
