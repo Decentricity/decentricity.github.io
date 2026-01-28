@@ -20,24 +20,7 @@
     </section>
 
     <section class="section lab" id="lab" style="display: none;">
-      <header class="hero lab-hero">
-        <div class="hero-inner">
-          <div class="brand">
-            <img src="assets/blocksphere.png" alt="BlockSphere logo" class="brand-logo" />
-          </div>
-          <div class="badge">Liquidity 101 Lab</div>
-          <h2>Automating liquidity with smart contracts, step by step.</h2>
-          <p>
-            This self-study kit mirrors the NobleProg lab. Each topic matches a slide with
-            commands, student TODOs, and the complete reference.
-          </p>
-          <div class="cta-row">
-            <button id="labStartBtn" class="primary" type="button">Start the lab</button>
-            <span class="note">Run everything in your own terminal.</span>
-          </div>
-        </div>
-      </header>
-
+      <div class="section-head" id="labHead"></div>
       <div id="labApp" class="app" aria-live="polite"></div>
 
       <footer class="footer">
@@ -657,12 +640,43 @@
 
     const deckSection = document.querySelector(".section.deck");
     const labSection = document.getElementById("lab");
+    const labHead = document.getElementById("labHead");
 
     const sectionStarts = {
       "Prelude": slides.findIndex((slide) => slide.section.startsWith("Prelude")),
       "Onchain Liquidity DApps": slides.findIndex((slide) => slide.section.startsWith("Section A")),
       "SCF Adjacent DApps": slides.findIndex((slide) => slide.section.startsWith("Section B")),
       "Labs": -1
+    };
+
+    const renderTabs = (activeKey) => `
+      <div class="section-top">
+        <div class="section-brand">
+          <img src="assets/blocksphere.png" alt="BlockSphere logo" class="section-logo" />
+        </div>
+        <nav class="section-tabs" aria-label="Sections">
+          <button class="tab${activeKey === "Prelude" ? " active" : ""}" type="button" data-tab="Prelude">Prelude</button>
+          <button class="tab${activeKey === "Onchain Liquidity DApps" ? " active" : ""}" type="button" data-tab="Onchain Liquidity DApps">Onchain Liquidity DApps</button>
+          <button class="tab${activeKey === "SCF Adjacent DApps" ? " active" : ""}" type="button" data-tab="SCF Adjacent DApps">SCF Adjacent DApps</button>
+          <button class="tab${activeKey === "Labs" ? " active" : ""}" type="button" data-tab="Labs">Labs</button>
+        </nav>
+      </div>
+    `;
+
+    const wireTabs = (container) => {
+      container.querySelectorAll(".tab").forEach((tab) => {
+        tab.addEventListener("click", () => {
+          const name = tab.getAttribute("data-tab");
+          if (name === "Labs") {
+            goToLab();
+            return;
+          }
+          const targetIndex = sectionStarts[name];
+          if (typeof targetIndex === "number" && targetIndex >= 0) {
+            showDeck(targetIndex);
+          }
+        });
+      });
     };
 
     const showDeck = (index) => {
@@ -676,6 +690,14 @@
     const goToLab = () => {
       deckSection.style.display = "none";
       labSection.style.display = "block";
+      labHead.innerHTML = `
+        ${renderTabs("Labs")}
+        <div class="section-text">
+          <h2>Liquidity 101 Lab</h2>
+          <p>Commands, student TODOs, and complete reference for each topic.</p>
+        </div>
+      `;
+      wireTabs(labHead);
       labSection.scrollIntoView({ behavior: "smooth", block: "start" });
     };
 
@@ -684,17 +706,15 @@
       if (!slide) return;
 
       sectionHead.innerHTML = `
-        <div class="section-top">
-          <div class="section-brand">
-            <img src="assets/blocksphere.png" alt="BlockSphere logo" class="section-logo" />
-          </div>
-          <nav class="section-tabs" aria-label="Sections">
-            <button class="tab" type="button" data-tab="Prelude">Prelude</button>
-            <button class="tab" type="button" data-tab="Onchain Liquidity DApps">Onchain Liquidity DApps</button>
-            <button class="tab" type="button" data-tab="SCF Adjacent DApps">SCF Adjacent DApps</button>
-            <button class="tab" type="button" data-tab="Labs">Labs</button>
-          </nav>
-        </div>
+        ${renderTabs(
+          slide.section.startsWith("Prelude")
+            ? "Prelude"
+            : slide.section.startsWith("Section A")
+              ? "Onchain Liquidity DApps"
+              : slide.section.startsWith("Section B")
+                ? "SCF Adjacent DApps"
+                : ""
+        )}
         <div class="section-text">
           <h2>${slide.section}</h2>
           <p>${slide.sectionNote}</p>
@@ -770,26 +790,7 @@
       document.title = `${slide.title} — Liquidity 101`;
       window.location.hash = slide.id;
 
-      sectionHead.querySelectorAll(".tab").forEach((tab) => {
-        const name = tab.getAttribute("data-tab");
-        if (name === "Prelude" && slide.section.startsWith("Prelude")) tab.classList.add("active");
-        if (name === "Onchain Liquidity DApps" && slide.section.startsWith("Section A")) tab.classList.add("active");
-        if (name === "SCF Adjacent DApps" && slide.section.startsWith("Section B")) tab.classList.add("active");
-      });
-
-      sectionHead.querySelectorAll(".tab").forEach((tab) => {
-        tab.addEventListener("click", () => {
-          const name = tab.getAttribute("data-tab");
-          if (name === "Labs") {
-            goToLab();
-            return;
-          }
-          const targetIndex = sectionStarts[name];
-          if (typeof targetIndex === "number" && targetIndex >= 0) {
-            showDeck(targetIndex);
-          }
-        });
-      });
+      wireTabs(sectionHead);
     };
 
     const getIndexFromHash = () => {
