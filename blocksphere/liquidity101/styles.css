@@ -73,6 +73,26 @@ main {
   margin-bottom: 0;
 }
 
+.section-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: 0.02em;
+}
+
+.section-logo {
+  height: 22px;
+  width: auto;
+  display: block;
+  object-fit: contain;
+}
+
+.section-brand-name {
+  font-size: 0.95rem;
+}
+
 .section-head h2 {
   margin: 0;
   font-size: clamp(1.6rem, 2.5vw, 2.2rem);
