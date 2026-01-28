@@ -89,10 +89,6 @@ main {
   object-fit: contain;
 }
 
-.section-brand-name {
-  font-size: 0.95rem;
-}
-
 .section-head h2 {
   margin: 0;
   font-size: clamp(1.6rem, 2.5vw, 2.2rem);
