@@ -14,7 +14,7 @@ const TOPICS = [
       "git --version",
       "node --version",
       "npm --version",
-      "npm install",
+      "nvm use 20    # or install Node 20 LTS",
     ],
   },
   {
@@ -50,9 +50,9 @@ const TOPICS = [
     commands: [
       "git checkout checkpoint-33-start",
       "npm install",
-      "npm test",
-      "npm run node    # Terminal A",
-      "npm run deploy:local    # Terminal B",
+      "npm test    # expect failures until TODOs are implemented",
+      "npm run node    # Terminal A (keep running)",
+      "npm run deploy:local    # Terminal B (requires Terminal A)",
     ],
   },
   {
@@ -69,9 +69,9 @@ const TOPICS = [
     ],
     commands: [
       "git checkout checkpoint-33-start",
-      "npm test",
-      "npm run node    # Terminal A",
-      "npm run deploy:local    # Terminal B",
+      "npm test    # expect failures until TODOs are implemented",
+      "npm run node    # Terminal A (keep running)",
+      "npm run deploy:local    # Terminal B (requires Terminal A)",
     ],
   },
   {
@@ -82,9 +82,9 @@ const TOPICS = [
       "Only the supplier can request early payment, and only after the buyer has approved the invoice.",
     commands: [
       "git checkout checkpoint-35-requestEarlyPayment",
-      "npm test",
-      "npm run node    # Terminal A",
-      "npm run deploy:local    # Terminal B",
+      "npm test    # expect failures until tests are implemented",
+      "npm run node    # Terminal A (keep running)",
+      "npm run deploy:local    # Terminal B (requires Terminal A)",
     ],
     studentTodo: "Implement in contracts/FactoringContract.sol",
     studentCode: `// Student version (TODO)
@@ -117,9 +117,9 @@ function requestEarlyPayment(uint256 _invoiceId)
       "When receiving and sending ETH, verify msg.value and use low-level call with checks.",
     commands: [
       "git checkout checkpoint-35-requestEarlyPayment",
-      "npm test",
-      "npm run node    # Terminal A",
-      "npm run deploy:local    # Terminal B",
+      "npm test    # expect failures until tests are implemented",
+      "npm run node    # Terminal A (keep running)",
+      "npm run deploy:local    # Terminal B (requires Terminal A)",
     ],
     referenceCode: `require(msg.value >= amountRequired, "Insufficient funds");
 
@@ -139,9 +139,9 @@ require(ok, "Transfer failed");`,
       "The financier sends ETH and receives a future repayment when the buyer settles.",
     commands: [
       "git checkout checkpoint-37-fund",
-      "npm test",
-      "npm run node    # Terminal A",
-      "npm run deploy:local    # Terminal B",
+      "npm test    # expect failures until tests are implemented",
+      "npm run node    # Terminal A (keep running)",
+      "npm run deploy:local    # Terminal B (requires Terminal A)",
     ],
     studentTodo: "Implement in contracts/FactoringContract.sol",
     studentCode: `// Student version (TODO)
@@ -183,9 +183,9 @@ function fund(uint256 _invoiceId)
       "Discounting uses basis points to avoid floating point math in Solidity.",
     commands: [
       "git checkout checkpoint-38-calculateDiscount",
-      "npm test",
-      "npm run node    # Terminal A",
-      "npm run deploy:local    # Terminal B",
+      "npm test    # expect failures until tests are implemented",
+      "npm run node    # Terminal A (keep running)",
+      "npm run deploy:local    # Terminal B (requires Terminal A)",
     ],
     studentTodo: "Implement in contracts/FactoringContract.sol",
     studentCode: `// Student version (TODO)
@@ -214,9 +214,9 @@ function calculateDiscount(uint256 amount) public pure returns (uint256) {
       "The buyer pays the full invoice amount. The financier receives repayment in full.",
     commands: [
       "git checkout checkpoint-39-settlePayment",
-      "npm test",
-      "npm run node    # Terminal A",
-      "npm run deploy:local    # Terminal B",
+      "npm test    # expect failures until tests are implemented",
+      "npm run node    # Terminal A (keep running)",
+      "npm run deploy:local    # Terminal B (requires Terminal A)",
     ],
     studentTodo: "Implement in contracts/FactoringContract.sol",
     studentCode: `// Student version (TODO)
@@ -258,9 +258,9 @@ function settlePayment(uint256 _invoiceId)
       "Only the admin can authorize suppliers and buyers. Without authorization, invoices can’t be created or settled.",
     commands: [
       "git checkout checkpoint-40-admin",
-      "npm test",
-      "npm run node    # Terminal A",
-      "npm run deploy:local    # Terminal B",
+      "npm test    # expect failures until tests are implemented",
+      "npm run node    # Terminal A (keep running)",
+      "npm run deploy:local    # Terminal B (requires Terminal A)",
     ],
     studentTodo: "Implement in contracts/FactoringContract.sol",
     studentCode: `// Student version (TODO)
@@ -295,9 +295,9 @@ function revokeSupplier(address _supplier) external onlyAdmin {
       "A tiny test confirms the environment works before you debug contract logic.",
     commands: [
       "git checkout checkpoint-33-start",
-      "npm test",
-      "npm run node    # Terminal A",
-      "npm run deploy:local    # Terminal B",
+      "npm test    # expect failures until tests are implemented",
+      "npm run node    # Terminal A (keep running)",
+      "npm run deploy:local    # Terminal B (requires Terminal A)",
     ],
     referenceCode: `it("tests document expected behavior", async function () {
   expect(true).to.equal(true);
@@ -311,9 +311,9 @@ function revokeSupplier(address _supplier) external onlyAdmin {
       "Before writing logic tests, confirm that the stack is wired correctly.",
     commands: [
       "git checkout checkpoint-33-start",
-      "npm test",
-      "npm run node    # Terminal A",
-      "npm run deploy:local    # Terminal B",
+      "npm test    # expect failures until tests are implemented",
+      "npm run node    # Terminal A (keep running)",
+      "npm run deploy:local    # Terminal B (requires Terminal A)",
     ],
     referenceCode: `it("Hardhat + Chai + Ethers.js are available", async function () {
   expect(ethers).to.not.equal(undefined);
@@ -328,9 +328,9 @@ function revokeSupplier(address _supplier) external onlyAdmin {
       "Use separate signers for admin, supplier, buyer, and financier.",
     commands: [
       "git checkout checkpoint-33-start",
-      "npm test",
-      "npm run node    # Terminal A",
-      "npm run deploy:local    # Terminal B",
+      "npm test    # expect failures until tests are implemented",
+      "npm run node    # Terminal A (keep running)",
+      "npm run deploy:local    # Terminal B (requires Terminal A)",
     ],
     referenceCode: `const { expect } = require("chai");
 const { ethers } = require("hardhat");
@@ -359,9 +359,9 @@ describe("FactoringContract", function () {
       "Authorizations must happen before invoice creation. Verify event arguments and status.",
     commands: [
       "git checkout checkpoint-33-start",
-      "npm test",
-      "npm run node    # Terminal A",
-      "npm run deploy:local    # Terminal B",
+      "npm test    # expect failures until tests are implemented",
+      "npm run node    # Terminal A (keep running)",
+      "npm run deploy:local    # Terminal B (requires Terminal A)",
     ],
     referenceCode: `it("should create invoice with correct data", async function () {
   await contract.connect(admin).authorizeSupplier(supplier.address);
@@ -388,9 +388,9 @@ describe("FactoringContract", function () {
       "Test both the unauthorized path and the successful approval.",
     commands: [
       "git checkout checkpoint-33-start",
-      "npm test",
-      "npm run node    # Terminal A",
-      "npm run deploy:local    # Terminal B",
+      "npm test    # expect failures until tests are implemented",
+      "npm run node    # Terminal A (keep running)",
+      "npm run deploy:local    # Terminal B (requires Terminal A)",
     ],
     referenceCode: `it("should only allow buyer to approve", async function () {
   await contract.connect(admin).authorizeSupplier(supplier.address);
@@ -417,9 +417,9 @@ describe("FactoringContract", function () {
       "Confirm the supplier balance increases by the discounted amount.",
     commands: [
       "git checkout checkpoint-33-start",
-      "npm test",
-      "npm run node    # Terminal A",
-      "npm run deploy:local    # Terminal B",
+      "npm test    # expect failures until tests are implemented",
+      "npm run node    # Terminal A (keep running)",
+      "npm run deploy:local    # Terminal B (requires Terminal A)",
     ],
     referenceCode: `it("should transfer correct amount on funding", async function () {
   await contract.connect(admin).authorizeSupplier(supplier.address);
@@ -448,9 +448,9 @@ describe("FactoringContract", function () {
       "These tests validate revert messages and prevent unsafe actions.",
     commands: [
       "git checkout checkpoint-33-start",
-      "npm test",
-      "npm run node    # Terminal A",
-      "npm run deploy:local    # Terminal B",
+      "npm test    # expect failures until tests are implemented",
+      "npm run node    # Terminal A (keep running)",
+      "npm run deploy:local    # Terminal B (requires Terminal A)",
     ],
     referenceCode: `it("should reject zero amount", async function () {
   await contract.connect(admin).authorizeSupplier(supplier.address);
@@ -533,10 +533,10 @@ it("should reject insufficient settlement", async function () {
       "Once your contract and tests are complete, you can run targeted tests or the full suite.",
     commands: [
       "git checkout checkpoint-33-start",
-      "npm test",
-      "npx hardhat test --grep \"Slide 44\"",
-      "npm run node    # Terminal A",
-      "npm run deploy:local    # Terminal B",
+      "npm test    # expect failures until tests are implemented",
+      "npx hardhat test --grep \"Slide 44\"    # runs a single test",
+      "npm run node    # Terminal A (keep running)",
+      "npm run deploy:local    # Terminal B (requires Terminal A)",
     ],
   },
   {
@@ -547,9 +547,9 @@ it("should reject insufficient settlement", async function () {
       "Coverage reveals untested branches and access control issues.",
     commands: [
       "git checkout checkpoint-33-start",
-      "npm run coverage",
-      "npm run node    # Terminal A",
-      "npm run deploy:local    # Terminal B",
+      "npm run coverage    # will fail until tests are implemented",
+      "npm run node    # Terminal A (keep running)",
+      "npm run deploy:local    # Terminal B (requires Terminal A)",
     ],
   },
   {
@@ -561,9 +561,9 @@ it("should reject insufficient settlement", async function () {
     commands: [
       "git checkout checkpoint-50-complete",
       "npm test",
-      "npm run demo:complete",
-      "npm run node    # Terminal A",
-      "npm run deploy:local    # Terminal B",
+      "npm run node    # Terminal A (keep running)",
+      "npm run demo:complete    # Terminal B (requires Terminal A)",
+      "npm run deploy:local    # Terminal B (requires Terminal A)",
     ],
     bullets: [
       "Contract compiles without errors",
@@ -586,8 +586,8 @@ it("should reject insufficient settlement", async function () {
     commands: [
       "git checkout checkpoint-50-complete",
       "npm test",
-      "npm run node    # Terminal A",
-      "npm run deploy:local    # Terminal B",
+      "npm run node    # Terminal A (keep running)",
+      "npm run deploy:local    # Terminal B (requires Terminal A)",
     ],
   },
 ];
