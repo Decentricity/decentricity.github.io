@@ -560,7 +560,7 @@ it("should reject insufficient settlement", async function () {
       "If you want to see the full flow working, run the complete demo and tests.",
     commands: [
       "git checkout checkpoint-50-complete",
-      "npm test",
+      "npm run test:complete",
       "npm run node    # Terminal A (keep running)",
       "npm run demo:complete    # Terminal B (requires Terminal A)",
       "npm run deploy:local    # Terminal B (requires Terminal A)",
@@ -585,7 +585,7 @@ it("should reject insufficient settlement", async function () {
     ],
     commands: [
       "git checkout checkpoint-50-complete",
-      "npm test",
+      "npm run test:complete",
       "npm run node    # Terminal A (keep running)",
       "npm run deploy:local    # Terminal B (requires Terminal A)",
     ],
