@@ -46,7 +46,7 @@
           <button class="secondary copy-btn" data-copy="${encodeURIComponent(code)}" data-label="${label}">Copy ${label}</button>
           <button class="secondary remix-btn">Open Remix</button>
         </div>
-        <div class="code-hint">Paste into Remix editor (browser VM).</div>
+        <div class="code-hint">Optional: paste into Remix if you don’t want to run locally.</div>
         <div class="code-block">${escapeHtml(code)}</div>
       </div>
     `;
@@ -74,6 +74,7 @@
         </div>
         <div class="topic-copy">
           <h3>Terminal Steps</h3>
+          <p class="topic-note">Preferred: run locally via the terminal. Remix is optional.</p>
           ${block("Commands", commands)}
           ${topic.studentTodo ? `<div class="panel"><h4>Student TODO</h4><div class="code-block">${escapeHtml(topic.studentTodo)}</div></div>` : ""}
           ${codePanel("Student Version", topic.studentCode, "Student")}

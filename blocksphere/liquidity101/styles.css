@@ -388,6 +388,12 @@ button:hover {
   margin-top: 0;
 }
 
+.topic-note {
+  margin: 6px 0 12px;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
 .topic-copy ul {
   padding-left: 20px;
   color: var(--muted);
