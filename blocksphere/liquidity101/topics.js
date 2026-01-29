@@ -7,7 +7,6 @@ const TOPICS = [
       "Use the exact Node version to avoid Hardhat/toolbox incompatibilities.",
     bullets: [
       "Node.js 20 LTS required",
-      "Commands must be run inside the cloned repo folder",
       "Run npm install before tests",
       "WSL users: run nvm use 20 in each terminal",
     ],

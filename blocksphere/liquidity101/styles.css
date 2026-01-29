@@ -137,36 +137,6 @@ main {
   color: var(--muted);
 }
 
-.lab-banner {
-  margin-top: 14px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(19, 76, 96, 0.12);
-  border-radius: 16px;
-  padding: 12px 16px;
-  box-shadow: var(--shadow);
-}
-
-.lab-banner-title {
-  font-weight: 600;
-  color: var(--accent-2);
-  margin-bottom: 6px;
-}
-
-.lab-banner-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  color: var(--muted);
-  font-size: 0.95rem;
-}
-
-.lab-banner-list span {
-  background: rgba(47, 138, 160, 0.08);
-  border: 1px solid rgba(47, 138, 160, 0.2);
-  border-radius: 999px;
-  padding: 4px 10px;
-}
-
 .slide {
   background: var(--card);
   border-radius: 24px;
