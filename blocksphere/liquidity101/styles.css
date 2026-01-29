@@ -406,6 +406,26 @@ button:hover {
   padding: 16px;
 }
 
+.panel.details {
+  padding: 0;
+}
+
+.panel.details summary {
+  list-style: none;
+  padding: 16px;
+  cursor: pointer;
+  font-weight: 600;
+  color: #1c7187;
+}
+
+.panel.details summary::-webkit-details-marker {
+  display: none;
+}
+
+.panel.details[open] {
+  padding: 16px;
+}
+
 .panel h4 {
   margin: 0 0 10px 0;
   font-size: 1rem;

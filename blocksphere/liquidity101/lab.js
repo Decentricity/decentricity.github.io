@@ -39,6 +39,19 @@
 
   function codePanel(title, code, label) {
     if (!code) return "";
+    if (label === "Complete") {
+      return `
+        <details class="panel details">
+          <summary>${title}</summary>
+          <div class="code-actions">
+            <button class="secondary copy-btn" data-copy="${encodeURIComponent(code)}" data-label="${label}">Copy ${label}</button>
+            <button class="secondary remix-btn">Open Remix</button>
+          </div>
+          <div class="code-hint">Optional: paste into Remix if you don’t want to run locally.</div>
+          <div class="code-block">${escapeHtml(code)}</div>
+        </details>
+      `;
+    }
     return `
       <div class="panel">
         <h4>${title}</h4>
