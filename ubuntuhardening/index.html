@@ -1,0 +1,481 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ubuntu Training Slides</title>
+  <style>
+    :root {
+      --bg1: #fff7fb;
+      --bg2: #ffeaf4;
+      --bg3: #ffe1ef;
+      --panel: #fff9fd;
+      --text: #5b3a4c;
+      --muted: #8f6680;
+      --accent: #e98ab7;
+      --accent-2: #d86ca2;
+      --line: #f3c8dd;
+      --code-bg: #fff3fa;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      color: var(--text);
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 10% 10%, #ffeef7 0%, transparent 40%),
+        radial-gradient(circle at 90% 20%, #ffe3f0 0%, transparent 35%),
+        linear-gradient(160deg, var(--bg1), var(--bg2) 55%, var(--bg3));
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.9rem 1rem;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 249, 253, 0.82);
+      backdrop-filter: blur(4px);
+    }
+
+    .deck-title {
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .counter {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    main {
+      display: grid;
+      place-items: center;
+      padding: 1rem;
+    }
+
+    .slide {
+      width: min(980px, 96vw);
+      height: min(74vh, 720px);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: clamp(1rem, 2vw, 2rem);
+      box-shadow: 0 10px 30px rgba(216, 108, 162, 0.14);
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      gap: 1rem;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.2rem, 3.1vw, 2rem);
+      color: var(--accent-2);
+      line-height: 1.25;
+    }
+
+    .explanation {
+      margin: 0;
+      font-size: clamp(1rem, 2.2vw, 1.2rem);
+      line-height: 1.45;
+      color: var(--text);
+    }
+
+    pre {
+      margin: 0;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--code-bg);
+      padding: 0.9rem;
+      overflow: auto;
+      font-size: 0.92rem;
+      line-height: 1.35;
+      color: #6a2f4d;
+    }
+
+    code {
+      font-family: "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
+      white-space: pre;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.8rem 1rem 1rem;
+      border-top: 1px solid var(--line);
+      background: rgba(255, 249, 253, 0.78);
+      backdrop-filter: blur(4px);
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--text);
+      border-radius: 999px;
+      padding: 0.5rem 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      min-width: 64px;
+    }
+
+    button:hover { background: #fff3fa; }
+    button:active { transform: translateY(1px); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .hint {
+      width: 100%;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .progress {
+      position: fixed;
+      left: 0;
+      bottom: 0;
+      width: 100%;
+      height: 4px;
+      background: #f6d9e8;
+    }
+
+    .progress > div {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      transition: width 180ms ease;
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="deck-title" id="deck-title">Ubuntu Training Deck</div>
+    <div class="counter" id="counter">0 / 0</div>
+  </header>
+
+  <main>
+    <section class="slide" aria-live="polite">
+      <h1 id="slide-title"></h1>
+      <p id="slide-explanation" class="explanation"></p>
+      <pre id="slide-code-wrap"><code id="slide-code"></code></pre>
+    </section>
+  </main>
+
+  <footer class="controls">
+    <button id="first" type="button">|&lt;</button>
+    <button id="prev" type="button">&lt;</button>
+    <button id="next" type="button">&gt;</button>
+    <button id="last" type="button">&gt;|</button>
+    <div class="hint">Use Left/Right arrow keys, Home/End, or buttons.</div>
+  </footer>
+
+  <div class="progress" aria-hidden="true"><div id="progress-bar"></div></div>
+
+  <textarea id="slide-source" hidden>
+[Slide 1 - Hardening goals]
+[Baseline hardening reduces common attack paths while preserving admin access and service availability.]
+```bash
+uname -a
+lsb_release -a
+```
+
+[Slide 2 - Security model for small teams]
+[Start with least privilege, minimal open ports, and key-based SSH; these controls stop most opportunistic attacks.]
+```bash
+id
+sudo -l
+```
+
+[Slide 3 - Quick exposure audit]
+[Before changing rules, identify listening services and network paths that are currently reachable.]
+```bash
+ss -tulpen
+sudo lsof -i -P -n | grep LISTEN
+```
+
+[Slide 4 - UFW fundamentals]
+[UFW is an Ubuntu-friendly firewall frontend for nftables/iptables with simple allow-deny semantics.]
+```bash
+sudo ufw status verbose
+sudo ufw app list
+```
+
+[Slide 5 - Default deny baseline]
+[Set inbound traffic to deny by default and outbound to allow, then open only required service ports.]
+```bash
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+```
+
+[Slide 6 - Allow SSH safely]
+[Always allow SSH before enabling UFW to prevent locking yourself out of remote servers.]
+```bash
+sudo ufw allow OpenSSH
+sudo ufw enable
+sudo ufw status numbered
+```
+
+[Slide 7 - Add web service rules]
+[Explicitly allow only ports for active workloads, such as HTTP and HTTPS for web servers.]
+```bash
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw status verbose
+```
+
+[Slide 8 - Restrict admin source ranges]
+[Limit SSH access to known admin IP ranges where possible to reduce brute-force and scanning risk.]
+```bash
+sudo ufw delete allow OpenSSH
+sudo ufw allow from 203.0.113.0/24 to any port 22 proto tcp
+```
+
+[Slide 9 - Logging and rule review]
+[Firewall logs support incident response and should be reviewed after policy changes.]
+```bash
+sudo ufw logging medium
+sudo tail -n 50 /var/log/ufw.log
+```
+
+[Slide 10 - SSH key-only authentication]
+[Disabling password auth significantly cuts automated credential attacks against SSH.]
+```bash
+sudoedit /etc/ssh/sshd_config
+# PasswordAuthentication no
+# PubkeyAuthentication yes
+sudo sshd -t
+sudo systemctl reload ssh
+```
+
+[Slide 11 - Disable root SSH login]
+[Direct root login removes accountability and raises risk; require named accounts plus sudo instead.]
+```bash
+sudoedit /etc/ssh/sshd_config
+# PermitRootLogin no
+sudo sshd -t && sudo systemctl reload ssh
+```
+
+[Slide 12 - Move SSH port (optional)]
+[Changing SSH port is not a primary control but reduces commodity noise in logs.]
+```bash
+sudoedit /etc/ssh/sshd_config
+# Port 2222
+sudo ufw allow 2222/tcp
+sudo ufw delete allow 22/tcp
+sudo sshd -t && sudo systemctl reload ssh
+```
+
+[Slide 13 - Connection rate limiting]
+[Rate limits slow brute-force attempts without blocking legitimate occasional retries.]
+```bash
+sudo ufw limit 22/tcp
+sudo ufw status numbered
+```
+
+[Slide 14 - Fail2ban concept]
+[Fail2ban monitors logs and temporarily bans abusive IPs based on repeated authentication failures.]
+```bash
+sudo apt update
+sudo apt install -y fail2ban
+systemctl status fail2ban --no-pager
+```
+
+[Slide 15 - Configure fail2ban jail]
+[Use local overrides in `jail.local` to protect SSH while preserving package defaults in `jail.conf`.]
+```bash
+sudo tee /etc/fail2ban/jail.local >/dev/null <<'JAIL'
+[sshd]
+enabled = true
+bantime = 1h
+findtime = 10m
+maxretry = 5
+JAIL
+sudo systemctl restart fail2ban
+```
+
+[Slide 16 - Validate bans and health]
+[Check jail status and banned IP counters to verify fail2ban is actively enforcing policy.]
+```bash
+sudo fail2ban-client status
+sudo fail2ban-client status sshd
+```
+
+[Slide 17 - Account and sudo hygiene]
+[Harden local accounts by removing unused users, enforcing sudo discipline, and auditing privileged access.]
+```bash
+getent passwd | cut -d: -f1
+getent group sudo
+sudo lastlog | head
+```
+
+[Slide 18 - Patch and upgrade baseline]
+[Most hardening failures come from unpatched systems; define a repeatable patch cadence and reboot process.]
+```bash
+sudo apt update
+apt list --upgradable
+sudo unattended-upgrades --dry-run --debug
+```
+
+[Slide 19 - Hardening verification checklist]
+[Convert hardening into objective checks so new servers are validated consistently.]
+```bash
+sudo ufw status verbose
+sudo sshd -T | grep -E 'permitrootlogin|passwordauthentication|pubkeyauthentication|port'
+sudo fail2ban-client status sshd
+```
+
+[Slide 20 - Recovery plan to avoid lockout]
+[Every hardening change should include backout steps and an out-of-band access method.]
+```bash
+# Keep one active SSH session open while testing.
+# If locked out via console:
+sudo ufw disable
+sudo cp /etc/ssh/sshd_config.bak /etc/ssh/sshd_config
+sudo systemctl restart ssh
+```
+  </textarea>
+
+  <script>
+    function unwrapBracketLine(line) {
+      const m = line.match(/^\[(.*)\]$/);
+      return m ? m[1] : line;
+    }
+
+    function parseSlides(raw) {
+      const lines = raw.replace(/\r\n/g, "\n").split("\n");
+      const slides = [];
+      let i = 0;
+
+      while (i < lines.length) {
+        while (i < lines.length && lines[i].trim() === "") i++;
+        if (i >= lines.length) break;
+        if (!/^\[.*\]$/.test(lines[i].trim())) {
+          i++;
+          continue;
+        }
+
+        const title = unwrapBracketLine(lines[i].trim());
+        i++;
+
+        while (i < lines.length && lines[i].trim() === "") i++;
+        if (i >= lines.length) break;
+        const explanation = /^\[.*\]$/.test(lines[i].trim())
+          ? unwrapBracketLine(lines[i].trim())
+          : lines[i].trim();
+        i++;
+
+        while (i < lines.length && lines[i].trim() === "") i++;
+        let code = "";
+        if (i < lines.length && lines[i].trim().startsWith("```")) {
+          i++;
+          const codeLines = [];
+          while (i < lines.length && !lines[i].trim().startsWith("```")) {
+            codeLines.push(lines[i]);
+            i++;
+          }
+          if (i < lines.length) i++;
+          code = codeLines.join("\n");
+        }
+
+        slides.push({ title, explanation, code });
+      }
+
+      return slides;
+    }
+
+    const source = document.getElementById("slide-source").value;
+    const slides = parseSlides(source);
+
+    const deckTitle = document.getElementById("deck-title");
+    const titleEl = document.getElementById("slide-title");
+    const explanationEl = document.getElementById("slide-explanation");
+    const codeWrap = document.getElementById("slide-code-wrap");
+    const codeEl = document.getElementById("slide-code");
+    const counterEl = document.getElementById("counter");
+    const progressBar = document.getElementById("progress-bar");
+
+    const firstBtn = document.getElementById("first");
+    const prevBtn = document.getElementById("prev");
+    const nextBtn = document.getElementById("next");
+    const lastBtn = document.getElementById("last");
+
+    let index = 0;
+
+    function updateDeckTitle() {
+      const path = window.location.pathname;
+      const folder = path.split("/").filter(Boolean).slice(-2, -1)[0] || "Ubuntu Deck";
+      deckTitle.textContent = folder;
+    }
+
+    function clamp(n, min, max) {
+      return Math.max(min, Math.min(max, n));
+    }
+
+    function render() {
+      if (!slides.length) {
+        titleEl.textContent = "No slides found";
+        explanationEl.textContent = "slides.md did not match the expected format.";
+        codeWrap.style.display = "none";
+        counterEl.textContent = "0 / 0";
+        progressBar.style.width = "0%";
+        firstBtn.disabled = prevBtn.disabled = nextBtn.disabled = lastBtn.disabled = true;
+        return;
+      }
+
+      index = clamp(index, 0, slides.length - 1);
+      const s = slides[index];
+      titleEl.textContent = s.title;
+      explanationEl.textContent = s.explanation;
+
+      if (s.code && s.code.trim().length) {
+        codeWrap.style.display = "block";
+        codeEl.textContent = s.code;
+      } else {
+        codeWrap.style.display = "none";
+        codeEl.textContent = "";
+      }
+
+      counterEl.textContent = (index + 1) + " / " + slides.length;
+      progressBar.style.width = (((index + 1) / slides.length) * 100).toFixed(2) + "%";
+
+      firstBtn.disabled = prevBtn.disabled = index === 0;
+      nextBtn.disabled = lastBtn.disabled = index === slides.length - 1;
+    }
+
+    firstBtn.addEventListener("click", function () { index = 0; render(); });
+    prevBtn.addEventListener("click", function () { index -= 1; render(); });
+    nextBtn.addEventListener("click", function () { index += 1; render(); });
+    lastBtn.addEventListener("click", function () { index = slides.length - 1; render(); });
+
+    window.addEventListener("keydown", function (event) {
+      if (event.key === "ArrowRight" || event.key === "PageDown") {
+        index += 1;
+        render();
+      }
+      if (event.key === "ArrowLeft" || event.key === "PageUp") {
+        index -= 1;
+        render();
+      }
+      if (event.key === "Home") {
+        index = 0;
+        render();
+      }
+      if (event.key === "End") {
+        index = slides.length - 1;
+        render();
+      }
+    });
+
+    updateDeckTitle();
+    render();
+  </script>
+</body>
+</html>

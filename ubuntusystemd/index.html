@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ubuntu Training Slides</title>
+  <style>
+    :root {
+      --bg1: #fff7fb;
+      --bg2: #ffeaf4;
+      --bg3: #ffe1ef;
+      --panel: #fff9fd;
+      --text: #5b3a4c;
+      --muted: #8f6680;
+      --accent: #e98ab7;
+      --accent-2: #d86ca2;
+      --line: #f3c8dd;
+      --code-bg: #fff3fa;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      color: var(--text);
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 10% 10%, #ffeef7 0%, transparent 40%),
+        radial-gradient(circle at 90% 20%, #ffe3f0 0%, transparent 35%),
+        linear-gradient(160deg, var(--bg1), var(--bg2) 55%, var(--bg3));
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.9rem 1rem;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 249, 253, 0.82);
+      backdrop-filter: blur(4px);
+    }
+
+    .deck-title {
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .counter {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    main {
+      display: grid;
+      place-items: center;
+      padding: 1rem;
+    }
+
+    .slide {
+      width: min(980px, 96vw);
+      height: min(74vh, 720px);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: clamp(1rem, 2vw, 2rem);
+      box-shadow: 0 10px 30px rgba(216, 108, 162, 0.14);
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      gap: 1rem;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.2rem, 3.1vw, 2rem);
+      color: var(--accent-2);
+      line-height: 1.25;
+    }
+
+    .explanation {
+      margin: 0;
+      font-size: clamp(1rem, 2.2vw, 1.2rem);
+      line-height: 1.45;
+      color: var(--text);
+    }
+
+    pre {
+      margin: 0;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--code-bg);
+      padding: 0.9rem;
+      overflow: auto;
+      font-size: 0.92rem;
+      line-height: 1.35;
+      color: #6a2f4d;
+    }
+
+    code {
+      font-family: "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
+      white-space: pre;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.8rem 1rem 1rem;
+      border-top: 1px solid var(--line);
+      background: rgba(255, 249, 253, 0.78);
+      backdrop-filter: blur(4px);
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--text);
+      border-radius: 999px;
+      padding: 0.5rem 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      min-width: 64px;
+    }
+
+    button:hover { background: #fff3fa; }
+    button:active { transform: translateY(1px); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .hint {
+      width: 100%;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .progress {
+      position: fixed;
+      left: 0;
+      bottom: 0;
+      width: 100%;
+      height: 4px;
+      background: #f6d9e8;
+    }
+
+    .progress > div {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      transition: width 180ms ease;
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="deck-title" id="deck-title">Ubuntu Training Deck</div>
+    <div class="counter" id="counter">0 / 0</div>
+  </header>
+
+  <main>
+    <section class="slide" aria-live="polite">
+      <h1 id="slide-title"></h1>
+      <p id="slide-explanation" class="explanation"></p>
+      <pre id="slide-code-wrap"><code id="slide-code"></code></pre>
+    </section>
+  </main>
+
+  <footer class="controls">
+    <button id="first" type="button">|&lt;</button>
+    <button id="prev" type="button">&lt;</button>
+    <button id="next" type="button">&gt;</button>
+    <button id="last" type="button">&gt;|</button>
+    <div class="hint">Use Left/Right arrow keys, Home/End, or buttons.</div>
+  </footer>
+
+  <div class="progress" aria-hidden="true"><div id="progress-bar"></div></div>
+
+  <textarea id="slide-source" hidden>
+[Slide 1 - Why systemd matters]
+[systemd is the service manager on Ubuntu; learning it gives you reliable startup, recovery, and observability for almost every server workload.]
+```bash
+ps -p 1 -o comm=
+systemctl --version
+```
+
+[Slide 2 - Unit types at a glance]
+[The most common unit is `service`, but real operations also use `socket`, `timer`, `mount`, and `target` units to model dependencies.]
+```bash
+systemctl list-unit-types
+systemctl list-units --type=service --state=running
+```
+
+[Slide 3 - Unit file locations]
+[Vendor unit files usually live in `/lib/systemd/system`, while your custom and override files belong in `/etc/systemd/system`.]
+```bash
+ls /lib/systemd/system | head
+ls /etc/systemd/system
+```
+
+[Slide 4 - Read an existing service]
+[Before writing your own unit, inspect a known-good one to understand directives, ordering, and restart behavior.]
+```bash
+systemctl cat ssh
+systemctl show ssh --no-pager | grep -E '^(Type|Restart|ExecStart)='
+```
+
+[Slide 5 - Minimal custom service]
+[Start with a simple service that runs a script; keep it explicit and fail-fast for easier debugging.]
+```bash
+sudo tee /etc/systemd/system/hello.service >/dev/null <<'UNIT'
+[Unit]
+Description=Hello Demo Service
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/hello.sh
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+```
+
+[Slide 6 - Create the script safely]
+[Your script should include a shebang, strict shell options, and log output to stdout/stderr so journald captures it.]
+```bash
+sudo tee /usr/local/bin/hello.sh >/dev/null <<'SCRIPT'
+#!/usr/bin/env bash
+set -euo pipefail
+while true; do
+  echo "hello-service alive at $(date -Is)"
+  sleep 10
+done
+SCRIPT
+sudo chmod +x /usr/local/bin/hello.sh
+```
+
+[Slide 7 - daemon-reload and first start]
+[After creating or changing unit files, reload systemd metadata, then start and inspect the service state.]
+```bash
+sudo systemctl daemon-reload
+sudo systemctl start hello.service
+systemctl status hello.service --no-pager
+```
+
+[Slide 8 - Enable on boot]
+[Enabling creates symlinks into targets so the service starts automatically after reboot, not just in the current session.]
+```bash
+sudo systemctl enable hello.service
+systemctl is-enabled hello.service
+```
+
+[Slide 9 - Service states and failure signals]
+[Use `is-active`, `is-failed`, and exit codes to quickly classify incidents before deep investigation.]
+```bash
+systemctl is-active hello.service
+systemctl is-failed hello.service
+systemctl show hello.service -p ActiveState -p SubState -p Result
+```
+
+[Slide 10 - Journal basics]
+[`journalctl` is your default service log source; filter by unit name and reverse output for fast incident triage.]
+```bash
+journalctl -u hello.service -n 50 --no-pager
+journalctl -u hello.service -r --no-pager | head
+```
+
+[Slide 11 - Time-based log filtering]
+[Pin logs to incident windows to reduce noise and align events with user reports or monitoring alerts.]
+```bash
+journalctl -u hello.service --since "10 minutes ago" --no-pager
+journalctl -u hello.service --since "2026-02-12 09:00:00" --until "2026-02-12 09:30:00"
+```
+
+[Slide 12 - Live log streaming]
+[Follow logs in real time while testing changes so you can validate behavior and detect regressions instantly.]
+```bash
+journalctl -u hello.service -f
+```
+
+[Slide 13 - Restart policy deep dive]
+[`Restart=on-failure` is a safe default; tune `RestartSec` and start limits to avoid crash loops and alert storms.]
+```bash
+sudo systemctl edit hello.service
+# Add:
+# [Service]
+# Restart=on-failure
+# RestartSec=5
+# StartLimitIntervalSec=60
+# StartLimitBurst=3
+```
+
+[Slide 14 - Dependency ordering]
+[Use `After=` for order and `Wants=` or `Requires=` for relationships; order alone does not imply dependency.]
+```bash
+systemctl show hello.service -p After -p Wants -p Requires
+systemctl list-dependencies hello.service
+```
+
+[Slide 15 - Environment variables]
+[Inject settings through `Environment=` or `EnvironmentFile=` to avoid hardcoding values directly in scripts.]
+```bash
+sudo systemctl edit hello.service
+# [Service]
+# Environment="APP_ENV=prod" "SLEEP_SECONDS=10"
+```
+
+[Slide 16 - Override without touching vendor files]
+[Use drop-ins with `systemctl edit` so package upgrades do not overwrite your local service changes.]
+```bash
+sudo systemctl edit nginx
+systemctl cat nginx
+```
+
+[Slide 17 - Validate unit syntax]
+[Run a verification pass before restart to catch typos and invalid directives early.]
+```bash
+sudo systemd-analyze verify /etc/systemd/system/hello.service
+```
+
+[Slide 18 - Resource controls with cgroups]
+[Systemd can enforce CPU and memory limits per service, preventing one process from exhausting the host.]
+```bash
+sudo systemctl set-property hello.service CPUQuota=50% MemoryMax=200M
+systemctl show hello.service -p CPUQuotaPerSecUSec -p MemoryMax
+```
+
+[Slide 19 - Safe deployment pattern]
+[Use a repeatable flow: edit, verify, reload, restart, status, logs. This reduces risky ad-hoc changes in production.]
+```bash
+sudoedit /etc/systemd/system/hello.service
+sudo systemd-analyze verify /etc/systemd/system/hello.service
+sudo systemctl daemon-reload && sudo systemctl restart hello.service
+systemctl status hello.service --no-pager
+journalctl -u hello.service -n 30 --no-pager
+```
+
+[Slide 20 - Cleanup and rollback]
+[Know how to disable and remove a bad unit cleanly, then return to a stable baseline.]
+```bash
+sudo systemctl disable --now hello.service
+sudo rm -f /etc/systemd/system/hello.service /usr/local/bin/hello.sh
+sudo systemctl daemon-reload
+sudo systemctl reset-failed
+```
+  </textarea>
+
+  <script>
+    function unwrapBracketLine(line) {
+      const m = line.match(/^\[(.*)\]$/);
+      return m ? m[1] : line;
+    }
+
+    function parseSlides(raw) {
+      const lines = raw.replace(/\r\n/g, "\n").split("\n");
+      const slides = [];
+      let i = 0;
+
+      while (i < lines.length) {
+        while (i < lines.length && lines[i].trim() === "") i++;
+        if (i >= lines.length) break;
+        if (!/^\[.*\]$/.test(lines[i].trim())) {
+          i++;
+          continue;
+        }
+
+        const title = unwrapBracketLine(lines[i].trim());
+        i++;
+
+        while (i < lines.length && lines[i].trim() === "") i++;
+        if (i >= lines.length) break;
+        const explanation = /^\[.*\]$/.test(lines[i].trim())
+          ? unwrapBracketLine(lines[i].trim())
+          : lines[i].trim();
+        i++;
+
+        while (i < lines.length && lines[i].trim() === "") i++;
+        let code = "";
+        if (i < lines.length && lines[i].trim().startsWith("```")) {
+          i++;
+          const codeLines = [];
+          while (i < lines.length && !lines[i].trim().startsWith("```")) {
+            codeLines.push(lines[i]);
+            i++;
+          }
+          if (i < lines.length) i++;
+          code = codeLines.join("\n");
+        }
+
+        slides.push({ title, explanation, code });
+      }
+
+      return slides;
+    }
+
+    const source = document.getElementById("slide-source").value;
+    const slides = parseSlides(source);
+
+    const deckTitle = document.getElementById("deck-title");
+    const titleEl = document.getElementById("slide-title");
+    const explanationEl = document.getElementById("slide-explanation");
+    const codeWrap = document.getElementById("slide-code-wrap");
+    const codeEl = document.getElementById("slide-code");
+    const counterEl = document.getElementById("counter");
+    const progressBar = document.getElementById("progress-bar");
+
+    const firstBtn = document.getElementById("first");
+    const prevBtn = document.getElementById("prev");
+    const nextBtn = document.getElementById("next");
+    const lastBtn = document.getElementById("last");
+
+    let index = 0;
+
+    function updateDeckTitle() {
+      const path = window.location.pathname;
+      const folder = path.split("/").filter(Boolean).slice(-2, -1)[0] || "Ubuntu Deck";
+      deckTitle.textContent = folder;
+    }
+
+    function clamp(n, min, max) {
+      return Math.max(min, Math.min(max, n));
+    }
+
+    function render() {
+      if (!slides.length) {
+        titleEl.textContent = "No slides found";
+        explanationEl.textContent = "slides.md did not match the expected format.";
+        codeWrap.style.display = "none";
+        counterEl.textContent = "0 / 0";
+        progressBar.style.width = "0%";
+        firstBtn.disabled = prevBtn.disabled = nextBtn.disabled = lastBtn.disabled = true;
+        return;
+      }
+
+      index = clamp(index, 0, slides.length - 1);
+      const s = slides[index];
+      titleEl.textContent = s.title;
+      explanationEl.textContent = s.explanation;
+
+      if (s.code && s.code.trim().length) {
+        codeWrap.style.display = "block";
+        codeEl.textContent = s.code;
+      } else {
+        codeWrap.style.display = "none";
+        codeEl.textContent = "";
+      }
+
+      counterEl.textContent = (index + 1) + " / " + slides.length;
+      progressBar.style.width = (((index + 1) / slides.length) * 100).toFixed(2) + "%";
+
+      firstBtn.disabled = prevBtn.disabled = index === 0;
+      nextBtn.disabled = lastBtn.disabled = index === slides.length - 1;
+    }
+
+    firstBtn.addEventListener("click", function () { index = 0; render(); });
+    prevBtn.addEventListener("click", function () { index -= 1; render(); });
+    nextBtn.addEventListener("click", function () { index += 1; render(); });
+    lastBtn.addEventListener("click", function () { index = slides.length - 1; render(); });
+
+    window.addEventListener("keydown", function (event) {
+      if (event.key === "ArrowRight" || event.key === "PageDown") {
+        index += 1;
+        render();
+      }
+      if (event.key === "ArrowLeft" || event.key === "PageUp") {
+        index -= 1;
+        render();
+      }
+      if (event.key === "Home") {
+        index = 0;
+        render();
+      }
+      if (event.key === "End") {
+        index = slides.length - 1;
+        render();
+      }
+    });
+
+    updateDeckTitle();
+    render();
+  </script>
+</body>
+</html>
