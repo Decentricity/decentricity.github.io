@@ -158,11 +158,15 @@ systemctl status hello.service --no-pager
 journalctl -u hello.service -n 30 --no-pager
 ```
 
-[Slide 20 - Cleanup and rollback]
-[Know how to disable and remove a bad unit cleanly, then return to a stable baseline.]
+[Slide 20 - Lab: broken-systemd escape room]
+[Try a real troubleshooting lab: clone the intentionally broken service repo, install it, debug with systemctl/journalctl, and verify with the checker.]
 ```bash
-sudo systemctl disable --now hello.service
-sudo rm -f /etc/systemd/system/hello.service /usr/local/bin/hello.sh
-sudo systemctl daemon-reload
-sudo systemctl reset-failed
+git clone https://github.com/Decentricity/broken-systemd.git
+cd broken-systemd
+sudo ./scripts/setup_lab.sh
+systemctl status escape-room --no-pager
+journalctl -u escape-room -n 100 --no-pager
+sudo systemctl edit --full escape-room
+sudo systemctl daemon-reload && sudo systemctl restart escape-room
+sudo ./scripts/check_progress.sh
 ```
