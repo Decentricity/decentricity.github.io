@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Linux Final Quiz</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="app">
+    <section class="card" id="quizCard" aria-live="polite">
+      <header class="topbar">
+        <h1>Linux Final Quiz</h1>
+        <p id="progressText">Question 1 of 30</p>
+      </header>
+
+      <div class="meter-wrap" aria-hidden="true">
+        <div id="meter" class="meter"></div>
+      </div>
+
+      <article id="questionArea" class="question-area"></article>
+
+      <div class="actions">
+        <button id="nextBtn" class="btn" disabled>Next</button>
+      </div>
+    </section>
+
+    <section class="card hidden" id="resultCard">
+      <h2>Quiz Complete</h2>
+      <p id="scoreText"></p>
+      <p id="percentText"></p>
+      <div id="reviewList" class="review-list"></div>
+      <div class="actions">
+        <button id="restartBtn" class="btn secondary">Restart Quiz</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
