@@ -43,7 +43,7 @@ export function createDesktopIcons({ iconLayer, desktop }){
     if (kind === "notes") return "📑";
     if (kind === "note") return "📝";
     if (kind === "browser") return "🌐";
-    if (kind === "app" && /agent1c:/i.test(meta?.title || "")) {
+    if (kind === "app" && /(agent1c:|chat|openai api|telegram api|loop|soul\.md|heartbeat\.md|events|create vault|unlock vault)/i.test(meta?.title || "")) {
       const title = (meta?.title || "").toLowerCase();
       if (title.includes("heartbeat")) return "❤️";
       if (title.includes("soul")) return "👻";
@@ -51,7 +51,7 @@ export function createDesktopIcons({ iconLayer, desktop }){
       if (title.includes("chat")) return "💬";
       if (title.includes("openai")) return "🧠";
       if (title.includes("telegram")) return "✈️";
-      if (title.includes("config")) return "⚙️";
+      if (title.includes("config") || title.includes("loop")) return "⚙️";
       if (title.includes("create vault")) return "🗝️";
       if (title.includes("unlock")) return "🔓";
       return "👁️";

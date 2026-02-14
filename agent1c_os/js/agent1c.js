@@ -29,6 +29,8 @@ const FALLBACK_OPENAI_MODELS = [
 const DB_NAME = "agent1c-db"
 const DB_VERSION = 1
 const ONBOARDING_KEY = "agent1c_onboarding_complete_v1"
+const ONBOARDING_OPENAI_TEST_KEY = "agent1c_onboarding_openai_tested_v1"
+const ONBOARDING_OPENAI_SETTINGS_KEY = "agent1c_onboarding_openai_settings_v1"
 const STORES = {
   meta: "meta",
   secrets: "secrets",
@@ -75,6 +77,8 @@ let workspaceReady = false
 let wired = false
 let dbPromise = null
 let onboardingComplete = false
+let onboardingOpenAiTested = false
+let onboardingOpenAiSettingsSaved = false
 const wins = {
   chat: null,
   openai: null,
@@ -568,6 +572,18 @@ function revealPostOpenAiWindows(){
   focusWindow(wins.chat)
 }
 
+async function maybeCompleteOnboarding(){
+  if (onboardingComplete) return true
+  const hasOpenAiSecret = Boolean(await getSecret("openai"))
+  if (!hasOpenAiSecret || !onboardingOpenAiTested || !onboardingOpenAiSettingsSaved) return false
+  onboardingComplete = true
+  localStorage.setItem(ONBOARDING_KEY, "1")
+  minimizeWindow(wins.openai)
+  revealPostOpenAiWindows()
+  await addEvent("onboarding_step", "OpenAI key saved, tested, and settings saved. Chat is ready.")
+  return true
+}
+
 function setupWindowHtml(){
   return `
     <div class="agent-stack">
@@ -632,6 +648,27 @@ function openAiWindowHtml(){
           <button id="lockBtn" class="btn" type="button">Lock Vault</button>
         </div>
       </form>
+      <div class="agent-grid2">
+        <label class="agent-form-label">
+          <span>Model</span>
+          <select id="modelInput" class="field"></select>
+        </label>
+        <label class="agent-form-label">
+          <span>Temperature</span>
+          <input id="temperatureInput" class="field" type="number" min="0" max="1.5" step="0.1" />
+        </label>
+        <label class="agent-form-label">
+          <span>Rolling context max messages</span>
+          <input id="contextInput" class="field" type="number" min="4" max="64" step="1" />
+        </label>
+        <label class="agent-form-label">
+          <span>Heartbeat interval (ms)</span>
+          <input id="heartbeatInput" class="field" type="number" min="5000" step="1000" />
+        </label>
+      </div>
+      <div class="agent-row">
+        <button id="saveSettingsBtn" class="btn" type="button">Save OpenAI Settings</button>
+      </div>
     </div>
   `
 }
@@ -650,30 +687,7 @@ function telegramWindowHtml(){
           <button id="telegramTestBtn" class="btn" type="button">Test Telegram Token</button>
         </div>
       </form>
-    </div>
-  `
-}
-
-function configWindowHtml(){
-  return `
-    <div class="agent-stack">
       <div class="agent-grid2">
-        <label class="agent-form-label">
-          <span>Model</span>
-          <select id="modelInput" class="field"></select>
-        </label>
-        <label class="agent-form-label">
-          <span>Heartbeat interval (ms)</span>
-          <input id="heartbeatInput" class="field" type="number" min="5000" step="1000" />
-        </label>
-        <label class="agent-form-label">
-          <span>Rolling context max messages</span>
-          <input id="contextInput" class="field" type="number" min="4" max="64" step="1" />
-        </label>
-        <label class="agent-form-label">
-          <span>Temperature</span>
-          <input id="temperatureInput" class="field" type="number" min="0" max="1.5" step="0.1" />
-        </label>
         <label class="agent-form-label">
           <span>Telegram poll interval (ms)</span>
           <input id="telegramPollInput" class="field" type="number" min="5000" step="1000" />
@@ -686,8 +700,18 @@ function configWindowHtml(){
           </select>
         </label>
       </div>
+      <div class="agent-row">
+        <button id="saveTelegramSettingsBtn" class="btn" type="button">Save Telegram Settings</button>
+      </div>
+      <div class="agent-note">Telegram bridge is <strong id="telegramBridgeState">enabled</strong>.</div>
+    </div>
+  `
+}
+
+function configWindowHtml(){
+  return `
+    <div class="agent-stack">
       <div class="agent-row agent-wrap-row">
-        <button id="saveSettingsBtn" class="btn" type="button">Save Settings</button>
         <button id="startLoopBtn" class="btn" type="button">Start Agent Loop</button>
         <button id="stopLoopBtn" class="btn" type="button">Stop Loop</button>
       </div>
@@ -696,7 +720,6 @@ function configWindowHtml(){
         <span>Last tick: <strong id="lastTick">never</strong></span>
       </div>
       <div class="agent-meta-row">
-        <span>Telegram bridge is <strong id="telegramBridgeState">enabled</strong>.</span>
         <span>Agent status: <strong id="agentStatus">idle</strong></span>
       </div>
       <div class="agent-row">
@@ -759,6 +782,7 @@ function cacheElements(){
     telegramEnabledSelect: byId("telegramEnabledSelect"),
     telegramBridgeState: byId("telegramBridgeState"),
     saveSettingsBtn: byId("saveSettingsBtn"),
+    saveTelegramSettingsBtn: byId("saveTelegramSettingsBtn"),
     startLoopBtn: byId("startLoopBtn"),
     stopLoopBtn: byId("stopLoopBtn"),
     loopStatus: byId("loopStatus"),
@@ -1003,9 +1027,13 @@ function wireMainDom(){
       const key = els.openaiKeyInput.value.trim()
       els.openaiKeyInput.value = ""
       await refreshModelDropdown(key)
+      onboardingComplete = false
+      onboardingOpenAiTested = false
+      localStorage.removeItem(ONBOARDING_KEY)
+      localStorage.removeItem(ONBOARDING_OPENAI_TEST_KEY)
       await addEvent("provider_key_saved", "OpenAI key stored in encrypted vault")
       await refreshBadges()
-      setStatus("OpenAI key saved.")
+      setStatus("OpenAI key saved. Next: test connection and save OpenAI settings.")
     } catch (err) {
       setStatus(err instanceof Error ? err.message : "Could not save OpenAI key")
     }
@@ -1017,12 +1045,10 @@ function wireMainDom(){
       if (!key) throw new Error("No OpenAI key available.")
       await testOpenAIKey(key, appState.config.model)
       await refreshModelDropdown(key)
-      onboardingComplete = true
-      localStorage.setItem(ONBOARDING_KEY, "1")
-      minimizeWindow(wins.openai)
-      revealPostOpenAiWindows()
-      await addEvent("onboarding_step", "OpenAI connected. Chat is now ready.")
-      setStatus("OpenAI key test succeeded.")
+      onboardingOpenAiTested = true
+      localStorage.setItem(ONBOARDING_OPENAI_TEST_KEY, "1")
+      const completed = await maybeCompleteOnboarding()
+      setStatus(completed ? "OpenAI key test succeeded. Onboarding continued." : "OpenAI key test succeeded. Save OpenAI settings to continue.")
     } catch (err) {
       setStatus(err instanceof Error ? err.message : "OpenAI key test failed")
     }
@@ -1056,10 +1082,18 @@ function wireMainDom(){
   els.saveSettingsBtn?.addEventListener("click", async () => {
     saveDraftFromInputs()
     await persistState()
-    stopLoop()
-    startLoop()
+    onboardingOpenAiSettingsSaved = true
+    localStorage.setItem(ONBOARDING_OPENAI_SETTINGS_KEY, "1")
+    const completed = await maybeCompleteOnboarding()
+    setStatus(completed ? "OpenAI settings saved. Onboarding continued." : "OpenAI settings saved. Test OpenAI connection to continue.")
+    refreshUi()
+  })
+
+  els.saveTelegramSettingsBtn?.addEventListener("click", async () => {
+    saveDraftFromInputs()
+    await persistState()
     refreshTelegramLoop()
-    setStatus("Settings saved.")
+    setStatus("Telegram settings saved.")
   })
 
   els.startLoopBtn?.addEventListener("click", async () => {
@@ -1106,13 +1140,13 @@ async function createWorkspace({ showUnlock, onboarding }) {
   wins.chat = wmRef.createAgentPanelWindow("Chat", { panelId: "chat", left: 20, top: 28, width: 480, height: 320 })
   if (wins.chat?.panelRoot) wins.chat.panelRoot.innerHTML = chatWindowHtml()
 
-  wins.openai = wmRef.createAgentPanelWindow("OpenAI API", { panelId: "openai", left: 510, top: 28, width: 470, height: 220 })
+  wins.openai = wmRef.createAgentPanelWindow("OpenAI API", { panelId: "openai", left: 510, top: 28, width: 500, height: 320 })
   if (wins.openai?.panelRoot) wins.openai.panelRoot.innerHTML = openAiWindowHtml()
 
-  wins.telegram = wmRef.createAgentPanelWindow("Telegram API", { panelId: "telegram", left: 510, top: 256, width: 470, height: 210 })
+  wins.telegram = wmRef.createAgentPanelWindow("Telegram API", { panelId: "telegram", left: 510, top: 360, width: 500, height: 280 })
   if (wins.telegram?.panelRoot) wins.telegram.panelRoot.innerHTML = telegramWindowHtml()
 
-  wins.config = wmRef.createAgentPanelWindow("Config", { panelId: "config", left: 20, top: 356, width: 640, height: 280 })
+  wins.config = wmRef.createAgentPanelWindow("Loop", { panelId: "config", left: 20, top: 356, width: 430, height: 220 })
   if (wins.config?.panelRoot) wins.config.panelRoot.innerHTML = configWindowHtml()
 
   wins.soul = wmRef.createAgentPanelWindow("SOUL.md", { panelId: "soul", left: 20, top: 644, width: 320, height: 330 })
@@ -1171,6 +1205,8 @@ async function loadPersistentState(){
 export async function initAgent1C({ wm }){
   wmRef = wm
   onboardingComplete = localStorage.getItem(ONBOARDING_KEY) === "1"
+  onboardingOpenAiTested = localStorage.getItem(ONBOARDING_OPENAI_TEST_KEY) === "1"
+  onboardingOpenAiSettingsSaved = localStorage.getItem(ONBOARDING_OPENAI_SETTINGS_KEY) === "1"
   await loadPersistentState()
   const hasOpenAiSecret = Boolean(await getSecret("openai"))
   const onboarding = !hasOpenAiSecret || !onboardingComplete
