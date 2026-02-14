@@ -1056,6 +1056,22 @@ export function createWindowManager({ desktop, iconLayer, templates, openWindows
     if (typeof opts.width === "number") st.win.style.width = `${opts.width}px`;
     if (typeof opts.height === "number") st.win.style.height = `${opts.height}px`;
 
+    // Keep agent panels fully reachable on small screens.
+    const { w: dw, h: dh } = deskSize();
+    const pad = 6;
+    const maxW = Math.max(200, dw - pad * 2);
+    const maxH = Math.max(140, dh - pad * 2);
+    const curW = parseFloat(st.win.style.width) || st.win.offsetWidth || 420;
+    const curH = parseFloat(st.win.style.height) || st.win.offsetHeight || 260;
+    const fitW = Math.min(curW, maxW);
+    const fitH = Math.min(curH, maxH);
+    const curL = parseFloat(st.win.style.left) || 0;
+    const curT = parseFloat(st.win.style.top) || 0;
+    st.win.style.width = `${fitW}px`;
+    st.win.style.height = `${fitH}px`;
+    st.win.style.left = `${clamp(curL, 0, Math.max(0, dw - fitW))}px`;
+    st.win.style.top = `${clamp(curT, 0, Math.max(0, dh - fitH))}px`;
+
     const appWrap = st.win.querySelector(".appwrap");
     if (!appWrap) return { id, win: st.win, panelRoot: null };
     appWrap.innerHTML = "";
