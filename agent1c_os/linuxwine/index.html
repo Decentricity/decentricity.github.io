@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Linux Wine Slides</title>
+  <style>
+    :root {
+      --bg1:#0f172a; --bg2:#111827; --panel:#0b1220; --line:#253149;
+      --text:#e5e7eb; --muted:#9ca3af; --accent:#22c55e; --code:#0a0f1a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin:0; min-height:100vh; color:var(--text);
+      font-family:"Inter","Segoe UI",system-ui,sans-serif;
+      background: radial-gradient(1200px 600px at 85% -10%, #17305a 0, transparent 60%), linear-gradient(150deg,var(--bg1),var(--bg2));
+      display:flex; align-items:center; justify-content:center; padding:20px;
+    }
+    .deck {
+      width:min(1100px,100%); background:var(--panel); border:1px solid var(--line);
+      border-radius:16px; box-shadow:0 24px 70px rgba(0,0,0,.35); overflow:hidden;
+    }
+    .top { padding:16px 20px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--line); }
+    .brand { font-weight:700; letter-spacing:.2px; }
+    .meta { color:var(--muted); font-size:.92rem; }
+    .progress { height:7px; background:#0a0f1a; border-bottom:1px solid var(--line); }
+    .bar { height:100%; width:0; background:linear-gradient(90deg,#22c55e,#38bdf8); transition:width .2s ease; }
+    .slide { min-height:64vh; padding:24px; display:grid; grid-template-rows:auto 1fr; gap:14px; }
+    h1 { margin:0; font-size:clamp(1.2rem,2.1vw,1.7rem); }
+    .content { line-height:1.55; color:#dbe3ef; }
+    .content p { margin:.45em 0; }
+    .content ul { margin:.35em 0 .7em 1.2em; padding:0; }
+    .content li { margin:.2em 0; }
+    .content code { background:#0f1a2e; border:1px solid #2a3a56; padding:0 .35em; border-radius:6px; }
+    .content pre { margin:.6em 0; background:var(--code); border:1px solid var(--line); border-radius:10px; padding:12px; overflow:auto; }
+    .controls { padding:12px 20px; border-top:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
+    .btns { display:flex; gap:8px; }
+    button { border:1px solid var(--line); background:#111827; color:var(--text); border-radius:10px; padding:8px 12px; cursor:pointer; }
+    button:hover { border-color:#4b6a97; }
+    button:disabled { opacity:.45; cursor:not-allowed; }
+    .hint { color:var(--muted); font-size:.9rem; }
+    #slides-src { display:none; }
+  </style>
+</head>
+<body>
+  <main class="deck">
+    <div class="top">
+      <div class="brand">Linux Wine Lab Slides</div>
+      <div class="meta" id="meta">Slide 1 / 1</div>
+    </div>
+    <div class="progress"><div class="bar" id="bar"></div></div>
+    <section class="slide">
+      <h1 id="title"></h1>
+      <div class="content" id="content"></div>
+    </section>
+    <div class="controls">
+      <div class="btns">
+        <button id="prev">Prev</button>
+        <button id="next">Next</button>
+        <button id="restart">Restart</button>
+      </div>
+      <div class="hint">Use Left/Right arrows</div>
+    </div>
+  </main>
+  <script id="slides-src" type="text/plain">
+# Wine Lab Operations (Current System State)
+
+## Slide 1: Current State
+- Wine is already installed system-wide on this Ubuntu 24.04 lab machine
+- `wine64`, `wine32`, and `winetricks` are present
+- Student users: `maple`, `orbit`, `pebble`, `sunny`, `tiger`
+
+## Slide 2: What Is Already Done
+- `i386` architecture enabled
+- Wine package installed and working
+- Wine prefix initialized for each student at `~/.wine`
+- Verified per user: `wine --version` and `prefix-ok`
+
+## Slide 3: Verified Baseline
+```bash
+wine --version
+```
+
+## Slide 4: Classroom Demo App (Minesweeper)
+- Demo file provided: `Mines-PerfectPortable_1.4.0.4_English.paf.exe`
+- App type: portable Minesweeper game (Mines-Perfect)
+- Purpose in class: verify Wine runs a real Windows `.exe` in each student account
+
+## Slide 5: Where the File Is
+Each student already has a local copy:
+- `~/wineapps/minesweeper/Mines-PerfectPortable_1.4.0.4_English.paf.exe`
+
+## Slide 6: Run the Minesweeper EXE
+As the student user:
+```bash
+wine ~/wineapps/minesweeper/Mines-PerfectPortable_1.4.0.4_English.paf.exe
+```
+
+## Slide 7: Student Workflow (Daily Use)
+- Log in to personal account
+- Keep all Windows app data inside personal prefix (`~/.wine`)
+- Do not install Windows apps into another user's directory
+
+## Slide 8: Prefix Location and Isolation
+- Default prefix: `~/.wine`
+- Windows C drive: `~/.wine/drive_c/`
+- Prefixes are isolated by Linux user permissions
+
+## Slide 9: Winetricks Usage
+Install common dependencies in the current user prefix:
+```bash
+winetricks -q vcrun2022
+winetricks -q corefonts
+```
+Use only in the current student's account.
+
+## Slide 10: Optional Separate Lab Prefix
+If a student needs a clean environment:
+```bash
+export WINEPREFIX="$HOME/.wine-lab"
+export WINEARCH=win64
+wineboot --init
+```
+Then run app with that prefix:
+```bash
+WINEPREFIX="$HOME/.wine-lab" wine ~/wineapps/minesweeper/Mines-PerfectPortable_1.4.0.4_English.paf.exe
+```
+
+## Slide 11: Quick Self-Check
+```bash
+wine --version
+ls ~/wineapps/minesweeper/Mines-PerfectPortable_1.4.0.4_English.paf.exe
+```
+
+## Slide 12: Common Problems
+- App launches then crashes: install required runtime via `winetricks`
+- GUI scaling/audio issues: adjust in `winecfg`
+- Prefix corruption: back up and reinitialize prefix
+
+## Slide 13: Reset a Broken Prefix (Per Student)
+Run as your own user:
+```bash
+mv ~/.wine ~/.wine.bak.$(date +%F-%H%M%S)
+wineboot --init
+```
+
+## Slide 14: Classroom Policy
+- One Linux user per student, no shared prefix
+- Install only course-required components first
+- Keep backup snapshots before major app installs
+
+## Slide 15: Success Criteria (Today)
+- You can run `wine --version`
+- You can launch `Mines-PerfectPortable_1.4.0.4_English.paf.exe`
+- You only work in your own home directory/prefix
+  </script>
+  <script>
+    function escapeHtml(s) {
+      return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function renderMarkdownBasic(md) {
+      const lines = md.replace(/\r/g, '').split('\n');
+      let html = '';
+      let inCode = false;
+      let inList = false;
+      let code = [];
+
+      const closeList = () => { if (inList) { html += '</ul>'; inList = false; } };
+      const closeCode = () => {
+        if (inCode) {
+          html += '<pre><code>' + escapeHtml(code.join('\n')) + '</code></pre>';
+          inCode = false;
+          code = [];
+        }
+      };
+
+      for (const raw of lines) {
+        const line = raw;
+        if (line.trim().startsWith('```')) {
+          if (inCode) closeCode(); else { closeList(); inCode = true; }
+          continue;
+        }
+        if (inCode) { code.push(line); continue; }
+
+        if (line.startsWith('- ')) {
+          if (!inList) { html += '<ul>'; inList = true; }
+          html += '<li>' + escapeHtml(line.slice(2)) + '</li>';
+          continue;
+        }
+
+        closeList();
+        if (!line.trim()) continue;
+
+        const inline = escapeHtml(line).replace(/`([^`]+)`/g, '<code>$1</code>');
+        html += '<p>' + inline + '</p>';
+      }
+
+      closeCode();
+      closeList();
+      return html;
+    }
+
+    const raw = document.getElementById('slides-src').textContent.trim();
+    const sections = raw
+      .split(/\n(?=## Slide \d+: )/)
+      .map(s => s.trim())
+      .filter(s => s.startsWith('## Slide '));
+
+    const slides = sections.map(section => {
+      const lines = section.split('\n');
+      const title = lines[0].replace(/^##\s*/, '').trim();
+      const body = lines.slice(1).join('\n').trim();
+      return { title, body };
+    });
+
+    const titleEl = document.getElementById('title');
+    const contentEl = document.getElementById('content');
+    const metaEl = document.getElementById('meta');
+    const barEl = document.getElementById('bar');
+    const prevBtn = document.getElementById('prev');
+    const nextBtn = document.getElementById('next');
+    const restartBtn = document.getElementById('restart');
+
+    let i = 0;
+
+    function draw() {
+      if (!slides.length) {
+        titleEl.textContent = 'No slides found';
+        contentEl.textContent = 'Check slides source.';
+        metaEl.textContent = 'Slide 0 / 0';
+        barEl.style.width = '0%';
+        prevBtn.disabled = true;
+        nextBtn.disabled = true;
+        return;
+      }
+
+      const s = slides[i];
+      titleEl.textContent = s.title;
+      contentEl.innerHTML = renderMarkdownBasic(s.body);
+      metaEl.textContent = `Slide ${i + 1} / ${slides.length}`;
+      barEl.style.width = `${(i / (slides.length - 1 || 1)) * 100}%`;
+      prevBtn.disabled = i === 0;
+      nextBtn.disabled = i === slides.length - 1;
+    }
+
+    prevBtn.addEventListener('click', () => { if (i > 0) { i--; draw(); } });
+    nextBtn.addEventListener('click', () => { if (i < slides.length - 1) { i++; draw(); } });
+    restartBtn.addEventListener('click', () => { i = 0; draw(); });
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' && i < slides.length - 1) { i++; draw(); }
+      if (e.key === 'ArrowLeft' && i > 0) { i--; draw(); }
+    });
+
+    draw();
+  </script>
+</body>
+</html>

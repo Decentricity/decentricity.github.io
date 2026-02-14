@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WebLinux Kept Slides</title>
+  <style>
+    :root {
+      --bg-a: #f7f2e9;
+      --bg-b: #dce7f1;
+      --panel: #fffdf8;
+      --ink: #1f2a37;
+      --muted: #5c6b7a;
+      --line: #d1d9e0;
+      --accent: #0c6d8f;
+      --accent-soft: #e7f4fa;
+      --code: #f4f7fb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+      background:
+        radial-gradient(1200px 500px at 85% -5%, #b6d8ea 0, transparent 65%),
+        radial-gradient(900px 400px at -10% 110%, #f2dcb8 0, transparent 70%),
+        linear-gradient(140deg, var(--bg-a), var(--bg-b));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 22px;
+    }
+    .deck {
+      width: min(1100px, 100%);
+      background: color-mix(in srgb, var(--panel) 92%, #ffffff 8%);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 26px 70px rgba(14, 28, 43, 0.18);
+      overflow: hidden;
+    }
+    .top {
+      padding: 18px 22px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(90deg, #ffffff, #f9fcff);
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .brand {
+      font-family: "Space Grotesk", "Segoe UI", sans-serif;
+      font-size: 1.05rem;
+      letter-spacing: 0.2px;
+      font-weight: 700;
+      color: #153244;
+    }
+    .meta {
+      font-size: 0.92rem;
+      color: var(--muted);
+      border: 1px solid var(--line);
+      background: #ffffff;
+      border-radius: 999px;
+      padding: 6px 12px;
+    }
+    .progress {
+      height: 7px;
+      background: #edf2f7;
+      border-bottom: 1px solid var(--line);
+      overflow: hidden;
+    }
+    .bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #0c6d8f, #1f8f5e);
+      transition: width 0.2s ease;
+    }
+    .slide {
+      padding: 28px 28px 20px;
+      min-height: 64vh;
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      gap: 14px;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(1.3rem, 2.3vw, 1.9rem);
+      line-height: 1.2;
+      font-family: "Space Grotesk", "Segoe UI", sans-serif;
+    }
+    .where {
+      display: inline-block;
+      padding: 7px 11px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      border: 1px solid #b9d8e5;
+      color: #0c5672;
+      background: var(--accent-soft);
+      width: fit-content;
+    }
+    ul {
+      margin: 0;
+      padding-left: 20px;
+      line-height: 1.5;
+    }
+    li { margin: 3px 0; }
+    pre {
+      margin: 0;
+      background: var(--code);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px;
+      overflow: auto;
+      font-size: 0.9rem;
+      line-height: 1.45;
+      color: #163145;
+      font-family: "JetBrains Mono", Consolas, monospace;
+      white-space: pre-wrap;
+    }
+    .commands-title {
+      margin: 0 0 8px;
+      font-size: 0.93rem;
+      color: #3f566b;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .controls {
+      border-top: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 14px 22px;
+      background: #fcfeff;
+    }
+    .buttons { display: flex; gap: 8px; }
+    button {
+      border: 1px solid var(--line);
+      background: white;
+      color: #173042;
+      border-radius: 10px;
+      padding: 8px 13px;
+      font-size: 0.92rem;
+      cursor: pointer;
+      transition: 0.15s ease;
+    }
+    button:hover {
+      border-color: #8dbdd0;
+      box-shadow: 0 8px 22px rgba(12, 109, 143, 0.14);
+      transform: translateY(-1px);
+    }
+    button:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+    .hint { font-size: 0.88rem; color: var(--muted); }
+    @media (max-width: 720px) {
+      .slide { padding: 22px 16px 14px; min-height: 68vh; }
+      .top, .controls { padding-inline: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="deck">
+    <div class="top">
+      <div class="brand">WebLinux</div>
+      <div id="meta" class="meta">Slide 1 / 20</div>
+    </div>
+    <div class="progress"><div id="bar" class="bar"></div></div>
+    <section class="slide">
+      <h1 id="title"></h1>
+      <div id="where" class="where"></div>
+      <ul id="bullets"></ul>
+      <div>
+        <p class="commands-title">Command Block</p>
+        <pre id="commands"></pre>
+      </div>
+    </section>
+    <div class="controls">
+      <div class="buttons">
+        <button id="prev">Prev</button>
+        <button id="next">Next</button>
+        <button id="restart">Restart</button>
+      </div>
+      <div class="hint">Use Left/Right arrows to navigate</div>
+    </div>
+  </main>
+
+  <script>
+    const slides = [
+      {n:1,t:"Virtual Hosts + TLS Basics (Ubuntu Server)",w:"Context slide",b:["Outcome: host 2 sites on 1 server, then secure with HTTPS","Concepts: ports, Host header, SNI, certs, keys, CA chain","Tools: nginx or Apache, systemd, openssl, curl, certbot","Mindset: validate config first; reload safely; debug with logs"],c:"systemctl status nginx --no-pager\nsystemctl status apache2 --no-pager"},
+      {n:2,t:"Lab setup (Ubuntu host): Multipass quick check",w:"Run on HOST",b:["Use Multipass to give every student the same Ubuntu Server VM","Great for labs: disposable, reproducible, low drama","You can run everything via multipass exec (no SSH needed)"],c:"multipass version\nmultipass list\n# if missing on Ubuntu host:\n# sudo snap install multipass"},
+      {n:3,t:"Create a VM for the web lab",w:"Run on HOST",b:["Pick an LTS image and name the VM (example: web)","Allocate modest resources so laptops survive","You can delete and recreate the VM anytime"],c:"multipass find | head\nmultipass launch 22.04 -n web --cpus 2 --memory 2G --disk 10G\nmultipass info web"},
+      {n:4,t:"Run commands inside the VM (no interactive shell required)",w:"Issued on HOST, executes inside web VM",b:["multipass exec runs a command inside the VM","Use it to install nginx/apache and create /var/www content","This keeps labs consistent across students"],c:"multipass exec web -- sudo apt update\nmultipass exec web -- sudo apt install -y nginx\nmultipass exec web -- systemctl status nginx --no-pager"},
+      {n:5,t:"Test from host: use the VM IP + Host header",w:"Run on HOST; targets VM IP",b:["Multipass VM has its own IP; host can curl it directly","Host header testing works even without DNS","Optional: add /etc/hosts on your host for nicer URLs"],c:"multipass info web\n# replace VM_IP below with the VM IPv4 from multipass info\ncurl -H 'Host: site1.test' http://VM_IP/\ncurl -H 'Host: site2.test' http://VM_IP/\n# optional host-side mapping:\n# sudo sh -c 'printf \"%s\\n\" \"VM_IP site1.test site2.test\" >> /etc/hosts'"},
+      {n:6,t:"The mental model: one server, many \"sites\"",w:"Run inside VM for IP inspection",b:["One IP can serve multiple domains","Virtual hosts decide which site per request","Domain name points to server IP via DNS"],c:"ip -br a"},
+      {n:7,t:"Ports: why 80 and 443 exist",w:"Run inside VM",b:["Port 80: HTTP (unencrypted)","Port 443: HTTPS (HTTP over TLS)","Same machine can listen on many ports"],c:"ss -lntp | head"},
+      {n:8,t:"A request includes a Host header",w:"Run on HOST; targets VM",b:["Browsers send the domain in Host: (HTTP/1.1+)","Server uses Host to route to the right vhost","This is name-based virtual hosting"],c:"curl -v http://YOUR_SERVER_IP/ 2>&1 | sed -n '1,20p'"},
+      {n:9,t:"HTTP/1.1 Host header demo (even without DNS)",w:"Run on HOST; targets VM",b:["Force Host header manually","Test vhosts before DNS is ready"],c:"curl -H 'Host: site1.test' http://YOUR_SERVER_IP/\ncurl -H 'Host: site2.test' http://YOUR_SERVER_IP/"},
+      {n:10,t:"Name-based vs IP-based virtual hosting",w:"Run inside VM",b:["Name-based: one IP, many domains (most common)","IP-based: multiple IPs (only when needed)","TLS used to push IP-based; SNI fixes most cases"],c:"ip -4 addr show | grep -w inet"},
+      {n:13,t:"Web roots: where content usually lives",w:"Run inside web VM",b:["Common: /var/www/site1 and /var/www/site2","Keep ownership sane (deploy user edits; web server reads)","Avoid writing to system dirs from the web server"],c:"sudo mkdir -p /var/www/site1 /var/www/site2\nsudo chown -R $USER:$USER /var/www/site1 /var/www/site2"},
+      {n:14,t:"Create two simple pages",w:"Run inside web VM",b:["Minimal HTML makes routing obvious","Give each site a different title/body"],c:"cat > /var/www/site1/index.html <<'EOF'\n<h1>site1</h1>\nEOF\ncat > /var/www/site2/index.html <<'EOF'\n<h1>site2</h1>\nEOF"},
+      {n:16,t:"Nginx directory layout (Ubuntu)",w:"Run inside web VM",b:["/etc/nginx/nginx.conf main config","/etc/nginx/sites-available/* vhost definitions","/etc/nginx/sites-enabled/* symlinks = enabled"],c:"ls -la /etc/nginx/sites-available /etc/nginx/sites-enabled"},
+      {n:18,t:"First nginx vhost: site1 (HTTP)",w:"Run inside web VM",b:["listen 80 for HTTP","server_name for routing","root points to content"],c:"sudo tee /etc/nginx/sites-available/site1.conf >/dev/null <<'EOF'\nserver {\n  listen 80;\n  server_name site1.test;\n  root /var/www/site1;\n  index index.html;\n}\nEOF"},
+      {n:20,t:"Enable sites using symlinks",w:"Run inside web VM",b:["Ubuntu nginx convention: symlink into sites-enabled","Easy to enable/disable without deleting configs"],c:"sudo ln -s /etc/nginx/sites-available/site1.conf /etc/nginx/sites-enabled/\nsudo ln -s /etc/nginx/sites-available/site2.conf /etc/nginx/sites-enabled/"},
+      {n:21,t:"Validate config before reload",w:"Run inside web VM",b:["Always test config first","Prevents taking down production by typo"],c:"sudo nginx -t"},
+      {n:22,t:"Reload nginx safely",w:"Run inside web VM",b:["Reload applies config without dropping connections (usually)","Restart is heavier and can cause brief downtime"],c:"sudo systemctl reload nginx\nsudo systemctl status nginx --no-pager"},
+      {n:23,t:"Test routing with Host headers",w:"Run on HOST; targets VM",b:["Works even if DNS not configured","Confirms vhost matching is correct"],c:"curl -H 'Host: site1.test' http://YOUR_SERVER_IP/\ncurl -H 'Host: site2.test' http://YOUR_SERVER_IP/"},
+      {n:34,t:"TLS in one sentence",w:"Run on HOST (public site or your TLS-enabled VM)",b:["TLS encrypts the connection so observers cannot read/modify traffic","Clients verify the cert matches the domain"],c:"curl -vk https://example.com/ 2>&1 | sed -n '1,40p'"},
+      {n:41,t:"Certbot with nginx (recommended)",w:"Run inside web VM",b:["Installs certs and edits nginx config","Also installs renewal timers"],c:"sudo apt install -y python3-certbot-nginx\nsudo certbot --nginx -d site1.yourdomain.com -d site2.yourdomain.com"}
+    ];
+
+    const title = document.getElementById("title");
+    const where = document.getElementById("where");
+    const bullets = document.getElementById("bullets");
+    const commands = document.getElementById("commands");
+    const meta = document.getElementById("meta");
+    const bar = document.getElementById("bar");
+    const prev = document.getElementById("prev");
+    const next = document.getElementById("next");
+    const restart = document.getElementById("restart");
+
+    let i = 0;
+    function draw() {
+      const s = slides[i];
+      title.textContent = `Slide ${s.n}: ${s.t}`;
+      where.textContent = s.w;
+      bullets.innerHTML = "";
+      s.b.forEach(line => {
+        const li = document.createElement("li");
+        li.textContent = line;
+        bullets.appendChild(li);
+      });
+      commands.textContent = s.c;
+      meta.textContent = `${i + 1} / ${slides.length} (original #${s.n})`;
+      bar.style.width = `${(i / (slides.length - 1)) * 100}%`;
+      prev.disabled = i === 0;
+      next.textContent = i === slides.length - 1 ? "End" : "Next";
+    }
+
+    function goNext() { if (i < slides.length - 1) { i++; draw(); } }
+    function goPrev() { if (i > 0) { i--; draw(); } }
+    function goRestart() { i = 0; draw(); }
+
+    next.addEventListener("click", goNext);
+    prev.addEventListener("click", goPrev);
+    restart.addEventListener("click", goRestart);
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowRight") goNext();
+      if (e.key === "ArrowLeft") goPrev();
+    });
+    draw();
+  </script>
+</body>
+</html>

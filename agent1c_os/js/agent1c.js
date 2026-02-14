@@ -1,0 +1,1097 @@
+const DEFAULT_SOUL = `# SOUL.md
+You are Hitomi (one + see), a local-first autonomous agent.
+You are opinionated, independent, warm, and practical.
+Be honest and direct without being rude.
+Offer clear next steps and avoid filler.
+`
+
+const DEFAULT_HEARTBEAT = `# heartbeat.md
+Heartbeat intent: once per minute, check whether user is present.
+1. Inspect recent context and timestamps.
+2. If user is active, send one concise, useful update or question.
+3. If user seems away, send short status once and wait.
+4. Avoid repetitive chatter.
+`
+
+const FALLBACK_OPENAI_MODELS = [
+  "gpt-4.1",
+  "gpt-4.1-mini",
+  "gpt-4.1-nano",
+  "gpt-4o",
+  "gpt-4o-mini",
+  "o1",
+  "o1-mini",
+  "o3-mini",
+  "gpt-4-turbo",
+  "gpt-3.5-turbo",
+]
+
+const DB_NAME = "agent1c-db"
+const DB_VERSION = 1
+const STORES = {
+  meta: "meta",
+  secrets: "secrets",
+  config: "config",
+  state: "state",
+  events: "events",
+}
+
+const appState = {
+  vaultReady: false,
+  unlocked: false,
+  sessionKey: null,
+  openAiModels: FALLBACK_OPENAI_MODELS.slice(),
+  running: false,
+  heartbeatTimer: null,
+  telegramTimer: null,
+  telegramPolling: false,
+  telegramEnabled: true,
+  telegramPollMs: 15000,
+  lastUserSeenAt: Date.now(),
+  awayStatusSentAt: 0,
+  config: {
+    model: "gpt-4.1-mini",
+    heartbeatIntervalMs: 60000,
+    maxContextMessages: 16,
+    temperature: 0.4,
+  },
+  agent: {
+    soulMd: DEFAULT_SOUL,
+    heartbeatMd: DEFAULT_HEARTBEAT,
+    rollingMessages: [],
+    status: "idle",
+    lastTickAt: null,
+    telegramLastUpdateId: undefined,
+  },
+  events: [],
+}
+
+const els = {}
+let wmRef = null
+let setupWin = null
+let unlockWin = null
+let workspaceReady = false
+let wired = false
+let dbPromise = null
+
+function byId(id){ return document.getElementById(id) }
+
+function escapeHtml(value){
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;")
+}
+
+function reqValue(req){
+  return new Promise((resolve, reject) => {
+    req.onsuccess = () => resolve(req.result)
+    req.onerror = () => reject(req.error)
+  })
+}
+
+function txDone(tx){
+  return new Promise((resolve, reject) => {
+    tx.oncomplete = () => resolve()
+    tx.onerror = () => reject(tx.error)
+    tx.onabort = () => reject(tx.error)
+  })
+}
+
+function openDb(){
+  if (dbPromise) return dbPromise
+  dbPromise = new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION)
+    req.onupgradeneeded = () => {
+      const db = req.result
+      if (!db.objectStoreNames.contains(STORES.meta)) db.createObjectStore(STORES.meta)
+      if (!db.objectStoreNames.contains(STORES.secrets)) db.createObjectStore(STORES.secrets, { keyPath: "provider" })
+      if (!db.objectStoreNames.contains(STORES.config)) db.createObjectStore(STORES.config)
+      if (!db.objectStoreNames.contains(STORES.state)) db.createObjectStore(STORES.state)
+      if (!db.objectStoreNames.contains(STORES.events)) db.createObjectStore(STORES.events, { keyPath: "id", autoIncrement: true })
+    }
+    req.onsuccess = () => resolve(req.result)
+    req.onerror = () => reject(req.error)
+  })
+  return dbPromise
+}
+
+async function getVaultMeta(){
+  const db = await openDb()
+  const tx = db.transaction(STORES.meta, "readonly")
+  return (await reqValue(tx.objectStore(STORES.meta).get("vault_meta"))) || null
+}
+
+async function setVaultMeta(meta){
+  const db = await openDb()
+  const tx = db.transaction(STORES.meta, "readwrite")
+  tx.objectStore(STORES.meta).put(meta, "vault_meta")
+  await txDone(tx)
+}
+
+async function getSecret(provider){
+  const db = await openDb()
+  const tx = db.transaction(STORES.secrets, "readonly")
+  return (await reqValue(tx.objectStore(STORES.secrets).get(provider))) || null
+}
+
+async function setSecret(secret){
+  const db = await openDb()
+  const tx = db.transaction(STORES.secrets, "readwrite")
+  tx.objectStore(STORES.secrets).put(secret)
+  await txDone(tx)
+}
+
+async function getConfig(){
+  const db = await openDb()
+  const tx = db.transaction(STORES.config, "readonly")
+  return (await reqValue(tx.objectStore(STORES.config).get("default"))) || null
+}
+
+async function setConfig(cfg){
+  const db = await openDb()
+  const tx = db.transaction(STORES.config, "readwrite")
+  tx.objectStore(STORES.config).put(cfg, "default")
+  await txDone(tx)
+}
+
+async function getState(){
+  const db = await openDb()
+  const tx = db.transaction(STORES.state, "readonly")
+  return (await reqValue(tx.objectStore(STORES.state).get("default"))) || null
+}
+
+async function setState(state){
+  const db = await openDb()
+  const tx = db.transaction(STORES.state, "readwrite")
+  tx.objectStore(STORES.state).put(state, "default")
+  await txDone(tx)
+}
+
+async function getRecentEvents(){
+  const db = await openDb()
+  const tx = db.transaction(STORES.events, "readonly")
+  const rows = (await reqValue(tx.objectStore(STORES.events).getAll())) || []
+  return rows.sort((a, b) => b.createdAt - a.createdAt).slice(0, 150)
+}
+
+async function addEvent(type, message){
+  const db = await openDb()
+  const tx = db.transaction(STORES.events, "readwrite")
+  const createdAt = Date.now()
+  const req = tx.objectStore(STORES.events).add({ type, message, createdAt })
+  const id = await reqValue(req)
+  await txDone(tx)
+  appState.events = [{ id, type, message, createdAt }, ...appState.events].slice(0, 150)
+  renderEvents()
+}
+
+function toBase64(buffer){
+  const bytes = new Uint8Array(buffer)
+  let raw = ""
+  for (const b of bytes) raw += String.fromCharCode(b)
+  return btoa(raw)
+}
+
+function fromBase64(value){
+  const raw = atob(value)
+  const out = new Uint8Array(raw.length)
+  for (let i = 0; i < raw.length; i += 1) out[i] = raw.charCodeAt(i)
+  return out.buffer
+}
+
+function randomB64(len){
+  return toBase64(crypto.getRandomValues(new Uint8Array(len)).buffer)
+}
+
+async function deriveKey(passphrase, saltBase64, iterations){
+  const enc = new TextEncoder()
+  const base = await crypto.subtle.importKey("raw", enc.encode(passphrase), "PBKDF2", false, ["deriveKey"])
+  return crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt: fromBase64(saltBase64), iterations, hash: "SHA-256" },
+    base,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt", "decrypt"],
+  )
+}
+
+async function encryptText(key, text, ivBase64){
+  const data = new TextEncoder().encode(text)
+  const out = await crypto.subtle.encrypt({ name: "AES-GCM", iv: fromBase64(ivBase64) }, key, data)
+  return toBase64(out)
+}
+
+async function decryptText(key, encryptedBase64, ivBase64){
+  const out = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: fromBase64(ivBase64) },
+    key,
+    fromBase64(encryptedBase64),
+  )
+  return new TextDecoder().decode(out)
+}
+
+async function setupVault(passphrase){
+  if (!passphrase || passphrase.length < 8) throw new Error("Passphrase must be at least 8 characters.")
+  const salt = randomB64(16)
+  const iterations = 210000
+  const key = await deriveKey(passphrase, salt, iterations)
+  const verifierIv = randomB64(12)
+  const verifierEncrypted = await encryptText(key, "agent1c-local-vault-verifier", verifierIv)
+  await setVaultMeta({ kdfSalt: salt, iterations, verifierIv, verifierEncrypted, createdAt: Date.now() })
+  appState.sessionKey = key
+  appState.vaultReady = true
+  appState.unlocked = true
+}
+
+async function unlockVault(passphrase){
+  const meta = await getVaultMeta()
+  if (!meta) throw new Error("Vault has not been initialized yet.")
+  try {
+    const key = await deriveKey(passphrase, meta.kdfSalt, meta.iterations)
+    const text = await decryptText(key, meta.verifierEncrypted, meta.verifierIv)
+    if (text !== "agent1c-local-vault-verifier") throw new Error("Incorrect passphrase")
+    appState.sessionKey = key
+    appState.unlocked = true
+  } catch {
+    throw new Error("Incorrect passphrase.")
+  }
+}
+
+function lockVault(){
+  appState.unlocked = false
+  appState.sessionKey = null
+  stopLoop()
+  stopTelegramLoop()
+}
+
+async function saveProviderKey(provider, value){
+  if (!appState.unlocked || !appState.sessionKey) throw new Error("Unlock vault first.")
+  const cleaned = (value || "").trim()
+  if (!cleaned) throw new Error("Value is required.")
+  const iv = randomB64(12)
+  const encrypted = await encryptText(appState.sessionKey, cleaned, iv)
+  await setSecret({ provider, iv, encrypted, updatedAt: Date.now() })
+}
+
+async function readProviderKey(provider){
+  if (!appState.unlocked || !appState.sessionKey) return ""
+  const record = await getSecret(provider)
+  if (!record) return ""
+  return decryptText(appState.sessionKey, record.encrypted, record.iv)
+}
+
+async function openAiChat({ apiKey, model, temperature, systemPrompt, messages }){
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      temperature,
+      messages: [{ role: "system", content: systemPrompt }, ...messages.map(m => ({ role: m.role, content: m.content }))],
+    }),
+  })
+  if (!response.ok) throw new Error(`OpenAI call failed (${response.status})`)
+  const json = await response.json()
+  const text = json?.choices?.[0]?.message?.content
+  if (!text) throw new Error("OpenAI returned no message.")
+  return text.trim()
+}
+
+async function testOpenAIKey(apiKey, model){
+  await openAiChat({
+    apiKey,
+    model,
+    temperature: 0,
+    systemPrompt: "Respond with exactly: ok",
+    messages: [{ role: "user", content: "ok" }],
+  })
+}
+
+async function listOpenAiModels(apiKey){
+  const response = await fetch("https://api.openai.com/v1/models", {
+    headers: { Authorization: `Bearer ${apiKey}` },
+  })
+  if (!response.ok) throw new Error(`OpenAI models failed (${response.status})`)
+  const json = await response.json()
+  const ids = (json?.data || []).map(item => item.id).filter(Boolean).sort((a, b) => a.localeCompare(b))
+  if (!ids.length) throw new Error("No models returned.")
+  return ids
+}
+
+function telegramEndpoint(token, method){
+  return `https://api.telegram.org/bot${token}/${method}`
+}
+
+async function telegramJson(response){
+  const json = await response.json()
+  if (!json?.ok) throw new Error(json?.description || "Telegram API error")
+  return json.result
+}
+
+async function testTelegramToken(token){
+  const response = await fetch(telegramEndpoint(token, "getMe"))
+  const result = await telegramJson(response)
+  return result?.username || "bot"
+}
+
+async function getTelegramUpdates(token, offset){
+  const url = new URL(telegramEndpoint(token, "getUpdates"))
+  url.searchParams.set("timeout", "0")
+  if (typeof offset === "number") url.searchParams.set("offset", String(offset))
+  const response = await fetch(url.toString())
+  return telegramJson(response)
+}
+
+async function sendTelegramMessage(token, chatId, text){
+  const response = await fetch(telegramEndpoint(token, "sendMessage"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: chatId, text }),
+  })
+  await telegramJson(response)
+}
+
+function pushRolling(role, content){
+  appState.agent.rollingMessages = appState.agent.rollingMessages
+    .concat({ role, content, createdAt: Date.now() })
+    .slice(-appState.config.maxContextMessages)
+}
+
+function formatTime(ts){
+  try { return new Date(ts).toLocaleString() } catch { return "" }
+}
+
+function updateLineNumbers(textarea, lines){
+  if (!textarea || !lines) return
+  const count = Math.max(1, (textarea.value.match(/\n/g)?.length || 0) + 1)
+  lines.textContent = Array.from({ length: count }, (_, i) => String(i + 1)).join("\n")
+}
+
+function bindNotepad(textarea, lines){
+  if (!textarea || !lines) return
+  const sync = () => {
+    updateLineNumbers(textarea, lines)
+    lines.scrollTop = textarea.scrollTop
+  }
+  textarea.addEventListener("input", sync)
+  textarea.addEventListener("scroll", sync)
+  sync()
+}
+
+function setStatus(text){
+  if (els.setupStatus) els.setupStatus.textContent = text
+  if (els.unlockStatus) els.unlockStatus.textContent = text
+  if (els.loopStatus) els.loopStatus.textContent = text
+}
+
+function renderChat(){
+  if (!els.chatLog) return
+  if (!appState.agent.rollingMessages.length) {
+    els.chatLog.innerHTML = `<div class="agent-muted">No messages yet.</div>`
+  } else {
+    els.chatLog.innerHTML = appState.agent.rollingMessages.map(msg => {
+      const cls = msg.role === "assistant" ? "assistant" : "user"
+      const role = msg.role === "assistant" ? "assistant" : "user"
+      return `<div class="agent-bubble ${cls}"><div class="agent-bubble-role">${role}</div><div>${escapeHtml(msg.content)}</div></div>`
+    }).join("")
+  }
+  els.chatLog.scrollTop = els.chatLog.scrollHeight
+}
+
+function renderEvents(){
+  if (!els.eventLog) return
+  if (!appState.events.length) {
+    els.eventLog.innerHTML = `<div class="agent-muted">No events yet.</div>`
+    return
+  }
+  els.eventLog.innerHTML = appState.events.map(event => {
+    return `<div class="agent-event"><div class="agent-event-head"><span>${escapeHtml(event.type)}</span><span>${escapeHtml(formatTime(event.createdAt))}</span></div><div>${escapeHtml(event.message)}</div></div>`
+  }).join("")
+}
+
+function setModelOptions(ids, selected){
+  if (!els.modelInput) return
+  const list = ids && ids.length ? ids : FALLBACK_OPENAI_MODELS
+  els.modelInput.innerHTML = list.map(id => `<option value="${escapeHtml(id)}">${escapeHtml(id)}</option>`).join("")
+  if (list.includes(selected)) els.modelInput.value = selected
+  else {
+    els.modelInput.value = list[0]
+    appState.config.model = list[0]
+  }
+}
+
+function saveDraftFromInputs(){
+  if (els.modelInput) appState.config.model = els.modelInput.value || appState.config.model
+  if (els.heartbeatInput) appState.config.heartbeatIntervalMs = Math.max(5000, Number(els.heartbeatInput.value) || 60000)
+  if (els.contextInput) appState.config.maxContextMessages = Math.max(4, Math.min(64, Number(els.contextInput.value) || 16))
+  if (els.temperatureInput) appState.config.temperature = Math.max(0, Math.min(1.5, Number(els.temperatureInput.value) || 0.4))
+  if (els.telegramPollInput) appState.telegramPollMs = Math.max(5000, Number(els.telegramPollInput.value) || 15000)
+  if (els.telegramEnabledSelect) appState.telegramEnabled = els.telegramEnabledSelect.value === "on"
+  if (els.soulInput) appState.agent.soulMd = els.soulInput.value
+  if (els.heartbeatDocInput) appState.agent.heartbeatMd = els.heartbeatDocInput.value
+}
+
+function loadInputsFromState(){
+  setModelOptions(appState.openAiModels, appState.config.model)
+  if (els.heartbeatInput) els.heartbeatInput.value = String(appState.config.heartbeatIntervalMs)
+  if (els.contextInput) els.contextInput.value = String(appState.config.maxContextMessages)
+  if (els.temperatureInput) els.temperatureInput.value = String(appState.config.temperature)
+  if (els.telegramPollInput) els.telegramPollInput.value = String(appState.telegramPollMs)
+  if (els.telegramEnabledSelect) els.telegramEnabledSelect.value = appState.telegramEnabled ? "on" : "off"
+  if (els.soulInput) els.soulInput.value = appState.agent.soulMd
+  if (els.heartbeatDocInput) els.heartbeatDocInput.value = appState.agent.heartbeatMd
+  if (els.lastTick) els.lastTick.textContent = appState.agent.lastTickAt ? formatTime(appState.agent.lastTickAt) : "never"
+  if (els.agentStatus) els.agentStatus.textContent = appState.agent.status || "idle"
+  if (els.telegramBridgeState) els.telegramBridgeState.textContent = appState.telegramEnabled ? "enabled" : "disabled"
+}
+
+async function persistState(){
+  await setConfig({ ...appState.config, telegramEnabled: appState.telegramEnabled, telegramPollMs: appState.telegramPollMs })
+  await setState({ ...appState.agent })
+}
+
+async function refreshBadges(){
+  const hasOpenAi = Boolean(await getSecret("openai"))
+  const hasTelegram = Boolean(await getSecret("telegram"))
+  if (els.openaiBadge) {
+    els.openaiBadge.className = `agent-badge ${hasOpenAi ? "ok" : "warn"}`
+    els.openaiBadge.textContent = hasOpenAi ? "Saved in vault" : "Missing key"
+  }
+  if (els.telegramBadge) {
+    els.telegramBadge.className = `agent-badge ${hasTelegram ? "ok" : "warn"}`
+    els.telegramBadge.textContent = hasTelegram ? "Saved in vault" : "Missing token"
+  }
+}
+
+function refreshUi(){
+  const canUse = appState.unlocked
+  if (els.chatInput) {
+    els.chatInput.disabled = false
+    els.chatInput.placeholder = "Write a message..."
+  }
+  if (els.chatSendBtn) els.chatSendBtn.disabled = false
+  if (els.openaiKeyInput) els.openaiKeyInput.disabled = !canUse
+  if (els.telegramTokenInput) els.telegramTokenInput.disabled = !canUse
+  if (els.modelInput) els.modelInput.disabled = !canUse
+  if (els.heartbeatInput) els.heartbeatInput.disabled = !canUse
+  if (els.contextInput) els.contextInput.disabled = !canUse
+  if (els.temperatureInput) els.temperatureInput.disabled = !canUse
+  if (els.telegramPollInput) els.telegramPollInput.disabled = !canUse
+  if (els.telegramEnabledSelect) els.telegramEnabledSelect.disabled = !canUse
+  if (els.soulInput) els.soulInput.disabled = !canUse
+  if (els.heartbeatDocInput) els.heartbeatDocInput.disabled = !canUse
+  if (els.startLoopBtn) els.startLoopBtn.disabled = !canUse || appState.running
+  if (els.stopLoopBtn) els.stopLoopBtn.disabled = !appState.running
+  if (els.lockBtn) els.lockBtn.disabled = !canUse
+  renderChat()
+  renderEvents()
+  loadInputsFromState()
+  refreshBadges()
+}
+
+function closeWindow(winObj){
+  if (!winObj?.win) return
+  const btn = winObj.win.querySelector("[data-close]")
+  if (btn) btn.click()
+}
+
+function setupWindowHtml(){
+  return `
+    <div class="agent-stack">
+      <div class="agent-note">Agent1c.me runs your agent entirely inside this browser tab with no app servers.</div>
+      <div class="agent-note">Bring Your Own Keys (BYOK): your API keys are encrypted locally in-browser and used only for direct calls to your providers.</div>
+      <form id="setupForm" class="agent-form">
+        <label class="agent-form-label">
+          <span>Passphrase</span>
+          <input id="setupPassphrase" class="field" type="password" autocomplete="new-password" minlength="8" required />
+        </label>
+        <label class="agent-form-label">
+          <span>Confirm passphrase</span>
+          <input id="setupConfirm" class="field" type="password" autocomplete="new-password" minlength="8" required />
+        </label>
+        <button class="btn" type="submit">Initialize Vault</button>
+        <div id="setupStatus" class="agent-note">Create a local vault to continue.</div>
+      </form>
+    </div>
+  `
+}
+
+function unlockWindowHtml(){
+  return `
+    <form id="unlockForm" class="agent-form">
+      <label class="agent-form-label">
+        <span>Passphrase</span>
+        <input id="unlockPassphrase" class="field" type="password" autocomplete="current-password" required />
+      </label>
+      <button class="btn" type="submit">Unlock Vault</button>
+      <div id="unlockStatus" class="agent-note">Vault is locked.</div>
+    </form>
+  `
+}
+
+function chatWindowHtml(){
+  return `
+    <div class="agent-stack">
+      <div class="agent-row">
+        <button id="chatClearBtn" class="btn" type="button">Clear Chat</button>
+      </div>
+      <div id="chatLog" class="agent-log"></div>
+      <form id="chatForm" class="agent-row">
+        <input id="chatInput" class="field" type="text" />
+        <button id="chatSendBtn" class="btn" type="submit">Send</button>
+      </form>
+    </div>
+  `
+}
+
+function openAiWindowHtml(){
+  return `
+    <div class="agent-stack">
+      <div class="agent-note">Status: <span id="openaiBadge" class="agent-badge warn">Missing key</span></div>
+      <form id="openaiForm" class="agent-form">
+        <label class="agent-form-label">
+          <span>API key</span>
+          <input id="openaiKeyInput" class="field" type="password" placeholder="sk-..." required />
+        </label>
+        <div class="agent-row">
+          <button class="btn" type="submit">Save Encrypted Key</button>
+          <button id="openaiTestBtn" class="btn" type="button">Test Connection</button>
+          <button id="lockBtn" class="btn" type="button">Lock Vault</button>
+        </div>
+      </form>
+    </div>
+  `
+}
+
+function telegramWindowHtml(){
+  return `
+    <div class="agent-stack">
+      <div class="agent-note">Status: <span id="telegramBadge" class="agent-badge warn">Missing token</span></div>
+      <form id="telegramForm" class="agent-form">
+        <label class="agent-form-label">
+          <span>Bot token</span>
+          <input id="telegramTokenInput" class="field" type="password" placeholder="123456:AA..." required />
+        </label>
+        <div class="agent-row">
+          <button class="btn" type="submit">Save Encrypted Token</button>
+          <button id="telegramTestBtn" class="btn" type="button">Test Telegram Token</button>
+        </div>
+      </form>
+    </div>
+  `
+}
+
+function configWindowHtml(){
+  return `
+    <div class="agent-stack">
+      <div class="agent-grid2">
+        <label class="agent-form-label">
+          <span>Model</span>
+          <select id="modelInput" class="field"></select>
+        </label>
+        <label class="agent-form-label">
+          <span>Heartbeat interval (ms)</span>
+          <input id="heartbeatInput" class="field" type="number" min="5000" step="1000" />
+        </label>
+        <label class="agent-form-label">
+          <span>Rolling context max messages</span>
+          <input id="contextInput" class="field" type="number" min="4" max="64" step="1" />
+        </label>
+        <label class="agent-form-label">
+          <span>Temperature</span>
+          <input id="temperatureInput" class="field" type="number" min="0" max="1.5" step="0.1" />
+        </label>
+        <label class="agent-form-label">
+          <span>Telegram poll interval (ms)</span>
+          <input id="telegramPollInput" class="field" type="number" min="5000" step="1000" />
+        </label>
+        <label class="agent-form-label">
+          <span>Telegram bridge</span>
+          <select id="telegramEnabledSelect" class="field">
+            <option value="on">Enabled</option>
+            <option value="off">Disabled</option>
+          </select>
+        </label>
+      </div>
+      <div class="agent-row agent-wrap-row">
+        <button id="saveSettingsBtn" class="btn" type="button">Save Settings</button>
+        <button id="startLoopBtn" class="btn" type="button">Start Agent Loop</button>
+        <button id="stopLoopBtn" class="btn" type="button">Stop Loop</button>
+      </div>
+      <div class="agent-meta-row">
+        <span>Loop status: <strong id="loopStatus">idle</strong></span>
+        <span>Last tick: <strong id="lastTick">never</strong></span>
+      </div>
+      <div class="agent-meta-row">
+        <span>Telegram bridge is <strong id="telegramBridgeState">enabled</strong>.</span>
+        <span>Agent status: <strong id="agentStatus">idle</strong></span>
+      </div>
+      <div class="agent-row">
+        <button id="lockBtn" class="btn" type="button">Lock Vault</button>
+      </div>
+    </div>
+  `
+}
+
+function soulWindowHtml(){
+  return `
+    <div class="agent-notepad">
+      <pre id="soulLineNums" class="agent-lines"></pre>
+      <textarea id="soulInput" class="agent-text" spellcheck="false"></textarea>
+    </div>
+  `
+}
+
+function heartbeatWindowHtml(){
+  return `
+    <div class="agent-notepad">
+      <pre id="heartbeatLineNums" class="agent-lines"></pre>
+      <textarea id="heartbeatDocInput" class="agent-text" spellcheck="false"></textarea>
+    </div>
+  `
+}
+
+function eventsWindowHtml(){
+  return `<div id="eventLog" class="agent-events"></div>`
+}
+
+function cacheElements(){
+  Object.assign(els, {
+    setupForm: byId("setupForm"),
+    setupPassphrase: byId("setupPassphrase"),
+    setupConfirm: byId("setupConfirm"),
+    setupStatus: byId("setupStatus"),
+    unlockForm: byId("unlockForm"),
+    unlockPassphrase: byId("unlockPassphrase"),
+    unlockStatus: byId("unlockStatus"),
+    chatClearBtn: byId("chatClearBtn"),
+    chatLog: byId("chatLog"),
+    chatForm: byId("chatForm"),
+    chatInput: byId("chatInput"),
+    chatSendBtn: byId("chatSendBtn"),
+    openaiForm: byId("openaiForm"),
+    openaiKeyInput: byId("openaiKeyInput"),
+    openaiTestBtn: byId("openaiTestBtn"),
+    lockBtn: byId("lockBtn"),
+    openaiBadge: byId("openaiBadge"),
+    telegramForm: byId("telegramForm"),
+    telegramTokenInput: byId("telegramTokenInput"),
+    telegramTestBtn: byId("telegramTestBtn"),
+    telegramBadge: byId("telegramBadge"),
+    modelInput: byId("modelInput"),
+    heartbeatInput: byId("heartbeatInput"),
+    contextInput: byId("contextInput"),
+    temperatureInput: byId("temperatureInput"),
+    telegramPollInput: byId("telegramPollInput"),
+    telegramEnabledSelect: byId("telegramEnabledSelect"),
+    telegramBridgeState: byId("telegramBridgeState"),
+    saveSettingsBtn: byId("saveSettingsBtn"),
+    startLoopBtn: byId("startLoopBtn"),
+    stopLoopBtn: byId("stopLoopBtn"),
+    loopStatus: byId("loopStatus"),
+    lastTick: byId("lastTick"),
+    agentStatus: byId("agentStatus"),
+    soulInput: byId("soulInput"),
+    soulLineNums: byId("soulLineNums"),
+    heartbeatDocInput: byId("heartbeatDocInput"),
+    heartbeatLineNums: byId("heartbeatLineNums"),
+    eventLog: byId("eventLog"),
+  })
+}
+
+async function refreshModelDropdown(providedKey){
+  try {
+    const key = providedKey || (await readProviderKey("openai"))
+    if (!key) {
+      setModelOptions(appState.openAiModels, appState.config.model)
+      return
+    }
+    const ids = await listOpenAiModels(key)
+    appState.openAiModels = ids
+    setModelOptions(ids, appState.config.model)
+  } catch {
+    setModelOptions(appState.openAiModels, appState.config.model)
+  }
+}
+
+async function sendChat(text){
+  const apiKey = await readProviderKey("openai")
+  if (!apiKey) throw new Error("No OpenAI key stored.")
+  appState.lastUserSeenAt = Date.now()
+  pushRolling("user", text)
+  const reply = await openAiChat({
+    apiKey,
+    model: appState.config.model,
+    temperature: appState.config.temperature,
+    systemPrompt: appState.agent.soulMd,
+    messages: appState.agent.rollingMessages,
+  })
+  pushRolling("assistant", reply)
+  await addEvent("chat_replied", "Hitomi replied in chat")
+  await persistState()
+  renderChat()
+}
+
+async function heartbeatTick(){
+  if (!appState.running || !appState.unlocked) return
+  appState.agent.lastTickAt = Date.now()
+  if (els.lastTick) els.lastTick.textContent = formatTime(appState.agent.lastTickAt)
+  const idleMs = Date.now() - appState.lastUserSeenAt
+  const isAway = idleMs > 120000
+  if (isAway) {
+    if (Date.now() - appState.awayStatusSentAt > 180000) {
+      pushRolling("assistant", "Heartbeat check: you seem away. I will stay quiet until you return.")
+      appState.awayStatusSentAt = Date.now()
+      await addEvent("heartbeat_away", "User appears away")
+      await persistState()
+      renderChat()
+    }
+    return
+  }
+  const apiKey = await readProviderKey("openai")
+  if (!apiKey) {
+    await addEvent("heartbeat_skipped", "No OpenAI key")
+    return
+  }
+  const prompt = `${appState.agent.heartbeatMd.trim()}\n\nTime: ${new Date().toISOString()}\nRespond with a short check-in.`
+  pushRolling("user", prompt)
+  const reply = await openAiChat({
+    apiKey,
+    model: appState.config.model,
+    temperature: Math.min(0.7, appState.config.temperature),
+    systemPrompt: appState.agent.soulMd,
+    messages: appState.agent.rollingMessages,
+  })
+  pushRolling("assistant", reply)
+  await addEvent("heartbeat_replied", "Heartbeat response generated")
+  await persistState()
+  renderChat()
+}
+
+function startLoop(){
+  if (appState.running) return
+  appState.running = true
+  if (els.agentStatus) els.agentStatus.textContent = "running"
+  if (appState.heartbeatTimer) clearInterval(appState.heartbeatTimer)
+  appState.heartbeatTimer = setInterval(() => {
+    heartbeatTick().catch(err => setStatus(err instanceof Error ? err.message : "Heartbeat failed"))
+  }, appState.config.heartbeatIntervalMs)
+  heartbeatTick().catch(() => {})
+  setStatus("Agent loop started")
+  refreshUi()
+}
+
+function stopLoop(){
+  appState.running = false
+  if (appState.heartbeatTimer) {
+    clearInterval(appState.heartbeatTimer)
+    appState.heartbeatTimer = null
+  }
+  if (els.agentStatus) els.agentStatus.textContent = "idle"
+  setStatus("Agent loop stopped")
+  refreshUi()
+}
+
+function stopTelegramLoop(){
+  if (appState.telegramTimer) {
+    clearInterval(appState.telegramTimer)
+    appState.telegramTimer = null
+  }
+}
+
+function refreshTelegramLoop(){
+  stopTelegramLoop()
+  if (!appState.unlocked || !appState.telegramEnabled) return
+  appState.telegramTimer = setInterval(() => {
+    pollTelegram().catch(() => {})
+  }, appState.telegramPollMs)
+  pollTelegram().catch(() => {})
+}
+
+async function pollTelegram(){
+  if (appState.telegramPolling || !appState.unlocked || !appState.telegramEnabled) return
+  appState.telegramPolling = true
+  try {
+    const [token, apiKey] = await Promise.all([readProviderKey("telegram"), readProviderKey("openai")])
+    if (!token || !apiKey) return
+    const offset = typeof appState.agent.telegramLastUpdateId === "number" ? appState.agent.telegramLastUpdateId + 1 : undefined
+    const updates = await getTelegramUpdates(token, offset)
+    for (const update of updates || []) {
+      appState.agent.telegramLastUpdateId = update.update_id
+      const msg = update.message
+      if (!msg?.text || !msg?.chat?.id) continue
+      appState.lastUserSeenAt = Date.now()
+      const chatLabel = msg.chat.username || String(msg.chat.id)
+      pushRolling("user", `[telegram:${chatLabel}] ${msg.text}`)
+      const reply = await openAiChat({
+        apiKey,
+        model: appState.config.model,
+        temperature: appState.config.temperature,
+        systemPrompt: appState.agent.soulMd,
+        messages: appState.agent.rollingMessages,
+      })
+      pushRolling("assistant", reply)
+      await sendTelegramMessage(token, msg.chat.id, reply.slice(0, 3900))
+      await addEvent("telegram_replied", `Replied to Telegram chat ${chatLabel}`)
+      renderChat()
+    }
+    if ((updates || []).length) await persistState()
+  } catch (err) {
+    setStatus(err instanceof Error ? err.message : "Telegram polling failed")
+  } finally {
+    appState.telegramPolling = false
+  }
+}
+
+function wireSetupDom(){
+  if (!els.setupForm) return
+  els.setupForm.addEventListener("submit", async (e) => {
+    e.preventDefault()
+    if (els.setupPassphrase.value !== els.setupConfirm.value) {
+      setStatus("Passphrase confirmation does not match.")
+      return
+    }
+    try {
+      await setupVault(els.setupPassphrase.value)
+      closeWindow(setupWin)
+      await addEvent("vault_unlocked", "Vault initialized and unlocked")
+      await createWorkspace({ showUnlock: false })
+      await refreshModelDropdown()
+      refreshTelegramLoop()
+      refreshUi()
+      setStatus("Vault initialized and unlocked.")
+    } catch (err) {
+      setStatus(err instanceof Error ? err.message : "Could not initialize vault")
+    }
+  })
+}
+
+function wireUnlockDom(){
+  if (!els.unlockForm) return
+  els.unlockForm.addEventListener("submit", async (e) => {
+    e.preventDefault()
+    try {
+      await unlockVault(els.unlockPassphrase.value)
+      closeWindow(unlockWin)
+      unlockWin = null
+      await addEvent("vault_unlocked", "Vault unlocked locally")
+      await refreshModelDropdown()
+      refreshTelegramLoop()
+      refreshUi()
+      setStatus("Vault unlocked.")
+    } catch (err) {
+      setStatus(err instanceof Error ? err.message : "Could not unlock vault")
+    }
+  })
+}
+
+function wireMainDom(){
+  if (wired) return
+  wired = true
+
+  bindNotepad(els.soulInput, els.soulLineNums)
+  bindNotepad(els.heartbeatDocInput, els.heartbeatLineNums)
+
+  if (els.chatForm) {
+    els.chatForm.addEventListener("submit", async (e) => {
+      e.preventDefault()
+      const text = (els.chatInput.value || "").trim()
+      if (!text) return
+      els.chatInput.value = ""
+      try {
+        saveDraftFromInputs()
+        setStatus("Thinking...")
+        await sendChat(text)
+        setStatus("Reply received.")
+      } catch (err) {
+        setStatus(err instanceof Error ? err.message : "Chat failed")
+      }
+    })
+  }
+
+  els.chatClearBtn?.addEventListener("click", async () => {
+    appState.agent.rollingMessages = []
+    await setState({ ...appState.agent })
+    await addEvent("chat_cleared", "Rolling chat context cleared")
+    renderChat()
+  })
+
+  els.openaiForm?.addEventListener("submit", async (e) => {
+    e.preventDefault()
+    try {
+      await saveProviderKey("openai", els.openaiKeyInput.value)
+      const key = els.openaiKeyInput.value.trim()
+      els.openaiKeyInput.value = ""
+      await refreshModelDropdown(key)
+      await addEvent("provider_key_saved", "OpenAI key stored in encrypted vault")
+      await refreshBadges()
+      setStatus("OpenAI key saved.")
+    } catch (err) {
+      setStatus(err instanceof Error ? err.message : "Could not save OpenAI key")
+    }
+  })
+
+  els.openaiTestBtn?.addEventListener("click", async () => {
+    try {
+      const key = (els.openaiKeyInput.value || "").trim() || (await readProviderKey("openai"))
+      if (!key) throw new Error("No OpenAI key available.")
+      await testOpenAIKey(key, appState.config.model)
+      await refreshModelDropdown(key)
+      setStatus("OpenAI key test succeeded.")
+    } catch (err) {
+      setStatus(err instanceof Error ? err.message : "OpenAI key test failed")
+    }
+  })
+
+  els.telegramForm?.addEventListener("submit", async (e) => {
+    e.preventDefault()
+    try {
+      await saveProviderKey("telegram", els.telegramTokenInput.value)
+      els.telegramTokenInput.value = ""
+      await addEvent("provider_key_saved", "Telegram token stored in encrypted vault")
+      await refreshBadges()
+      setStatus("Telegram token saved.")
+      refreshTelegramLoop()
+    } catch (err) {
+      setStatus(err instanceof Error ? err.message : "Could not save Telegram token")
+    }
+  })
+
+  els.telegramTestBtn?.addEventListener("click", async () => {
+    try {
+      const token = (els.telegramTokenInput.value || "").trim() || (await readProviderKey("telegram"))
+      if (!token) throw new Error("No Telegram token available.")
+      const username = await testTelegramToken(token)
+      setStatus(`Telegram token works for @${username}.`)
+    } catch (err) {
+      setStatus(err instanceof Error ? err.message : "Telegram token test failed")
+    }
+  })
+
+  els.saveSettingsBtn?.addEventListener("click", async () => {
+    saveDraftFromInputs()
+    await persistState()
+    stopLoop()
+    startLoop()
+    refreshTelegramLoop()
+    setStatus("Settings saved.")
+  })
+
+  els.startLoopBtn?.addEventListener("click", async () => {
+    if (!appState.unlocked) {
+      setStatus("Unlock vault first.")
+      return
+    }
+    saveDraftFromInputs()
+    await persistState()
+    startLoop()
+    refreshTelegramLoop()
+  })
+
+  els.stopLoopBtn?.addEventListener("click", () => {
+    stopLoop()
+  })
+
+  els.lockBtn?.addEventListener("click", async () => {
+    lockVault()
+    await addEvent("vault_locked", "Vault locked")
+    if (!unlockWin) {
+      unlockWin = wmRef.createAgentPanelWindow("agent1c: Unlock Vault", { panelId: "unlock", left: 280, top: 100, width: 420, height: 210 })
+      if (unlockWin?.panelRoot) unlockWin.panelRoot.innerHTML = unlockWindowHtml()
+      cacheElements()
+      wireUnlockDom()
+    }
+    refreshUi()
+  })
+}
+
+function createSetupWindow(){
+  setupWin = wmRef.createAgentPanelWindow("agent1c: Create Vault", { panelId: "setup", left: 340, top: 90, width: 520, height: 260 })
+  if (!setupWin?.panelRoot) return
+  setupWin.panelRoot.innerHTML = setupWindowHtml()
+  cacheElements()
+  wireSetupDom()
+  setStatus("Create a vault to continue.")
+}
+
+async function createWorkspace({ showUnlock }){
+  if (workspaceReady) return
+  workspaceReady = true
+
+  const chatWin = wmRef.createAgentPanelWindow("agent1c: Chat", { panelId: "chat", left: 20, top: 28, width: 480, height: 320 })
+  if (chatWin?.panelRoot) chatWin.panelRoot.innerHTML = chatWindowHtml()
+
+  const openaiWin = wmRef.createAgentPanelWindow("agent1c: OpenAI", { panelId: "openai", left: 510, top: 28, width: 470, height: 220 })
+  if (openaiWin?.panelRoot) openaiWin.panelRoot.innerHTML = openAiWindowHtml()
+
+  const telegramWin = wmRef.createAgentPanelWindow("agent1c: Telegram", { panelId: "telegram", left: 510, top: 256, width: 470, height: 210 })
+  if (telegramWin?.panelRoot) telegramWin.panelRoot.innerHTML = telegramWindowHtml()
+
+  const configWin = wmRef.createAgentPanelWindow("agent1c: Config", { panelId: "config", left: 20, top: 356, width: 640, height: 280 })
+  if (configWin?.panelRoot) configWin.panelRoot.innerHTML = configWindowHtml()
+
+  const soulWin = wmRef.createAgentPanelWindow("agent1c: SOUL.md", { panelId: "soul", left: 20, top: 644, width: 320, height: 330 })
+  if (soulWin?.panelRoot) soulWin.panelRoot.innerHTML = soulWindowHtml()
+
+  const heartbeatWin = wmRef.createAgentPanelWindow("agent1c: heartbeat.md", { panelId: "heartbeat", left: 350, top: 644, width: 320, height: 330 })
+  if (heartbeatWin?.panelRoot) heartbeatWin.panelRoot.innerHTML = heartbeatWindowHtml()
+
+  const eventsWin = wmRef.createAgentPanelWindow("agent1c: Events", { panelId: "events", left: 680, top: 644, width: 360, height: 330 })
+  if (eventsWin?.panelRoot) eventsWin.panelRoot.innerHTML = eventsWindowHtml()
+
+  if (showUnlock) {
+    unlockWin = wmRef.createAgentPanelWindow("agent1c: Unlock Vault", { panelId: "unlock", left: 280, top: 100, width: 420, height: 210 })
+    if (unlockWin?.panelRoot) unlockWin.panelRoot.innerHTML = unlockWindowHtml()
+  }
+
+  cacheElements()
+  wireMainDom()
+  wireUnlockDom()
+  loadInputsFromState()
+  renderChat()
+  renderEvents()
+  refreshUi()
+}
+
+async function loadPersistentState(){
+  const [meta, cfg, savedState, events] = await Promise.all([getVaultMeta(), getConfig(), getState(), getRecentEvents()])
+  appState.vaultReady = Boolean(meta)
+  appState.unlocked = false
+  appState.sessionKey = null
+  if (cfg) {
+    appState.config.model = cfg.model || appState.config.model
+    appState.config.heartbeatIntervalMs = Math.max(5000, Number(cfg.heartbeatIntervalMs) || appState.config.heartbeatIntervalMs)
+    appState.config.maxContextMessages = Math.max(4, Math.min(64, Number(cfg.maxContextMessages) || appState.config.maxContextMessages))
+    appState.config.temperature = Math.max(0, Math.min(1.5, Number(cfg.temperature) || appState.config.temperature))
+    appState.telegramEnabled = cfg.telegramEnabled !== false
+    appState.telegramPollMs = Math.max(5000, Number(cfg.telegramPollMs) || appState.telegramPollMs)
+  }
+  if (savedState) {
+    appState.agent.soulMd = savedState.soulMd || appState.agent.soulMd
+    appState.agent.heartbeatMd = savedState.heartbeatMd || appState.agent.heartbeatMd
+    appState.agent.rollingMessages = Array.isArray(savedState.rollingMessages) ? savedState.rollingMessages.slice(-appState.config.maxContextMessages) : []
+    appState.agent.status = savedState.status || "idle"
+    appState.agent.lastTickAt = savedState.lastTickAt || null
+    appState.agent.telegramLastUpdateId = savedState.telegramLastUpdateId
+  }
+  appState.events = events
+}
+
+export async function initAgent1C({ wm }){
+  wmRef = wm
+  await loadPersistentState()
+
+  if (!appState.vaultReady) {
+    createSetupWindow()
+    return
+  }
+
+  await createWorkspace({ showUnlock: true })
+  setStatus("Vault locked. Unlock to continue.")
+}

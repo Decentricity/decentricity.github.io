@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Virtual Hosts + TLS Quiz</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root {
+      --bg: #0d1117;
+      --panel: #161b22;
+      --accent: #58a6ff;
+      --accent-2: #2ea043;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --border: #30363d;
+      --warn: #f85149;
+      --radius: 14px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: radial-gradient(120% 120% at 10% 20%, #112034 0, #0d1117 45%, #0b0f15 100%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      width: min(900px, 100%);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 30px 70px rgba(0,0,0,0.35);
+      padding: 28px;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .title { font-size: 1.4rem; font-weight: 700; }
+    .pill {
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .question {
+      font-size: 1.2rem;
+      margin: 10px 0 14px;
+      line-height: 1.4;
+    }
+    .options { display: grid; gap: 10px; }
+    button.option {
+      width: 100%;
+      text-align: left;
+      border: 1px solid var(--border);
+      background: #0f1624;
+      color: var(--text);
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: border-color .15s, transform .12s ease, box-shadow .15s;
+    }
+    button.option:hover { border-color: var(--accent); transform: translateY(-1px); box-shadow: 0 8px 24px rgba(88,166,255,0.15); }
+    button.option:active { transform: translateY(0); }
+    .footer {
+      margin-top: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    .summary { display: none; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 10px;
+      text-align: left;
+      vertical-align: top;
+      font-size: 0.95rem;
+    }
+    th { background: #111827; }
+    .badge {
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-weight: 600;
+      display: inline-block;
+      font-size: 0.9rem;
+    }
+    .good { background: rgba(46,160,67,0.2); color: #2ea043; border: 1px solid rgba(46,160,67,0.4); }
+    .bad { background: rgba(248,81,73,0.18); color: #f85149; border: 1px solid rgba(248,81,73,0.4); }
+    .hidden { display: none; }
+    .progress {
+      width: 100%;
+      height: 8px;
+      border-radius: 6px;
+      background: #0b0f16;
+      overflow: hidden;
+      margin-top: 6px;
+      border: 1px solid var(--border);
+    }
+    .bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #58a6ff, #2ea043);
+      transition: width .25s ease;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <header>
+      <div>
+        <div class="title">Virtual Hosts + TLS Quiz</div>
+        <div class="pill" id="progress-label">Question 1 of 20</div>
+      </div>
+      <div class="pill" id="score-pill">Score: 0 / 0</div>
+    </header>
+
+    <div class="progress"><div class="bar" id="progress-bar"></div></div>
+
+    <div id="quiz">
+      <div class="question" id="question-text"></div>
+      <div class="options" id="options"></div>
+      <div class="footer">
+        <div id="helper">Choose an option to auto-advance.</div>
+        <div id="status"></div>
+      </div>
+    </div>
+
+    <div class="summary" id="summary">
+      <h2 style="margin:10px 0 6px;">Results</h2>
+      <div class="pill" id="summary-score"></div>
+      <table>
+        <thead>
+          <tr><th>#</th><th>Question</th><th>Result</th><th>Explanation</th></tr>
+        </thead>
+        <tbody id="summary-rows"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const questions = [
+      { q: "What’s the promised outcome of this session?", options: ["Build a Kubernetes cluster","Host two sites on one Ubuntu server and add HTTPS","Write a web framework","Configure a mail server"], correct: 1, explanation: "Outcome is two sites on one box plus HTTPS, not Kubernetes or mail." },
+      { q: "Why use Multipass for the lab?", options: ["It provides Windows VMs by default","Identical, disposable Ubuntu VMs for every student","It’s the only way to run Docker","It disables networking to be safer"], correct: 1, explanation: "Multipass keeps everyone on the same Ubuntu VM that’s easy to recreate." },
+      { q: "In `multipass launch --name web --cpus 2 --mem 2G --disk 10G 22.04`, what does `--disk 10G` mean?", options: ["Preallocates 10G immediately","Sets a sparse virtual disk up to 10G","Limits RAM to 10G","Reserves 10G of host swap"], correct: 1, explanation: "Multipass creates a sparse disk that can grow to 10G, not preallocate." },
+      { q: "What does `multipass exec web -- sudo apt update` do?", options: ["Runs on the host machine","Opens an interactive shell","Runs `sudo apt update` inside the VM named `web`","Updates Multipass itself"], correct: 2, explanation: "exec runs the command inside the VM; the host stays untouched." },
+      { q: "Why add entries to `/etc/hosts` during testing?", options: ["To block ads","To override DNS locally so Host header matches lab domains","To speed up the VM","To enable IPv6"], correct: 1, explanation: "Hosts file forces the lab domain to point to the VM IP locally." },
+      { q: "What mainly decides which site responds on one server?", options: ["The MAC address","The Host header in the HTTP request","The CPU model","The default gateway"], correct: 1, explanation: "Name-based virtual hosting keys off the Host header." },
+      { q: "Why are ports 80/443 “special”?", options: ["They are UDP-only","Browsers default to them; binding <1024 usually requires root/capability","They’re blocked by firewalls by default","They only work on IPv6"], correct: 1, explanation: "80/443 are default HTTP/S; low ports need root or capabilities." },
+      { q: "What does the Host header contain?", options: ["Client IP","Server OS version","Domain name the client is requesting","TLS cipher"], correct: 2, explanation: "Host header carries the domain being requested." },
+      { q: "Which curl command tests vhost routing without DNS?", options: ["curl http://IP/","curl -H 'Host: site1.test' http://IP/","curl https://IP/","curl -k http://site1.test/"], correct: 1, explanation: "Adding Host header simulates DNS and triggers the right vhost." },
+      { q: "Name-based virtual hosting lets you…", options: ["Serve many domains on one IP using Host header","Serve one domain per IP only","Require multiple NICs","Avoid using DNS entirely"], correct: 0, explanation: "Multiple domains share one IP via Host header routing." },
+      { q: "Why keep separate web roots like `/var/www/site1` and `/var/www/site2`?", options: ["They speed up the kernel","Clear ownership, permissions, and logging per site","Required by nginx license","Needed only for HTTPS"], correct: 1, explanation: "Separate roots simplify perms and per-site diagnostics." },
+      { q: "Why make each site’s HTML visibly different?", options: ["Aesthetic reasons only","Helps verify routing is correct when testing Host headers","Needed for TLS handshakes","Required by systemd"], correct: 1, explanation: "Distinct pages confirm you’re hitting the intended vhost." },
+      { q: "What is the purpose of `sites-enabled` in nginx?", options: ["Stores log files","Holds live configs via symlinks from `sites-available`","Contains SSL keys","Temporary directory for cache"], correct: 1, explanation: "sites-enabled activates configs by symlink; available holds sources." },
+      { q: "Which directive routes requests to the right nginx server block?", options: ["root","listen","server_name","index"], correct: 2, explanation: "server_name matches the Host header to pick a server block." },
+      { q: "Why enable a site with a symlink instead of editing `nginx.conf` directly?", options: ["It increases performance","It allows reversible enables/disables without touching main config","It is required for TLS","It avoids using systemd"], correct: 1, explanation: "Symlinks let you toggle sites cleanly; main config stays stable." },
+      { q: "What should you always run before reloading nginx?", options: ["systemctl restart nginx","nginx -t","apt upgrade","curl -I http://localhost/"], correct: 1, explanation: "nginx -t validates syntax so reloads don’t fail live." },
+      { q: "Why prefer `systemctl reload nginx` over `restart`?", options: ["Reload recompiles nginx","Reload keeps connections alive while applying config","Restart is faster","Reload clears logs"], correct: 1, explanation: "Reload swaps configs without dropping active connections." },
+      { q: "If both site1 and site2 return the same page, what’s the likely issue?", options: ["Disk is full","Wrong or missing `server_name` so default server is used","CPU is overloaded","RAM is low"], correct: 1, explanation: "Without correct server_name, nginx serves the default block for all hosts." },
+      { q: "What are the two core promises of TLS?", options: ["Compression and caching","Encryption of traffic and identity verification of server","Faster DNS and cheaper hosting","Malware scanning"], correct: 1, explanation: "TLS encrypts data in transit and proves server identity via certs." },
+      { q: "What does `certbot --nginx -d site1.example.com -d site2.example.com` do?", options: ["Generates self-signed certs only","Requests/installs Let’s Encrypt certs and edits nginx to use them","Disables HTTP on port 80","Upgrades nginx to latest mainline"], correct: 1, explanation: "Certbot obtains LE certs and patches nginx for those domains." }
+    ];
+
+    let current = 0;
+    let correct = 0;
+    const results = [];
+
+    const qText = document.getElementById("question-text");
+    const optionsEl = document.getElementById("options");
+    const progressLabel = document.getElementById("progress-label");
+    const scorePill = document.getElementById("score-pill");
+    const status = document.getElementById("status");
+    const summary = document.getElementById("summary");
+    const quiz = document.getElementById("quiz");
+    const summaryRows = document.getElementById("summary-rows");
+    const summaryScore = document.getElementById("summary-score");
+    const progressBar = document.getElementById("progress-bar");
+
+    function renderQuestion() {
+      const q = questions[current];
+      qText.textContent = `${current + 1}. ${q.q}`;
+      optionsEl.innerHTML = "";
+      q.options.forEach((opt, idx) => {
+        const btn = document.createElement("button");
+        btn.className = "option";
+        btn.textContent = opt;
+        btn.onclick = () => select(idx);
+        optionsEl.appendChild(btn);
+      });
+      progressLabel.textContent = `Question ${current + 1} of ${questions.length}`;
+      scorePill.textContent = `Score: ${correct} / ${results.length}`;
+      status.textContent = "";
+      progressBar.style.width = `${(current / questions.length) * 100}%`;
+    }
+
+    function select(choice) {
+      const q = questions[current];
+      const isCorrect = choice === q.correct;
+      if (isCorrect) correct++;
+      results.push({
+        question: q.q,
+        correct: isCorrect,
+        explanation: q.explanation,
+        chosen: q.options[choice],
+        answer: q.options[q.correct]
+      });
+      scorePill.textContent = `Score: ${correct} / ${results.length}`;
+      status.textContent = isCorrect ? "Correct!" : `Wrong. Right answer: ${q.options[q.correct]}`;
+      status.style.color = isCorrect ? "#2ea043" : "#f85149";
+
+      setTimeout(() => {
+        current++;
+        if (current >= questions.length) finish();
+        else renderQuestion();
+      }, 450);
+    }
+
+    function finish() {
+      quiz.classList.add("hidden");
+      summary.style.display = "block";
+      summaryScore.textContent = `Final: ${correct} / ${questions.length} correct`;
+      summaryRows.innerHTML = "";
+      progressBar.style.width = "100%";
+      results.forEach((r, i) => {
+        const tr = document.createElement("tr");
+        const resultBadge = `<span class="badge ${r.correct ? "good" : "bad"}">${r.correct ? "Correct" : "Wrong"}</span>`;
+        tr.innerHTML = `<td>${i + 1}</td><td>${r.question}</td><td>${resultBadge}</td><td>${r.explanation}</td>`;
+        summaryRows.appendChild(tr);
+      });
+    }
+
+    renderQuestion();
+  </script>
+</body>
+</html>

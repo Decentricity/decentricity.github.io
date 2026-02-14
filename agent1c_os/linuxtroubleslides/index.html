@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Linux Troubleshooting Toolkit - Easy 20</title>
+  <style>
+    :root {
+      --bg1: #eef6f4;
+      --bg2: #f8f1e6;
+      --panel: #fffdfa;
+      --ink: #1f2933;
+      --muted: #5f6c7b;
+      --line: #d8e1e8;
+      --accent: #0f766e;
+      --accent2: #b45309;
+      --code: #f6f8fb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Avenir Next", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(900px 400px at 80% 0%, #d9efe8 0, transparent 70%),
+        radial-gradient(900px 500px at 0% 100%, #f9e8ce 0, transparent 70%),
+        linear-gradient(140deg, var(--bg1), var(--bg2));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .deck {
+      width: min(1080px, 100%);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 25px 70px rgba(20, 28, 40, 0.14);
+    }
+    .top {
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(90deg, #ffffff, #f9fdfc);
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .brand {
+      font-family: "Space Grotesk", "Segoe UI", sans-serif;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #114b47;
+    }
+    .meta {
+      font-size: 0.9rem;
+      color: var(--muted);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 5px 11px;
+      background: #fff;
+    }
+    .progress { height: 7px; background: #ebf0f4; }
+    .bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      transition: width .2s ease;
+    }
+    .slide {
+      min-height: 62vh;
+      padding: 24px 24px 16px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 14px;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(1.35rem, 2.2vw, 1.85rem);
+      line-height: 1.25;
+      font-family: "Space Grotesk", "Segoe UI", sans-serif;
+    }
+    ul {
+      margin: 0;
+      padding-left: 20px;
+      line-height: 1.5;
+    }
+    li { margin: 4px 0; }
+    .cmd-title {
+      margin: 0 0 8px;
+      font-size: .88rem;
+      color: #516070;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      font-weight: 700;
+    }
+    pre {
+      margin: 0;
+      border: 1px solid var(--line);
+      background: var(--code);
+      border-radius: 12px;
+      padding: 12px;
+      font-size: .9rem;
+      line-height: 1.45;
+      overflow: auto;
+      white-space: pre-wrap;
+      font-family: "JetBrains Mono", Consolas, monospace;
+      color: #16324a;
+    }
+    .controls {
+      padding: 12px 20px;
+      border-top: 1px solid var(--line);
+      background: #fbfefd;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .btns { display: flex; gap: 8px; }
+    button {
+      border: 1px solid var(--line);
+      background: white;
+      color: #1b3a50;
+      border-radius: 10px;
+      padding: 8px 13px;
+      font-size: .92rem;
+      cursor: pointer;
+      transition: .15s ease;
+    }
+    button:hover {
+      border-color: #9fc6d4;
+      box-shadow: 0 7px 16px rgba(15, 118, 110, 0.12);
+      transform: translateY(-1px);
+    }
+    button:disabled { opacity: .45; cursor: not-allowed; transform: none; box-shadow: none; }
+    .hint { color: var(--muted); font-size: .86rem; }
+    @media (max-width: 720px) {
+      .slide { padding: 18px 14px 12px; min-height: 68vh; }
+      .top, .controls { padding-inline: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="deck">
+    <div class="top">
+      <div class="brand">Linux Troubleshooting Toolkit</div>
+      <div id="meta" class="meta">1 / 20</div>
+    </div>
+    <div class="progress"><div id="bar" class="bar"></div></div>
+
+    <section class="slide">
+      <h1 id="title"></h1>
+      <ul id="bullets"></ul>
+      <div>
+        <p class="cmd-title">Command block</p>
+        <pre id="commands"></pre>
+      </div>
+    </section>
+
+    <div class="controls">
+      <div class="btns">
+        <button id="prev">Prev</button>
+        <button id="next">Next</button>
+        <button id="restart">Restart</button>
+      </div>
+      <div class="hint">Use Left/Right arrows</div>
+    </div>
+  </main>
+
+  <script>
+    const slides = [
+      {
+        n: 1,
+        t: "Troubleshooting Toolkit (Ubuntu Server): process + memory + disk + network",
+        b: [
+          "Goal: go from \"something's wrong\" to \"I know what's wrong\" fast",
+          "Mindset: observe first, change second, document always"
+        ],
+        c: "(intro slide - no required command)"
+      },
+      {
+        n: 2,
+        t: "Triage loop you'll use forever",
+        b: [
+          "Symptom -> scope -> evidence -> hypothesis -> smallest safe test -> fix -> verify -> write it down",
+          "Evidence sources: commands, logs, timestamps, configs, recent changes"
+        ],
+        c: "(workflow slide - no required command)"
+      },
+      {
+        n: 3,
+        t: "First 60 seconds: is the box alive?",
+        b: [
+          "Uptime + load + users",
+          "Recent boots / shutdowns"
+        ],
+        c: "uptime\nw\nwho\nlast -x | head -n 20"
+      },
+      {
+        n: 5,
+        t: "Know your battlefield: OS + kernel + hardware quick peek",
+        b: [
+          "Quick system identity and hardware snapshot"
+        ],
+        c: "lsb_release -a\nuname -a\nhostnamectl\nlscpu | head\nlsblk"
+      },
+      {
+        n: 6,
+        t: "The 4 big buckets (map symptoms to tools)",
+        b: [
+          "CPU pegged -> process tools",
+          "OOM / slow -> memory + IO tools",
+          "No space / weird writes -> disk tools",
+          "Can't reach X -> network tools"
+        ],
+        c: "(classification slide - no required command)"
+      },
+      {
+        n: 8,
+        t: "Live process view (top/htop)",
+        b: [
+          "Useful keys in top: P (CPU sort), M (mem sort), 1 (per CPU), k (kill)",
+          "If installed, htop is easier for quick scanning"
+        ],
+        c: "top\n# optional\nhtop"
+      },
+      {
+        n: 9,
+        t: "Which process is killing my CPU? (non-interactive)",
+        b: [
+          "List top CPU consumers",
+          "Inspect one PID in detail"
+        ],
+        c: "ps -eo pid,ppid,user,stat,%cpu,%mem,etime,cmd --sort=-%cpu | head -n 15\nps -p <PID> -o pid,ppid,user,stat,lstart,etime,cmd"
+      },
+      {
+        n: 12,
+        t: "Service-level view: systemctl is your best friend",
+        b: [
+          "Check status / active / failed state",
+          "List recent failed units"
+        ],
+        c: "systemctl status <service>\nsystemctl is-active <service>\nsystemctl is-failed <service>\nsystemctl --failed"
+      },
+      {
+        n: 13,
+        t: "Logs: journalctl basics (systemd)",
+        b: [
+          "Use time windows to reduce noise",
+          "Service-specific logs are the fastest root-cause path"
+        ],
+        c: "journalctl -xe\njournalctl -u <service> --since \"1 hour ago\"\njournalctl --since \"today\""
+      },
+      {
+        n: 15,
+        t: "Memory quick look: free + is swap exploding?",
+        b: [
+          "If swap climbs fast, you are under memory pressure or leak conditions"
+        ],
+        c: "free -h\nswapon --show"
+      },
+      {
+        n: 18,
+        t: "Disk space: df is the truth serum",
+        b: [
+          "If space percent is fine but writes fail, check inodes"
+        ],
+        c: "df -h\ndf -i"
+      },
+      {
+        n: 19,
+        t: "Find big directories fast (du)",
+        b: [
+          "Start broad, then narrow into likely hot spots like /var/log"
+        ],
+        c: "sudo du -xhd1 / | sort -h\nsudo du -xhd1 /var | sort -h\nsudo du -xhd1 /var/log | sort -h"
+      },
+      {
+        n: 20,
+        t: "Find big files (fast-ish)",
+        b: [
+          "Use size threshold scans to identify immediate cleanup candidates"
+        ],
+        c: "sudo find /var -xdev -type f -size +200M -printf '%s %p\\n' | sort -n | tail -n 20"
+      },
+      {
+        n: 24,
+        t: "Network: start local then go outward",
+        b: [
+          "Check interface, routes, resolver state first",
+          "Then confirm gateway reachability"
+        ],
+        c: "ip a\nip r\nresolvectl status\nping -c 2 <gateway_ip>"
+      },
+      {
+        n: 25,
+        t: "DNS tests (because DNS lies convincingly)",
+        b: [
+          "Cross-check resolver answers with multiple tools"
+        ],
+        c: "getent hosts example.com\nresolvectl query example.com\n# if available\ndig example.com +short"
+      },
+      {
+        n: 26,
+        t: "Connectivity tests (ICMP is not everything)",
+        b: [
+          "HTTP-level checks and raw TCP checks catch different failures"
+        ],
+        c: "curl -I https://example.com\ncurl -v https://example.com 2>&1 | tail -n 30\n# if nc exists\nnc -vz example.com 443"
+      },
+      {
+        n: 27,
+        t: "Socket inspection: who is listening on what",
+        b: [
+          "Port bind failures usually mean another process already owns the port"
+        ],
+        c: "ss -tulpn\nss -tupn | head -n 30"
+      },
+      {
+        n: 29,
+        t: "SSH troubleshooting mini-flow",
+        b: [
+          "Check daemon state, listener, and recent auth logs"
+        ],
+        c: "systemctl status ssh\nss -tulpn | grep -E ':22\\b'\njournalctl -u ssh --since \"1 hour ago\" | tail -n 80"
+      },
+      {
+        n: 31,
+        t: "Practical cheat-sheet: symptom -> first commands",
+        b: [
+          "Server slow: uptime, top, free -h, df -h",
+          "No space: df -h, df -i, du -xhd1 /var, lsof +L1",
+          "Service down: systemctl status svc, journalctl -u svc --since \"1 hour ago\"",
+          "Network down: ip r, resolvectl status, ping gw, curl -I url, ss -tulpn"
+        ],
+        c: "(cheat-sheet slide - use commands above)"
+      },
+      {
+        n: 33,
+        t: "Lab checkpoint (what done looks like)",
+        b: [
+          "Prove bottleneck type (CPU/mem/disk/net) with 2-3 commands",
+          "Pull relevant logs with timestamps",
+          "Explain likely root cause in one sentence backed by evidence"
+        ],
+        c: "(checkpoint slide - no required command)"
+      }
+    ];
+
+    const title = document.getElementById('title');
+    const bullets = document.getElementById('bullets');
+    const commands = document.getElementById('commands');
+    const meta = document.getElementById('meta');
+    const bar = document.getElementById('bar');
+    const prev = document.getElementById('prev');
+    const next = document.getElementById('next');
+    const restart = document.getElementById('restart');
+
+    let i = 0;
+    function draw() {
+      const s = slides[i];
+      title.textContent = `Slide ${s.n}: ${s.t}`;
+      bullets.innerHTML = '';
+      s.b.forEach(line => {
+        const li = document.createElement('li');
+        li.textContent = line;
+        bullets.appendChild(li);
+      });
+      commands.textContent = s.c;
+      meta.textContent = `${i + 1} / ${slides.length} (orig #${s.n})`;
+      bar.style.width = `${(i / (slides.length - 1)) * 100}%`;
+      prev.disabled = i === 0;
+      next.textContent = i === slides.length - 1 ? 'End' : 'Next';
+    }
+
+    function goNext() { if (i < slides.length - 1) { i += 1; draw(); } }
+    function goPrev() { if (i > 0) { i -= 1; draw(); } }
+    function goRestart() { i = 0; draw(); }
+
+    prev.addEventListener('click', goPrev);
+    next.addEventListener('click', goNext);
+    restart.addEventListener('click', goRestart);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight') goNext();
+      if (e.key === 'ArrowLeft') goPrev();
+    });
+
+    draw();
+  </script>
+</body>
+</html>

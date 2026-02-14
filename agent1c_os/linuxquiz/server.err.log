@@ -1,0 +1,94 @@
+127.0.0.1 - - [28/Jan/2026 20:55:21] "GET / HTTP/1.1" 304 -
+127.0.0.1 - - [28/Jan/2026 20:55:21] "GET /styles.css HTTP/1.1" 200 -
+127.0.0.1 - - [28/Jan/2026 20:55:21] "GET /app.js HTTP/1.1" 200 -
+127.0.0.1 - - [28/Jan/2026 20:55:22] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:55:22] "GET /images/q01.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:55:24] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:55:24] "GET /images/q02.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:55:24] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:55:24] "GET /images/q03.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:55:58] "GET / HTTP/1.1" 304 -
+127.0.0.1 - - [28/Jan/2026 20:55:59] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:55:59] "GET /images/q01.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:56:21] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:56:21] "GET /images/q02.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:56:23] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:56:23] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:56:23] "GET /images/q03.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:56:23] "GET /images/q05.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:56:24] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:56:24] "GET /images/q06.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:56:25] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:56:25] "GET /images/q07.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:56:26] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:56:26] "GET /images/q08.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:56:27] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:56:27] "GET /images/q09.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:56:28] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:56:28] "GET /images/q10.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:56:28] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:56:28] "GET /images/q11.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:56:29] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:56:29] "GET /images/q12.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:56:30] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:56:30] "GET /images/q13.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:56:31] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:56:31] "GET /images/q14.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:56:31] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:56:31] "GET /images/q15.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:56:31] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:56:31] "GET /images/q16.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:56:32] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:56:32] "GET /images/q17.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:56:32] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:56:32] "GET /images/q18.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:56:33] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:56:33] "GET /images/q19.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:56:34] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:56:34] "GET /images/q20.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:56:34] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:56:34] "GET /images/q21.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:56:34] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:56:34] "GET /images/q22.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:56:35] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:56:35] "GET /images/q23.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:56:36] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:56:36] "GET /images/q24.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:56:37] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:56:37] "GET /images/q25.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:56:38] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:56:38] "GET /images/q26.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:56:39] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:56:39] "GET /images/q27.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:56:39] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:56:39] "GET /images/q28.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:56:40] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:56:40] "GET /images/q29.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:56:40] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:56:40] "GET /images/q30.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:56:41] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:56:41] "GET /images/q31.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:56:42] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:56:42] "GET /images/q32.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:56:43] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:56:43] "GET /images/q33.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:56:43] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:56:43] "GET /images/q34.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:56:44] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:56:44] "GET /images/q35.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:56:44] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:56:44] "GET /images/q36.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:56:45] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:56:45] "GET /images/q37.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:56:45] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:56:45] "GET /images/q38.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:56:46] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:56:46] "GET /images/q39.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:56:47] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:56:47] "GET /images/q40.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:59:41] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:59:41] "GET /images/q01.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:59:44] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:59:44] "GET /images/q02.png HTTP/1.1" 404 -
+127.0.0.1 - - [28/Jan/2026 20:59:45] code 404, message File not found
+127.0.0.1 - - [28/Jan/2026 20:59:45] "GET /images/q03.png HTTP/1.1" 404 -

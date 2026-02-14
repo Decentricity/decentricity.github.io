@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Linux Troubleshooting Quiz</title>
+  <style>
+    :root {
+      --bg: #f3f7f6;
+      --panel: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #d7dee5;
+      --ok: #0f766e;
+      --bad: #b91c1c;
+      --accent: #0ea5a4;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", sans-serif;
+      background: linear-gradient(140deg, #eef8f6, #f9f3e8);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .card {
+      width: min(900px, 100%);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.08);
+    }
+    .top { display: flex; justify-content: space-between; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .meta { color: var(--muted); font-size: 0.9rem; }
+    .q { margin: 16px 0 14px; font-size: 1.15rem; line-height: 1.4; }
+    .opts { display: grid; gap: 10px; }
+    button.opt {
+      text-align: left;
+      border: 1px solid var(--line);
+      background: #f8fbfd;
+      border-radius: 10px;
+      padding: 11px 12px;
+      cursor: pointer;
+      color: var(--text);
+      font-size: 0.97rem;
+    }
+    button.opt:hover { border-color: var(--accent); }
+    .status { margin-top: 10px; min-height: 22px; font-size: 0.92rem; }
+    .summary { display: none; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    th, td { border: 1px solid var(--line); padding: 8px; text-align: left; vertical-align: top; font-size: 0.9rem; }
+    th { background: #f2f6fa; }
+    .ok { color: var(--ok); font-weight: 700; }
+    .bad { color: var(--bad); font-weight: 700; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div id="quiz">
+      <div class="top">
+        <h1 style="margin:0; font-size:1.2rem;">Linux Troubleshooting Quiz</h1>
+        <div class="meta" id="meta"></div>
+      </div>
+      <div class="q" id="q"></div>
+      <div class="opts" id="opts"></div>
+      <div class="status" id="status"></div>
+    </div>
+
+    <div class="summary" id="summary">
+      <h2 style="margin:0;">Results</h2>
+      <p id="score"></p>
+      <table>
+        <thead><tr><th>#</th><th>Question</th><th>Result</th><th>Explanation</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </main>
+
+  <script>
+    const qs = [
+      {q:"Slide 1: What mindset is explicitly stated?",o:["Change first, observe second","Observe first, change second, document always","Always reboot first","Only check logs"],a:1,e:"Slide 1 states: observe first, change second, document always."},
+      {q:"Slide 2: Which step appears in the triage loop?",o:["Reimage immediately","Smallest safe test","Ignore timestamps","Skip verification"],a:1,e:"The loop includes 'smallest safe test' before fix/verify."},
+      {q:"Slide 3: Which command checks recent boots/shutdowns?",o:["uptime","who","last -x | head -n 20","w"],a:2,e:"Slide 3 uses `last -x | head -n 20` for recent boot/shutdown history."},
+      {q:"Slide 5: Which command shows block devices?",o:["lsblk","lscpu","uname -a","hostnamectl"],a:0,e:"`lsblk` is listed on Slide 5 for block device overview."},
+      {q:"Slide 6: 'Can't reach X' maps to which tool bucket?",o:["Disk tools","Process tools","Network tools","Memory tools"],a:2,e:"Slide 6 maps reachability issues to network tools."},
+      {q:"Slide 8: In top, which key sorts by memory?",o:["P","M","1","k"],a:1,e:"Slide 8 calls out `M` as memory sort in top."},
+      {q:"Slide 9: Which `ps` sort is used for CPU hogs?",o:["--sort=-rss","--sort=-%cpu","--sort=etime","--sort=ppid"],a:1,e:"Slide 9 command sorts descending CPU via `--sort=-%cpu`."},
+      {q:"Slide 12: Which command checks if a service is failed?",o:["systemctl status <service>","systemctl --failed","systemctl is-failed <service>","journalctl -xe"],a:2,e:"Slide 12 includes `systemctl is-failed <service>` for direct failed state."},
+      {q:"Slide 13: Which command filters logs for one service in last hour?",o:["journalctl -xe","journalctl --since today","journalctl -u <service> --since \"1 hour ago\"","dmesg -T"],a:2,e:"Slide 13 specifically uses `-u <service>` with `--since`."},
+      {q:"Slide 15: Which pair is used for memory/swap quick check?",o:["top and vmstat","free -h and swapon --show","ps and lsof","df -h and df -i"],a:1,e:"Slide 15 lists `free -h` and `swapon --show`."},
+      {q:"Slide 18: If disk percent looks fine but writes fail, what should you check?",o:["CPU temperature","Inodes (`df -i`)","DNS cache","Kernel version"],a:1,e:"Slide 18 explicitly says check inodes with `df -i`."},
+      {q:"Slide 19: Which path is narrowed down after /var for log growth?",o:["/tmp","/home","/var/log","/usr"],a:2,e:"Slide 19 narrows to `/var/log` using du."},
+      {q:"Slide 20: Which find flag keeps scan on same filesystem?",o:["-type","-xdev","-size","-printf"],a:1,e:"Slide 20 uses `-xdev` to avoid crossing filesystems."},
+      {q:"Slide 24: Which command shows routing table?",o:["ip a","ip r","resolvectl status","ping -c 2"],a:1,e:"Slide 24 lists `ip r` for route inspection."},
+      {q:"Slide 25: Which command asks system resolver for a host?",o:["dig example.com +short","getent hosts example.com","curl -I https://example.com","ss -tulpn"],a:1,e:"`getent hosts` is on Slide 25 as a resolver-aware check."},
+      {q:"Slide 26: Which command checks HTTP headers only?",o:["curl -v https://example.com","curl -I https://example.com","nc -vz example.com 443","ping example.com"],a:1,e:"`curl -I` is the header-only reachability check on Slide 26."},
+      {q:"Slide 27: Which command shows listening sockets with processes?",o:["ss -tulpn","ss -tupn | head -n 30","netstat -an","lsof +L1"],a:0,e:"Slide 27 starts with `ss -tulpn` for listeners and owning processes."},
+      {q:"Slide 29: What log command is used for SSH auth failures?",o:["journalctl -u ssh --since \"1 hour ago\" | tail -n 80","journalctl -k","dmesg -T","tail -f /var/log/auth.log"],a:0,e:"Slide 29 uses `journalctl -u ssh --since \"1 hour ago\" | tail -n 80`."},
+      {q:"Slide 31: 'Service down' first checks include which pair?",o:["df -h and du -xhd1 /var","systemctl status svc and journalctl -u svc --since \"1 hour ago\"","ip r and ping gw","top and free -h"],a:1,e:"Slide 31 maps service issues to systemctl status + service journal logs."},
+      {q:"Slide 33: What defines done quality?",o:["One command output","Root cause guess without evidence","2-3 commands proving bottleneck + timestamped logs + one-sentence evidence-backed cause","Only successful ping"],a:2,e:"Slide 33 states done means evidence-backed diagnosis with minimal commands."}
+    ];
+
+    let i = 0, right = 0;
+    const answers = [];
+    const qEl = document.getElementById('q');
+    const optsEl = document.getElementById('opts');
+    const statusEl = document.getElementById('status');
+    const metaEl = document.getElementById('meta');
+
+    function render() {
+      const item = qs[i];
+      qEl.textContent = `${i + 1}. ${item.q}`;
+      metaEl.textContent = `${i + 1} / ${qs.length}`;
+      optsEl.innerHTML = '';
+      statusEl.textContent = '';
+      item.o.forEach((opt, idx) => {
+        const b = document.createElement('button');
+        b.className = 'opt';
+        b.textContent = opt;
+        b.onclick = () => pick(idx);
+        optsEl.appendChild(b);
+      });
+    }
+
+    function pick(idx) {
+      const item = qs[i];
+      const ok = idx === item.a;
+      if (ok) right += 1;
+      answers.push({q:item.q,ok,e:item.e});
+      statusEl.textContent = ok ? 'Correct' : `Wrong (correct: ${item.o[item.a]})`;
+      statusEl.className = `status ${ok ? 'ok' : 'bad'}`;
+      setTimeout(() => {
+        i += 1;
+        if (i < qs.length) render();
+        else done();
+      }, 350);
+    }
+
+    function done() {
+      document.getElementById('quiz').style.display = 'none';
+      document.getElementById('summary').style.display = 'block';
+      document.getElementById('score').textContent = `Score: ${right}/${qs.length} (Wrong: ${qs.length - right})`;
+      const rows = document.getElementById('rows');
+      answers.forEach((a, idx) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${idx + 1}</td><td>${a.q}</td><td class="${a.ok ? 'ok':'bad'}">${a.ok ? 'Correct':'Wrong'}</td><td>${a.e}</td>`;
+        rows.appendChild(tr);
+      });
+    }
+
+    render();
+  </script>
+</body>
+</html>

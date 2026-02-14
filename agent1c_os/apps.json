@@ -1,0 +1,23 @@
+{
+  "apps": [
+    { "id": "localTerminal", "title": "Terminal", "section": "system", "category": "system" },
+    { "id": "files", "title": "Files", "section": "system", "category": "system" },
+    { "id": "browser", "title": "Browser", "section": "system", "category": "top" },
+    { "id": "notes", "title": "Notes", "section": "system", "category": "utilities" },
+
+    { "id": "flipsideClassic", "title": "Flipside classic", "url": "https://flipside.ink", "section": "apps", "category": "games" },
+    { "id": "flipside3d", "title": "Flipside 3D", "url": "https://cubewalker.berrry.app", "section": "apps", "category": "games" },
+    { "id": "unconnectedChat", "title": "Unconnected AI Chat", "url": "https://chat.unconnected.ai", "section": "apps", "category": "utilities" },
+    { "id": "hedgeyTown", "title": "3D Hedgey Town", "url": "https://blueprintwalk.berrry.app/", "section": "apps", "category": "games" },
+    { "id": "chordynaut", "title": "Chordynaut", "url": "https://chordynaut.com", "section": "apps", "category": "games" },
+    { "id": "about", "title": "About", "url": "https://decentricity.github.io", "section": "apps", "category": "games" },
+
+    { "id": "terminal", "title": "DecenTerminal", "url": "https://decentricityos.berrry.app/", "section": "apps", "category": "utilities" },
+    { "id": "python", "title": "PythonCity", "url": "https://pythoncity.berrry.app/", "section": "apps", "category": "utilities" },
+    { "id": "upload", "title": "Upload", "url": "apps/upload/index.html", "section": "apps", "category": "utilities" },
+    { "id": "ocean", "title": "OceanBoat", "url": "https://oceanshader.berrry.app/", "section": "apps", "category": "games" },
+    { "id": "tetris", "title": "3dTetris", "url": "https://tetris3d.berrry.app/", "section": "apps", "category": "games" },
+    { "id": "rss", "title": "RSS Reader", "url": "apps/rss/index.html", "section": "apps", "category": "utilities" },
+    { "id": "hedgeytube", "title": "HedgeyTube", "url": "hedgeytube/index.html", "section": "apps", "category": "utilities" }
+  ]
+}

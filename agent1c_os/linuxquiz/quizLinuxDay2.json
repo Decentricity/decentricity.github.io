@@ -1,0 +1,247 @@
+{
+  "quiz_id": "ubuntu_ops_packaging_scripting_automation_v1",
+  "title": "Ubuntu Ops: Processes, Packaging, Bash Scripting, Automation, and Containers",
+  "version": 1,
+  "questions": [
+    {
+      "id": "q01",
+      "text": "A process is a running instance of a program and has a PID (process ID).",
+      "correct": true,
+      "answer": "True. A process is a running program instance identified by a PID."
+    },
+    {
+      "id": "q02",
+      "text": "A program is a running instance in memory, while a process is the executable file on disk.",
+      "correct": false,
+      "answer": "False. Program = executable on disk; process = running instance of that program."
+    },
+    {
+      "id": "q03",
+      "text": "PPID is the parent process ID and helps you trace which process launched another.",
+      "correct": true,
+      "answer": "True. PPID identifies the parent and is useful for understanding process trees."
+    },
+    {
+      "id": "q04",
+      "text": "In common Linux process state letters, \"Z\" typically indicates a zombie process (exited but not reaped yet).",
+      "correct": true,
+      "answer": "True. Zombies are dead processes whose exit status hasn’t been collected by the parent yet."
+    },
+    {
+      "id": "q05",
+      "text": "Foreground/background describes whether a process exists without a terminal.",
+      "correct": false,
+      "answer": "False. Foreground/background is shell job-control; processes can exist without a terminal (daemons/services)."
+    },
+    {
+      "id": "q06",
+      "text": "`ps` provides a live-updating view like a dashboard, similar to `top`.",
+      "correct": false,
+      "answer": "False. `ps` is a snapshot; `top` (and `htop`/`btop`) refresh live."
+    },
+    {
+      "id": "q07",
+      "text": "`ps -ef` includes PPID by default and is good for parent/child tracing.",
+      "correct": true,
+      "answer": "True. The System V style output includes PPID, which helps follow process ancestry."
+    },
+    {
+      "id": "q08",
+      "text": "`pgrep -a` can show matching PIDs along with their full command lines.",
+      "correct": true,
+      "answer": "True. `-a` prints PID plus the full command line for each match."
+    },
+    {
+      "id": "q09",
+      "text": "`pstree -p` can display a process tree and include PIDs in the output.",
+      "correct": true,
+      "answer": "True. `-p` adds PIDs, which is handy for quick “family tree” diagnosis."
+    },
+    {
+      "id": "q10",
+      "text": "Inside `top`, pressing `P` sorts by memory usage and `M` sorts by CPU usage.",
+      "correct": false,
+      "answer": "False. In `top`, `P` sorts by CPU and `M` sorts by memory."
+    },
+    {
+      "id": "q11",
+      "text": "In `htop`, `F9` is commonly used to send a signal to the selected process.",
+      "correct": true,
+      "answer": "True. `F9` opens a signal menu (TERM first, KILL last is the usual etiquette)."
+    },
+    {
+      "id": "q12",
+      "text": "GPU utilization and VRAM usage can look fine in CPU tools, so GPU-aware tools like `nvtop` help identify the offending PID.",
+      "correct": true,
+      "answer": "True. GPU saturation can be invisible in CPU-only monitors; `nvtop` (or `nvidia-smi`) can show GPU process usage."
+    },
+    {
+      "id": "q13",
+      "text": "Ctrl+C sends SIGINT, which is commonly interpreted as \"please stop now\" for the foreground process.",
+      "correct": true,
+      "answer": "True. SIGINT usually requests an interrupt/clean stop for the current foreground command."
+    },
+    {
+      "id": "q14",
+      "text": "Ctrl+Z kills the running process immediately.",
+      "correct": false,
+      "answer": "False. Ctrl+Z typically suspends (stops) the foreground job (SIGTSTP); it does not kill it."
+    },
+    {
+      "id": "q15",
+      "text": "`nohup ... &` is used to keep a command running after logout by ignoring hangup signals and detaching it.",
+      "correct": true,
+      "answer": "True. `nohup` helps survive terminal disconnects; `&` detaches immediately, usually with output redirected."
+    },
+    {
+      "id": "q16",
+      "text": "`tmux` is useful for long-running work because you can detach and reattach even if SSH drops.",
+      "correct": true,
+      "answer": "True. `tmux` keeps a session alive across disconnects."
+    },
+    {
+      "id": "q17",
+      "text": "`systemd-run --user` can run a command as a transient user service that survives logout and logs to the journal.",
+      "correct": true,
+      "answer": "True. It lets systemd manage the job, including journald logging, without writing a unit file."
+    },
+    {
+      "id": "q18",
+      "text": "`timeout 10m cmd` can be used to auto-stop a command after 10 minutes.",
+      "correct": true,
+      "answer": "True. `timeout` is a simple guardrail against runaway commands."
+    },
+    {
+      "id": "q19",
+      "text": "On Ubuntu Server, cron runs commands on a schedule using a minimal environment, which often breaks assumptions from interactive shells.",
+      "correct": true,
+      "answer": "True. Cron’s stripped environment is a classic source of “works in terminal, fails in cron.”"
+    },
+    {
+      "id": "q20",
+      "text": "A user crontab (edited with `crontab -e`) includes a mandatory \"user\" column for each job line.",
+      "correct": false,
+      "answer": "False. User crontabs do not include a user column; `/etc/crontab` and `/etc/cron.d/*` do."
+    },
+    {
+      "id": "q21",
+      "text": "Cron schedule syntax uses five time fields: minute, hour, day-of-month, month, day-of-week.",
+      "correct": true,
+      "answer": "True. Standard format is `m h dom mon dow command`."
+    },
+    {
+      "id": "q22",
+      "text": "On Ubuntu, cron entries are commonly visible in `/var/log/syslog` and also via the systemd journal.",
+      "correct": true,
+      "answer": "True. You can inspect CRON lines in syslog or view them with `journalctl -u cron`."
+    },
+    {
+      "id": "q23",
+      "text": "Cron jobs always inherit your interactive PATH, so using bare command names is generally safe.",
+      "correct": false,
+      "answer": "False. Cron PATH is often minimal; use absolute paths or set PATH explicitly in the crontab."
+    },
+    {
+      "id": "q24",
+      "text": "A common practice for automation-safe Bash is using a shebang plus strict mode such as `set -Eeuo pipefail` (carefully).",
+      "correct": true,
+      "answer": "True. A predictable interpreter + strict-ish defaults reduces silent failures and foot-guns."
+    },
+    {
+      "id": "q25",
+      "text": "A robust cron job should leave evidence: timestamps and logs you can grep later, instead of relying on \"it probably ran.\"",
+      "correct": true,
+      "answer": "True. Good automation leaves verifiable traces (logs, timestamps, exit codes)."
+    },
+    {
+      "id": "q26",
+      "text": "Using `flock -n` in cron can help prevent overlapping runs when a job takes longer than its schedule interval.",
+      "correct": true,
+      "answer": "True. A lock prevents concurrent runs; `-n` skips if the lock is already held."
+    },
+    {
+      "id": "q27",
+      "text": "You are \"backed up\" as soon as you have a backup script that runs on schedule; restore testing is optional.",
+      "correct": false,
+      "answer": "False. A backup is only real if you tested a restore (at least once)."
+    },
+    {
+      "id": "q28",
+      "text": "The 3-2-1 backup heuristic means: 3 copies, 2 media types, 1 offsite.",
+      "correct": true,
+      "answer": "True. It’s a simple resilience rule-of-thumb for backups."
+    },
+    {
+      "id": "q29",
+      "text": "In Bash, single quotes prevent variable expansion, while double quotes allow variable expansion but still suppress word splitting/globbing for that expansion.",
+      "correct": true,
+      "answer": "True. Single quotes are literal; double quotes expand variables while avoiding most splitting/globbing surprises."
+    },
+    {
+      "id": "q30",
+      "text": "Unquoted variables are a common source of bugs because they can trigger word splitting and pathname expansion (globbing).",
+      "correct": true,
+      "answer": "True. Quoting expansions is the default habit for correctness."
+    },
+    {
+      "id": "q31",
+      "text": "Command substitution using `$(...)` captures a command’s stdout into a variable, and quoting the substitution is usually safer.",
+      "correct": true,
+      "answer": "True. `$(...)` captures stdout; quoting prevents accidental splitting/globbing of the captured text."
+    },
+    {
+      "id": "q32",
+      "text": "Bash arrays help avoid argument-splitting bugs, and expanding them as `\"${arr[@]}\"` preserves element boundaries.",
+      "correct": true,
+      "answer": "True. `\"${arr[@]}\"` expands to separate arguments, keeping spaces intact inside elements."
+    },
+    {
+      "id": "q33",
+      "text": "For reading lines in Bash safely, `while IFS= read -r line; do ...; done` avoids backslash and trimming issues.",
+      "correct": true,
+      "answer": "True. `IFS=` + `read -r` is the standard safe pattern for line-oriented input."
+    },
+    {
+      "id": "q34",
+      "text": "`[[ ... ]]` is POSIX `test`, while `[ ... ]` is Bash-only and safer for pattern matching.",
+      "correct": false,
+      "answer": "False. `[ ... ]` is POSIX `test` (a command); `[[ ... ]]` is Bash and is often safer/more expressive."
+    },
+    {
+      "id": "q35",
+      "text": "`set -o pipefail` makes a pipeline fail if any command in it fails, which matters for things like `curl | jq`.",
+      "correct": true,
+      "answer": "True. With pipefail, earlier failures in a pipeline don’t get masked by later successes."
+    },
+    {
+      "id": "q36",
+      "text": "`apt remove` deletes a package’s binaries but typically keeps its configuration files, while `apt purge` removes configs too.",
+      "correct": true,
+      "answer": "True. Remove keeps config; purge removes config as well."
+    },
+    {
+      "id": "q37",
+      "text": "If a package \"doesn't exist\" on Ubuntu, enabling the `universe` component may be required for community-maintained packages.",
+      "correct": true,
+      "answer": "True. `universe` contains many community-maintained packages not in `main`."
+    },
+    {
+      "id": "q38",
+      "text": "Snaps can use channels like stable/candidate/beta/edge, allowing newer features without upgrading the entire OS.",
+      "correct": true,
+      "answer": "True. Channels/tracks let you choose stability vs freshness per snap."
+    },
+    {
+      "id": "q39",
+      "text": "In Docker’s basic mental model, an image is a template, a container is a running instance, and containers share the host kernel.",
+      "correct": true,
+      "answer": "True. Containers are isolated processes with their own filesystem view, but they use the host kernel."
+    },
+    {
+      "id": "q40",
+      "text": "Running `sudo pip install ...` on a system Python is generally fine on Ubuntu because it keeps the OS tooling stable.",
+      "correct": false,
+      "answer": "False. Installing into system Python can break OS tools; use a venv (or tools like `uv`) for project dependencies."
+    }
+  ]
+}

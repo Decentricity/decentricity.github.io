@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>HedgeyOS</title>
+  <script>
+    window.coi = {
+      shouldRegister: () => false,
+      shouldDeregister: () => true,
+      quiet: true
+    };
+  </script>
+  <script src="coi-serviceworker.js"></script>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <div class="menubar bevel-out hairline" id="menubar">
+    <div class="menu" data-menu="hedgey">
+      <span class="menu-label">🦔</span>
+      <div class="menu-dropdown bevel-out hairline">
+        <div class="menu-item" data-action="fullScreen">Full Screen</div>
+        <div class="menu-item" data-action="toggleHud">HUD</div>
+        <div class="menu-item" data-action="openThemes">Themes</div>
+        <div class="menu-sep"></div>
+        <div class="menu-item" data-action="aboutSystem">About HedgeyOS</div>
+      </div>
+    </div>
+
+    <div class="menu" data-menu="file">
+      <span class="menu-label">File</span>
+      <div class="menu-dropdown bevel-out hairline">
+        <div class="menu-item" data-action="newFiles">New Files Window</div>
+        <div class="menu-item" data-action="newNotes">New Notes</div>
+      </div>
+    </div>
+
+    <div class="menu" data-menu="apps" id="appsMenu">
+      <span class="menu-label">Apps</span>
+      <div class="menu-dropdown bevel-out hairline" id="appsDropdown">
+        <div id="appsList"></div>
+
+        <div class="menu-sep"></div>
+
+        <div class="menu-item menu-title">Saved Apps</div>
+        <div id="savedAppsList"></div>
+
+        <div class="menu-sep"></div>
+
+        <div class="menu-item menu-title">Open Windows</div>
+        <div id="openWindowsList"></div>
+      </div>
+    </div>
+
+    <div class="menubar-spacer"></div>
+    <button class="modebtn hudbtn" id="hudSwitch" title="Switch camera" aria-label="Switch camera">📷</button>
+    <button class="modebtn" id="keybtn" title="Key operations" aria-label="Key operations">🔑</button>
+    <button class="modebtn" id="modebtn" title="Toggle dark mode" aria-label="Toggle dark mode">☾</button>
+  </div>
+
+  <video id="hudFeed" class="hud-feed" autoplay muted playsinline></video>
+
+  <div class="toast" id="toast" role="status" aria-live="polite">
+    <div class="toast-body" id="toastBody"></div>
+  </div>
+
+  <div class="desktop" id="desktop">
+    <div class="icon-layer" id="iconLayer"></div>
+  </div>
+
+  <!-- Save App Dialog -->
+  <div class="modal" id="saveModal" aria-hidden="true">
+    <div class="dialog bevel-out thick hairline">
+      <div class="dtitle">Add New App to HedgeyOS?</div>
+      <div class="dcontent">
+        <div class="formrow">
+          <div class="label">App Name:</div>
+          <input class="field" id="saveAppName" type="text" value="" />
+        </div>
+        <div class="formrow">
+          <div class="label">URL:</div>
+          <div class="ro" id="saveAppUrl"></div>
+        </div>
+      </div>
+      <div class="dbtns">
+        <button class="btn" id="saveNo">No</button>
+        <button class="btn" id="saveYes">Yes</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="notesOpenModal" aria-hidden="true">
+    <div class="dialog bevel-out thick hairline">
+      <div class="dtitle">Open Note</div>
+      <div class="dcontent">
+        <div class="openlist" id="notesOpenList"></div>
+      </div>
+      <div class="dactions">
+        <button class="btn" id="notesOpenCancel">Cancel</button>
+        <button class="btn" id="notesOpenConfirm">Open</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="keyModal" aria-hidden="true">
+    <div class="dialog bevel-out thick hairline">
+      <div class="dtitle" id="keyTitle">Unlock Encryption</div>
+      <div class="dcontent">
+        <div class="key-hero">
+          <img src="assets/hedgey1.png" alt="Hedgey Hog" />
+        </div>
+        <div id="keyDesc"></div>
+        <div id="keyInfo" class="notehint">Hi, I'm a Hedgey Hog. I've generated a key for you when you loaded HedgeyOS, so your files are already encrypted. But we can go ahead and wrap the key with your own passphrase for extra safety-ness.</div>
+        <div class="formrow">
+          <div class="label">Passphrase:</div>
+          <input class="field" id="keyPass1" type="password" value="" />
+        </div>
+        <div class="formrow" id="keyPassRow2">
+          <div class="label">Confirm:</div>
+          <input class="field" id="keyPass2" type="password" value="" />
+        </div>
+        <div class="notehint" id="keyError"></div>
+      </div>
+      <div class="dactions">
+        <button class="btn" id="keyKeep">Keep Key Unwrapped</button>
+        <button class="btn" id="keyConfirm">Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="downloadModal" aria-hidden="true">
+    <div class="dialog bevel-out thick hairline">
+      <div class="dtitle">Download File</div>
+      <div class="dcontent">
+        <div class="key-hero">
+          <img src="assets/hedgey1.png" alt="Hedgey Hog" />
+        </div>
+        <div id="downloadDesc">Decrypt and download this file?</div>
+      </div>
+      <div class="dactions">
+        <button class="btn" id="downloadNo">No</button>
+        <button class="btn" id="downloadYes">Yes</button>
+      </div>
+    </div>
+  </div>
+
+  <template id="finderTemplate">
+    <div class="window bevel-out thick hairline" data-win>
+      <div class="titlebar bevel-out hairline" data-titlebar>
+        <div class="controls">
+          <div class="os9-box" title="Close" data-close></div>
+          <div class="os9-box" title="Minimize" data-minimize></div>
+        </div>
+        <div class="title"><span data-titletext>Files</span></div>
+        <div class="right">
+          <div class="os9-box" title="Zoom" data-zoom></div>
+        </div>
+      </div>
+
+      <div class="window-body">
+        <aside class="sidebar">
+          <div class="section-title">Places</div>
+          <ul class="navlist" data-nav>
+            <li class="navitem active"><div class="icon"></div> Applications</li>
+            <li class="navitem"><div class="icon"></div> Encrypted Files</li>
+            <li class="navitem"><div class="icon"></div> System Folder</li>
+            <li class="navitem"><div class="icon"></div> Desktop</li>
+          </ul>
+          <div class="statusbar">
+            <span>42 items</span>
+            <span>Infinity GB available</span>
+          </div>
+        </aside>
+
+        <main class="main">
+          <div class="toolbar">
+            <button class="btn" data-newwin>New Window</button>
+            <button class="btn" data-upload>Upload</button>
+            <button class="btn">Sort</button>
+            <button class="btn">View</button>
+          </div>
+
+          <div class="listwrap">
+            <table class="list" data-list>
+              <thead>
+                <tr>
+                  <th style="width: 42%;">Name</th>
+                  <th style="width: 34%;">Date Modified</th>
+                  <th style="width: 12%;">Size</th>
+                  <th style="width: 12%;">Kind</th>
+                </tr>
+              </thead>
+              <tbody data-finder-rows></tbody>
+            </table>
+          </div>
+
+          <div class="statusbar">
+            <span data-status>Ready.</span>
+            <span>Finder-ish</span>
+          </div>
+        </main>
+      </div>
+
+      <div class="resize-grip" data-grip title="Resize"></div>
+    </div>
+  </template>
+
+  <template id="appTemplate">
+    <div class="window bevel-out thick hairline" data-win>
+      <div class="titlebar bevel-out hairline" data-titlebar>
+        <div class="controls">
+          <div class="os9-box" title="Close" data-close></div>
+          <div class="os9-box" title="Minimize" data-minimize></div>
+        </div>
+        <div class="title"><span data-titletext>App</span></div>
+        <div class="right">
+          <div class="os9-box" title="Zoom" data-zoom></div>
+        </div>
+      </div>
+
+      <div class="appwrap">
+        <iframe class="appframe" data-iframe src="about:blank"></iframe>
+        <div class="drop-shield" data-drop-shield>Drop to upload</div>
+      </div>
+
+      <div class="resize-grip" data-grip title="Resize"></div>
+    </div>
+  </template>
+
+  <template id="browserTemplate">
+    <div class="window bevel-out thick hairline" data-win>
+      <div class="titlebar bevel-out hairline" data-titlebar>
+        <div class="controls">
+          <div class="os9-box" title="Close" data-close></div>
+          <div class="os9-box" title="Minimize" data-minimize></div>
+        </div>
+        <div class="title"><span data-titletext>Browser</span></div>
+        <div class="right">
+          <div class="os9-box" title="Zoom" data-zoom></div>
+        </div>
+      </div>
+
+      <div class="browserwrap">
+        <div class="browserbar">
+          <button class="btn" data-back>Back</button>
+          <input class="field" data-urlfield type="text" value="about:blank" />
+          <button class="btn" data-go>Go</button>
+          <button class="btn" data-save>Save</button>
+        </div>
+        <iframe class="appframe" data-iframe src="about:blank"></iframe>
+        <div class="drop-shield" data-drop-shield>Drop to upload</div>
+        <div class="statusbar">
+          <span data-browser-status>Ready.</span>
+          <span>Browser</span>
+        </div>
+      </div>
+
+      <div class="resize-grip" data-grip title="Resize"></div>
+    </div>
+  </template>
+
+  <template id="notesTemplate">
+    <div class="window bevel-out thick hairline" data-win>
+      <div class="titlebar bevel-out hairline" data-titlebar>
+        <div class="controls">
+          <div class="os9-box" title="Close" data-close></div>
+          <div class="os9-box" title="Minimize" data-minimize></div>
+        </div>
+        <div class="title"><span data-titletext>Notes</span></div>
+        <div class="right">
+          <div class="os9-box" title="Zoom" data-zoom></div>
+        </div>
+      </div>
+
+      <div class="noteswrap">
+        <div class="notesbar">
+          <div class="notehint" data-notehint>Autosaves after 1s idle</div>
+          <div class="notes-actions">
+            <button class="btn" type="button" data-notes-new>New</button>
+            <button class="btn" type="button" data-notes-open>Open</button>
+            <button class="btn" type="button" data-notes-save>Save</button>
+          </div>
+          <div class="notehint" data-notestatus>Not saved yet</div>
+        </div>
+        <textarea class="notestext" data-notes placeholder="Type here..."></textarea>
+        <div class="statusbar">
+          <span>Ready.</span>
+          <span>Notes</span>
+        </div>
+      </div>
+
+      <div class="resize-grip" data-grip title="Resize"></div>
+    </div>
+  </template>
+
+  <template id="themesTemplate">
+    <div class="window bevel-out thick hairline" data-win>
+      <div class="titlebar bevel-out hairline" data-titlebar>
+        <div class="controls">
+          <div class="os9-box" title="Close" data-close></div>
+          <div class="os9-box" title="Minimize" data-minimize></div>
+        </div>
+        <div class="title"><span data-titletext>Themes</span></div>
+        <div class="right">
+          <div class="os9-box" title="Zoom" data-zoom></div>
+        </div>
+      </div>
+
+      <div class="themeswrap">
+        <div class="themeslist bevel-in hairline" data-themes-list>
+          <div class="themesitem active" data-theme="hedgey">OS 9 Classic</div>
+          <div class="themesitem" data-theme="system7">System Software 7</div>
+          <div class="themesitem" data-theme="greenscreen">Greenscreen</div>
+          <div class="themesitem" data-theme="cyberpunk">Cyberpunk Red</div>
+          <div class="themesitem" data-theme="beos">BeOS</div>
+          <div class="themesitem" data-theme="hedgeyOS">HedgeyOS</div>
+        </div>
+
+        <div class="themepreview">
+          <div class="theme-title" data-theme-title>OS 9 Classic</div>
+          <div class="theme-desc" data-theme-desc>Classic HedgeyOS chrome with Mac OS 9-inspired greys.</div>
+          <div class="theme-swatch" aria-hidden="true">
+            <div class="swatch swatch-main"></div>
+            <div class="swatch swatch-accent"></div>
+            <div class="swatch swatch-dark"></div>
+          </div>
+          <div class="theme-hint">Select a theme to apply it instantly.</div>
+        </div>
+      </div>
+
+      <div class="resize-grip" data-grip title="Resize"></div>
+    </div>
+  </template>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

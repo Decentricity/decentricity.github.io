@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Multipass NAS Mounting – Slide Deck</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root {
+      --bg1: #0b1224;
+      --bg2: #0f172a;
+      --panel: rgba(18, 26, 44, 0.9);
+      --accent: #7dd3fc;
+      --accent-2: #22c55e;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --border: #1f2937;
+      --code: #0a0f1c;
+      --radius: 18px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(120% 140% at 20% 20%, #102040 0, #0b1224 50%, #060912 100%);
+      color: var(--text);
+      font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .shell {
+      width: min(1100px, 100%);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 30px 80px rgba(0,0,0,0.35);
+      padding: 26px 28px 30px;
+      display: grid;
+      gap: 18px;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+    .pill {
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      background: rgba(255,255,255,0.03);
+      font-size: 0.95rem;
+    }
+    .slide-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin: 0;
+    }
+    .narrative {
+      margin: 8px 0 14px;
+      color: #d1d5db;
+      line-height: 1.55;
+    }
+    pre {
+      background: var(--code);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      overflow-x: auto;
+      font-size: 0.95rem;
+      color: #e5e7eb;
+      line-height: 1.45;
+    }
+    code { font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace; }
+    .commands {
+      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .cmd {
+      padding: 6px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: rgba(125, 211, 252, 0.07);
+      color: var(--text);
+      font-size: 0.92rem;
+    }
+    .progress {
+      width: 100%;
+      height: 8px;
+      border-radius: 6px;
+      background: #0a0f1a;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      transition: width .25s ease;
+    }
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .buttons {
+      display: flex;
+      gap: 10px;
+    }
+    button {
+      border: 1px solid var(--border);
+      background: #111827;
+      color: var(--text);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: border-color .15s, transform .12s ease, box-shadow .15s;
+    }
+    button:hover { border-color: var(--accent); transform: translateY(-1px); box-shadow: 0 8px 24px rgba(125,211,252,0.18); }
+    button:active { transform: translateY(0); }
+    .muted { color: var(--muted); font-size: 0.95rem; }
+    @media (max-width: 700px) {
+      .title { font-size: 1.2rem; }
+      .slide-title { font-size: 1.2rem; }
+      pre { font-size: 0.88rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div>
+        <div class="title">Multipass NAS Mounting</div>
+        <div class="muted">Host orchestrates two VMs: <strong>nas</strong> and <strong>web</strong>. Use → or buttons to navigate.</div>
+      </div>
+      <div class="pill" id="meta">Slide 1 of 20</div>
+    </header>
+
+    <div class="progress"><div class="bar" id="bar"></div></div>
+
+    <div id="content">
+      <h2 class="slide-title" id="slide-title"></h2>
+      <div class="narrative" id="slide-body"></div>
+      <pre><code id="slide-code"></code></pre>
+      <div class="commands" id="slide-commands"></div>
+    </div>
+
+    <div class="controls">
+      <div class="buttons">
+        <button id="prev">← Prev</button>
+        <button id="next">Next →</button>
+        <button id="restart">Restart</button>
+      </div>
+      <div class="muted" id="hint">Press → / ← to move</div>
+    </div>
+  </div>
+
+  <script>
+    const slides = [
+      {
+        title: "Spin Up the NAS VM",
+        body: "Imagine provisioning a tiny storage closet in the cloud. This VM will be the closet everyone borrows from.",
+        code: "multipass launch 22.04 --name nas --cpus 2 --mem 2G --disk 10G",
+        cmds: ["multipass launch"]
+      },
+      {
+        title: "Spin Up the App/Client VM",
+        body: "Add the office VM that will mount the closet—two rooms, one hallway between them.",
+        code: "multipass launch 22.04 --name web --cpus 2 --mem 2G --disk 10G",
+        cmds: ["multipass launch"]
+      },
+      {
+        title: "Find Their Addresses",
+        body: "Check the door numbers on both apartments so deliveries know where to knock.",
+        code: "multipass list\n# note nas_IP and web_IP",
+        cmds: ["multipass list"]
+      },
+      {
+        title: "Install NFS Server Packages",
+        body: "Adding shelving to the closet so others can access it.",
+        code: "multipass exec nas -- sudo apt update\nmultipass exec nas -- sudo apt install -y nfs-kernel-server",
+        cmds: ["multipass exec", "apt install", "nfs-kernel-server"]
+      },
+      {
+        title: "Create the Share Directory",
+        body: "Lay down a clean mat on the closet floor where items will go.",
+        code: "multipass exec nas -- sudo install -d -o nobody -g nogroup /srv/nas-share",
+        cmds: ["install -d", "nobody:nogroup"]
+      },
+      {
+        title: "Export the Share",
+        body: "Post the rules on the closet door: who can access and how.",
+        code: "multipass exec nas -- sudo sh -c \"echo '/srv/nas-share *(rw,sync,no_subtree_check,no_root_squash)' > /etc/exports\"\nmultipass exec nas -- sudo exportfs -ra",
+        cmds: ["/etc/exports", "exportfs -ra"]
+      },
+      {
+        title: "Open Firewall (if UFW On)",
+        body: "Unlock the hallway so movers can reach the closet.",
+        code: "multipass exec nas -- sudo ufw allow 2049/tcp\nmultipass exec nas -- sudo ufw allow 111/tcp",
+        cmds: ["ufw allow 2049", "ufw allow 111"]
+      },
+      {
+        title: "Verify NFS Service",
+        body: "Quick health check: is the closet door actually open?",
+        code: "multipass exec nas -- sudo systemctl status nfs-server --no-pager\nmultipass exec nas -- sudo exportfs -v",
+        cmds: ["systemctl status nfs-server", "exportfs -v"]
+      },
+      {
+        title: "Install NFS Client on Web VM",
+        body: "Give the office a key that understands NFS locks.",
+        code: "multipass exec web -- sudo apt update\nmultipass exec web -- sudo apt install -y nfs-common",
+        cmds: ["nfs-common", "multipass exec"]
+      },
+      {
+        title: "Create Mount Point on Web",
+        body: "Mark a shelf in the office labeled “NAS inside.”",
+        code: "multipass exec web -- sudo install -d -o ubuntu -g ubuntu /mnt/nas",
+        cmds: ["install -d"]
+      },
+      {
+        title: "Manual Mount Test",
+        body: "First time plugging in the network drive—does it appear?",
+        code: "multipass exec web -- sudo mount -t nfs nas_IP:/srv/nas-share /mnt/nas\nmultipass exec web -- df -h | grep nas-share",
+        cmds: ["mount -t nfs", "df -h"]
+      },
+      {
+        title: "Read/Write Smoke Test",
+        body: "Drop a note in the shared drawer and see if it shows up in the closet.",
+        code: "multipass exec web -- bash -lc \"echo 'hello from web' | sudo tee /mnt/nas/hello.txt\"\nmultipass exec nas -- sudo cat /srv/nas-share/hello.txt",
+        cmds: ["tee", "bash -lc", "cat"]
+      },
+      {
+        title: "Persist with fstab",
+        body: "Auto-plug the drive every reboot—like setting your coffee maker on a timer.",
+        code: "multipass exec web -- sudo sh -c \"echo 'nas_IP:/srv/nas-share /mnt/nas nfs defaults,_netdev 0 0' >> /etc/fstab\"\nmultipass exec web -- sudo mount -a",
+        cmds: ["/etc/fstab", "mount -a"]
+      },
+      {
+        title: "Adjust Ownership for App User",
+        body: "Hand the right person the keys so they’re not always bugging root.",
+        code: "multipass exec nas -- sudo chown -R ubuntu:ubuntu /srv/nas-share",
+        cmds: ["chown -R"]
+      },
+      {
+        title: "Restrict Export to One Client",
+        body: "Add a guest list so only the web VM can enter.",
+        code: "multipass exec nas -- sudo sh -c \"echo '/srv/nas-share web_IP(rw,sync,no_subtree_check,no_root_squash)' > /etc/exports\"\nmultipass exec nas -- sudo exportfs -ra",
+        cmds: ["host-specific export", "exportfs -ra"]
+      },
+      {
+        title: "Ensure Services Enable on Boot",
+        body: "Make sure the doors unlock automatically after a power cut.",
+        code: "multipass exec nas -- sudo systemctl enable --now nfs-server\nmultipass exec web -- sudo systemctl daemon-reload",
+        cmds: ["systemctl enable --now", "daemon-reload"]
+      },
+      {
+        title: "Connectivity Troubleshooting",
+        body: "Detective kit: is the hallway open, is the closet speaking?",
+        code: "multipass exec web -- sudo ss -ltnp | grep 2049\nmultipass exec web -- showmount -e nas_IP\nmultipass exec web -- sudo journalctl -u nfs-common -n 50",
+        cmds: ["ss", "showmount -e", "journalctl -u"]
+      },
+      {
+        title: "Autofs Alternative",
+        body: "Auto-door that opens only when someone walks up—mount on demand.",
+        code: "multipass exec web -- sudo apt install -y autofs\nmultipass exec web -- sudo sh -c \"echo '/- /etc/auto.nas' >> /etc/auto.master\"\nmultipass exec web -- sudo sh -c \"echo '/mnt/nas -fstype=nfs nas_IP:/srv/nas-share' > /etc/auto.nas\"\nmultipass exec web -- sudo systemctl restart autofs",
+        cmds: ["autofs", "/etc/auto.master", "/etc/auto.nas"]
+      },
+      {
+        title: "Snapshots Before Experiments",
+        body: "Save points like in a game—rewind if you break things.",
+        code: "multipass snapshot nas pre-nfs\nmultipass snapshot web pre-nfs",
+        cmds: ["multipass snapshot"]
+      },
+      {
+        title: "Clean Teardown",
+        body: "Put away the lab gear; free laptop resources.",
+        code: "multipass delete nas web && multipass purge",
+        cmds: ["multipass delete", "multipass purge"]
+      }
+    ];
+
+    let idx = 0;
+    const titleEl = document.getElementById("slide-title");
+    const bodyEl = document.getElementById("slide-body");
+    const codeEl = document.getElementById("slide-code");
+    const cmdsEl = document.getElementById("slide-commands");
+    const metaEl = document.getElementById("meta");
+    const barEl = document.getElementById("bar");
+    const prevBtn = document.getElementById("prev");
+    const nextBtn = document.getElementById("next");
+    const restartBtn = document.getElementById("restart");
+
+    function render() {
+      const s = slides[idx];
+      titleEl.textContent = s.title;
+      bodyEl.textContent = s.body;
+      codeEl.textContent = s.code;
+      cmdsEl.innerHTML = "";
+      s.cmds.forEach(c => {
+        const span = document.createElement("div");
+        span.className = "cmd";
+        span.textContent = c;
+        cmdsEl.appendChild(span);
+      });
+      metaEl.textContent = `Slide ${idx + 1} of ${slides.length}`;
+      barEl.style.width = `${((idx) / (slides.length - 1)) * 100}%`;
+      prevBtn.disabled = idx === 0;
+      nextBtn.textContent = idx === slides.length - 1 ? "Finish" : "Next →";
+    }
+
+    function next() { if (idx < slides.length - 1) idx++; render(); }
+    function prev() { if (idx > 0) idx--; render(); }
+    function restart() { idx = 0; render(); }
+
+    nextBtn.addEventListener("click", next);
+    prevBtn.addEventListener("click", prev);
+    restartBtn.addEventListener("click", restart);
+    document.addEventListener("keydown", e => {
+      if (e.key === "ArrowRight") next();
+      if (e.key === "ArrowLeft") prev();
+    });
+
+    render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Terminal</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="terminalwrap">
+      <div class="v86-shell">
+        <div class="v86-screen" id="screen">
+          <canvas></canvas>
+          <div class="v86-text"></div>
+          <textarea class="v86-capture" id="capture"></textarea>
+          <div class="v86-key-overlay" id="keys">Keys: (waiting)</div>
+          <button class="v86-keyboard" type="button" id="keyboard">Keyboard</button>
+        </div>
+        <div class="v86-status" id="status">Preparing Buildroot Linux...</div>
+      </div>
+    </div>
+    <script src="../../vendor/v86/libv86.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

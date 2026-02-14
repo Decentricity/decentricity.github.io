@@ -1,0 +1,248 @@
+{
+  "quiz_id": "finance_flows_workshop_v1",
+  "title": "Utility-First Blockchain for Financing Flows (Developer Workshop)",
+  "version": 1,
+  "questions": [
+    {
+      "id": "q01",
+      "text": "Financing flow design is mainly about managing cash timing, credit risk, and operational risk across multiple parties.",
+      "correct": true,
+      "answer": "True. Financing flows are fundamentally about when money moves, who carries risk at each step, and how reliably the process is executed and audited."
+    },
+    {
+      "id": "q02",
+      "text": "A key reason financing is expensive is uncertainty: if parties cannot prove status and obligations, lenders price in extra risk and friction.",
+      "correct": true,
+      "answer": "True. Uncertainty about what is owed, what is approved, and what is delivered increases verification costs and dispute risk, which often raises pricing."
+    },
+    {
+      "id": "q03",
+      "text": "Credit risk is always the only driver of financing cost; workflow delays and reconciliation effort don't matter.",
+      "correct": false,
+      "answer": "False. Operational friction (manual checks, poor data quality, slow approvals, mismatched records) can materially increase cost and delay even when credit risk is stable."
+    },
+    {
+      "id": "q04",
+      "text": "In most financing flows, a reliable 'trigger event' (like approval/acceptance) is what turns a claim into a financeable obligation.",
+      "correct": true,
+      "answer": "True. Financing usually hinges on a gating event that reduces disputes and makes the obligation clearer and more enforceable."
+    },
+    {
+      "id": "q05",
+      "text": "If two parties disagree on the current status of a payable, you usually get reconciliation work, delays, and higher pricing.",
+      "correct": true,
+      "answer": "True. Status disagreements create manual investigation, delayed disbursement, and conservative pricing because the risk of non-payment or dispute rises."
+    },
+    {
+      "id": "q06",
+      "text": "A 'single source of truth' can reduce financing friction by giving all parties the same state transitions and timestamps for obligations.",
+      "correct": true,
+      "answer": "True. Shared state reduces duplicated checks and makes it easier to prove what happened and when."
+    },
+    {
+      "id": "q07",
+      "text": "Immutability means you can never fix mistakes in a financing system.",
+      "correct": false,
+      "answer": "False. You fix mistakes by appending corrections (reversals, adjustments, cancellations) rather than rewriting history."
+    },
+    {
+      "id": "q08",
+      "text": "For workflow automation, smart contracts are mainly useful because they enforce allowed sequences of steps and permissions.",
+      "correct": true,
+      "answer": "True. A contract can enforce a state machine (valid transitions only) and restrict who can trigger which transitions."
+    },
+    {
+      "id": "q09",
+      "text": "A system that automates disbursement still needs strong authorization checks, because integrity does not equal permission.",
+      "correct": true,
+      "answer": "True. Even with tamper-evident logs, you must control who can approve, request funds, disburse, and settle."
+    },
+    {
+      "id": "q10",
+      "text": "Blockchains automatically make real-world events (like delivery, acceptance, or payment) true and trustworthy.",
+      "correct": false,
+      "answer": "False. A blockchain records submitted events; real-world truth depends on data sources, integrations/oracles, controls, and evidence."
+    },
+    {
+      "id": "q11",
+      "text": "In automated finance, integrations/oracles are often the weakest link because wrong inputs can create 'correct-looking' but wrong outcomes.",
+      "correct": true,
+      "answer": "True. If the upstream system lies or is wrong, the automation can execute perfectly on bad data, so input verification matters."
+    },
+    {
+      "id": "q12",
+      "text": "Storing a hash of a document proves the document is true about reality.",
+      "correct": false,
+      "answer": "False. A hash proves integrity (unchanged content), not that the content is correct or honest."
+    },
+    {
+      "id": "q13",
+      "text": "A minimal financing state machine can be: Created → Approved → FundingRequested → Funded → Settled.",
+      "correct": true,
+      "answer": "True. Many financing workflows can be modeled with those core states, with optional states like Rejected, Cancelled, Disputed, or PartiallySettled."
+    },
+    {
+      "id": "q14",
+      "text": "A good state machine prevents invalid transitions like Funded before Approved.",
+      "correct": true,
+      "answer": "True. The point of the state machine is to reject sequences that violate the intended risk controls and business rules."
+    },
+    {
+      "id": "q15",
+      "text": "If you track a financing workflow on-chain, you should store as much detail as possible on-chain, including confidential terms and documents.",
+      "correct": false,
+      "answer": "False. For enterprise workflows you typically store minimal on-chain facts (IDs, states, timestamps, hashes/pointers, permissions) and keep sensitive payloads off-chain."
+    },
+    {
+      "id": "q16",
+      "text": "A common fraud risk in financing flows is double-pledging: using the same receivable/collateral to obtain multiple financings.",
+      "correct": true,
+      "answer": "True. Double-pledging/double-financing is a classic risk; systems try to prevent it using unique identifiers, registries, and shared status visibility."
+    },
+    {
+      "id": "q17",
+      "text": "A shared registry can reduce double-financing inside a network by making it visible that an obligation is already financed.",
+      "correct": true,
+      "answer": "True. If all participating financiers consult the same registry/status, the same asset is harder to reuse within that participant set."
+    },
+    {
+      "id": "q18",
+      "text": "A shared ledger completely prevents collusion between counterparties.",
+      "correct": false,
+      "answer": "False. Collusion is a governance problem; a ledger helps audit and detect anomalies but cannot prevent intentional coordinated fraud."
+    },
+    {
+      "id": "q19",
+      "text": "Settlement confirmation is often hard because bank references can be inconsistent, timing differs, and matching payments to obligations is messy.",
+      "correct": true,
+      "answer": "True. Payment matching is a common bottleneck; structured references and consistent IDs significantly reduce manual reconciliation."
+    },
+    {
+      "id": "q20",
+      "text": "Richer payment message standards (like ISO 20022) help automation because they carry structured identifiers for matching and reconciliation.",
+      "correct": true,
+      "answer": "True. When payment messages carry structured fields reliably, systems can automatically link a payment to a specific obligation."
+    },
+    {
+      "id": "q21",
+      "text": "Many enterprise finance flows still settle off-chain (bank rails), even if lifecycle state is tracked on-chain.",
+      "correct": true,
+      "answer": "True. The chain typically tracks state and evidence; final fiat settlement usually remains on existing banking/payment rails."
+    },
+    {
+      "id": "q22",
+      "text": "Auditability is not a major concern in financing flows as long as the money arrives eventually.",
+      "correct": false,
+      "answer": "False. Auditability is central: internal control, regulators, auditors, and counterparties often require a reconstructable history of approvals, terms, and settlement."
+    },
+    {
+      "id": "q23",
+      "text": "Good finance automation needs explainability: the system should answer 'why did this disburse?' and 'why was this rejected?' from logs.",
+      "correct": true,
+      "answer": "True. A deterministic event trail with reasons/codes reduces operational risk and speeds up incident response and audits."
+    },
+    {
+      "id": "q24",
+      "text": "Token incentives are required to make an enterprise financing workflow function.",
+      "correct": false,
+      "answer": "False. Enterprise workflow utility comes from shared state, auditability, and automation; tokens may exist but should not be required for core functionality."
+    },
+    {
+      "id": "q25",
+      "text": "Token incentives can create perverse behavior by rewarding proxy metrics (volume/activity) rather than real value or real risk reduction.",
+      "correct": true,
+      "answer": "True. If rewards track easy-to-game metrics, participants optimize for the metric (cobra effect), producing noise or fraud-like activity."
+    },
+    {
+      "id": "q26",
+      "text": "If an automated finance system is robust, it should still provide value even when incentives or hype disappear.",
+      "correct": true,
+      "answer": "True. Robust systems are useful because they reduce friction and risk; they don’t depend on speculative participation."
+    },
+    {
+      "id": "q27",
+      "text": "In financing flows, the most dangerous bugs are often not math bugs but authorization and state-transition bugs.",
+      "correct": true,
+      "answer": "True. Incorrect permissions or invalid transition acceptance can lead to unauthorized disbursement or inconsistent obligations—high-impact failures."
+    },
+    {
+      "id": "q28",
+      "text": "A practical way to reduce operational risk is to keep a strict separation between: (1) off-chain evidence storage and (2) on-chain state + integrity proofs.",
+      "correct": true,
+      "answer": "True. Keep sensitive documents off-chain while storing hashes/pointers and state transitions on-chain; this balances privacy with auditability."
+    },
+    {
+      "id": "q29",
+      "text": "Disputes in financing flows are often caused by ambiguous data: mismatched IDs, missing references, or inconsistent timestamps across systems.",
+      "correct": true,
+      "answer": "True. Many disputes and delays are data-quality problems disguised as finance problems; consistent identifiers and event capture help a lot."
+    },
+    {
+      "id": "q30",
+      "text": "If a system only works when token price goes up, it's probably not robust financing infrastructure.",
+      "correct": true,
+      "answer": "True. Infrastructure should deliver measurable workflow improvements regardless of speculative markets."
+    },
+
+    {
+      "id": "q31",
+      "text": "Is a reliable gating event (like approval/acceptance) usually required before an obligation becomes financeable at good terms?",
+      "correct": true,
+      "answer": "Yes. The gating event reduces dispute probability and clarifies enforceability, which lowers verification effort and pricing."
+    },
+    {
+      "id": "q32",
+      "text": "Does a shared lifecycle record reduce reconciliation by letting all parties reference the same state transitions and timestamps?",
+      "correct": true,
+      "answer": "Yes. Shared state reduces duplicated checks and resolves disagreements faster because the history is consistent."
+    },
+    {
+      "id": "q33",
+      "text": "Can an immutable log still support corrections by appending reversals/adjustments instead of overwriting past entries?",
+      "correct": true,
+      "answer": "Yes. Immutability preserves history; correction is done by adding new events that supersede prior ones with traceability."
+    },
+    {
+      "id": "q34",
+      "text": "Are oracles/integrations a key risk because automation can execute correctly on bad data, causing wrong payouts or wrong settlements?",
+      "correct": true,
+      "answer": "Yes. Input integrity is critical; otherwise the system can 'do the wrong thing perfectly'."
+    },
+    {
+      "id": "q35",
+      "text": "Should confidential terms and documents usually stay off-chain, with only IDs, states, timestamps, and hashes/pointers on-chain?",
+      "correct": true,
+      "answer": "Yes. This reduces privacy and compliance risk while still enabling integrity checks and shared coordination."
+    },
+    {
+      "id": "q36",
+      "text": "Is double-pledging/double-financing a realistic abuse case that a shared registry and unique IDs can mitigate within a participant network?",
+      "correct": true,
+      "answer": "Yes. A shared registry can make re-use visible and block financing of already-financed obligations within the network."
+    },
+    {
+      "id": "q37",
+      "text": "Do tamper-evident logs still require strict access control because integrity does not decide who is authorized to disburse funds?",
+      "correct": true,
+      "answer": "Yes. Authorization must be enforced explicitly; integrity only helps detect tampering after the fact."
+    },
+    {
+      "id": "q38",
+      "text": "Is settlement matching often a bottleneck, and do clean structured references (e.g., ISO 20022 fields) make it easier?",
+      "correct": true,
+      "answer": "Yes. Better structured payment metadata improves automated matching and reduces manual reconciliation."
+    },
+    {
+      "id": "q39",
+      "text": "Can token-based incentives backfire in finance by encouraging activity that looks good on dashboards but increases operational and fraud risk?",
+      "correct": true,
+      "answer": "Yes. Rewarding proxy metrics can create incentive gaming (cobra effect) and degrade real-world integrity."
+    },
+    {
+      "id": "q40",
+      "text": "Is it reasonable to improve financing flows by first fixing the biggest bottleneck (data quality, approvals, settlement matching, or authorization), rather than 'blockchain everything'?",
+      "correct": true,
+      "answer": "Yes. The highest-leverage improvement depends on where delays, disputes, and manual effort dominate the current flow."
+    }
+  ]
+}

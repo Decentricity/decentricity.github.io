@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NAS Multipass Quiz</title>
+  <style>
+    :root {
+      --bg: #0c1324;
+      --panel: #121b31;
+      --text: #e5ebf7;
+      --muted: #9aa7bf;
+      --line: #2a3652;
+      --ok: #22c55e;
+      --bad: #f87171;
+      --accent: #7dd3fc;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", sans-serif;
+      background: radial-gradient(130% 120% at 15% 20%, #17284a, #0c1324 60%);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .card {
+      width: min(920px, 100%);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+    }
+    .top { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+    .meta { color: var(--muted); font-size: 0.9rem; }
+    .q { margin: 16px 0 14px; font-size: 1.14rem; line-height: 1.4; }
+    .opts { display: grid; gap: 10px; }
+    button.opt {
+      text-align: left;
+      border: 1px solid var(--line);
+      background: #192646;
+      color: var(--text);
+      border-radius: 10px;
+      padding: 11px 12px;
+      cursor: pointer;
+      font-size: 0.97rem;
+    }
+    button.opt:hover { border-color: var(--accent); }
+    .status { margin-top: 10px; min-height: 22px; font-size: 0.92rem; }
+    .summary { display: none; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    th, td { border: 1px solid var(--line); padding: 8px; text-align: left; vertical-align: top; font-size: 0.9rem; }
+    th { background: #16223f; }
+    .ok { color: var(--ok); font-weight: 700; }
+    .bad { color: var(--bad); font-weight: 700; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div id="quiz">
+      <div class="top">
+        <h1 style="margin:0; font-size:1.2rem;">Multipass NAS Quiz</h1>
+        <div class="meta" id="meta"></div>
+      </div>
+      <div class="q" id="q"></div>
+      <div class="opts" id="opts"></div>
+      <div class="status" id="status"></div>
+    </div>
+
+    <div class="summary" id="summary">
+      <h2 style="margin:0;">Results</h2>
+      <p id="score"></p>
+      <table>
+        <thead><tr><th>#</th><th>Question</th><th>Result</th><th>Explanation</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </main>
+
+  <script>
+    const qs = [
+      {q:"Slide 1: What is the first VM role you create?",o:["web client","NAS storage VM","DNS server","Firewall VM"],a:1,e:"Slide 1 starts by creating the NAS VM as the storage node."},
+      {q:"Slide 2: What VM name is used for the client/server side?",o:["app","node","web","client"],a:2,e:"Slide 2 creates the app/client VM named `web`."},
+      {q:"Slide 3: Which command is used to find both VM IP addresses?",o:["ip a","multipass list","hostnamectl","ifconfig"],a:1,e:"Slide 3 uses `multipass list` to see VM IPs."},
+      {q:"Slide 4: Which package is installed on the NAS VM?",o:["nfs-common","nfs-kernel-server","samba","openssh-server"],a:1,e:"Slide 4 installs `nfs-kernel-server` on the NAS VM."},
+      {q:"Slide 5: Which directory is created as the exported share?",o:["/mnt/share","/srv/nas-share","/data/nfs","/var/nas"],a:1,e:"Slide 5 creates `/srv/nas-share` with `install -d`."},
+      {q:"Slide 6: Which file is updated to define NFS exports?",o:["/etc/fstab","/etc/exports","/etc/auto.master","/etc/nfs.conf"],a:1,e:"Slide 6 writes export rules to `/etc/exports` then runs exportfs."},
+      {q:"Slide 7: Which port pair is opened in UFW for NFS basics in this deck?",o:["22 and 80","443 and 53","2049 and 111","3306 and 5432"],a:2,e:"Slide 7 opens `2049/tcp` and `111/tcp`."},
+      {q:"Slide 8: Which command shows active exports in verbose mode?",o:["showmount -e","exportfs -v","mount -v","nfsstat -s"],a:1,e:"Slide 8 uses `exportfs -v` for export verification."},
+      {q:"Slide 9: Which package is required on the web VM to mount NFS?",o:["nfs-kernel-server","autofs","nfs-common","sysstat"],a:2,e:"Slide 9 installs `nfs-common` on web VM."},
+      {q:"Slide 10: Which mount point is created on web VM?",o:["/mnt/nfs","/srv/webshare","/mnt/nas","/media/nas"],a:2,e:"Slide 10 uses `/mnt/nas` as the client mountpoint."},
+      {q:"Slide 11: Which command verifies mounted filesystem usage after mount?",o:["lsblk","du -sh","df -h | grep nas-share","findmnt -D"],a:2,e:"Slide 11 follows mount with `df -h | grep nas-share`."},
+      {q:"Slide 12: What is the smoke-test file name written from web VM?",o:["test.txt","hello.txt","nas.txt","probe.log"],a:1,e:"Slide 12 writes `hello.txt` and reads it from NAS VM."},
+      {q:"Slide 13: Which file is appended for persistent mount settings?",o:["/etc/exports","/etc/fstab","/etc/auto.nas","/etc/default/nfs"],a:1,e:"Slide 13 appends an NFS entry to `/etc/fstab` and runs `mount -a`."},
+      {q:"Slide 14: Which ownership command is used on NAS share?",o:["chmod -R 777 /srv/nas-share","chown -R ubuntu:ubuntu /srv/nas-share","chgrp -R www-data /srv/nas-share","setfacl -m u:ubuntu:rwx /srv/nas-share"],a:1,e:"Slide 14 uses `chown -R ubuntu:ubuntu /srv/nas-share`."},
+      {q:"Slide 15: How is export access restricted in the updated rule?",o:["By subnet mask only","By specifying web_IP(...) in /etc/exports","By SSH key","By ufw deny all"],a:1,e:"Slide 15 changes export to `web_IP(rw,...)`."},
+      {q:"Slide 16: Which service is enabled with --now on NAS VM?",o:["autofs","nfs-server","ssh","rpcbind"],a:1,e:"Slide 16 runs `systemctl enable --now nfs-server`."},
+      {q:"Slide 17: Which command checks exports visible from client side?",o:["exportfs -v","showmount -e nas_IP","mount | grep nas","rpcinfo -p"],a:1,e:"Slide 17 includes `showmount -e nas_IP` from web VM."},
+      {q:"Slide 18: Which files are configured for autofs in this deck?",o:["/etc/fstab and /etc/exports","/etc/auto.master and /etc/auto.nas","/etc/nsswitch.conf and /etc/hosts","/etc/default/autofs and /etc/mtab"],a:1,e:"Slide 18 edits `/etc/auto.master` and `/etc/auto.nas`."},
+      {q:"Slide 19: Which command creates pre-change restore points?",o:["multipass backup","multipass snapshot","rsync -a","tar -czf"],a:1,e:"Slide 19 uses `multipass snapshot` on both VMs."},
+      {q:"Slide 20: What is the teardown command pair?",o:["multipass stop nas web","multipass delete nas web && multipass purge","multipass rm nas web","multipass uninstall"],a:1,e:"Slide 20 ends with delete + purge to fully clean lab VMs."}
+    ];
+
+    let i = 0, right = 0;
+    const answers = [];
+    const qEl = document.getElementById('q');
+    const optsEl = document.getElementById('opts');
+    const statusEl = document.getElementById('status');
+    const metaEl = document.getElementById('meta');
+
+    function render() {
+      const item = qs[i];
+      qEl.textContent = `${i + 1}. ${item.q}`;
+      metaEl.textContent = `${i + 1} / ${qs.length}`;
+      optsEl.innerHTML = '';
+      statusEl.textContent = '';
+      item.o.forEach((opt, idx) => {
+        const b = document.createElement('button');
+        b.className = 'opt';
+        b.textContent = opt;
+        b.onclick = () => pick(idx);
+        optsEl.appendChild(b);
+      });
+    }
+
+    function pick(idx) {
+      const item = qs[i];
+      const ok = idx === item.a;
+      if (ok) right += 1;
+      answers.push({q:item.q,ok,e:item.e});
+      statusEl.textContent = ok ? 'Correct' : `Wrong (correct: ${item.o[item.a]})`;
+      statusEl.className = `status ${ok ? 'ok' : 'bad'}`;
+      setTimeout(() => {
+        i += 1;
+        if (i < qs.length) render();
+        else done();
+      }, 350);
+    }
+
+    function done() {
+      document.getElementById('quiz').style.display = 'none';
+      document.getElementById('summary').style.display = 'block';
+      document.getElementById('score').textContent = `Score: ${right}/${qs.length} (Wrong: ${qs.length - right})`;
+      const rows = document.getElementById('rows');
+      answers.forEach((a, idx) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${idx + 1}</td><td>${a.q}</td><td class="${a.ok ? 'ok':'bad'}">${a.ok ? 'Correct':'Wrong'}</td><td>${a.e}</td>`;
+        rows.appendChild(tr);
+      });
+    }
+
+    render();
+  </script>
+</body>
+</html>

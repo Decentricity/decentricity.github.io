@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Hedgey Browser</title>
+    <style>
+      :root {
+        font: 13px/1.4 "Chicago", "Geneva", "Lucida Grande", Arial, sans-serif;
+        color-scheme: light;
+      }
+      html, body { height: 100%; margin: 0; }
+      body {
+        display: grid;
+        place-items: center;
+        background: #f2f2f2;
+        color: #1b1b1b;
+      }
+      .card {
+        max-width: 360px;
+        text-align: center;
+        padding: 18px;
+      }
+      img {
+        width: 90px;
+        height: auto;
+      }
+      p {
+        margin: 12px 0 0;
+      }
+      html.dark body { background: #1b1e23; color: #e6e8eb; }
+      html.greenscreen body { background: #000; color: #00ff66; }
+      html.cyberpunk body { background: #0b0b0b; color: #ff3b30; }
+      html.beos body { background: #f6f9ff; color: #1d2a3a; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <img src="../../assets/hedgey1.png" alt="Hedgey Hog" />
+      <p>Hi, I'm a Hedgey Browser. I might not load all websites since I am actually an iframe. :( But if you find a site that can load (github.io sites, wikipedia, direct link to Google Slides, etc) you can save it as a little application! yay!</p>
+      <p>Also, I can open YouTube, Twitch, Vimeo, Spotify, and some other media sites, as long as you give me the direct link to the video or song. :)</p>
+    </div>
+    <script>
+      (function(){
+        try {
+          const parentClasses = parent?.document?.body?.classList;
+          if (!parentClasses) return;
+          const themes = ["dark", "beos", "system7", "greenscreen", "cyberpunk"];
+          let next = "";
+          for (const t of themes){
+            if (parentClasses.contains(t)) { next = t; break; }
+          }
+          document.documentElement.className = next;
+        } catch {}
+      })();
+    </script>
+  </body>
+</html>

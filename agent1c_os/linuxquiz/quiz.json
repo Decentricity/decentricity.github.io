@@ -1,0 +1,247 @@
+{
+  "quiz_id": "linux_fundamentals_bundle_v1",
+  "title": "Linux Fundamentals: CLI, Core Components, Packaging, and Ubuntu Server VM",
+  "version": 1,
+  "questions": [
+    {
+      "id": "q01",
+      "text": "`pwd` prints your current working directory and is useful when you’re lost in the filesystem.",
+      "correct": true,
+      "answer": "True. `pwd` reports the absolute path of the shell’s current working directory."
+    },
+    {
+      "id": "q02",
+      "text": "`ls -la` shows a long listing and includes hidden dotfiles.",
+      "correct": true,
+      "answer": "True. `-l` enables the long format and `-a` includes entries starting with `.`."
+    },
+    {
+      "id": "q03",
+      "text": "`cd -` changes to your home directory.",
+      "correct": false,
+      "answer": "False. `cd` (with no args) goes home; `cd -` jumps back to the previous directory."
+    },
+    {
+      "id": "q04",
+      "text": "`mkdir -p` can create parent directories that don’t exist yet.",
+      "correct": true,
+      "answer": "True. `-p` makes missing parents and does not error if the directory already exists."
+    },
+    {
+      "id": "q05",
+      "text": "`rmdir` removes directories recursively, including non-empty ones.",
+      "correct": false,
+      "answer": "False. `rmdir` only removes *empty* directories; use `rm -r` for recursive removal."
+    },
+    {
+      "id": "q06",
+      "text": "On Linux, `touch file.txt` can update a file’s timestamp even if the file already exists.",
+      "correct": true,
+      "answer": "True. `touch` creates an empty file if missing, otherwise updates timestamps."
+    },
+    {
+      "id": "q07",
+      "text": "`rm -i` is safer than plain `rm` because it prompts before each removal.",
+      "correct": true,
+      "answer": "True. Interactive mode reduces “oops I nuked the wrong thing” incidents."
+    },
+    {
+      "id": "q08",
+      "text": "`cp -a` is commonly used when you want to preserve metadata while copying.",
+      "correct": true,
+      "answer": "True. Archive mode preserves permissions, timestamps, symlinks, symlink-ness, and more."
+    },
+    {
+      "id": "q09",
+      "text": "A symlink is created with `ln target linkname`, while a hard link uses `ln -s`.",
+      "correct": false,
+      "answer": "False. Hard link: `ln target linkname`; symlink: `ln -s target linkname`."
+    },
+    {
+      "id": "q10",
+      "text": "`less` is a pager that lets you search inside a file interactively.",
+      "correct": true,
+      "answer": "True. You can search with `/pattern` and move through matches with `n`."
+    },
+    {
+      "id": "q11",
+      "text": "`tail -f` is useful for following logs as they are appended.",
+      "correct": true,
+      "answer": "True. `-f` keeps the file open and streams new lines as they arrive."
+    },
+    {
+      "id": "q12",
+      "text": "`wc -l` counts the number of lines in a file or stream.",
+      "correct": true,
+      "answer": "True. `-l` counts lines (other common flags are `-w` words and `-c` bytes)."
+    },
+    {
+      "id": "q13",
+      "text": "`uniq` removes all duplicates in a file regardless of position.",
+      "correct": false,
+      "answer": "False. `uniq` only removes *adjacent* duplicates, so you usually `sort` first."
+    },
+    {
+      "id": "q14",
+      "text": "`tr` is used for character-level transforms like lower→upper or squeezing repeated spaces.",
+      "correct": true,
+      "answer": "True. It operates on characters, not structured fields."
+    },
+    {
+      "id": "q15",
+      "text": "`sed 's/\\./-/g'` replaces dots with dashes globally in the input stream.",
+      "correct": true,
+      "answer": "True. `s/old/new/g` performs a substitution on each line, with `g` for all matches."
+    },
+    {
+      "id": "q16",
+      "text": "`grep -iE \"warn|fail|error\" file` does a case-insensitive extended-regex search.",
+      "correct": true,
+      "answer": "True. `-i` ignores case and `-E` enables extended regex alternation with `|`."
+    },
+    {
+      "id": "q17",
+      "text": "`find . -type d` searches for directories.",
+      "correct": true,
+      "answer": "True. `-type d` restricts results to directories (files would be `-type f`)."
+    },
+    {
+      "id": "q18",
+      "text": "`chmod 644 notes.txt` typically results in read/write for owner and read-only for group/others.",
+      "correct": true,
+      "answer": "True. 6=rw-, 4=r--, 4=r--."
+    },
+    {
+      "id": "q19",
+      "text": "`umask` sets the maximum permissions a new file can have.",
+      "correct": false,
+      "answer": "False. `umask` sets the *mask of permissions to remove* from defaults."
+    },
+    {
+      "id": "q20",
+      "text": "`journalctl -b` shows logs for the current boot on systemd-based systems.",
+      "correct": true,
+      "answer": "True. `-b` scopes the journal to the current boot session."
+    },
+    {
+      "id": "q21",
+      "text": "`dmesg` primarily reads the kernel ring buffer (drivers/hardware messages).",
+      "correct": true,
+      "answer": "True. It’s a kernel log view; piping through `grep -i error` is common."
+    },
+    {
+      "id": "q22",
+      "text": "`ip addr` and `ip route` are modern tools for inspecting addresses and routing.",
+      "correct": true,
+      "answer": "True. `ip` is the contemporary interface to kernel networking state."
+    },
+    {
+      "id": "q23",
+      "text": "In the Linux stack, syscalls are the boundary between user space and the kernel.",
+      "correct": true,
+      "answer": "True. Syscalls are the controlled interface apps use to request kernel services."
+    },
+    {
+      "id": "q24",
+      "text": "The boot chain is a relay where firmware starts, a bootloader loads the kernel/initramfs, and the kernel launches the first userspace process.",
+      "correct": true,
+      "answer": "True. That handoff ends when PID 1 is running in userspace."
+    },
+    {
+      "id": "q25",
+      "text": "PID 1 is the first userspace process and acts as a service supervisor (often systemd).",
+      "correct": true,
+      "answer": "True. PID 1 starts/monitors essential services and defines operational targets/runlevels."
+    },
+    {
+      "id": "q26",
+      "text": "Userland includes libc, core utilities, and shells such as bash/zsh/fish.",
+      "correct": true,
+      "answer": "True. This is the everyday toolkit above the kernel that makes the CLI usable."
+    },
+    {
+      "id": "q27",
+      "text": "On modern Linux desktops, Wayland is a display protocol alternative to X11.",
+      "correct": true,
+      "answer": "True. Wayland and X11 are the main display protocols; the rest layers above them."
+    },
+    {
+      "id": "q28",
+      "text": "Linux security isolation can involve namespaces, cgroups, and LSMs like SELinux/AppArmor.",
+      "correct": true,
+      "answer": "True. These are composable primitives that contribute to isolation and policy enforcement."
+    },
+    {
+      "id": "q29",
+      "text": "Linux updates feel less disruptive partly because components are updated incrementally rather than replacing large subsystems.",
+      "correct": true,
+      "answer": "True. Updates tend to be package/component-level, reducing “big bang” replacements."
+    },
+    {
+      "id": "q30",
+      "text": "Linux rarely needs defragmenting because it never fragments at all.",
+      "correct": false,
+      "answer": "False. Fragmentation can happen, but extent-based and delayed allocation designs keep it low in practice."
+    },
+    {
+      "id": "q31",
+      "text": "Linux can delete a file that is still in use because removing the name does not remove the data until all file descriptors close.",
+      "correct": true,
+      "answer": "True. The directory entry can be removed while the inode/data persists until the last reference is gone."
+    },
+    {
+      "id": "q32",
+      "text": "`sudo` asks for your password after the command because it authenticates intent first and logs privileged actions for auditing.",
+      "correct": true,
+      "answer": "True. `sudo` is designed for least-privilege elevation with accountability."
+    },
+    {
+      "id": "q33",
+      "text": "`dpkg` is mainly responsible for repository metadata refresh and dependency resolution.",
+      "correct": false,
+      "answer": "False. `dpkg` installs/tracks `.deb` packages; APT handles repos and dependency resolution."
+    },
+    {
+      "id": "q34",
+      "text": "If an install is interrupted and you see 'dpkg was interrupted', `sudo dpkg --configure -a` is a standard recovery step.",
+      "correct": true,
+      "answer": "True. It finishes configuring unpacked packages; often followed by `sudo apt -f install`."
+    },
+    {
+      "id": "q35",
+      "text": "`apt update` upgrades installed packages to newer versions.",
+      "correct": false,
+      "answer": "False. `apt update` refreshes package lists/metadata; `apt upgrade` performs upgrades."
+    },
+    {
+      "id": "q36",
+      "text": "`apt full-upgrade` may remove packages to resolve dependency changes.",
+      "correct": true,
+      "answer": "True. It’s allowed to remove packages when required to satisfy dependencies."
+    },
+    {
+      "id": "q37",
+      "text": "`apt remove` and `apt purge` both uninstall a package, but `purge` also removes its configuration files.",
+      "correct": true,
+      "answer": "True. `remove` keeps configs; `purge` deletes configs too."
+    },
+    {
+      "id": "q38",
+      "text": "Installing a local `.deb` is often safer with `apt install ./thing.deb` than `dpkg -i` because APT can resolve and fetch dependencies.",
+      "correct": true,
+      "answer": "True. `dpkg` won’t fetch missing deps; APT will."
+    },
+    {
+      "id": "q39",
+      "text": "To build an Ubuntu Server VM lab in VirtualBox, the tutorial suggests a VM with 8 CPU cores, ~6 GB RAM, and ~10 GB disk.",
+      "correct": true,
+      "answer": "True. Those settings are intentionally generous for a server lab and leave headroom for services."
+    },
+    {
+      "id": "q40",
+      "text": "After the first boot, a quick sanity check includes `systemctl --failed` and a high-priority `journalctl` view to spot obvious errors.",
+      "correct": true,
+      "answer": "True. `systemctl --failed` and `journalctl -p 3 -xb` help confirm nothing is ‘on fire’ post-install."
+    }
+  ]
+}
