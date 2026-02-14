@@ -28,6 +28,7 @@ const FALLBACK_OPENAI_MODELS = [
 
 const DB_NAME = "agent1c-db"
 const DB_VERSION = 1
+const ONBOARDING_KEY = "agent1c_onboarding_complete_v1"
 const STORES = {
   meta: "meta",
   secrets: "secrets",
@@ -73,6 +74,16 @@ let unlockWin = null
 let workspaceReady = false
 let wired = false
 let dbPromise = null
+let onboardingComplete = false
+const wins = {
+  chat: null,
+  openai: null,
+  telegram: null,
+  config: null,
+  soul: null,
+  heartbeat: null,
+  events: null,
+}
 
 function byId(id){ return document.getElementById(id) }
 
@@ -511,6 +522,44 @@ function closeWindow(winObj){
   if (btn) btn.click()
 }
 
+function minimizeWindow(winObj){
+  if (!winObj?.win) return
+  if (winObj.win.style.display === "none") return
+  const btn = winObj.win.querySelector("[data-minimize]")
+  if (btn) btn.click()
+}
+
+function restoreWindow(winObj){
+  if (!winObj?.id || !wmRef) return
+  wmRef.restore?.(winObj.id)
+}
+
+function focusWindow(winObj){
+  if (!winObj?.id || !wmRef) return
+  wmRef.focus?.(winObj.id)
+}
+
+function applyOnboardingWindowState(){
+  restoreWindow(wins.openai)
+  restoreWindow(wins.events)
+  focusWindow(wins.openai)
+  minimizeWindow(wins.chat)
+  minimizeWindow(wins.config)
+  minimizeWindow(wins.telegram)
+  minimizeWindow(wins.soul)
+  minimizeWindow(wins.heartbeat)
+}
+
+function revealPostOpenAiWindows(){
+  restoreWindow(wins.chat)
+  restoreWindow(wins.config)
+  restoreWindow(wins.telegram)
+  restoreWindow(wins.events)
+  minimizeWindow(wins.soul)
+  minimizeWindow(wins.heartbeat)
+  focusWindow(wins.chat)
+}
+
 function setupWindowHtml(){
   return `
     <div class="agent-stack">
@@ -871,10 +920,11 @@ function wireSetupDom(){
       await setupVault(els.setupPassphrase.value)
       closeWindow(setupWin)
       await addEvent("vault_unlocked", "Vault initialized and unlocked")
-      await createWorkspace({ showUnlock: false })
+      await createWorkspace({ showUnlock: false, onboarding: true })
       await refreshModelDropdown()
       refreshTelegramLoop()
       refreshUi()
+      applyOnboardingWindowState()
       setStatus("Vault initialized and unlocked.")
     } catch (err) {
       setStatus(err instanceof Error ? err.message : "Could not initialize vault")
@@ -894,7 +944,13 @@ function wireUnlockDom(){
       await refreshModelDropdown()
       refreshTelegramLoop()
       refreshUi()
-      setStatus("Vault unlocked.")
+      const hasOpenAiSecret = Boolean(await getSecret("openai"))
+      if (!hasOpenAiSecret || !onboardingComplete) {
+        applyOnboardingWindowState()
+        setStatus("Now connect OpenAI to start chatting.")
+      } else {
+        setStatus("Vault unlocked.")
+      }
     } catch (err) {
       setStatus(err instanceof Error ? err.message : "Could not unlock vault")
     }
@@ -953,6 +1009,11 @@ function wireMainDom(){
       if (!key) throw new Error("No OpenAI key available.")
       await testOpenAIKey(key, appState.config.model)
       await refreshModelDropdown(key)
+      onboardingComplete = true
+      localStorage.setItem(ONBOARDING_KEY, "1")
+      minimizeWindow(wins.openai)
+      revealPostOpenAiWindows()
+      await addEvent("onboarding_step", "OpenAI connected. Chat is now ready.")
       setStatus("OpenAI key test succeeded.")
     } catch (err) {
       setStatus(err instanceof Error ? err.message : "OpenAI key test failed")
@@ -1030,30 +1091,30 @@ function createSetupWindow(){
   setStatus("Create a vault to continue.")
 }
 
-async function createWorkspace({ showUnlock }){
+async function createWorkspace({ showUnlock, onboarding }) {
   if (workspaceReady) return
   workspaceReady = true
 
-  const chatWin = wmRef.createAgentPanelWindow("agent1c: Chat", { panelId: "chat", left: 20, top: 28, width: 480, height: 320 })
-  if (chatWin?.panelRoot) chatWin.panelRoot.innerHTML = chatWindowHtml()
+  wins.chat = wmRef.createAgentPanelWindow("agent1c: Chat", { panelId: "chat", left: 20, top: 28, width: 480, height: 320 })
+  if (wins.chat?.panelRoot) wins.chat.panelRoot.innerHTML = chatWindowHtml()
 
-  const openaiWin = wmRef.createAgentPanelWindow("agent1c: OpenAI", { panelId: "openai", left: 510, top: 28, width: 470, height: 220 })
-  if (openaiWin?.panelRoot) openaiWin.panelRoot.innerHTML = openAiWindowHtml()
+  wins.openai = wmRef.createAgentPanelWindow("agent1c: OpenAI", { panelId: "openai", left: 510, top: 28, width: 470, height: 220 })
+  if (wins.openai?.panelRoot) wins.openai.panelRoot.innerHTML = openAiWindowHtml()
 
-  const telegramWin = wmRef.createAgentPanelWindow("agent1c: Telegram", { panelId: "telegram", left: 510, top: 256, width: 470, height: 210 })
-  if (telegramWin?.panelRoot) telegramWin.panelRoot.innerHTML = telegramWindowHtml()
+  wins.telegram = wmRef.createAgentPanelWindow("agent1c: Telegram", { panelId: "telegram", left: 510, top: 256, width: 470, height: 210 })
+  if (wins.telegram?.panelRoot) wins.telegram.panelRoot.innerHTML = telegramWindowHtml()
 
-  const configWin = wmRef.createAgentPanelWindow("agent1c: Config", { panelId: "config", left: 20, top: 356, width: 640, height: 280 })
-  if (configWin?.panelRoot) configWin.panelRoot.innerHTML = configWindowHtml()
+  wins.config = wmRef.createAgentPanelWindow("agent1c: Config", { panelId: "config", left: 20, top: 356, width: 640, height: 280 })
+  if (wins.config?.panelRoot) wins.config.panelRoot.innerHTML = configWindowHtml()
 
-  const soulWin = wmRef.createAgentPanelWindow("agent1c: SOUL.md", { panelId: "soul", left: 20, top: 644, width: 320, height: 330 })
-  if (soulWin?.panelRoot) soulWin.panelRoot.innerHTML = soulWindowHtml()
+  wins.soul = wmRef.createAgentPanelWindow("agent1c: SOUL.md", { panelId: "soul", left: 20, top: 644, width: 320, height: 330 })
+  if (wins.soul?.panelRoot) wins.soul.panelRoot.innerHTML = soulWindowHtml()
 
-  const heartbeatWin = wmRef.createAgentPanelWindow("agent1c: heartbeat.md", { panelId: "heartbeat", left: 350, top: 644, width: 320, height: 330 })
-  if (heartbeatWin?.panelRoot) heartbeatWin.panelRoot.innerHTML = heartbeatWindowHtml()
+  wins.heartbeat = wmRef.createAgentPanelWindow("agent1c: heartbeat.md", { panelId: "heartbeat", left: 350, top: 644, width: 320, height: 330 })
+  if (wins.heartbeat?.panelRoot) wins.heartbeat.panelRoot.innerHTML = heartbeatWindowHtml()
 
-  const eventsWin = wmRef.createAgentPanelWindow("agent1c: Events", { panelId: "events", left: 680, top: 644, width: 360, height: 330 })
-  if (eventsWin?.panelRoot) eventsWin.panelRoot.innerHTML = eventsWindowHtml()
+  wins.events = wmRef.createAgentPanelWindow("agent1c: Events", { panelId: "events", left: 680, top: 644, width: 360, height: 330 })
+  if (wins.events?.panelRoot) wins.events.panelRoot.innerHTML = eventsWindowHtml()
 
   if (showUnlock) {
     unlockWin = wmRef.createAgentPanelWindow("agent1c: Unlock Vault", { panelId: "unlock", left: 280, top: 100, width: 420, height: 210 })
@@ -1069,6 +1130,10 @@ async function createWorkspace({ showUnlock }){
   renderChat()
   renderEvents()
   refreshUi()
+
+  if (onboarding) {
+    applyOnboardingWindowState()
+  }
 }
 
 async function loadPersistentState(){
@@ -1097,13 +1162,21 @@ async function loadPersistentState(){
 
 export async function initAgent1C({ wm }){
   wmRef = wm
+  onboardingComplete = localStorage.getItem(ONBOARDING_KEY) === "1"
   await loadPersistentState()
+  const hasOpenAiSecret = Boolean(await getSecret("openai"))
+  const onboarding = !hasOpenAiSecret || !onboardingComplete
 
   if (!appState.vaultReady) {
     createSetupWindow()
     return
   }
 
-  await createWorkspace({ showUnlock: true })
-  setStatus("Vault locked. Unlock to continue.")
+  await createWorkspace({ showUnlock: true, onboarding })
+  if (onboarding) {
+    applyOnboardingWindowState()
+    setStatus("Unlock vault, then connect OpenAI to start.")
+  } else {
+    setStatus("Vault locked. Unlock to continue.")
+  }
 }
