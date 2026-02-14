@@ -749,22 +749,31 @@ On each heartbeat:
       const mobile = isMobile()
       const viewportW = window.innerWidth
       const viewportH = window.innerHeight
-      let stackTop = 72
+      const menubarH = 26
+      const topInset = 68
+      let visibleIndex = 0
 
       windows.forEach((win) => {
         const base = baseRects.get(win)
         if (!base) return
 
         if (mobile) {
+          if (isHiddenTree(win)) return
           const width = Math.min(base.width, Math.max(220, viewportW - 12))
-          const maxWindowHeight = Math.max(140, viewportH - 46)
+          const maxWindowHeight = Math.max(130, viewportH - menubarH - 12)
           const height = Math.min(base.height, maxWindowHeight)
+          const maxLeft = Math.max(6, viewportW - width - 6)
+          const maxTop = Math.max(topInset, viewportH - menubarH - height - 6)
+          const offsetX = (visibleIndex % 3) * 8
+          const offsetY = (visibleIndex % 5) * 22
+          const left = Math.min(maxLeft, 6 + offsetX)
+          const top = Math.min(maxTop, topInset + offsetY)
 
           win.style.width = `${width}px`
           win.style.height = `${height}px`
-          win.style.left = '6px'
-          win.style.top = `${stackTop}px`
-          stackTop += Math.min(height, 260) + 12
+          win.style.left = `${left}px`
+          win.style.top = `${top}px`
+          visibleIndex += 1
         } else {
           win.style.width = `${base.width}px`
           win.style.height = `${base.height}px`

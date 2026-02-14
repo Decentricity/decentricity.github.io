@@ -51,9 +51,8 @@ body {
     radial-gradient(circle at 15% 10%, rgba(255, 223, 237, 0.35), transparent 28%),
     radial-gradient(circle at 88% 16%, rgba(255, 243, 176, 0.45), transparent 24%),
     linear-gradient(180deg, #c9c9c9, #bababa);
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding-bottom: 38px;
+  overflow: hidden;
+  padding-bottom: 0;
 }
 
 .wm-wallpaper-header {
