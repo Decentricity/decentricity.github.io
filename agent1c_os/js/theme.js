@@ -33,5 +33,11 @@ export function applyTheme(name, { persist = true } = {}){
 }
 
 export function initThemeState(){
+  const saved = localStorage.getItem(THEME_KEY);
+  if (!saved) {
+    localStorage.setItem(THEME_KEY, "hedgeyOS");
+    applyTheme("hedgeyOS", { persist: false });
+    return;
+  }
   applyTheme(getTheme(), { persist: false });
 }
