@@ -51,7 +51,8 @@ body {
     radial-gradient(circle at 15% 10%, rgba(255, 223, 237, 0.35), transparent 28%),
     radial-gradient(circle at 88% 16%, rgba(255, 243, 176, 0.45), transparent 24%),
     linear-gradient(180deg, #c9c9c9, #bababa);
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   padding-bottom: 38px;
 }
 
@@ -418,5 +419,23 @@ button {
 
   .grid-2 {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .wm-window {
+    max-width: calc(100vw - 12px);
+    max-height: calc(100vh - 12px - 26px);
+  }
+
+  .wm-wallpaper-header {
+    left: 10px;
+    right: 10px;
+    max-width: none;
+    padding: 6px 8px;
+  }
+
+  .wm-wallpaper-header h1 {
+    font-size: 20px;
   }
 }

@@ -512,6 +512,7 @@ On each heartbeat:
     renderChat()
     renderEvents()
     if (appState.windowManager) {
+      appState.windowManager.applyResponsiveLayout()
       appState.windowManager.refreshDock()
     }
   }
@@ -730,12 +731,43 @@ On each heartbeat:
     const dock = els.wmDock
     let zTop = 40
     const isHiddenTree = (node) => Boolean(node.closest('.hidden'))
+    const isMobile = () => window.matchMedia('(max-width: 760px)').matches
+    const baseRects = new Map()
 
     const setFocus = (win) => {
       if (!win || win.classList.contains('closed') || isHiddenTree(win)) return
       zTop += 1
       win.style.zIndex = String(zTop)
       windows.forEach((node) => node.classList.toggle('inactive', node !== win))
+    }
+
+    const applyResponsiveLayout = () => {
+      const mobile = isMobile()
+      const viewportW = window.innerWidth
+      const viewportH = window.innerHeight
+      let stackTop = 72
+
+      windows.forEach((win) => {
+        const base = baseRects.get(win)
+        if (!base) return
+
+        if (mobile) {
+          const width = Math.min(base.width, Math.max(220, viewportW - 12))
+          const maxWindowHeight = Math.max(140, viewportH - 46)
+          const height = Math.min(base.height, maxWindowHeight)
+
+          win.style.width = `${width}px`
+          win.style.height = `${height}px`
+          win.style.left = '6px'
+          win.style.top = `${stackTop}px`
+          stackTop += Math.min(height, 260) + 12
+        } else {
+          win.style.width = `${base.width}px`
+          win.style.height = `${base.height}px`
+          win.style.left = `${base.left}px`
+          win.style.top = `${base.top}px`
+        }
+      })
     }
 
     const refreshDock = () => {
@@ -762,10 +794,17 @@ On each heartbeat:
     }
 
     windows.forEach((win, index) => {
-      win.style.left = `${Number(win.dataset.x || 24 + index * 18)}px`
-      win.style.top = `${Number(win.dataset.y || 24 + index * 14)}px`
-      win.style.width = `${Number(win.dataset.w || 420)}px`
-      win.style.height = `${Number(win.dataset.h || 260)}px`
+      const rect = {
+        left: Number(win.dataset.x || 24 + index * 18),
+        top: Number(win.dataset.y || 24 + index * 14),
+        width: Number(win.dataset.w || 420),
+        height: Number(win.dataset.h || 260),
+      }
+      baseRects.set(win, rect)
+      win.style.left = `${rect.left}px`
+      win.style.top = `${rect.top}px`
+      win.style.width = `${rect.width}px`
+      win.style.height = `${rect.height}px`
 
       const titlebar = win.querySelector('[data-drag-handle]')
       if (!titlebar) return
@@ -798,8 +837,8 @@ On each heartbeat:
         if (!dragging) return
         const dx = event.clientX - startX
         const dy = event.clientY - startY
-        const maxLeft = Math.max(0, els.wmDesktop.scrollWidth - 120)
-        const maxTop = Math.max(0, els.wmDesktop.scrollHeight - 60)
+        const maxLeft = Math.max(0, els.wmDesktop.clientWidth - 120)
+        const maxTop = Math.max(0, els.wmDesktop.clientHeight - 60)
         const nextLeft = Math.max(0, Math.min(maxLeft, startLeft + dx))
         const nextTop = Math.max(0, Math.min(maxTop, startTop + dy))
         win.style.left = `${nextLeft}px`
@@ -830,16 +869,24 @@ On each heartbeat:
 
     const firstVisible = windows.find((win) => !isHiddenTree(win))
     if (firstVisible) setFocus(firstVisible)
+    applyResponsiveLayout()
     refreshDock()
+
+    window.addEventListener('resize', () => {
+      applyResponsiveLayout()
+      refreshDock()
+    })
 
     return {
       refreshDock,
+      applyResponsiveLayout,
       focusById: (id) => {
         const win = windows.find((node) => node.dataset.winId === id)
         if (!win) return
         win.classList.remove('closed')
         win.classList.remove('minimized')
         setFocus(win)
+        applyResponsiveLayout()
         refreshDock()
       },
       showAll: () => {
@@ -850,6 +897,7 @@ On each heartbeat:
         })
         const first = windows.find((win) => !isHiddenTree(win))
         if (first) setFocus(first)
+        applyResponsiveLayout()
         refreshDock()
       },
       minimizeAll: () => {
@@ -857,6 +905,7 @@ On each heartbeat:
           if (isHiddenTree(win)) return
           win.classList.add('minimized')
         })
+        applyResponsiveLayout()
         refreshDock()
       },
     }
