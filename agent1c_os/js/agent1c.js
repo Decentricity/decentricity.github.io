@@ -410,6 +410,14 @@ function setStatus(text){
   if (els.loopStatus) els.loopStatus.textContent = text
 }
 
+function scrollChatToBottom(){
+  if (!els.chatLog) return
+  const apply = () => { els.chatLog.scrollTop = els.chatLog.scrollHeight }
+  apply()
+  requestAnimationFrame(apply)
+  setTimeout(apply, 0)
+}
+
 function renderChat(){
   if (!els.chatLog) return
   if (!appState.agent.rollingMessages.length) {
@@ -421,7 +429,7 @@ function renderChat(){
       return `<div class="agent-bubble ${cls}"><div class="agent-bubble-role">${role}</div><div>${escapeHtml(msg.content)}</div></div>`
     }).join("")
   }
-  els.chatLog.scrollTop = els.chatLog.scrollHeight
+  scrollChatToBottom()
 }
 
 function renderEvents(){
