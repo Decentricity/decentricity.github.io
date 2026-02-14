@@ -549,10 +549,16 @@ function renderLocalThreadPicker(){
   }
 }
 
+function refreshThreadPickerSoon(){
+  renderLocalThreadPicker()
+  requestAnimationFrame(() => renderLocalThreadPicker())
+  setTimeout(() => renderLocalThreadPicker(), 0)
+}
+
 function renderChat(){
   if (!els.chatLog) return
   ensureLocalThreadsInitialized()
-  renderLocalThreadPicker()
+  refreshThreadPickerSoon()
   const thread = getActiveLocalThread()
   const messages = Array.isArray(thread?.messages) ? thread.messages : []
   if (!messages.length) {
@@ -1051,13 +1057,20 @@ async function pollTelegram(){
     if (!token || !apiKey) return
     const offset = typeof appState.agent.telegramLastUpdateId === "number" ? appState.agent.telegramLastUpdateId + 1 : undefined
     const updates = await getTelegramUpdates(token, offset)
+    let discoveredTelegramThread = false
     for (const update of updates || []) {
       appState.agent.telegramLastUpdateId = update.update_id
       const msg = update.message
       if (!msg?.text || !msg?.chat?.id) continue
       appState.lastUserSeenAt = Date.now()
+      const threadId = `telegram:${String(msg.chat.id)}`
+      const existed = Boolean(appState.agent.localThreads?.[threadId])
       const thread = ensureTelegramThread(msg.chat)
       if (!thread) continue
+      if (!existed) {
+        discoveredTelegramThread = true
+        await addEvent("chat_thread_created", `Added ${thread.label} to chat list`)
+      }
       const chatLabel = thread.label || String(msg.chat.id)
       pushLocalMessage(thread.id, "user", msg.text)
       const promptMessages = appState.agent.localThreads[thread.id]?.messages || []
@@ -1073,7 +1086,10 @@ async function pollTelegram(){
       await addEvent("telegram_replied", `Replied to Telegram chat ${chatLabel}`)
       renderChat()
     }
-    if ((updates || []).length) await persistState()
+    if ((updates || []).length) {
+      await persistState()
+      if (discoveredTelegramThread) refreshThreadPickerSoon()
+    }
   } catch (err) {
     setStatus(err instanceof Error ? err.message : "Telegram polling failed")
   } finally {
