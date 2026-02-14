@@ -1047,6 +1047,100 @@ export function createWindowManager({ desktop, iconLayer, templates, openWindows
     return spawn(themesTpl, "Themes", { kind: "app" });
   }
 
+  function getVisibleWindowStates(){
+    return Array.from(state.values())
+      .filter(st => !st.minimized && st.win && st.win.style.display !== "none");
+  }
+
+  function tileVisibleWindows(){
+    const visible = getVisibleWindowStates();
+    if (!visible.length) return;
+    const { w: dw, h: dh } = deskSize();
+    const gap = 8;
+    const count = visible.length;
+    const cols = Math.max(1, Math.ceil(Math.sqrt((count * dw) / Math.max(1, dh))));
+    const rows = Math.max(1, Math.ceil(count / cols));
+    const cellW = Math.max(220, Math.floor((dw - gap * (cols + 1)) / cols));
+    const cellH = Math.max(140, Math.floor((dh - gap * (rows + 1)) / rows));
+
+    visible.forEach((st, i) => {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const left = gap + col * (cellW + gap);
+      const top = gap + row * (cellH + gap);
+      st.maximized = false;
+      st.restoreRect = null;
+      st.win.style.left = `${clamp(left, 0, Math.max(0, dw - cellW))}px`;
+      st.win.style.top = `${clamp(top, 0, Math.max(0, dh - cellH))}px`;
+      st.win.style.width = `${Math.min(cellW, Math.max(160, dw - gap * 2))}px`;
+      st.win.style.height = `${Math.min(cellH, Math.max(120, dh - gap * 2))}px`;
+    });
+
+    refreshIcons();
+    refreshOpenWindowsMenu();
+  }
+
+  function arrangeVisibleWindows(){
+    const visible = getVisibleWindowStates();
+    if (!visible.length) return;
+    const { w: dw, h: dh } = deskSize();
+    const gap = 10;
+    const maxW = Math.max(220, dw - gap * 2);
+    const maxH = Math.max(140, dh - gap * 2);
+    const base = visible.map(st => {
+      const w = clamp(parseFloat(st.win.style.width) || st.win.offsetWidth || 360, 220, maxW);
+      const h = clamp(parseFloat(st.win.style.height) || st.win.offsetHeight || 240, 140, maxH);
+      return { st, w, h };
+    });
+
+    function pack(items){
+      let x = gap;
+      let y = gap;
+      let rowH = 0;
+      let maxBottom = 0;
+      const placed = [];
+      items.forEach(item => {
+        let w = item.w;
+        let h = item.h;
+        if (x + w > dw - gap && x > gap) {
+          x = gap;
+          y += rowH + gap;
+          rowH = 0;
+        }
+        const left = clamp(x, 0, Math.max(0, dw - w));
+        const top = clamp(y, 0, Math.max(0, dh - h));
+        placed.push({ st: item.st, left, top, w, h });
+        x += w + gap;
+        rowH = Math.max(rowH, h);
+        maxBottom = Math.max(maxBottom, top + h);
+      });
+      return { placed, maxBottom };
+    }
+
+    let packed = pack(base);
+    if (packed.maxBottom > dh - gap) {
+      const scale = Math.max(0.55, (dh - gap * 2) / Math.max(1, packed.maxBottom));
+      const scaled = base.map(item => ({
+        st: item.st,
+        w: clamp(Math.floor(item.w * scale), 220, maxW),
+        h: clamp(Math.floor(item.h * scale), 140, maxH),
+      }));
+      packed = pack(scaled);
+    }
+
+    packed.placed.forEach(item => {
+      item.st.maximized = false;
+      item.st.restoreRect = null;
+      item.st.win.style.left = `${item.left}px`;
+      item.st.win.style.top = `${item.top}px`;
+      item.st.win.style.width = `${item.w}px`;
+      item.st.win.style.height = `${item.h}px`;
+    });
+
+    refreshIcons();
+    refreshOpenWindowsMenu();
+  }
+
   function createAgentPanelWindow(title, opts = {}){
     const id = spawn(appTpl, title, { kind: "app", url: "about:blank" });
     const st = state.get(id);
@@ -1100,6 +1194,8 @@ export function createWindowManager({ desktop, iconLayer, templates, openWindows
     createAppWindow,
     createThemesWindow,
     createAgentPanelWindow,
+    arrangeVisibleWindows,
+    tileVisibleWindows,
     focusDocumentsWindow,
     refreshOpenWindowsMenu,
     refreshIcons,

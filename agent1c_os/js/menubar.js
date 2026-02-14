@@ -83,6 +83,12 @@ export function initMenuActions({ menubar, wm, appsMenu, defaultApps, hud }){
     if (action === "newNotes"){
       wm.createNotesWindow();
     }
+    if (action === "arrangeWindows" && typeof wm.arrangeVisibleWindows === "function"){
+      wm.arrangeVisibleWindows();
+    }
+    if (action === "tileWindows" && typeof wm.tileVisibleWindows === "function"){
+      wm.tileVisibleWindows();
+    }
 
     if (app) openAppById(app);
 
