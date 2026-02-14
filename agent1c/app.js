@@ -485,9 +485,13 @@ On each heartbeat:
     const hasOpenAi = Boolean(await getSecret('openai'))
     const hasTelegram = Boolean(await getSecret('telegram'))
 
-    els.setupSection.classList.toggle('hidden', appState.vaultReady)
-    els.unlockSection.classList.toggle('hidden', !appState.vaultReady || appState.unlocked)
-    els.authedSections.classList.toggle('hidden', !appState.unlocked)
+    const firstRun = !appState.vaultReady
+
+    els.heroWindow.classList.toggle('hidden', firstRun)
+    els.chatShell.classList.toggle('hidden', firstRun)
+    els.setupSection.classList.toggle('hidden', !firstRun)
+    els.unlockSection.classList.toggle('hidden', firstRun || appState.unlocked)
+    els.authedSections.classList.toggle('hidden', firstRun || !appState.unlocked)
 
     els.openaiBadge.className = `badge ${hasOpenAi ? 'ok' : 'warn'}`
     els.openaiBadge.textContent = hasOpenAi ? 'Saved in vault' : 'Missing key'
@@ -919,6 +923,7 @@ On each heartbeat:
       wmClock: id('wmClock'),
       menuFileBtn: id('menuFileBtn'),
       menuWinBtn: id('menuWinBtn'),
+      heroWindow: id('heroWindow'),
       app: id('app'),
       chatShell: id('chatShell'),
       chatClearBtn: id('chatClearBtn'),
