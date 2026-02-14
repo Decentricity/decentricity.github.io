@@ -17,10 +17,30 @@ export function createWindowManager({ desktop, iconLayer, templates, openWindows
   let activeId = null;
   const state = new Map();
   let tileSnapshot = null;
+  const LAYOUT_MIN_W = 160;
+  const LAYOUT_MIN_H = 96;
 
   function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
   function deskRect(){ return desktop.getBoundingClientRect(); }
   function deskSize(){ return { w: desktop.clientWidth, h: desktop.clientHeight }; }
+  function getIconReserveHeight(){
+    const iconCount = iconLayer?.querySelectorAll(".desk-icon")?.length || 0;
+    if (!iconCount) return 0;
+    const cs = getComputedStyle(document.documentElement);
+    const cellW = parseInt(cs.getPropertyValue("--icon-cell-w"), 10) || 92;
+    const cellH = parseInt(cs.getPropertyValue("--icon-cell-h"), 10) || 86;
+    const pad = parseInt(cs.getPropertyValue("--icon-pad"), 10) || 10;
+    const dw = desktop.clientWidth || 0;
+    const cols = Math.max(1, Math.floor(Math.max(1, dw - pad) / cellW));
+    const rows = Math.max(1, Math.ceil(iconCount / cols));
+    return pad + rows * cellH;
+  }
+  function getLayoutBounds(){
+    const { w: dw, h: dh } = deskSize();
+    const reserveBottom = getIconReserveHeight();
+    const usableH = Math.max(LAYOUT_MIN_H, dh - reserveBottom);
+    return { dw, dh, usableH };
+  }
 
   function getTitle(win){
     return win.querySelector("[data-titletext]")?.textContent?.trim() || "Window";
@@ -1091,13 +1111,15 @@ export function createWindowManager({ desktop, iconLayer, templates, openWindows
       });
     });
 
-    const { w: dw, h: dh } = deskSize();
+    const { dw, usableH } = getLayoutBounds();
     const gap = 8;
     const count = visible.length;
-    const cols = Math.max(1, Math.ceil(Math.sqrt((count * dw) / Math.max(1, dh))));
+    const cols = Math.max(1, Math.ceil(Math.sqrt((count * dw) / Math.max(1, usableH))));
     const rows = Math.max(1, Math.ceil(count / cols));
-    const cellW = Math.max(220, Math.floor((dw - gap * (cols + 1)) / cols));
-    const cellH = Math.max(140, Math.floor((dh - gap * (rows + 1)) / rows));
+    const maxCellW = Math.max(LAYOUT_MIN_W, dw - gap * 2);
+    const maxCellH = Math.max(LAYOUT_MIN_H, usableH - gap * 2);
+    const cellW = clamp(Math.floor((dw - gap * (cols + 1)) / cols), LAYOUT_MIN_W, maxCellW);
+    const cellH = clamp(Math.floor((usableH - gap * (rows + 1)) / rows), LAYOUT_MIN_H, maxCellH);
 
     visible.forEach((item, i) => {
       const col = i % cols;
@@ -1107,9 +1129,9 @@ export function createWindowManager({ desktop, iconLayer, templates, openWindows
       item.st.maximized = false;
       item.st.restoreRect = null;
       item.st.win.style.left = `${clamp(left, 0, Math.max(0, dw - cellW))}px`;
-      item.st.win.style.top = `${clamp(top, 0, Math.max(0, dh - cellH))}px`;
-      item.st.win.style.width = `${Math.min(cellW, Math.max(160, dw - gap * 2))}px`;
-      item.st.win.style.height = `${Math.min(cellH, Math.max(120, dh - gap * 2))}px`;
+      item.st.win.style.top = `${clamp(top, 0, Math.max(0, usableH - cellH))}px`;
+      item.st.win.style.width = `${cellW}px`;
+      item.st.win.style.height = `${cellH}px`;
     });
 
     refreshIcons();
@@ -1120,13 +1142,13 @@ export function createWindowManager({ desktop, iconLayer, templates, openWindows
     clearTileSnapshot();
     const visible = getVisibleWindowStates();
     if (!visible.length) return;
-    const { w: dw, h: dh } = deskSize();
+    const { dw, usableH } = getLayoutBounds();
     const gap = 10;
-    const maxW = Math.max(220, dw - gap * 2);
-    const maxH = Math.max(140, dh - gap * 2);
+    const maxW = Math.max(LAYOUT_MIN_W, dw - gap * 2);
+    const maxH = Math.max(LAYOUT_MIN_H, usableH - gap * 2);
     const base = visible.map(item => {
-      const w = clamp(parseFloat(item.st.win.style.width) || item.st.win.offsetWidth || 360, 220, maxW);
-      const h = clamp(parseFloat(item.st.win.style.height) || item.st.win.offsetHeight || 240, 140, maxH);
+      const w = clamp(parseFloat(item.st.win.style.width) || item.st.win.offsetWidth || 360, LAYOUT_MIN_W, maxW);
+      const h = clamp(parseFloat(item.st.win.style.height) || item.st.win.offsetHeight || 240, LAYOUT_MIN_H, maxH);
       return { st: item.st, w, h };
     });
 
@@ -1145,7 +1167,7 @@ export function createWindowManager({ desktop, iconLayer, templates, openWindows
           rowH = 0;
         }
         const left = clamp(x, 0, Math.max(0, dw - w));
-        const top = clamp(y, 0, Math.max(0, dh - h));
+        const top = clamp(y, 0, Math.max(0, usableH - h));
         placed.push({ st: item.st, left, top, w, h });
         x += w + gap;
         rowH = Math.max(rowH, h);
@@ -1155,12 +1177,12 @@ export function createWindowManager({ desktop, iconLayer, templates, openWindows
     }
 
     let packed = pack(base);
-    if (packed.maxBottom > dh - gap) {
-      const scale = Math.max(0.55, (dh - gap * 2) / Math.max(1, packed.maxBottom));
+    if (packed.maxBottom > usableH - gap) {
+      const scale = Math.max(0.45, (usableH - gap * 2) / Math.max(1, packed.maxBottom));
       const scaled = base.map(item => ({
         st: item.st,
-        w: clamp(Math.floor(item.w * scale), 220, maxW),
-        h: clamp(Math.floor(item.h * scale), 140, maxH),
+        w: clamp(Math.floor(item.w * scale), LAYOUT_MIN_W, maxW),
+        h: clamp(Math.floor(item.h * scale), LAYOUT_MIN_H, maxH),
       }));
       packed = pack(scaled);
     }
