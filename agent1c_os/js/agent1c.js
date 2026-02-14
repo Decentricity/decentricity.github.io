@@ -446,6 +446,8 @@ function loadInputsFromState(){
   if (els.telegramEnabledSelect) els.telegramEnabledSelect.value = appState.telegramEnabled ? "on" : "off"
   if (els.soulInput) els.soulInput.value = appState.agent.soulMd
   if (els.heartbeatDocInput) els.heartbeatDocInput.value = appState.agent.heartbeatMd
+  updateLineNumbers(els.soulInput, els.soulLineNums)
+  updateLineNumbers(els.heartbeatDocInput, els.heartbeatLineNums)
   if (els.lastTick) els.lastTick.textContent = appState.agent.lastTickAt ? formatTime(appState.agent.lastTickAt) : "never"
   if (els.agentStatus) els.agentStatus.textContent = appState.agent.status || "idle"
   if (els.telegramBridgeState) els.telegramBridgeState.textContent = appState.telegramEnabled ? "enabled" : "disabled"
