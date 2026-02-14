@@ -737,6 +737,52 @@ On each heartbeat:
     const isHiddenTree = (node) => Boolean(node.closest('.hidden'))
     const isMobile = () => window.matchMedia('(max-width: 760px)').matches
     const baseRects = new Map()
+    const shadeRestore = new Map()
+
+    const shadeWindow = (win) => {
+      if (win.classList.contains('minimized')) return
+      const titlebar = win.querySelector('.wm-titlebar')
+      if (!titlebar) {
+        win.classList.add('minimized')
+        return
+      }
+
+      const winRect = win.getBoundingClientRect()
+      const tabRect = titlebar.getBoundingClientRect()
+      const tabOffsetX = tabRect.left - winRect.left
+      const tabOffsetY = tabRect.top - winRect.top
+      shadeRestore.set(win, {
+        width: win.style.width,
+        height: win.style.height,
+        tabOffsetX,
+        tabOffsetY,
+      })
+
+      const left = (parseFloat(win.style.left || '0') || 0) + tabOffsetX
+      const top = (parseFloat(win.style.top || '0') || 0) + tabOffsetY
+      win.style.left = `${left}px`
+      win.style.top = `${top}px`
+      win.classList.add('minimized')
+    }
+
+    const unshadeWindow = (win) => {
+      if (!win.classList.contains('minimized')) return
+      const restore = shadeRestore.get(win)
+      win.classList.remove('minimized')
+      if (!restore) return
+
+      // Rehydrate relative to current shaded-tab location, so dragging the tab
+      // changes where the full window opens.
+      const shadedLeft = parseFloat(win.style.left || '0') || 0
+      const shadedTop = parseFloat(win.style.top || '0') || 0
+      const left = shadedLeft - (restore.tabOffsetX || 0)
+      const top = shadedTop - (restore.tabOffsetY || 0)
+      win.style.left = `${left}px`
+      win.style.top = `${top}px`
+      if (restore.width) win.style.width = restore.width
+      if (restore.height) win.style.height = restore.height
+      shadeRestore.delete(win)
+    }
 
     const setFocus = (win) => {
       if (!win || win.classList.contains('closed') || isHiddenTree(win)) return
@@ -798,7 +844,7 @@ On each heartbeat:
         }
         button.addEventListener('click', () => {
           win.classList.remove('closed')
-          win.classList.remove('minimized')
+          unshadeWindow(win)
           setFocus(win)
           refreshDock()
         })
@@ -830,15 +876,19 @@ On each heartbeat:
       let startY = 0
       let startLeft = 0
       let startTop = 0
+      let draggedSinceDown = false
       let previousOverflowY = ''
+      let lastTapAt = 0
 
       titlebar.addEventListener(
         'pointerdown',
         (event) => {
           const target = event.target
           if (target instanceof Element && target.closest('button')) return
+
           event.preventDefault()
           dragging = true
+          draggedSinceDown = false
           startX = event.clientX
           startY = event.clientY
           startLeft = parseInt(win.style.left || '0', 10)
@@ -858,6 +908,9 @@ On each heartbeat:
           event.preventDefault()
           const dx = event.clientX - startX
           const dy = event.clientY - startY
+          if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+            draggedSinceDown = true
+          }
           const maxLeft = Math.max(0, els.wmDesktop.clientWidth - 120)
           const maxTop = Math.max(0, els.wmDesktop.clientHeight - 60)
           const nextLeft = Math.max(0, Math.min(maxLeft, startLeft + dx))
@@ -876,13 +929,63 @@ On each heartbeat:
       titlebar.addEventListener('pointercancel', stopDrag)
       titlebar.addEventListener('lostpointercapture', stopDrag)
 
+      // Desktop double-click windowshade toggle.
+      titlebar.addEventListener('dblclick', () => {
+        if (win.classList.contains('minimized')) {
+          unshadeWindow(win)
+          setFocus(win)
+        } else {
+          shadeWindow(win)
+        }
+        refreshDock()
+      })
+
+      // Mobile double-tap windowshade toggle.
+      titlebar.addEventListener('pointerup', (event) => {
+        const target = event.target
+        if (target instanceof Element && target.closest('button')) return
+
+        // A single tap/click on shaded tab restores, but drag keeps it shaded.
+        if (win.classList.contains('minimized') && !draggedSinceDown) {
+          unshadeWindow(win)
+          setFocus(win)
+          refreshDock()
+          lastTapAt = 0
+          return
+        }
+
+        if (event.pointerType !== 'touch') return
+        if (draggedSinceDown) {
+          lastTapAt = 0
+          return
+        }
+
+        const now = Date.now()
+        if (now - lastTapAt < 320) {
+          if (win.classList.contains('minimized')) {
+            unshadeWindow(win)
+            setFocus(win)
+          } else {
+            shadeWindow(win)
+          }
+          refreshDock()
+          lastTapAt = 0
+          return
+        }
+        lastTapAt = now
+      })
+
       win.querySelectorAll('[data-win-action]').forEach((btn) => {
         btn.addEventListener('click', () => {
           const action = btn.getAttribute('data-win-action')
           if (action === 'close') {
             win.classList.add('closed')
           } else if (action === 'min') {
-            win.classList.toggle('minimized')
+            if (win.classList.contains('minimized')) {
+              unshadeWindow(win)
+            } else {
+              shadeWindow(win)
+            }
           } else {
             setFocus(win)
           }
@@ -909,7 +1012,7 @@ On each heartbeat:
         const win = windows.find((node) => node.dataset.winId === id)
         if (!win) return
         win.classList.remove('closed')
-        win.classList.remove('minimized')
+        unshadeWindow(win)
         setFocus(win)
         applyResponsiveLayout()
         refreshDock()
@@ -918,7 +1021,7 @@ On each heartbeat:
         windows.forEach((win) => {
           if (isHiddenTree(win)) return
           win.classList.remove('closed')
-          win.classList.remove('minimized')
+          unshadeWindow(win)
         })
         const first = windows.find((win) => !isHiddenTree(win))
         if (first) setFocus(first)
@@ -928,7 +1031,7 @@ On each heartbeat:
       minimizeAll: () => {
         windows.forEach((win) => {
           if (isHiddenTree(win)) return
-          win.classList.add('minimized')
+          shadeWindow(win)
         })
         applyResponsiveLayout()
         refreshDock()
