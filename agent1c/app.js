@@ -734,6 +734,7 @@ On each heartbeat:
     const windows = Array.from(document.querySelectorAll('.wm-window'))
     const dock = els.wmDock
     let zTop = 40
+    let layoutMode = 'free'
     const isHiddenTree = (node) => Boolean(node.closest('.hidden'))
     const isMobile = () => window.matchMedia('(max-width: 760px)').matches
     const baseRects = new Map()
@@ -781,6 +782,7 @@ On each heartbeat:
       win.style.top = `${top}px`
       if (restore.width) win.style.width = restore.width
       if (restore.height) win.style.height = restore.height
+      win.style.removeProperty('--shade-width')
       shadeRestore.delete(win)
     }
 
@@ -792,6 +794,14 @@ On each heartbeat:
     }
 
     const applyResponsiveLayout = () => {
+      if (layoutMode === 'tile') {
+        tileAllInternal()
+        return
+      }
+      if (layoutMode === 'arrange') {
+        arrangeAllInternal()
+        return
+      }
       const mobile = isMobile()
       const viewportW = window.innerWidth
       const viewportH = window.innerHeight
@@ -829,6 +839,16 @@ On each heartbeat:
       })
     }
 
+    const restoreBaseRectangles = () => {
+      windows.forEach((win) => {
+        const base = baseRects.get(win)
+        if (!base) return
+        if (win.classList.contains('minimized')) return
+        win.style.width = `${base.width}px`
+        win.style.height = `${base.height}px`
+      })
+    }
+
     const refreshDock = () => {
       dock.innerHTML = ''
       windows.forEach((win) => {
@@ -849,6 +869,165 @@ On each heartbeat:
           refreshDock()
         })
         dock.appendChild(button)
+      })
+    }
+
+    const tileAllInternal = () => {
+      const gap = 10
+      const menubarH = 26
+      const areaLeft = 6
+      const areaTop = 68
+      const areaRight = Math.max(areaLeft + 80, els.wmDesktop.clientWidth - 6)
+      const areaBottom = Math.max(areaTop + 80, els.wmDesktop.clientHeight - menubarH - 6)
+      const areaW = Math.max(80, areaRight - areaLeft)
+      const areaH = Math.max(80, areaBottom - areaTop)
+      const visible = windows.filter((win) => !isHiddenTree(win) && !win.classList.contains('closed'))
+      const shaded = visible.filter((win) => win.classList.contains('minimized'))
+      const normal = visible.filter((win) => !win.classList.contains('minimized'))
+
+      let bodyBottom = areaBottom
+
+      if (shaded.length > 0) {
+        const tabH = 24
+        const tabGap = 6
+        let cols = Math.max(1, Math.floor((areaW + tabGap) / (140 + tabGap)))
+        cols = Math.min(cols, shaded.length)
+        let rows = Math.ceil(shaded.length / cols)
+        const tabW = Math.max(84, Math.floor((areaW - tabGap * (cols - 1)) / cols))
+        const bandHeight = rows * tabH + (rows - 1) * tabGap
+        const bandTop = areaBottom - bandHeight
+        bodyBottom = bandTop - gap
+
+        shaded.forEach((win, idx) => {
+          const row = Math.floor(idx / cols)
+          const col = idx % cols
+          const left = areaLeft + col * (tabW + tabGap)
+          const top = bandTop + row * (tabH + tabGap)
+          win.style.left = `${left}px`
+          win.style.top = `${top}px`
+          win.style.setProperty('--shade-width', `${tabW}px`)
+        })
+      }
+
+      const bodyHeight = Math.max(90, bodyBottom - areaTop)
+      if (normal.length > 0) {
+        const cols = Math.max(1, Math.ceil(Math.sqrt((normal.length * areaW) / bodyHeight)))
+        const rows = Math.max(1, Math.ceil(normal.length / cols))
+        const cellW = Math.max(96, Math.floor((areaW - gap * (cols - 1)) / cols))
+        const cellH = Math.max(92, Math.floor((bodyHeight - gap * (rows - 1)) / rows))
+
+        normal.forEach((win, idx) => {
+          const row = Math.floor(idx / cols)
+          const col = idx % cols
+          const left = areaLeft + col * (cellW + gap)
+          const top = areaTop + row * (cellH + gap)
+          win.style.left = `${left}px`
+          win.style.top = `${top}px`
+          win.style.width = `${cellW}px`
+          win.style.height = `${cellH}px`
+        })
+      }
+    }
+
+    const arrangeAllInternal = () => {
+      const gap = 10
+      const menubarH = 26
+      const areaLeft = 6
+      const areaTop = 68
+      const areaRight = Math.max(areaLeft + 80, els.wmDesktop.clientWidth - 6)
+      const areaBottom = Math.max(areaTop + 80, els.wmDesktop.clientHeight - menubarH - 6)
+      const areaW = Math.max(80, areaRight - areaLeft)
+      const areaH = Math.max(80, areaBottom - areaTop)
+      const visible = windows.filter((win) => !isHiddenTree(win) && !win.classList.contains('closed'))
+      const shaded = visible.filter((win) => win.classList.contains('minimized'))
+      const normal = visible
+        .filter((win) => !win.classList.contains('minimized'))
+        .sort(
+          (a, b) =>
+            parseFloat(a.style.top || '0') - parseFloat(b.style.top || '0') ||
+            parseFloat(a.style.left || '0') - parseFloat(b.style.left || '0'),
+        )
+
+      let bodyBottom = areaBottom
+
+      if (shaded.length > 0) {
+        const tabH = 24
+        const tabGap = 6
+        const prefTabW = 132
+        let cols = Math.max(1, Math.floor((areaW + tabGap) / (prefTabW + tabGap)))
+        cols = Math.min(cols, shaded.length)
+        const rows = Math.ceil(shaded.length / cols)
+        const tabW = Math.max(84, Math.floor((areaW - tabGap * (cols - 1)) / cols))
+        const bandHeight = rows * tabH + (rows - 1) * tabGap
+        const bandTop = areaBottom - bandHeight
+        bodyBottom = bandTop - gap
+
+        shaded.forEach((win, idx) => {
+          const row = Math.floor(idx / cols)
+          const col = idx % cols
+          const left = areaLeft + col * (tabW + tabGap)
+          const top = bandTop + row * (tabH + tabGap)
+          win.style.left = `${left}px`
+          win.style.top = `${top}px`
+          win.style.setProperty('--shade-width', `${tabW}px`)
+        })
+      }
+
+      const bodyHeight = Math.max(90, bodyBottom - areaTop)
+      if (normal.length === 0) return
+
+      const desired = normal.map((win) => ({
+        win,
+        width: parseFloat(win.style.width || '0') || 320,
+        height: parseFloat(win.style.height || '0') || 220,
+      }))
+
+      const tryPack = (scale) => {
+        const packed = []
+        let x = areaLeft
+        let y = areaTop
+        let rowH = 0
+        const minW = 120
+        const minH = 96
+
+        for (const item of desired) {
+          const w = Math.min(areaW, Math.max(minW, Math.round(item.width * scale)))
+          const h = Math.min(bodyHeight, Math.max(minH, Math.round(item.height * scale)))
+
+          if (x > areaLeft && x + w > areaRight) {
+            x = areaLeft
+            y += rowH + gap
+            rowH = 0
+          }
+
+          if (y + h > bodyBottom) {
+            return null
+          }
+
+          packed.push({ win: item.win, left: x, top: y, width: w, height: h })
+          x += w + gap
+          rowH = Math.max(rowH, h)
+        }
+
+        return packed
+      }
+
+      let packed = null
+      for (let scale = 1; scale >= 0.45; scale -= 0.05) {
+        packed = tryPack(scale)
+        if (packed) break
+      }
+
+      if (!packed) {
+        tileAllInternal()
+        return
+      }
+
+      packed.forEach((item) => {
+        item.win.style.left = `${item.left}px`
+        item.win.style.top = `${item.top}px`
+        item.win.style.width = `${item.width}px`
+        item.win.style.height = `${item.height}px`
       })
     }
 
@@ -888,6 +1067,7 @@ On each heartbeat:
           const target = event.target
           if (target instanceof Element && target.closest('button')) return
 
+          layoutMode = 'free'
           event.preventDefault()
           dragging = true
           draggedSinceDown = false
@@ -1042,6 +1222,22 @@ On each heartbeat:
     return {
       refreshDock,
       applyResponsiveLayout,
+      tileAll: () => {
+        if (layoutMode === 'tile') {
+          layoutMode = 'arrange'
+          restoreBaseRectangles()
+          arrangeAllInternal()
+        } else {
+          layoutMode = 'tile'
+          tileAllInternal()
+        }
+        refreshDock()
+      },
+      arrangeAll: () => {
+        layoutMode = 'arrange'
+        arrangeAllInternal()
+        refreshDock()
+      },
       focusById: (id) => {
         const win = windows.find((node) => node.dataset.winId === id)
         if (!win) return
@@ -1052,6 +1248,7 @@ On each heartbeat:
         refreshDock()
       },
       showAll: () => {
+        layoutMode = 'free'
         windows.forEach((win) => {
           if (isHiddenTree(win)) return
           win.classList.remove('closed')
@@ -1063,6 +1260,7 @@ On each heartbeat:
         refreshDock()
       },
       minimizeAll: () => {
+        layoutMode = 'free'
         windows.forEach((win) => {
           if (isHiddenTree(win)) return
           shadeWindow(win)
@@ -1081,6 +1279,8 @@ On each heartbeat:
       wmClock: id('wmClock'),
       menuFileBtn: id('menuFileBtn'),
       menuWinBtn: id('menuWinBtn'),
+      menuArrangeBtn: id('menuArrangeBtn'),
+      menuTileBtn: id('menuTileBtn'),
       heroWindow: id('heroWindow'),
       app: id('app'),
       chatShell: id('chatShell'),
@@ -1140,6 +1340,12 @@ On each heartbeat:
     })
     els.menuWinBtn.addEventListener('click', () => {
       appState.windowManager.minimizeAll()
+    })
+    els.menuArrangeBtn.addEventListener('click', () => {
+      appState.windowManager.arrangeAll()
+    })
+    els.menuTileBtn.addEventListener('click', () => {
+      appState.windowManager.tileAll()
     })
 
     els.chatToggleBtn.addEventListener('click', () => {
