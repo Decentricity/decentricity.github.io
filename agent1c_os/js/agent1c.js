@@ -1081,7 +1081,7 @@ function wireMainDom(){
     lockVault()
     await addEvent("vault_locked", "Vault locked")
     if (!unlockWin) {
-      unlockWin = wmRef.createAgentPanelWindow("agent1c: Unlock Vault", { panelId: "unlock", left: 280, top: 100, width: 420, height: 210 })
+      unlockWin = wmRef.createAgentPanelWindow("Unlock Vault", { panelId: "unlock", left: 280, top: 100, width: 420, height: 210 })
       if (unlockWin?.panelRoot) unlockWin.panelRoot.innerHTML = unlockWindowHtml()
       cacheElements()
       wireUnlockDom()
@@ -1091,7 +1091,7 @@ function wireMainDom(){
 }
 
 function createSetupWindow(){
-  setupWin = wmRef.createAgentPanelWindow("agent1c: Create Vault", { panelId: "setup", left: 340, top: 90, width: 520, height: 260 })
+  setupWin = wmRef.createAgentPanelWindow("Create Vault", { panelId: "setup", left: 340, top: 90, width: 520, height: 260 })
   if (!setupWin?.panelRoot) return
   setupWin.panelRoot.innerHTML = setupWindowHtml()
   cacheElements()
@@ -1103,29 +1103,29 @@ async function createWorkspace({ showUnlock, onboarding }) {
   if (workspaceReady) return
   workspaceReady = true
 
-  wins.chat = wmRef.createAgentPanelWindow("agent1c: Chat", { panelId: "chat", left: 20, top: 28, width: 480, height: 320 })
+  wins.chat = wmRef.createAgentPanelWindow("Chat", { panelId: "chat", left: 20, top: 28, width: 480, height: 320 })
   if (wins.chat?.panelRoot) wins.chat.panelRoot.innerHTML = chatWindowHtml()
 
-  wins.openai = wmRef.createAgentPanelWindow("agent1c: OpenAI", { panelId: "openai", left: 510, top: 28, width: 470, height: 220 })
+  wins.openai = wmRef.createAgentPanelWindow("OpenAI API", { panelId: "openai", left: 510, top: 28, width: 470, height: 220 })
   if (wins.openai?.panelRoot) wins.openai.panelRoot.innerHTML = openAiWindowHtml()
 
-  wins.telegram = wmRef.createAgentPanelWindow("agent1c: Telegram", { panelId: "telegram", left: 510, top: 256, width: 470, height: 210 })
+  wins.telegram = wmRef.createAgentPanelWindow("Telegram API", { panelId: "telegram", left: 510, top: 256, width: 470, height: 210 })
   if (wins.telegram?.panelRoot) wins.telegram.panelRoot.innerHTML = telegramWindowHtml()
 
-  wins.config = wmRef.createAgentPanelWindow("agent1c: Config", { panelId: "config", left: 20, top: 356, width: 640, height: 280 })
+  wins.config = wmRef.createAgentPanelWindow("Config", { panelId: "config", left: 20, top: 356, width: 640, height: 280 })
   if (wins.config?.panelRoot) wins.config.panelRoot.innerHTML = configWindowHtml()
 
-  wins.soul = wmRef.createAgentPanelWindow("agent1c: SOUL.md", { panelId: "soul", left: 20, top: 644, width: 320, height: 330 })
+  wins.soul = wmRef.createAgentPanelWindow("SOUL.md", { panelId: "soul", left: 20, top: 644, width: 320, height: 330 })
   if (wins.soul?.panelRoot) wins.soul.panelRoot.innerHTML = soulWindowHtml()
 
-  wins.heartbeat = wmRef.createAgentPanelWindow("agent1c: heartbeat.md", { panelId: "heartbeat", left: 350, top: 644, width: 320, height: 330 })
+  wins.heartbeat = wmRef.createAgentPanelWindow("heartbeat.md", { panelId: "heartbeat", left: 350, top: 644, width: 320, height: 330 })
   if (wins.heartbeat?.panelRoot) wins.heartbeat.panelRoot.innerHTML = heartbeatWindowHtml()
 
-  wins.events = wmRef.createAgentPanelWindow("agent1c: Events", { panelId: "events", left: 680, top: 644, width: 360, height: 330 })
+  wins.events = wmRef.createAgentPanelWindow("Events", { panelId: "events", left: 680, top: 644, width: 360, height: 330 })
   if (wins.events?.panelRoot) wins.events.panelRoot.innerHTML = eventsWindowHtml()
 
   if (showUnlock) {
-    unlockWin = wmRef.createAgentPanelWindow("agent1c: Unlock Vault", { panelId: "unlock", left: 280, top: 100, width: 420, height: 210 })
+    unlockWin = wmRef.createAgentPanelWindow("Unlock Vault", { panelId: "unlock", left: 280, top: 100, width: 420, height: 210 })
     if (unlockWin?.panelRoot) unlockWin.panelRoot.innerHTML = unlockWindowHtml()
   }
 
