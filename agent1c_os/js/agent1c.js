@@ -386,6 +386,7 @@ function getLocalThreadEntries(){
 
 function makeNextLocalThreadLabel(){
   const nums = getLocalThreadEntries()
+    .filter(thread => (thread.source || "local") === "local")
     .map(thread => {
       const m = /^chat\s+(\d+)$/i.exec((thread.label || "").trim())
       return m ? Number(m[1]) : 0
@@ -402,13 +403,16 @@ function ensureLocalThreadsInitialized(){
   const entries = getLocalThreadEntries()
   if (!entries.length) {
     const id = `local-${Date.now()}`
+    const legacy = Array.isArray(appState.agent.rollingMessages) ? appState.agent.rollingMessages : []
     appState.agent.localThreads[id] = {
       id,
       label: "Chat 1",
+      source: "local",
       createdAt: Date.now(),
       updatedAt: Date.now(),
-      messages: [],
+      messages: legacy.slice(-appState.config.maxContextMessages),
     }
+    appState.agent.rollingMessages = []
     appState.agent.activeLocalThreadId = id
     return
   }
@@ -429,6 +433,7 @@ function createNewLocalThread(){
   appState.agent.localThreads[id] = {
     id,
     label: makeNextLocalThreadLabel(),
+    source: "local",
     createdAt: Date.now(),
     updatedAt: Date.now(),
     messages: [],
@@ -445,6 +450,43 @@ function pushLocalMessage(threadId, role, content){
     .concat({ role, content, createdAt: Date.now() })
     .slice(-appState.config.maxContextMessages)
   thread.updatedAt = Date.now()
+}
+
+function threadLabelForTelegram(chat){
+  const username = (chat?.username || "").trim()
+  if (username) return `TG @${username}`
+  const first = (chat?.first_name || "").trim()
+  const last = (chat?.last_name || "").trim()
+  const name = `${first} ${last}`.trim()
+  if (name) return `TG ${name}`
+  return `TG ${String(chat?.id || "")}`
+}
+
+function ensureTelegramThread(chat){
+  ensureLocalThreadsInitialized()
+  const chatId = String(chat?.id || "")
+  if (!chatId) return null
+  const id = `telegram:${chatId}`
+  const label = threadLabelForTelegram(chat)
+  const existing = appState.agent.localThreads[id]
+  if (existing) {
+    existing.label = label || existing.label
+    existing.source = "telegram"
+    existing.telegramChatId = chatId
+    existing.updatedAt = Date.now()
+    return existing
+  }
+  const thread = {
+    id,
+    label,
+    source: "telegram",
+    telegramChatId: chatId,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+    messages: [],
+  }
+  appState.agent.localThreads[id] = thread
+  return thread
 }
 
 function formatTime(ts){
@@ -497,7 +539,10 @@ function renderLocalThreadPicker(){
   const threads = getLocalThreadEntries()
   const active = appState.agent.activeLocalThreadId
   els.chatThreadSelect.innerHTML = threads
-    .map(thread => `<option value="${escapeHtml(thread.id)}">${escapeHtml(thread.label || "Chat")}</option>`)
+    .map(thread => {
+      const source = (thread.source || "local") === "telegram" ? "Telegram" : "Local"
+      return `<option value="${escapeHtml(thread.id)}">${escapeHtml(thread.label || "Chat")} · ${source}</option>`
+    })
     .join("")
   if (active && threads.some(thread => thread.id === active)) {
     els.chatThreadSelect.value = active
@@ -1011,16 +1056,19 @@ async function pollTelegram(){
       const msg = update.message
       if (!msg?.text || !msg?.chat?.id) continue
       appState.lastUserSeenAt = Date.now()
-      const chatLabel = msg.chat.username || String(msg.chat.id)
-      pushRolling("user", `[telegram:${chatLabel}] ${msg.text}`)
+      const thread = ensureTelegramThread(msg.chat)
+      if (!thread) continue
+      const chatLabel = thread.label || String(msg.chat.id)
+      pushLocalMessage(thread.id, "user", msg.text)
+      const promptMessages = appState.agent.localThreads[thread.id]?.messages || []
       const reply = await openAiChat({
         apiKey,
         model: appState.config.model,
         temperature: appState.config.temperature,
         systemPrompt: appState.agent.soulMd,
-        messages: appState.agent.rollingMessages,
+        messages: promptMessages,
       })
-      pushRolling("assistant", reply)
+      pushLocalMessage(thread.id, "assistant", reply)
       await sendTelegramMessage(token, msg.chat.id, reply.slice(0, 3900))
       await addEvent("telegram_replied", `Replied to Telegram chat ${chatLabel}`)
       renderChat()
