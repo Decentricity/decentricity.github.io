@@ -1029,8 +1029,10 @@ function wireMainDom(){
       await refreshModelDropdown(key)
       onboardingComplete = false
       onboardingOpenAiTested = false
+      onboardingOpenAiSettingsSaved = false
       localStorage.removeItem(ONBOARDING_KEY)
       localStorage.removeItem(ONBOARDING_OPENAI_TEST_KEY)
+      localStorage.removeItem(ONBOARDING_OPENAI_SETTINGS_KEY)
       await addEvent("provider_key_saved", "OpenAI key stored in encrypted vault")
       await refreshBadges()
       setStatus("OpenAI key saved. Next: test connection and save OpenAI settings.")
