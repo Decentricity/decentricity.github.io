@@ -1603,6 +1603,15 @@
 }
 .agent-note{ font-size: 11px; opacity: 0.92; }
 .agent-muted{ font-size: 11px; opacity: 0.75; padding: 6px; }
+.agent-hidden{ display: none !important; }
+.agent-icon-btn{
+  min-width: 20px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  line-height: 1;
+  text-align: center;
+}
 .agent-row{ display: flex; gap: 6px; align-items: center; }
 .agent-wrap-row{ flex-wrap: wrap; }
 .agent-row .btn{ white-space: nowrap; }

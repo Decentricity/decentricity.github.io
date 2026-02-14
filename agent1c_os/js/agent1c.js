@@ -81,6 +81,8 @@ let dbPromise = null
 let onboardingComplete = false
 let onboardingOpenAiTested = false
 let onboardingOpenAiSettingsSaved = false
+let openAiEditing = false
+let telegramEditing = false
 const wins = {
   chat: null,
   openai: null,
@@ -637,6 +639,16 @@ async function refreshBadges(){
     els.telegramBadge.className = `agent-badge ${hasTelegram ? "ok" : "warn"}`
     els.telegramBadge.textContent = hasTelegram ? "Saved in vault" : "Missing token"
   }
+  if (els.openaiStoredRow && els.openaiControls) {
+    const hideOpenAiControls = hasOpenAi && !openAiEditing
+    els.openaiStoredRow.classList.toggle("agent-hidden", !hideOpenAiControls)
+    els.openaiControls.classList.toggle("agent-hidden", hideOpenAiControls)
+  }
+  if (els.telegramStoredRow && els.telegramControls) {
+    const hideTelegramControls = hasTelegram && !telegramEditing
+    els.telegramStoredRow.classList.toggle("agent-hidden", !hideTelegramControls)
+    els.telegramControls.classList.toggle("agent-hidden", hideTelegramControls)
+  }
 }
 
 function refreshUi(){
@@ -775,18 +787,24 @@ function chatWindowHtml(){
 function openAiWindowHtml(){
   return `
     <div class="agent-stack">
-      <div class="agent-note">Status: <span id="openaiBadge" class="agent-badge warn">Missing key</span></div>
-      <form id="openaiForm" class="agent-form">
-        <label class="agent-form-label">
-          <span>API key</span>
-          <input id="openaiKeyInput" class="field" type="password" placeholder="sk-..." required />
-        </label>
-        <div class="agent-row">
-          <button class="btn" type="submit">Save Encrypted Key</button>
-          <button id="openaiTestBtn" class="btn" type="button">Test Connection</button>
-          <button id="lockBtn" class="btn" type="button">Lock Vault</button>
-        </div>
-      </form>
+      <div id="openaiStoredRow" class="agent-row agent-hidden">
+        <span class="agent-note">OpenAI API Key Stored in Vault</span>
+        <button id="openaiEditBtn" class="btn agent-icon-btn" type="button" aria-label="Edit OpenAI key">✎</button>
+      </div>
+      <div id="openaiControls">
+        <div class="agent-note">Status: <span id="openaiBadge" class="agent-badge warn">Missing key</span></div>
+        <form id="openaiForm" class="agent-form">
+          <label class="agent-form-label">
+            <span>API key</span>
+            <input id="openaiKeyInput" class="field" type="password" placeholder="sk-..." required />
+          </label>
+          <div class="agent-row">
+            <button class="btn" type="submit">Save Encrypted Key</button>
+            <button id="openaiTestBtn" class="btn" type="button">Test Connection</button>
+            <button id="lockBtn" class="btn" type="button">Lock Vault</button>
+          </div>
+        </form>
+      </div>
       <div class="agent-grid2">
         <label class="agent-form-label">
           <span>Model</span>
@@ -815,17 +833,23 @@ function openAiWindowHtml(){
 function telegramWindowHtml(){
   return `
     <div class="agent-stack">
-      <div class="agent-note">Status: <span id="telegramBadge" class="agent-badge warn">Missing token</span></div>
-      <form id="telegramForm" class="agent-form">
-        <label class="agent-form-label">
-          <span>Bot token</span>
-          <input id="telegramTokenInput" class="field" type="password" placeholder="123456:AA..." required />
-        </label>
-        <div class="agent-row">
-          <button class="btn" type="submit">Save Encrypted Token</button>
-          <button id="telegramTestBtn" class="btn" type="button">Test Telegram Token</button>
-        </div>
-      </form>
+      <div id="telegramStoredRow" class="agent-row agent-hidden">
+        <span class="agent-note">Telegram API Key Stored in Vault</span>
+        <button id="telegramEditBtn" class="btn agent-icon-btn" type="button" aria-label="Edit Telegram token">✎</button>
+      </div>
+      <div id="telegramControls">
+        <div class="agent-note">Status: <span id="telegramBadge" class="agent-badge warn">Missing token</span></div>
+        <form id="telegramForm" class="agent-form">
+          <label class="agent-form-label">
+            <span>Bot token</span>
+            <input id="telegramTokenInput" class="field" type="password" placeholder="123456:AA..." required />
+          </label>
+          <div class="agent-row">
+            <button class="btn" type="submit">Save Encrypted Token</button>
+            <button id="telegramTestBtn" class="btn" type="button">Test Telegram Token</button>
+          </div>
+        </form>
+      </div>
       <div class="agent-grid2">
         <label class="agent-form-label">
           <span>Telegram poll interval (ms)</span>
@@ -909,11 +933,17 @@ function cacheElements(){
     openaiForm: byId("openaiForm"),
     openaiKeyInput: byId("openaiKeyInput"),
     openaiTestBtn: byId("openaiTestBtn"),
+    openaiStoredRow: byId("openaiStoredRow"),
+    openaiControls: byId("openaiControls"),
+    openaiEditBtn: byId("openaiEditBtn"),
     lockBtn: byId("lockBtn"),
     openaiBadge: byId("openaiBadge"),
     telegramForm: byId("telegramForm"),
     telegramTokenInput: byId("telegramTokenInput"),
     telegramTestBtn: byId("telegramTestBtn"),
+    telegramStoredRow: byId("telegramStoredRow"),
+    telegramControls: byId("telegramControls"),
+    telegramEditBtn: byId("telegramEditBtn"),
     telegramBadge: byId("telegramBadge"),
     modelInput: byId("modelInput"),
     heartbeatInput: byId("heartbeatInput"),
@@ -1205,6 +1235,7 @@ function wireMainDom(){
       onboardingComplete = false
       onboardingOpenAiTested = false
       onboardingOpenAiSettingsSaved = false
+      openAiEditing = false
       localStorage.removeItem(ONBOARDING_KEY)
       localStorage.removeItem(ONBOARDING_OPENAI_TEST_KEY)
       localStorage.removeItem(ONBOARDING_OPENAI_SETTINGS_KEY)
@@ -1236,6 +1267,7 @@ function wireMainDom(){
     try {
       await saveProviderKey("telegram", els.telegramTokenInput.value)
       els.telegramTokenInput.value = ""
+      telegramEditing = false
       await addEvent("provider_key_saved", "Telegram token stored in encrypted vault")
       await refreshBadges()
       setStatus("Telegram token saved.")
@@ -1254,6 +1286,18 @@ function wireMainDom(){
     } catch (err) {
       setStatus(err instanceof Error ? err.message : "Telegram token test failed")
     }
+  })
+
+  els.openaiEditBtn?.addEventListener("click", async () => {
+    openAiEditing = true
+    await refreshBadges()
+    els.openaiKeyInput?.focus()
+  })
+
+  els.telegramEditBtn?.addEventListener("click", async () => {
+    telegramEditing = true
+    await refreshBadges()
+    els.telegramTokenInput?.focus()
   })
 
   els.saveSettingsBtn?.addEventListener("click", async () => {
