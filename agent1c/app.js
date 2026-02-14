@@ -879,6 +879,8 @@ On each heartbeat:
       let draggedSinceDown = false
       let previousOverflowY = ''
       let lastTapAt = 0
+      let longTapTimer = null
+      let longTapTriggered = false
 
       titlebar.addEventListener(
         'pointerdown',
@@ -889,6 +891,7 @@ On each heartbeat:
           event.preventDefault()
           dragging = true
           draggedSinceDown = false
+          longTapTriggered = false
           startX = event.clientX
           startY = event.clientY
           startLeft = parseInt(win.style.left || '0', 10)
@@ -897,6 +900,24 @@ On each heartbeat:
           els.wmDesktop.style.overflowY = 'hidden'
           titlebar.setPointerCapture(event.pointerId)
           setFocus(win)
+
+          if (event.pointerType === 'touch') {
+            if (longTapTimer) {
+              clearTimeout(longTapTimer)
+              longTapTimer = null
+            }
+            longTapTimer = setTimeout(() => {
+              if (draggedSinceDown) return
+              longTapTriggered = true
+              if (win.classList.contains('minimized')) {
+                unshadeWindow(win)
+                setFocus(win)
+              } else {
+                shadeWindow(win)
+              }
+              refreshDock()
+            }, 420)
+          }
         },
         { passive: false },
       )
@@ -910,6 +931,10 @@ On each heartbeat:
           const dy = event.clientY - startY
           if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
             draggedSinceDown = true
+            if (longTapTimer) {
+              clearTimeout(longTapTimer)
+              longTapTimer = null
+            }
           }
           const maxLeft = Math.max(0, els.wmDesktop.clientWidth - 120)
           const maxTop = Math.max(0, els.wmDesktop.clientHeight - 60)
@@ -924,6 +949,10 @@ On each heartbeat:
       const stopDrag = () => {
         dragging = false
         els.wmDesktop.style.overflowY = previousOverflowY
+        if (longTapTimer) {
+          clearTimeout(longTapTimer)
+          longTapTimer = null
+        }
       }
       titlebar.addEventListener('pointerup', stopDrag)
       titlebar.addEventListener('pointercancel', stopDrag)
@@ -944,6 +973,11 @@ On each heartbeat:
       titlebar.addEventListener('pointerup', (event) => {
         const target = event.target
         if (target instanceof Element && target.closest('button')) return
+        if (longTapTriggered) {
+          longTapTriggered = false
+          lastTapAt = 0
+          return
+        }
 
         // A single tap/click on shaded tab restores, but drag keeps it shaded.
         if (win.classList.contains('minimized') && !draggedSinceDown) {
