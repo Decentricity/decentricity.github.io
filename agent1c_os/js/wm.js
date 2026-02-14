@@ -16,6 +16,7 @@ export function createWindowManager({ desktop, iconLayer, templates, openWindows
   let idSeq = 1;
   let activeId = null;
   const state = new Map();
+  let tileSnapshot = null;
 
   function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
   function deskRect(){ return desktop.getBoundingClientRect(); }
@@ -1047,14 +1048,49 @@ export function createWindowManager({ desktop, iconLayer, templates, openWindows
     return spawn(themesTpl, "Themes", { kind: "app" });
   }
 
+  function clearTileSnapshot(){
+    tileSnapshot = null;
+  }
+
   function getVisibleWindowStates(){
-    return Array.from(state.values())
-      .filter(st => !st.minimized && st.win && st.win.style.display !== "none");
+    return Array.from(state.entries())
+      .filter(([, st]) => !st.minimized && st.win && st.win.style.display !== "none")
+      .map(([id, st]) => ({ id, st }));
   }
 
   function tileVisibleWindows(){
     const visible = getVisibleWindowStates();
     if (!visible.length) return;
+    const canUntile = !!tileSnapshot
+      && tileSnapshot.size === visible.length
+      && visible.every(item => tileSnapshot.has(item.id));
+
+    if (canUntile) {
+      visible.forEach(item => {
+        const prev = tileSnapshot.get(item.id);
+        if (!prev) return;
+        item.st.maximized = false;
+        item.st.restoreRect = null;
+        item.st.win.style.left = `${prev.left}px`;
+        item.st.win.style.top = `${prev.top}px`;
+        item.st.win.style.width = `${prev.width}px`;
+        item.st.win.style.height = `${prev.height}px`;
+      });
+      clearTileSnapshot();
+      arrangeVisibleWindows();
+      return;
+    }
+
+    tileSnapshot = new Map();
+    visible.forEach(item => {
+      tileSnapshot.set(item.id, {
+        left: parseFloat(item.st.win.style.left) || item.st.win.offsetLeft || 0,
+        top: parseFloat(item.st.win.style.top) || item.st.win.offsetTop || 0,
+        width: parseFloat(item.st.win.style.width) || item.st.win.offsetWidth || 360,
+        height: parseFloat(item.st.win.style.height) || item.st.win.offsetHeight || 240,
+      });
+    });
+
     const { w: dw, h: dh } = deskSize();
     const gap = 8;
     const count = visible.length;
@@ -1063,17 +1099,17 @@ export function createWindowManager({ desktop, iconLayer, templates, openWindows
     const cellW = Math.max(220, Math.floor((dw - gap * (cols + 1)) / cols));
     const cellH = Math.max(140, Math.floor((dh - gap * (rows + 1)) / rows));
 
-    visible.forEach((st, i) => {
+    visible.forEach((item, i) => {
       const col = i % cols;
       const row = Math.floor(i / cols);
       const left = gap + col * (cellW + gap);
       const top = gap + row * (cellH + gap);
-      st.maximized = false;
-      st.restoreRect = null;
-      st.win.style.left = `${clamp(left, 0, Math.max(0, dw - cellW))}px`;
-      st.win.style.top = `${clamp(top, 0, Math.max(0, dh - cellH))}px`;
-      st.win.style.width = `${Math.min(cellW, Math.max(160, dw - gap * 2))}px`;
-      st.win.style.height = `${Math.min(cellH, Math.max(120, dh - gap * 2))}px`;
+      item.st.maximized = false;
+      item.st.restoreRect = null;
+      item.st.win.style.left = `${clamp(left, 0, Math.max(0, dw - cellW))}px`;
+      item.st.win.style.top = `${clamp(top, 0, Math.max(0, dh - cellH))}px`;
+      item.st.win.style.width = `${Math.min(cellW, Math.max(160, dw - gap * 2))}px`;
+      item.st.win.style.height = `${Math.min(cellH, Math.max(120, dh - gap * 2))}px`;
     });
 
     refreshIcons();
@@ -1081,16 +1117,17 @@ export function createWindowManager({ desktop, iconLayer, templates, openWindows
   }
 
   function arrangeVisibleWindows(){
+    clearTileSnapshot();
     const visible = getVisibleWindowStates();
     if (!visible.length) return;
     const { w: dw, h: dh } = deskSize();
     const gap = 10;
     const maxW = Math.max(220, dw - gap * 2);
     const maxH = Math.max(140, dh - gap * 2);
-    const base = visible.map(st => {
-      const w = clamp(parseFloat(st.win.style.width) || st.win.offsetWidth || 360, 220, maxW);
-      const h = clamp(parseFloat(st.win.style.height) || st.win.offsetHeight || 240, 140, maxH);
-      return { st, w, h };
+    const base = visible.map(item => {
+      const w = clamp(parseFloat(item.st.win.style.width) || item.st.win.offsetWidth || 360, 220, maxW);
+      const h = clamp(parseFloat(item.st.win.style.height) || item.st.win.offsetHeight || 240, 140, maxH);
+      return { st: item.st, w, h };
     });
 
     function pack(items){
