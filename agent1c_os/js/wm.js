@@ -1078,25 +1078,29 @@ export function createWindowManager({ desktop, iconLayer, templates, openWindows
       .map(([id, st]) => ({ id, st }));
   }
 
+  function untileVisibleWindows(visible){
+    if (!tileSnapshot || !visible.length) return false;
+    const canUntile = tileSnapshot.size === visible.length
+      && visible.every(item => tileSnapshot.has(item.id));
+    if (!canUntile) return false;
+    visible.forEach(item => {
+      const prev = tileSnapshot.get(item.id);
+      if (!prev) return;
+      item.st.maximized = false;
+      item.st.restoreRect = null;
+      item.st.win.style.left = `${prev.left}px`;
+      item.st.win.style.top = `${prev.top}px`;
+      item.st.win.style.width = `${prev.width}px`;
+      item.st.win.style.height = `${prev.height}px`;
+    });
+    clearTileSnapshot();
+    return true;
+  }
+
   function tileVisibleWindows(){
     const visible = getVisibleWindowStates();
     if (!visible.length) return;
-    const canUntile = !!tileSnapshot
-      && tileSnapshot.size === visible.length
-      && visible.every(item => tileSnapshot.has(item.id));
-
-    if (canUntile) {
-      visible.forEach(item => {
-        const prev = tileSnapshot.get(item.id);
-        if (!prev) return;
-        item.st.maximized = false;
-        item.st.restoreRect = null;
-        item.st.win.style.left = `${prev.left}px`;
-        item.st.win.style.top = `${prev.top}px`;
-        item.st.win.style.width = `${prev.width}px`;
-        item.st.win.style.height = `${prev.height}px`;
-      });
-      clearTileSnapshot();
+    if (untileVisibleWindows(visible)) {
       arrangeVisibleWindows();
       return;
     }
@@ -1139,9 +1143,9 @@ export function createWindowManager({ desktop, iconLayer, templates, openWindows
   }
 
   function arrangeVisibleWindows(){
-    clearTileSnapshot();
     const visible = getVisibleWindowStates();
     if (!visible.length) return;
+    if (!untileVisibleWindows(visible)) clearTileSnapshot();
     const { dw, usableH } = getLayoutBounds();
     const gap = 10;
     const maxW = Math.max(LAYOUT_MIN_W, dw - gap * 2);
