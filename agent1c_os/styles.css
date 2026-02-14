@@ -1607,6 +1607,7 @@
 .agent-wrap-row{ flex-wrap: wrap; }
 .agent-row .btn{ white-space: nowrap; }
 .agent-row .field{ flex: 1 1 200px; min-width: 0; }
+.agent-row #chatThreadSelect{ flex: 1 1 220px; min-width: 140px; }
 .agent-row input.field,
 .agent-row select.field{
   height: 22px;

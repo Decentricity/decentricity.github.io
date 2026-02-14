@@ -62,6 +62,8 @@ const appState = {
     soulMd: DEFAULT_SOUL,
     heartbeatMd: DEFAULT_HEARTBEAT,
     rollingMessages: [],
+    localThreads: {},
+    activeLocalThreadId: "",
     status: "idle",
     lastTickAt: null,
     telegramLastUpdateId: undefined,
@@ -378,6 +380,73 @@ function pushRolling(role, content){
     .slice(-appState.config.maxContextMessages)
 }
 
+function getLocalThreadEntries(){
+  return Object.values(appState.agent.localThreads || {}).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))
+}
+
+function makeNextLocalThreadLabel(){
+  const nums = getLocalThreadEntries()
+    .map(thread => {
+      const m = /^chat\s+(\d+)$/i.exec((thread.label || "").trim())
+      return m ? Number(m[1]) : 0
+    })
+    .filter(n => Number.isFinite(n) && n > 0)
+  const next = (nums.length ? Math.max(...nums) : 0) + 1
+  return `Chat ${next}`
+}
+
+function ensureLocalThreadsInitialized(){
+  if (!appState.agent.localThreads || typeof appState.agent.localThreads !== "object") {
+    appState.agent.localThreads = {}
+  }
+  const entries = getLocalThreadEntries()
+  if (!entries.length) {
+    const id = `local-${Date.now()}`
+    appState.agent.localThreads[id] = {
+      id,
+      label: "Chat 1",
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      messages: [],
+    }
+    appState.agent.activeLocalThreadId = id
+    return
+  }
+  const active = appState.agent.activeLocalThreadId
+  if (!active || !appState.agent.localThreads[active]) {
+    appState.agent.activeLocalThreadId = entries[0].id
+  }
+}
+
+function getActiveLocalThread(){
+  ensureLocalThreadsInitialized()
+  return appState.agent.localThreads[appState.agent.activeLocalThreadId]
+}
+
+function createNewLocalThread(){
+  ensureLocalThreadsInitialized()
+  const id = `local-${Date.now()}-${Math.floor(Math.random() * 1000)}`
+  appState.agent.localThreads[id] = {
+    id,
+    label: makeNextLocalThreadLabel(),
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+    messages: [],
+  }
+  appState.agent.activeLocalThreadId = id
+  return appState.agent.localThreads[id]
+}
+
+function pushLocalMessage(threadId, role, content){
+  ensureLocalThreadsInitialized()
+  const thread = appState.agent.localThreads[threadId]
+  if (!thread) return
+  thread.messages = (thread.messages || [])
+    .concat({ role, content, createdAt: Date.now() })
+    .slice(-appState.config.maxContextMessages)
+  thread.updatedAt = Date.now()
+}
+
 function formatTime(ts){
   try { return new Date(ts).toLocaleString() } catch { return "" }
 }
@@ -422,12 +491,29 @@ function scrollChatToBottom(){
   setTimeout(apply, 0)
 }
 
+function renderLocalThreadPicker(){
+  if (!els.chatThreadSelect) return
+  ensureLocalThreadsInitialized()
+  const threads = getLocalThreadEntries()
+  const active = appState.agent.activeLocalThreadId
+  els.chatThreadSelect.innerHTML = threads
+    .map(thread => `<option value="${escapeHtml(thread.id)}">${escapeHtml(thread.label || "Chat")}</option>`)
+    .join("")
+  if (active && threads.some(thread => thread.id === active)) {
+    els.chatThreadSelect.value = active
+  }
+}
+
 function renderChat(){
   if (!els.chatLog) return
-  if (!appState.agent.rollingMessages.length) {
+  ensureLocalThreadsInitialized()
+  renderLocalThreadPicker()
+  const thread = getActiveLocalThread()
+  const messages = Array.isArray(thread?.messages) ? thread.messages : []
+  if (!messages.length) {
     els.chatLog.innerHTML = `<div class="agent-muted">No messages yet.</div>`
   } else {
-    els.chatLog.innerHTML = appState.agent.rollingMessages.map(msg => {
+    els.chatLog.innerHTML = messages.map(msg => {
       const cls = msg.role === "assistant" ? "assistant" : "user"
       const role = msg.role === "assistant" ? "assistant" : "user"
       return `<div class="agent-bubble ${cls}"><div class="agent-bubble-role">${role}</div><div>${escapeHtml(msg.content)}</div></div>`
@@ -621,7 +707,9 @@ function unlockWindowHtml(){
 function chatWindowHtml(){
   return `
     <div class="agent-stack">
-      <div class="agent-row">
+      <div class="agent-row agent-wrap-row">
+        <select id="chatThreadSelect" class="field"></select>
+        <button id="chatNewBtn" class="btn" type="button">New Chat</button>
         <button id="chatClearBtn" class="btn" type="button">Clear Chat</button>
       </div>
       <div id="chatLog" class="agent-log"></div>
@@ -760,6 +848,8 @@ function cacheElements(){
     unlockForm: byId("unlockForm"),
     unlockPassphrase: byId("unlockPassphrase"),
     unlockStatus: byId("unlockStatus"),
+    chatThreadSelect: byId("chatThreadSelect"),
+    chatNewBtn: byId("chatNewBtn"),
     chatClearBtn: byId("chatClearBtn"),
     chatLog: byId("chatLog"),
     chatForm: byId("chatForm"),
@@ -815,15 +905,18 @@ async function sendChat(text){
   const apiKey = await readProviderKey("openai")
   if (!apiKey) throw new Error("No OpenAI key stored.")
   appState.lastUserSeenAt = Date.now()
-  pushRolling("user", text)
+  const thread = getActiveLocalThread()
+  if (!thread) throw new Error("No active chat thread.")
+  pushLocalMessage(thread.id, "user", text)
+  const promptMessages = appState.agent.localThreads[thread.id]?.messages || []
   const reply = await openAiChat({
     apiKey,
     model: appState.config.model,
     temperature: appState.config.temperature,
     systemPrompt: appState.agent.soulMd,
-    messages: appState.agent.rollingMessages,
+    messages: promptMessages,
   })
-  pushRolling("assistant", reply)
+  pushLocalMessage(thread.id, "assistant", reply)
   await addEvent("chat_replied", "Hitomi replied in chat")
   await persistState()
   renderChat()
@@ -1013,10 +1106,28 @@ function wireMainDom(){
     })
   }
 
+  els.chatThreadSelect?.addEventListener("change", async () => {
+    const id = els.chatThreadSelect.value
+    if (!id || !appState.agent.localThreads?.[id]) return
+    appState.agent.activeLocalThreadId = id
+    await persistState()
+    renderChat()
+  })
+
+  els.chatNewBtn?.addEventListener("click", async () => {
+    const thread = createNewLocalThread()
+    await persistState()
+    await addEvent("chat_thread_created", `Created ${thread.label}`)
+    renderChat()
+  })
+
   els.chatClearBtn?.addEventListener("click", async () => {
-    appState.agent.rollingMessages = []
+    const thread = getActiveLocalThread()
+    if (!thread) return
+    thread.messages = []
+    thread.updatedAt = Date.now()
     await setState({ ...appState.agent })
-    await addEvent("chat_cleared", "Rolling chat context cleared")
+    await addEvent("chat_cleared", `Cleared context for ${thread.label}`)
     renderChat()
   })
 
@@ -1200,7 +1311,14 @@ async function loadPersistentState(){
     appState.agent.status = savedState.status || "idle"
     appState.agent.lastTickAt = savedState.lastTickAt || null
     appState.agent.telegramLastUpdateId = savedState.telegramLastUpdateId
+    if (savedState.localThreads && typeof savedState.localThreads === "object") {
+      appState.agent.localThreads = savedState.localThreads
+    }
+    if (typeof savedState.activeLocalThreadId === "string") {
+      appState.agent.activeLocalThreadId = savedState.activeLocalThreadId
+    }
   }
+  ensureLocalThreadsInitialized()
   appState.events = events
 }
 
