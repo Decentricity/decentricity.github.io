@@ -282,8 +282,6 @@ async function unlockVault(passphrase){
 function lockVault(){
   appState.unlocked = false
   appState.sessionKey = null
-  stopLoop()
-  stopTelegramLoop()
 }
 
 async function saveProviderKey(provider, value){
@@ -1004,7 +1002,8 @@ async function sendChat(text){
 }
 
 async function heartbeatTick(){
-  if (!appState.running || !appState.unlocked) return
+  if (!appState.running) return
+  if (!appState.unlocked) return
   appState.agent.lastTickAt = Date.now()
   if (els.lastTick) els.lastTick.textContent = formatTime(appState.agent.lastTickAt)
   const idleMs = Date.now() - appState.lastUserSeenAt
