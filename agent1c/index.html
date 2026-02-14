@@ -7,157 +7,247 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="./styles.css" />
   </head>
-  <body>
-    <main id="app" class="screen">
-      <header class="hero panel">
-        <p class="kicker">agent1c.me</p>
-        <h1>Local-first Autonomous Agent</h1>
-        <p>
-          BYOK stays encrypted in your browser. No app server. Calls go directly to your API providers.
-        </p>
-      </header>
+  <body class="hedgeyOS">
+    <main id="wmDesktop" class="wm-desktop">
+      <section id="heroWindow" class="wm-window" data-win-id="hero" data-win-title="Welcome" data-x="18" data-y="18" data-w="560" data-h="140">
+        <div class="wm-titlebar" data-drag-handle>
+          <div class="wm-controls">
+            <button class="wm-box" type="button" data-win-action="close" aria-label="Close"></button>
+            <button class="wm-box" type="button" data-win-action="min" aria-label="Minimize"></button>
+          </div>
+          <div class="wm-title">agent1c.me</div>
+          <div class="wm-controls right">
+            <button class="wm-box" type="button" data-win-action="focus" aria-label="Focus"></button>
+          </div>
+        </div>
+        <div class="wm-body hero-body">
+          <p class="kicker">local-first</p>
+          <h1>Hitomi Control Desk</h1>
+          <p>BYOK stays encrypted in your browser. No app server. Calls go directly to your API providers.</p>
+        </div>
+      </section>
 
-      <section id="chatShell" class="panel chat-shell">
-        <div class="row between chat-head">
-          <h2>Chat</h2>
-          <div class="row gap">
+      <section id="chatShell" class="wm-window" data-win-id="chat" data-win-title="Chat" data-x="38" data-y="184" data-w="620" data-h="360">
+        <div class="wm-titlebar" data-drag-handle>
+          <div class="wm-controls">
+            <button class="wm-box" type="button" data-win-action="close" aria-label="Close"></button>
+            <button class="wm-box" type="button" data-win-action="min" aria-label="Minimize"></button>
+          </div>
+          <div class="wm-title">Chat</div>
+          <div class="wm-controls right"><button class="wm-box" type="button" data-win-action="focus" aria-label="Focus"></button></div>
+        </div>
+        <div class="wm-body">
+          <div class="row gap chat-toolbar">
             <button id="chatClearBtn" type="button">Clear Chat</button>
             <button id="chatToggleBtn" class="chat-toggle" type="button">Maximize</button>
           </div>
+          <div id="chatLog" class="chat-log"></div>
+          <form id="chatForm" class="row gap chat-form">
+            <input id="chatInput" placeholder="Unlock vault to chat" disabled />
+            <button id="chatSendBtn" type="submit" disabled>Send</button>
+          </form>
         </div>
-        <div id="chatLog" class="chat-log"></div>
-        <form id="chatForm" class="row gap chat-form">
-          <input id="chatInput" placeholder="Unlock vault to chat" disabled />
-          <button id="chatSendBtn" type="submit" disabled>Send</button>
-        </form>
       </section>
 
-      <section id="setupSection" class="panel">
-        <h2>Create Local Vault</h2>
-        <form id="setupForm" class="stack">
-          <label>
-            Passphrase
-            <input id="setupPassphrase" type="password" minlength="8" required />
-          </label>
-          <label>
-            Confirm passphrase
-            <input id="setupConfirm" type="password" minlength="8" required />
-          </label>
-          <button type="submit">Initialize Vault</button>
-        </form>
-      </section>
-
-      <section id="unlockSection" class="panel hidden">
-        <h2>Unlock Vault</h2>
-        <form id="unlockForm" class="stack">
-          <label>
-            Passphrase
-            <input id="unlockPassphrase" type="password" required />
-          </label>
-          <button type="submit">Unlock</button>
-        </form>
-      </section>
-
-      <div id="authedSections" class="stack hidden">
-        <section class="panel">
-          <div class="row between">
-            <h2>OpenAI Key</h2>
-            <span id="openaiBadge" class="badge warn">Missing key</span>
+      <section id="setupSection" class="wm-window" data-win-id="setup" data-win-title="Create Vault" data-x="690" data-y="24" data-w="420" data-h="250">
+        <div class="wm-titlebar" data-drag-handle>
+          <div class="wm-controls">
+            <button class="wm-box" type="button" data-win-action="close" aria-label="Close"></button>
+            <button class="wm-box" type="button" data-win-action="min" aria-label="Minimize"></button>
           </div>
-          <form id="openaiForm" class="stack">
+          <div class="wm-title">Create Local Vault</div>
+          <div class="wm-controls right"><button class="wm-box" type="button" data-win-action="focus" aria-label="Focus"></button></div>
+        </div>
+        <div class="wm-body">
+          <form id="setupForm" class="stack">
             <label>
-              API key
-              <input id="openaiKeyInput" type="password" placeholder="sk-..." required />
+              Passphrase
+              <input id="setupPassphrase" type="password" minlength="8" required />
             </label>
-            <div class="row gap">
-              <button type="submit">Save Encrypted Key</button>
-              <button id="openaiTestBtn" type="button">Test Connection</button>
-              <button id="lockBtn" type="button">Lock Vault</button>
-            </div>
-          </form>
-        </section>
-
-        <section class="panel">
-          <div class="row between">
-            <h2>Telegram Bot Token</h2>
-            <span id="telegramBadge" class="badge warn">Missing token</span>
-          </div>
-          <form id="telegramForm" class="stack">
             <label>
-              Bot token
-              <input id="telegramTokenInput" type="password" placeholder="123456:AA..." required />
+              Confirm passphrase
+              <input id="setupConfirm" type="password" minlength="8" required />
             </label>
-            <div class="row gap">
-              <button type="submit">Save Encrypted Token</button>
-              <button id="telegramTestBtn" type="button">Test Telegram Token</button>
-            </div>
+            <button type="submit">Initialize Vault</button>
           </form>
-        </section>
+        </div>
+      </section>
 
-        <section class="panel grid-2">
-          <label>
-            Model
-            <select id="modelInput"></select>
-          </label>
-          <label>
-            Heartbeat interval (ms)
-            <input id="heartbeatInput" type="number" min="5000" step="1000" value="60000" />
-          </label>
-          <label>
-            Rolling context max messages
-            <input id="contextInput" type="number" min="4" step="1" value="16" />
-          </label>
-          <label>
-            Temperature
-            <input id="temperatureInput" type="number" min="0" max="2" step="0.1" value="0.4" />
-          </label>
-          <label>
-            Telegram poll interval (ms)
-            <input id="telegramPollInput" type="number" min="5000" step="1000" value="15000" />
-          </label>
-          <label>
-            Telegram bridge
-            <select id="telegramEnabledSelect">
-              <option value="on">Enabled</option>
-              <option value="off">Disabled</option>
-            </select>
-          </label>
-        </section>
-
-        <section class="panel">
-          <p class="small">
-            Telegram bridge is <strong id="telegramBridgeState">enabled</strong>. When enabled, Hitomi polls and
-            replies while the vault is unlocked.
-          </p>
-        </section>
-
-        <section class="panel stack">
-          <h2>SOUL.md</h2>
-          <textarea id="soulInput" rows="8"></textarea>
-          <h2>heartbeat.md</h2>
-          <textarea id="heartbeatDocInput" rows="8"></textarea>
-          <div class="row gap">
-            <button id="saveSettingsBtn" type="button">Save Settings</button>
-            <button id="startLoopBtn" type="button">Start Agent Loop</button>
-            <button id="stopLoopBtn" type="button" disabled>Stop Loop</button>
+      <section id="unlockSection" class="wm-window hidden" data-win-id="unlock" data-win-title="Unlock Vault" data-x="720" data-y="24" data-w="380" data-h="190">
+        <div class="wm-titlebar" data-drag-handle>
+          <div class="wm-controls">
+            <button class="wm-box" type="button" data-win-action="close" aria-label="Close"></button>
+            <button class="wm-box" type="button" data-win-action="min" aria-label="Minimize"></button>
           </div>
-          <p class="small">
-            Loop status: <strong id="loopStatus">idle</strong> | Last tick: <strong id="lastTick">Never</strong>
-          </p>
+          <div class="wm-title">Unlock Vault</div>
+          <div class="wm-controls right"><button class="wm-box" type="button" data-win-action="focus" aria-label="Focus"></button></div>
+        </div>
+        <div class="wm-body">
+          <form id="unlockForm" class="stack">
+            <label>
+              Passphrase
+              <input id="unlockPassphrase" type="password" required />
+            </label>
+            <button type="submit">Unlock</button>
+          </form>
+        </div>
+      </section>
+
+      <div id="authedSections" class="hidden">
+        <section id="openaiWindow" class="wm-window" data-win-id="openai" data-win-title="OpenAI Key" data-x="690" data-y="24" data-w="430" data-h="220">
+          <div class="wm-titlebar" data-drag-handle>
+            <div class="wm-controls">
+              <button class="wm-box" type="button" data-win-action="close" aria-label="Close"></button>
+              <button class="wm-box" type="button" data-win-action="min" aria-label="Minimize"></button>
+            </div>
+            <div class="wm-title">OpenAI Key</div>
+            <div class="wm-controls right"><button class="wm-box" type="button" data-win-action="focus" aria-label="Focus"></button></div>
+          </div>
+          <div class="wm-body">
+            <p class="small window-note">Status: <span id="openaiBadge" class="badge warn">Missing key</span></p>
+            <form id="openaiForm" class="stack">
+              <label>
+                API key
+                <input id="openaiKeyInput" type="password" placeholder="sk-..." required />
+              </label>
+              <div class="row gap">
+                <button type="submit">Save Encrypted Key</button>
+                <button id="openaiTestBtn" type="button">Test Connection</button>
+                <button id="lockBtn" type="button">Lock Vault</button>
+              </div>
+            </form>
+          </div>
         </section>
 
-        <section class="panel">
-          <h2>Event Timeline</h2>
-          <div id="eventLog" class="events"></div>
+        <section id="telegramWindow" class="wm-window" data-win-id="telegram" data-win-title="Telegram" data-x="690" data-y="258" data-w="430" data-h="220">
+          <div class="wm-titlebar" data-drag-handle>
+            <div class="wm-controls">
+              <button class="wm-box" type="button" data-win-action="close" aria-label="Close"></button>
+              <button class="wm-box" type="button" data-win-action="min" aria-label="Minimize"></button>
+            </div>
+            <div class="wm-title">Telegram Bot Token</div>
+            <div class="wm-controls right"><button class="wm-box" type="button" data-win-action="focus" aria-label="Focus"></button></div>
+          </div>
+          <div class="wm-body">
+            <p class="small window-note">Status: <span id="telegramBadge" class="badge warn">Missing token</span></p>
+            <form id="telegramForm" class="stack">
+              <label>
+                Bot token
+                <input id="telegramTokenInput" type="password" placeholder="123456:AA..." required />
+              </label>
+              <div class="row gap">
+                <button type="submit">Save Encrypted Token</button>
+                <button id="telegramTestBtn" type="button">Test Telegram Token</button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <section id="configWindow" class="wm-window" data-win-id="config" data-win-title="Config" data-x="690" data-y="492" data-w="430" data-h="330">
+          <div class="wm-titlebar" data-drag-handle>
+            <div class="wm-controls">
+              <button class="wm-box" type="button" data-win-action="close" aria-label="Close"></button>
+              <button class="wm-box" type="button" data-win-action="min" aria-label="Minimize"></button>
+            </div>
+            <div class="wm-title">Runtime Config</div>
+            <div class="wm-controls right"><button class="wm-box" type="button" data-win-action="focus" aria-label="Focus"></button></div>
+          </div>
+          <div class="wm-body grid-2">
+            <label>
+              Model
+              <select id="modelInput"></select>
+            </label>
+            <label>
+              Heartbeat interval (ms)
+              <input id="heartbeatInput" type="number" min="5000" step="1000" value="60000" />
+            </label>
+            <label>
+              Rolling context max messages
+              <input id="contextInput" type="number" min="4" step="1" value="16" />
+            </label>
+            <label>
+              Temperature
+              <input id="temperatureInput" type="number" min="0" max="2" step="0.1" value="0.4" />
+            </label>
+            <label>
+              Telegram poll interval (ms)
+              <input id="telegramPollInput" type="number" min="5000" step="1000" value="15000" />
+            </label>
+            <label>
+              Telegram bridge
+              <select id="telegramEnabledSelect">
+                <option value="on">Enabled</option>
+                <option value="off">Disabled</option>
+              </select>
+            </label>
+            <div class="grid-span-2 row gap">
+              <button id="saveSettingsBtn" type="button">Save Settings</button>
+              <button id="startLoopBtn" type="button">Start Agent Loop</button>
+              <button id="stopLoopBtn" type="button" disabled>Stop Loop</button>
+            </div>
+            <p class="small grid-span-2">
+              Loop status: <strong id="loopStatus">idle</strong> | Last tick: <strong id="lastTick">Never</strong>
+            </p>
+            <p class="small grid-span-2">
+              Telegram bridge is <strong id="telegramBridgeState">enabled</strong>. When enabled, Hitomi polls and replies while the vault is unlocked.
+            </p>
+          </div>
+        </section>
+
+        <section id="docsWindow" class="wm-window" data-win-id="docs" data-win-title="SOUL + heartbeat" data-x="38" data-y="560" data-w="620" data-h="330">
+          <div class="wm-titlebar" data-drag-handle>
+            <div class="wm-controls">
+              <button class="wm-box" type="button" data-win-action="close" aria-label="Close"></button>
+              <button class="wm-box" type="button" data-win-action="min" aria-label="Minimize"></button>
+            </div>
+            <div class="wm-title">SOUL + Heartbeat</div>
+            <div class="wm-controls right"><button class="wm-box" type="button" data-win-action="focus" aria-label="Focus"></button></div>
+          </div>
+          <div class="wm-body stack">
+            <label>
+              SOUL.md
+              <textarea id="soulInput" rows="7"></textarea>
+            </label>
+            <label>
+              heartbeat.md
+              <textarea id="heartbeatDocInput" rows="7"></textarea>
+            </label>
+          </div>
+        </section>
+
+        <section id="eventsWindow" class="wm-window" data-win-id="events" data-win-title="Event Timeline" data-x="38" data-y="908" data-w="620" data-h="270">
+          <div class="wm-titlebar" data-drag-handle>
+            <div class="wm-controls">
+              <button class="wm-box" type="button" data-win-action="close" aria-label="Close"></button>
+              <button class="wm-box" type="button" data-win-action="min" aria-label="Minimize"></button>
+            </div>
+            <div class="wm-title">Event Timeline</div>
+            <div class="wm-controls right"><button class="wm-box" type="button" data-win-action="focus" aria-label="Focus"></button></div>
+          </div>
+          <div class="wm-body">
+            <div id="eventLog" class="events"></div>
+          </div>
         </section>
       </div>
 
-      <footer id="statusBar" class="panel status hidden"></footer>
+      <footer id="statusBar" class="wm-window wm-status hidden" data-win-id="status" data-win-title="Status" data-x="18" data-y="1188" data-w="1102" data-h="80">
+        <div class="wm-titlebar" data-drag-handle>
+          <div class="wm-controls">
+            <button class="wm-box" type="button" data-win-action="close" aria-label="Close"></button>
+            <button class="wm-box" type="button" data-win-action="min" aria-label="Minimize"></button>
+          </div>
+          <div class="wm-title">Status</div>
+          <div class="wm-controls right"><button class="wm-box" type="button" data-win-action="focus" aria-label="Focus"></button></div>
+        </div>
+        <div class="wm-body" id="statusBody"></div>
+      </footer>
+
+      <div id="wmDock" class="wm-dock"></div>
     </main>
 
     <script src="./app.js"></script>

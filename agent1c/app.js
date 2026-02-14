@@ -96,6 +96,7 @@ On each heartbeat:
     telegramEnabled: true,
     telegramPollMs: 15000,
     openAiModels: FALLBACK_OPENAI_MODELS.slice(),
+    windowManager: null,
   }
 
   const els = {}
@@ -459,11 +460,13 @@ On each heartbeat:
   const setStatus = (message) => {
     if (!message) {
       els.statusBar.classList.add('hidden')
-      els.statusBar.textContent = ''
+      els.statusBody.textContent = ''
+      if (appState.windowManager) appState.windowManager.refreshDock()
       return
     }
     els.statusBar.classList.remove('hidden')
-    els.statusBar.textContent = message
+    els.statusBody.textContent = message
+    if (appState.windowManager) appState.windowManager.refreshDock()
   }
 
   const setBusy = (value) => {
@@ -508,6 +511,9 @@ On each heartbeat:
 
     renderChat()
     renderEvents()
+    if (appState.windowManager) {
+      appState.windowManager.refreshDock()
+    }
   }
 
   const setModelOptions = (modelIds, selectedModel) => {
@@ -719,9 +725,131 @@ On each heartbeat:
       .replaceAll('"', '&quot;')
       .replaceAll("'", '&#39;')
 
+  const initWindowManager = () => {
+    const windows = Array.from(document.querySelectorAll('.wm-window'))
+    const dock = els.wmDock
+    let zTop = 40
+    const isHiddenTree = (node) => Boolean(node.closest('.hidden'))
+
+    const setFocus = (win) => {
+      if (!win || win.classList.contains('closed') || isHiddenTree(win)) return
+      zTop += 1
+      win.style.zIndex = String(zTop)
+      windows.forEach((node) => node.classList.toggle('inactive', node !== win))
+    }
+
+    const refreshDock = () => {
+      dock.innerHTML = ''
+      windows.forEach((win) => {
+        if (isHiddenTree(win)) return
+        const title = win.dataset.winTitle || win.querySelector('.wm-title')?.textContent || 'window'
+        const button = document.createElement('button')
+        if (win.classList.contains('closed')) {
+          button.textContent = `✕ ${title}`
+        } else if (win.classList.contains('minimized')) {
+          button.textContent = `◇ ${title}`
+        } else {
+          button.textContent = title
+        }
+        button.addEventListener('click', () => {
+          win.classList.remove('closed')
+          win.classList.remove('minimized')
+          setFocus(win)
+          refreshDock()
+        })
+        dock.appendChild(button)
+      })
+    }
+
+    windows.forEach((win, index) => {
+      win.style.left = `${Number(win.dataset.x || 24 + index * 18)}px`
+      win.style.top = `${Number(win.dataset.y || 24 + index * 14)}px`
+      win.style.width = `${Number(win.dataset.w || 420)}px`
+      win.style.height = `${Number(win.dataset.h || 260)}px`
+
+      const titlebar = win.querySelector('[data-drag-handle]')
+      if (!titlebar) return
+
+      win.addEventListener('pointerdown', () => setFocus(win), { capture: true })
+
+      let dragging = false
+      let startX = 0
+      let startY = 0
+      let startLeft = 0
+      let startTop = 0
+
+      titlebar.addEventListener(
+        'pointerdown',
+        (event) => {
+          const target = event.target
+          if (target instanceof Element && target.closest('button')) return
+          dragging = true
+          startX = event.clientX
+          startY = event.clientY
+          startLeft = parseInt(win.style.left || '0', 10)
+          startTop = parseInt(win.style.top || '0', 10)
+          titlebar.setPointerCapture(event.pointerId)
+          setFocus(win)
+        },
+        { passive: true },
+      )
+
+      titlebar.addEventListener('pointermove', (event) => {
+        if (!dragging) return
+        const dx = event.clientX - startX
+        const dy = event.clientY - startY
+        const maxLeft = Math.max(0, els.wmDesktop.scrollWidth - 120)
+        const maxTop = Math.max(0, els.wmDesktop.scrollHeight - 60)
+        const nextLeft = Math.max(0, Math.min(maxLeft, startLeft + dx))
+        const nextTop = Math.max(0, Math.min(maxTop, startTop + dy))
+        win.style.left = `${nextLeft}px`
+        win.style.top = `${nextTop}px`
+      })
+
+      const stopDrag = () => {
+        dragging = false
+      }
+      titlebar.addEventListener('pointerup', stopDrag)
+      titlebar.addEventListener('pointercancel', stopDrag)
+      titlebar.addEventListener('lostpointercapture', stopDrag)
+
+      win.querySelectorAll('[data-win-action]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const action = btn.getAttribute('data-win-action')
+          if (action === 'close') {
+            win.classList.add('closed')
+          } else if (action === 'min') {
+            win.classList.toggle('minimized')
+          } else {
+            setFocus(win)
+          }
+          refreshDock()
+        })
+      })
+    })
+
+    const firstVisible = windows.find((win) => !isHiddenTree(win))
+    if (firstVisible) setFocus(firstVisible)
+    refreshDock()
+
+    return {
+      refreshDock,
+      focusById: (id) => {
+        const win = windows.find((node) => node.dataset.winId === id)
+        if (!win) return
+        win.classList.remove('closed')
+        win.classList.remove('minimized')
+        setFocus(win)
+        refreshDock()
+      },
+    }
+  }
+
   const wireDom = () => {
     const id = (name) => document.getElementById(name)
     Object.assign(els, {
+      wmDesktop: id('wmDesktop'),
+      wmDock: id('wmDock'),
       app: id('app'),
       chatShell: id('chatShell'),
       chatClearBtn: id('chatClearBtn'),
@@ -763,7 +891,10 @@ On each heartbeat:
       lastTick: id('lastTick'),
       eventLog: id('eventLog'),
       statusBar: id('statusBar'),
+      statusBody: id('statusBody'),
     })
+
+    appState.windowManager = initWindowManager()
 
     els.chatToggleBtn.addEventListener('click', () => {
       const maximized = els.chatShell.classList.toggle('maximized')
@@ -992,9 +1123,12 @@ On each heartbeat:
   bootstrap().catch((error) => {
     console.error(error)
     const status = document.getElementById('statusBar')
+    const statusBody = document.getElementById('statusBody')
     if (status) {
       status.classList.remove('hidden')
-      status.textContent = error instanceof Error ? error.message : 'Initialization failed.'
+      if (statusBody) {
+        statusBody.textContent = error instanceof Error ? error.message : 'Initialization failed.'
+      }
     }
   })
 })()
