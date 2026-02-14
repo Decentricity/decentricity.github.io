@@ -814,6 +814,7 @@ On each heartbeat:
         height: Number(win.dataset.h || 260),
       }
       baseRects.set(win, rect)
+      win.style.zIndex = String(20 + index)
       win.style.left = `${rect.left}px`
       win.style.top = `${rect.top}px`
       win.style.width = `${rect.width}px`
@@ -890,6 +891,7 @@ On each heartbeat:
       })
     })
 
+    zTop = 20 + windows.length
     const firstVisible = windows.find((win) => !isHiddenTree(win))
     if (firstVisible) setFocus(firstVisible)
     applyResponsiveLayout()
