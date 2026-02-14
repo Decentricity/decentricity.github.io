@@ -14,25 +14,13 @@
   </head>
   <body class="hedgeyOS">
     <main id="wmDesktop" class="wm-desktop">
-      <section id="heroWindow" class="wm-window" data-win-id="hero" data-win-title="Welcome" data-x="18" data-y="18" data-w="560" data-h="140">
-        <div class="wm-titlebar" data-drag-handle>
-          <div class="wm-controls">
-            <button class="wm-box" type="button" data-win-action="close" aria-label="Close"></button>
-            <button class="wm-box" type="button" data-win-action="min" aria-label="Minimize"></button>
-          </div>
-          <div class="wm-title">agent1c.me</div>
-          <div class="wm-controls right">
-            <button class="wm-box" type="button" data-win-action="focus" aria-label="Focus"></button>
-          </div>
-        </div>
-        <div class="wm-body hero-body">
-          <p class="kicker">local-first</p>
-          <h1>Hitomi Control Desk</h1>
-          <p>BYOK stays encrypted in your browser. No app server. Calls go directly to your API providers.</p>
-        </div>
+      <section id="heroWindow" class="wm-wallpaper-header">
+        <p class="kicker">agent1c.me local-first</p>
+        <h1>Hitomi Control Desk</h1>
+        <p>BYOK stays encrypted in your browser. No app server. Calls go directly to your API providers.</p>
       </section>
 
-      <section id="chatShell" class="wm-window" data-win-id="chat" data-win-title="Chat" data-x="38" data-y="184" data-w="620" data-h="360">
+      <section id="chatShell" class="wm-window" data-win-id="chat" data-win-title="Chat" data-x="38" data-y="96" data-w="620" data-h="360">
         <div class="wm-titlebar" data-drag-handle>
           <div class="wm-controls">
             <button class="wm-box" type="button" data-win-action="close" aria-label="Close"></button>
@@ -54,7 +42,7 @@
         </div>
       </section>
 
-      <section id="setupSection" class="wm-window" data-win-id="setup" data-win-title="Create Vault" data-x="690" data-y="24" data-w="420" data-h="250">
+      <section id="setupSection" class="wm-window" data-win-id="setup" data-win-title="Create Vault" data-x="690" data-y="96" data-w="420" data-h="250">
         <div class="wm-titlebar" data-drag-handle>
           <div class="wm-controls">
             <button class="wm-box" type="button" data-win-action="close" aria-label="Close"></button>
@@ -78,7 +66,7 @@
         </div>
       </section>
 
-      <section id="unlockSection" class="wm-window hidden" data-win-id="unlock" data-win-title="Unlock Vault" data-x="720" data-y="24" data-w="380" data-h="190">
+      <section id="unlockSection" class="wm-window hidden" data-win-id="unlock" data-win-title="Unlock Vault" data-x="720" data-y="96" data-w="380" data-h="190">
         <div class="wm-titlebar" data-drag-handle>
           <div class="wm-controls">
             <button class="wm-box" type="button" data-win-action="close" aria-label="Close"></button>
@@ -99,7 +87,7 @@
       </section>
 
       <div id="authedSections" class="hidden">
-        <section id="openaiWindow" class="wm-window" data-win-id="openai" data-win-title="OpenAI Key" data-x="690" data-y="24" data-w="430" data-h="220">
+        <section id="openaiWindow" class="wm-window" data-win-id="openai" data-win-title="OpenAI Key" data-x="690" data-y="96" data-w="430" data-h="220">
           <div class="wm-titlebar" data-drag-handle>
             <div class="wm-controls">
               <button class="wm-box" type="button" data-win-action="close" aria-label="Close"></button>
@@ -247,7 +235,14 @@
         <div class="wm-body" id="statusBody"></div>
       </footer>
 
-      <div id="wmDock" class="wm-dock"></div>
+      <div id="wmMenubar" class="wm-menubar">
+        <button id="menuFileBtn" class="wm-menu-btn" type="button">File</button>
+        <button id="menuWinBtn" class="wm-menu-btn" type="button">Windows</button>
+        <div id="wmDock" class="wm-window-list"></div>
+        <div class="wm-menubar-spacer"></div>
+        <span class="wm-brand">HitomiOS</span>
+        <span id="wmClock" class="wm-clock"></span>
+      </div>
     </main>
 
     <script src="./app.js"></script>

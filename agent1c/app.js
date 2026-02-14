@@ -842,6 +842,23 @@ On each heartbeat:
         setFocus(win)
         refreshDock()
       },
+      showAll: () => {
+        windows.forEach((win) => {
+          if (isHiddenTree(win)) return
+          win.classList.remove('closed')
+          win.classList.remove('minimized')
+        })
+        const first = windows.find((win) => !isHiddenTree(win))
+        if (first) setFocus(first)
+        refreshDock()
+      },
+      minimizeAll: () => {
+        windows.forEach((win) => {
+          if (isHiddenTree(win)) return
+          win.classList.add('minimized')
+        })
+        refreshDock()
+      },
     }
   }
 
@@ -850,6 +867,9 @@ On each heartbeat:
     Object.assign(els, {
       wmDesktop: id('wmDesktop'),
       wmDock: id('wmDock'),
+      wmClock: id('wmClock'),
+      menuFileBtn: id('menuFileBtn'),
+      menuWinBtn: id('menuWinBtn'),
       app: id('app'),
       chatShell: id('chatShell'),
       chatClearBtn: id('chatClearBtn'),
@@ -895,6 +915,20 @@ On each heartbeat:
     })
 
     appState.windowManager = initWindowManager()
+
+    const updateClock = () => {
+      const now = new Date()
+      els.wmClock.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    }
+    updateClock()
+    setInterval(updateClock, 30000)
+
+    els.menuFileBtn.addEventListener('click', () => {
+      appState.windowManager.showAll()
+    })
+    els.menuWinBtn.addEventListener('click', () => {
+      appState.windowManager.minimizeAll()
+    })
 
     els.chatToggleBtn.addEventListener('click', () => {
       const maximized = els.chatShell.classList.toggle('maximized')

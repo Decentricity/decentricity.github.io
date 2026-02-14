@@ -1,6 +1,6 @@
 :root {
-  --font-size: 13px;
-  --line: 17px;
+  --font-size: 12px;
+  --line: 16px;
   --os-bg: #bdbdbd;
   --os-face: #d2d2d2;
   --os-face2: #e4e4e4;
@@ -12,6 +12,15 @@
   --titlebar-bot: #f3b8c8;
   --inactive-top: #fff2bd;
   --inactive-bot: #f4e3a6;
+  --menubar-top: #efefef;
+  --menubar-bot: #dbdbdb;
+}
+
+@font-face {
+  font-family: 'EnvyCodeRNerd';
+  src: url('./fonts/EnvyCodeRNerdFont-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
 }
 
 * {
@@ -22,10 +31,12 @@ body {
   margin: 0;
   background: var(--os-bg);
   color: var(--os-black);
-  font-family: 'Nunito', system-ui, sans-serif;
+  font-family: 'EnvyCodeRNerd', 'Nunito', system-ui, sans-serif;
   font-size: var(--font-size);
   line-height: var(--line);
   overflow: hidden;
+  -webkit-font-smoothing: none;
+  font-smooth: never;
 }
 
 .hidden {
@@ -41,7 +52,32 @@ body {
     radial-gradient(circle at 88% 16%, rgba(255, 243, 176, 0.45), transparent 24%),
     linear-gradient(180deg, #c9c9c9, #bababa);
   overflow: auto;
-  padding-bottom: 54px;
+  padding-bottom: 38px;
+}
+
+.wm-wallpaper-header {
+  position: absolute;
+  top: 10px;
+  left: 18px;
+  right: 18px;
+  max-width: 760px;
+  padding: 8px 10px;
+  color: #2f2f2f;
+  pointer-events: none;
+  user-select: none;
+  z-index: 1;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.wm-wallpaper-header h1 {
+  margin: 0 0 4px;
+  font-family: 'Crimson Pro', serif;
+  font-size: 24px;
+  line-height: 1.05;
+}
+
+.wm-wallpaper-header p {
+  margin: 0;
 }
 
 .wm-window {
@@ -50,7 +86,7 @@ body {
   border: 0;
   outline: none;
   min-width: 280px;
-  min-height: 120px;
+  min-height: 110px;
   display: grid;
   grid-template-rows: 1fr 28px;
 }
@@ -73,15 +109,15 @@ body {
   display: inline-grid;
   grid-template-columns: max-content max-content max-content;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   width: fit-content;
   max-width: calc(100% - 24px);
   justify-self: start;
   align-self: end;
-  margin: 0 12px 6px 10px;
-  padding: 0 8px;
+  margin: 0 10px 5px 9px;
+  padding: 0 7px;
   border-radius: 10px;
-  height: 28px;
+  height: 24px;
   cursor: grab;
   user-select: none;
   border-top: 1px solid var(--os-white);
@@ -94,9 +130,9 @@ body {
 
 .wm-title {
   font-weight: 700;
-  font-family: 'Crimson Pro', serif;
-  font-size: 14px;
-  letter-spacing: 0.02em;
+  font-family: 'EnvyCodeRNerd', 'Nunito', sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.01em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -106,7 +142,7 @@ body {
 .wm-controls {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
 }
 
 .wm-controls.right {
@@ -114,8 +150,8 @@ body {
 }
 
 .wm-box {
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   padding: 0;
   border-top: 1px solid var(--os-white);
   border-left: 1px solid var(--os-white);
@@ -127,42 +163,73 @@ body {
 
 .wm-body {
   grid-row: 1;
-  padding: 10px;
+  padding: 8px;
   overflow: auto;
   background: linear-gradient(180deg, #efefef, #dddddd);
   border: 1px solid var(--os-shadow);
   border-bottom: 0;
-  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.22);
+  box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.22);
 }
 
-.wm-dock {
+.wm-menubar {
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
-  min-height: 32px;
-  padding: 4px 8px;
+  height: 26px;
+  padding: 0 6px;
   display: flex;
   align-items: center;
-  gap: 6px;
-  background: linear-gradient(#efefef, #d6d6d6);
-  border-top: 1px solid #7a7a7a;
+  gap: 5px;
+  background: linear-gradient(var(--menubar-top), var(--menubar-bot));
+  border-top: 1px solid var(--os-shadow);
   z-index: 9999;
-  overflow-x: auto;
 }
 
-.wm-dock button {
-  white-space: nowrap;
+.wm-menu-btn {
+  height: 20px;
+  padding: 0 6px;
+  border: 1px solid #6e6e6e;
+  background: linear-gradient(#f8f8f8, #d7d7d7);
   font-size: 11px;
-  padding: 3px 8px;
+}
+
+.wm-window-list {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  overflow-x: auto;
+  padding-bottom: 1px;
+}
+
+.wm-window-list button {
+  white-space: nowrap;
+  font-size: 10px;
+  padding: 1px 6px;
   border: 1px solid #6e6e6e;
   background: linear-gradient(#f9f9f9, #d8d8d8);
+}
+
+.wm-menubar-spacer {
+  flex: 1;
+}
+
+.wm-brand {
+  font-size: 10px;
+  opacity: 0.8;
+}
+
+.wm-clock {
+  font-size: 10px;
+  min-width: 58px;
+  text-align: right;
 }
 
 .hero-body h1 {
   margin: 0 0 6px;
   font-family: 'Crimson Pro', serif;
-  font-size: 30px;
+  font-size: 24px;
   line-height: 1.05;
 }
 
@@ -182,7 +249,7 @@ p {
 
 .stack {
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 .row {
@@ -192,7 +259,7 @@ p {
 }
 
 .gap {
-  gap: 6px;
+  gap: 5px;
 }
 
 input,
@@ -209,7 +276,7 @@ textarea {
   border: 1px solid #777;
   background: #f6f6f6;
   color: #111;
-  padding: 6px;
+  padding: 5px 6px;
 }
 
 textarea {
@@ -220,7 +287,8 @@ textarea {
 button {
   border: 1px solid #6e6e6e;
   background: linear-gradient(#f9f9f9, #d8d8d8);
-  padding: 4px 8px;
+  padding: 3px 7px;
+  font-size: 11px;
 }
 
 .chat-toggle {
@@ -236,7 +304,7 @@ button {
 }
 
 .chat-toolbar {
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .chat-bubble {
@@ -252,7 +320,7 @@ button {
 .chat-role {
   margin: 0 0 3px;
   text-transform: uppercase;
-  font-size: 10px;
+  font-size: 9px;
   color: #666;
   font-weight: 700;
 }
@@ -264,7 +332,7 @@ button {
 .badge {
   display: inline-block;
   border: 1px solid #6e6e6e;
-  font-size: 10px;
+  font-size: 9px;
   padding: 1px 6px;
   margin-left: 5px;
 }
@@ -279,7 +347,7 @@ button {
 
 .grid-2 {
   display: grid;
-  gap: 8px;
+  gap: 6px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
@@ -288,13 +356,13 @@ button {
 }
 
 .small {
-  font-size: 11px;
+  font-size: 10px;
   color: #444;
 }
 
 .events {
   display: grid;
-  gap: 6px;
+  gap: 5px;
   max-height: 200px;
   overflow: auto;
 }
@@ -302,7 +370,7 @@ button {
 .event-row {
   border: 1px solid #808080;
   background: #f2ebe3;
-  padding: 6px;
+  padding: 5px;
 }
 
 .event-head {
@@ -310,7 +378,7 @@ button {
   justify-content: space-between;
   gap: 8px;
   margin-bottom: 2px;
-  font-size: 10px;
+  font-size: 9px;
   color: #555;
   font-weight: 700;
 }
@@ -330,14 +398,17 @@ button {
 
 #chatShell.maximized {
   position: fixed !important;
-  inset: 10px;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  bottom: 34px;
   z-index: 12000 !important;
   width: auto !important;
   height: auto !important;
 }
 
 #chatShell.maximized .chat-log {
-  max-height: calc(100vh - 180px);
+  max-height: calc(100vh - 170px);
 }
 
 @media (max-width: 900px) {
