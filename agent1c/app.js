@@ -820,37 +820,47 @@ On each heartbeat:
       let startY = 0
       let startLeft = 0
       let startTop = 0
+      let previousOverflowY = ''
 
       titlebar.addEventListener(
         'pointerdown',
         (event) => {
           const target = event.target
           if (target instanceof Element && target.closest('button')) return
+          event.preventDefault()
           dragging = true
           startX = event.clientX
           startY = event.clientY
           startLeft = parseInt(win.style.left || '0', 10)
           startTop = parseInt(win.style.top || '0', 10)
+          previousOverflowY = els.wmDesktop.style.overflowY
+          els.wmDesktop.style.overflowY = 'hidden'
           titlebar.setPointerCapture(event.pointerId)
           setFocus(win)
         },
-        { passive: true },
+        { passive: false },
       )
 
-      titlebar.addEventListener('pointermove', (event) => {
-        if (!dragging) return
-        const dx = event.clientX - startX
-        const dy = event.clientY - startY
-        const maxLeft = Math.max(0, els.wmDesktop.clientWidth - 120)
-        const maxTop = Math.max(0, els.wmDesktop.clientHeight - 60)
-        const nextLeft = Math.max(0, Math.min(maxLeft, startLeft + dx))
-        const nextTop = Math.max(0, Math.min(maxTop, startTop + dy))
-        win.style.left = `${nextLeft}px`
-        win.style.top = `${nextTop}px`
-      })
+      titlebar.addEventListener(
+        'pointermove',
+        (event) => {
+          if (!dragging) return
+          event.preventDefault()
+          const dx = event.clientX - startX
+          const dy = event.clientY - startY
+          const maxLeft = Math.max(0, els.wmDesktop.clientWidth - 120)
+          const maxTop = Math.max(0, els.wmDesktop.clientHeight - 60)
+          const nextLeft = Math.max(0, Math.min(maxLeft, startLeft + dx))
+          const nextTop = Math.max(0, Math.min(maxTop, startTop + dy))
+          win.style.left = `${nextLeft}px`
+          win.style.top = `${nextTop}px`
+        },
+        { passive: false },
+      )
 
       const stopDrag = () => {
         dragging = false
+        els.wmDesktop.style.overflowY = previousOverflowY
       }
       titlebar.addEventListener('pointerup', stopDrag)
       titlebar.addEventListener('pointercancel', stopDrag)

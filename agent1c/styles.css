@@ -121,6 +121,7 @@ body {
   height: 24px;
   cursor: grab;
   user-select: none;
+  touch-action: none;
   border-top: 1px solid var(--os-white);
   border-left: 1px solid var(--os-white);
   border-right: 1px solid var(--os-shadow);
