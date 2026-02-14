@@ -384,6 +384,15 @@ function bindNotepad(textarea, lines){
   sync()
 }
 
+function syncNotepadGutters(){
+  const soulInput = els.soulInput || byId("soulInput")
+  const soulLines = els.soulLineNums || byId("soulLineNums")
+  const heartInput = els.heartbeatDocInput || byId("heartbeatDocInput")
+  const heartLines = els.heartbeatLineNums || byId("heartbeatLineNums")
+  updateLineNumbers(soulInput, soulLines)
+  updateLineNumbers(heartInput, heartLines)
+}
+
 function setStatus(text){
   if (els.setupStatus) els.setupStatus.textContent = text
   if (els.unlockStatus) els.unlockStatus.textContent = text
@@ -446,8 +455,7 @@ function loadInputsFromState(){
   if (els.telegramEnabledSelect) els.telegramEnabledSelect.value = appState.telegramEnabled ? "on" : "off"
   if (els.soulInput) els.soulInput.value = appState.agent.soulMd
   if (els.heartbeatDocInput) els.heartbeatDocInput.value = appState.agent.heartbeatMd
-  updateLineNumbers(els.soulInput, els.soulLineNums)
-  updateLineNumbers(els.heartbeatDocInput, els.heartbeatLineNums)
+  syncNotepadGutters()
   if (els.lastTick) els.lastTick.textContent = appState.agent.lastTickAt ? formatTime(appState.agent.lastTickAt) : "never"
   if (els.agentStatus) els.agentStatus.textContent = appState.agent.status || "idle"
   if (els.telegramBridgeState) els.telegramBridgeState.textContent = appState.telegramEnabled ? "enabled" : "disabled"
@@ -1056,6 +1064,8 @@ async function createWorkspace({ showUnlock }){
   wireMainDom()
   wireUnlockDom()
   loadInputsFromState()
+  requestAnimationFrame(() => syncNotepadGutters())
+  setTimeout(() => syncNotepadGutters(), 0)
   renderChat()
   renderEvents()
   refreshUi()
