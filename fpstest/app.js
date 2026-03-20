@@ -1,12 +1,13 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import * as SkeletonUtils from "three/addons/utils/SkeletonUtils.js";
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x090b10);
-scene.fog = new THREE.Fog(0x090b10, 22, 90);
+scene.background = new THREE.Color(0xa0a0a0);
+scene.fog = new THREE.Fog(0xa0a0a0, 10, 50);
 
-const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 200);
+const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);
+camera.position.set(0, 2, 4);
+
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -14,9 +15,10 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.shadowMap.enabled = true;
 document.body.appendChild(renderer.domElement);
 
-const clock = new THREE.Clock();
 const overlay = document.getElementById("overlay");
 const startButton = document.getElementById("startButton");
+const clock = new THREE.Clock();
+const loader = new GLTFLoader();
 
 const keys = {
   KeyW: false,
@@ -26,59 +28,54 @@ const keys = {
 };
 
 const player = {
-  position: new THREE.Vector3(0, 0, 0),
   yaw: 0,
-  pitch: -0.16,
-  speed: 4.5
+  pitch: -0.12,
+  position: new THREE.Vector3(0, 0, 0),
+  speed: 2.2
 };
 
-const cameraOffset = new THREE.Vector3(0.9, 2.2, 4.8);
+const cameraOffset = new THREE.Vector3(0, 1.85, 3.6);
 const cameraTarget = new THREE.Vector3();
 const desiredCameraPosition = new THREE.Vector3();
-const moveDirection = new THREE.Vector3();
-const cameraDirection = new THREE.Vector3();
-const strafeDirection = new THREE.Vector3();
-const flatForward = new THREE.Vector3();
+const forward = new THREE.Vector3();
+const right = new THREE.Vector3();
+const move = new THREE.Vector3();
 const yawQuaternion = new THREE.Quaternion();
 const pitchQuaternion = new THREE.Quaternion();
 
+let model = null;
 let mixer = null;
-let avatar = null;
 let idleAction = null;
 let walkAction = null;
 let currentAction = null;
 
 function createWorld() {
-  const hemiLight = new THREE.HemisphereLight(0x89b6ff, 0x2f2415, 1.8);
+  const hemiLight = new THREE.HemisphereLight(0xffffff, 0x8d8d8d, 3);
+  hemiLight.position.set(0, 20, 0);
   scene.add(hemiLight);
 
-  const sun = new THREE.DirectionalLight(0xffe0ba, 2.2);
-  sun.position.set(10, 18, 8);
-  sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048);
-  sun.shadow.camera.near = 0.5;
-  sun.shadow.camera.far = 60;
-  sun.shadow.camera.left = -30;
-  sun.shadow.camera.right = 30;
-  sun.shadow.camera.top = 30;
-  sun.shadow.camera.bottom = -30;
-  scene.add(sun);
+  const dirLight = new THREE.DirectionalLight(0xffffff, 3);
+  dirLight.position.set(3, 10, 10);
+  dirLight.castShadow = true;
+  dirLight.shadow.camera.top = 2;
+  dirLight.shadow.camera.bottom = -2;
+  dirLight.shadow.camera.left = -2;
+  dirLight.shadow.camera.right = 2;
+  dirLight.shadow.camera.near = 0.1;
+  dirLight.shadow.camera.far = 40;
+  scene.add(dirLight);
 
   const ground = new THREE.Mesh(
-    new THREE.PlaneGeometry(180, 180),
-    new THREE.MeshStandardMaterial({
-      color: 0x141922,
-      roughness: 0.92,
-      metalness: 0.04
-    })
+    new THREE.PlaneGeometry(100, 100),
+    new THREE.MeshPhongMaterial({ color: 0xcbcbcb, depthWrite: false })
   );
   ground.rotation.x = -Math.PI / 2;
   ground.receiveShadow = true;
   scene.add(ground);
 
-  const grid = new THREE.GridHelper(180, 90, 0x8fb4ff, 0x243345);
+  const grid = new THREE.GridHelper(100, 50, 0x777777, 0x999999);
   grid.position.y = 0.01;
-  grid.material.opacity = 0.3;
+  grid.material.opacity = 0.2;
   grid.material.transparent = true;
   scene.add(grid);
 }
@@ -89,127 +86,97 @@ function setAction(nextAction) {
   }
 
   if (currentAction) {
-    currentAction.fadeOut(0.18);
+    currentAction.fadeOut(0.2);
   }
 
-  nextAction.reset().fadeIn(0.18).play();
+  nextAction.reset().fadeIn(0.2).play();
   currentAction = nextAction;
 }
 
-function loadAvatar() {
-  const loader = new GLTFLoader();
-
+function loadPlayer() {
   loader.load(
-    "https://threejs.org/examples/models/gltf/Michelle.glb",
-    (michelleGltf) => {
-      loader.load(
-        "https://threejs.org/examples/models/gltf/Xbot.glb",
-        (xbotGltf) => {
-          avatar = michelleGltf.scene;
-          avatar.scale.setScalar(1.35);
-          avatar.traverse((child) => {
-            if (child.isMesh) {
-              child.castShadow = true;
-              child.receiveShadow = true;
-            }
-          });
-          scene.add(avatar);
+    "https://threejs.org/examples/models/gltf/Xbot.glb",
+    (gltf) => {
+      model = gltf.scene;
+      scene.add(model);
 
-          const sourceSkeleton = new THREE.SkeletonHelper(xbotGltf.scene);
-          const targetSkeleton = new THREE.SkeletonHelper(avatar);
-          const targetRoot = avatar.getObjectByName("mixamorigHips") || avatar;
-
-          const idleClip = THREE.AnimationClip.findByName(xbotGltf.animations, "idle");
-          const walkClip = THREE.AnimationClip.findByName(xbotGltf.animations, "walk");
-
-          const retargetOptions = {
-            hip: "mixamorigHips",
-            preservePosition: false,
-            preserveHipPosition: true,
-            useFirstFramePosition: true
-          };
-
-          mixer = new THREE.AnimationMixer(avatar);
-          idleAction = mixer.clipAction(
-            SkeletonUtils.retargetClip(targetSkeleton, sourceSkeleton, idleClip, retargetOptions),
-            targetRoot
-          );
-          walkAction = mixer.clipAction(
-            SkeletonUtils.retargetClip(targetSkeleton, sourceSkeleton, walkClip, retargetOptions),
-            targetRoot
-          );
-          setAction(idleAction);
-          updateAvatarTransform();
-        },
-        undefined,
-        (error) => {
-          overlay.classList.remove("overlay--hidden");
-          overlay.querySelector("p").textContent = "The movement clips failed to load. Reload the page to try again.";
-          console.error(error);
+      model.traverse((object) => {
+        if (object.isMesh) {
+          object.castShadow = true;
         }
-      );
+      });
+
+      mixer = new THREE.AnimationMixer(model);
+      idleAction = mixer.clipAction(THREE.AnimationClip.findByName(gltf.animations, "idle"));
+      walkAction = mixer.clipAction(THREE.AnimationClip.findByName(gltf.animations, "walk"));
+      setAction(idleAction);
+      updateModelTransform();
+      updateCamera(true);
     },
     undefined,
     (error) => {
       overlay.classList.remove("overlay--hidden");
-      overlay.querySelector("p").textContent = "The avatar failed to load. Reload the page to try again.";
+      overlay.querySelector("p").textContent = "The mannequin failed to load. Reload the page to try again.";
       console.error(error);
     }
   );
 }
 
-function updateAvatarTransform() {
-  if (!avatar) {
+function updateModelTransform() {
+  if (!model) {
     return;
   }
 
-  avatar.position.copy(player.position);
-  avatar.rotation.set(0, player.yaw, 0);
+  model.position.copy(player.position);
+  model.rotation.set(0, player.yaw, 0);
 }
 
 function updateMovement(delta) {
-  moveDirection.set(0, 0, 0);
-  cameraDirection.set(Math.sin(player.yaw), 0, Math.cos(player.yaw)).normalize();
-  strafeDirection.set(cameraDirection.z, 0, -cameraDirection.x).normalize();
+  move.set(0, 0, 0);
+  forward.set(Math.sin(player.yaw), 0, Math.cos(player.yaw)).normalize();
+  right.set(forward.z, 0, -forward.x).normalize();
 
   if (keys.KeyW) {
-    moveDirection.add(cameraDirection);
+    move.add(forward);
   }
   if (keys.KeyS) {
-    moveDirection.sub(cameraDirection);
+    move.sub(forward);
   }
   if (keys.KeyA) {
-    moveDirection.sub(strafeDirection);
+    move.sub(right);
   }
   if (keys.KeyD) {
-    moveDirection.add(strafeDirection);
+    move.add(right);
   }
 
-  const isMoving = moveDirection.lengthSq() > 0;
+  const moving = move.lengthSq() > 0;
 
-  if (isMoving) {
-    moveDirection.normalize();
-    player.position.addScaledVector(moveDirection, player.speed * delta);
-    player.position.x = THREE.MathUtils.clamp(player.position.x, -70, 70);
-    player.position.z = THREE.MathUtils.clamp(player.position.z, -70, 70);
+  if (moving) {
+    move.normalize();
+    player.position.addScaledVector(move, player.speed * delta);
+    player.position.x = THREE.MathUtils.clamp(player.position.x, -20, 20);
+    player.position.z = THREE.MathUtils.clamp(player.position.z, -20, 20);
   }
 
-  if (walkAction && idleAction) {
-    setAction(isMoving ? walkAction : idleAction);
+  if (idleAction && walkAction) {
+    setAction(moving ? walkAction : idleAction);
   }
 }
 
-function updateCamera() {
+function updateCamera(snap = false) {
   yawQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), player.yaw);
   pitchQuaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), player.pitch);
 
   desiredCameraPosition.copy(cameraOffset).applyQuaternion(pitchQuaternion).applyQuaternion(yawQuaternion);
   desiredCameraPosition.add(player.position);
 
-  camera.position.lerp(desiredCameraPosition, 0.14);
+  if (snap) {
+    camera.position.copy(desiredCameraPosition);
+  } else {
+    camera.position.lerp(desiredCameraPosition, 0.14);
+  }
 
-  flatForward.set(0, 1.6, 0).add(player.position);
-  cameraTarget.copy(flatForward);
+  cameraTarget.set(player.position.x, player.position.y + 1.45, player.position.z);
   camera.lookAt(cameraTarget);
 }
 
@@ -223,18 +190,9 @@ function animate() {
   }
 
   updateMovement(delta);
-  updateAvatarTransform();
+  updateModelTransform();
   updateCamera();
   renderer.render(scene, camera);
-}
-
-function lockPointer() {
-  renderer.domElement.requestPointerLock();
-}
-
-function onPointerLockChange() {
-  const locked = document.pointerLockElement === renderer.domElement;
-  overlay.classList.toggle("overlay--hidden", locked);
 }
 
 function onMouseMove(event) {
@@ -242,12 +200,17 @@ function onMouseMove(event) {
     return;
   }
 
-  player.yaw -= event.movementX * 0.0024;
-  player.pitch -= event.movementY * 0.0016;
-  player.pitch = THREE.MathUtils.clamp(player.pitch, -0.85, 0.45);
+  player.yaw -= event.movementX * 0.0025;
+  player.pitch -= event.movementY * 0.0015;
+  player.pitch = THREE.MathUtils.clamp(player.pitch, -0.75, 0.35);
 }
 
-function onKeyChange(event, pressed) {
+function onPointerLockChange() {
+  const locked = document.pointerLockElement === renderer.domElement;
+  overlay.classList.toggle("overlay--hidden", locked);
+}
+
+function setKey(event, pressed) {
   if (event.code in keys) {
     keys[event.code] = pressed;
   }
@@ -260,14 +223,13 @@ function onResize() {
 }
 
 createWorld();
-loadAvatar();
-updateCamera();
+loadPlayer();
 animate();
 
-startButton.addEventListener("click", lockPointer);
-overlay.addEventListener("click", lockPointer);
+startButton.addEventListener("click", () => renderer.domElement.requestPointerLock());
+overlay.addEventListener("click", () => renderer.domElement.requestPointerLock());
 document.addEventListener("pointerlockchange", onPointerLockChange);
 document.addEventListener("mousemove", onMouseMove);
-window.addEventListener("keydown", (event) => onKeyChange(event, true));
-window.addEventListener("keyup", (event) => onKeyChange(event, false));
+window.addEventListener("keydown", (event) => setKey(event, true));
+window.addEventListener("keyup", (event) => setKey(event, false));
 window.addEventListener("resize", onResize);
