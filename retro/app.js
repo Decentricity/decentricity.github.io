@@ -1500,14 +1500,14 @@ class CRTScene {
                 }
                 case 'shed': {
                     const panel = addGroupBox(house, 'shedRoof', cfg.width + 0.7, 0.18, cfg.depth + 0.7, 0, roofBaseY + 0.16, 0, makeMaterial(cfg.roofColor, 0.82, 0.03));
-                    panel.rotation.x = -0.28;
+                    panel.rotation.x = 0.28;
                     break;
                 }
                 default: {
                     const roofA = addGroupBox(house, 'gableRoofA', cfg.width + 0.6, 0.16, cfg.depth * 0.58, 0, roofBaseY + 0.08, cfg.depth * 0.18, makeMaterial(cfg.roofColor, 0.82, 0.03));
                     const roofB = addGroupBox(house, 'gableRoofB', cfg.width + 0.6, 0.16, cfg.depth * 0.58, 0, roofBaseY + 0.08, -cfg.depth * 0.18, makeMaterial(cfg.roofColor, 0.82, 0.03));
-                    roofA.rotation.x = -0.33;
-                    roofB.rotation.x = 0.33;
+                    roofA.rotation.x = 0.33;
+                    roofB.rotation.x = -0.33;
                     break;
                 }
             }
@@ -1612,20 +1612,35 @@ class CRTScene {
             addShrub(84.2, 48.2, 0.38, 0x62884d);
             addShrub(87.9, 47.2, 0.32, 0x5a7f46);
 
-            addBox('mainHouseWalkway', 1.25, 0.05, 4.1, 0.65, floorY - 0.005, 6.7, makeMaterial(0xd8d4ce, 0.96, 0.01));
-            addBox('mainHousePorch', 1.9, 0.08, 1.25, 0.65, floorY + 0.01, 4.92, makeMaterial(0xd9cfbf, 0.93, 0.01));
-            addNumberPlaque(this.scene, '01', 0.65, floorY + 2.42, 4.42);
+            addBox('mainHouseSidePorch', 1.22, 0.08, 1.72, -6.48, floorY + 0.01, 1.82, makeMaterial(0xd9cfbf, 0.93, 0.01));
+            addBox('mainHouseSidePathA', 2.56, 0.05, 1.08, -7.78, floorY - 0.005, 1.82, makeMaterial(0xd8d4ce, 0.96, 0.01));
+            addBox('mainHouseSidePathB', 1.08, 0.05, 2.34, -8.52, floorY - 0.005, 2.99, makeMaterial(0xd8d4ce, 0.96, 0.01));
+            addNumberPlaque(this.scene, '01', -5.72, floorY + 2.14, 1.82, Math.PI / 2);
             addWindowUnit(this.scene, -1.25, floorY + 1.5, 4.38, 0.92, 0.74, 0, true);
             addWindowUnit(this.scene, 1.9, floorY + 1.5, 4.38, 0.92, 0.74, 0, true);
 
-            addBox('mainHouseOuterLeft', wallThickness, 3.3, 8.9, -5.88, floorY + 1.65, 0.15, makeMaterial(0xe2ddcf, 0.86, 0.02));
+            addBox('mainHouseOuterLeftLower', wallThickness, 3.3, 5.59, -5.88, floorY + 1.65, -1.50, makeMaterial(0xe2ddcf, 0.86, 0.02));
+            addBox('mainHouseOuterLeftUpper', wallThickness, 3.3, 2.25, -5.88, floorY + 1.65, 3.47, makeMaterial(0xe2ddcf, 0.86, 0.02));
+            addBox('mainHouseOuterLeftHeader', wallThickness, 1.16, 1.06, -5.88, floorY + 2.72, 1.82, makeMaterial(0xe2ddcf, 0.86, 0.02));
             addBox('mainHouseOuterRight', wallThickness, 3.3, 8.9, 6.62, floorY + 1.65, 0.15, makeMaterial(0xe2ddcf, 0.86, 0.02));
             addBox('mainHouseOuterBack', 12.5, 3.3, wallThickness, 0.37, floorY + 1.65, -4.12, makeMaterial(0xe2ddcf, 0.86, 0.02));
+            addHingedDoor(
+                this.scene,
+                'mainSideDoor',
+                1.0,
+                2.14,
+                0.06,
+                -5.84,
+                floorY + 1.07,
+                1.82,
+                makeMaterial(0x946d55, 0.72, 0.03),
+                { closedRotY: Math.PI / 2, openAngle: 1.1, hinge: 'right' }
+            );
 
             const roofA = addBox('mainHouseRoofA', 12.9, 0.18, 5.1, 0.37, floorY + 3.58, -1.0, makeMaterial(0x7c5648, 0.82, 0.03));
             const roofB = addBox('mainHouseRoofB', 12.9, 0.18, 5.1, 0.37, floorY + 3.58, 1.3, makeMaterial(0x7c5648, 0.82, 0.03));
-            roofA.rotation.x = -0.34;
-            roofB.rotation.x = 0.34;
+            roofA.rotation.x = 0.34;
+            roofB.rotation.x = -0.34;
 
             addTree(-8.2, 6.8, 1001);
             addTree(8.4, 7.2, 1002);
@@ -1700,27 +1715,7 @@ class CRTScene {
         // 2) A front hall/gallery turns the open front edge into part of a house.
         addFloorPanel('hallFloor', 4.2, 2.4, 0, 3.1, 0xf1ece8);
         addCeilingPanel('hallCeiling', 4.2, 2.4, 0, 3.1, 0xfbf7f3);
-        const hallDoorCenterX = 0.65;
-        const hallDoorWidth = 1.06;
-        const hallDoorHeight = 2.14;
-        const hallFrontHalf = 2.1;
-        const hallFrontLeftWidth = hallDoorCenterX - hallDoorWidth * 0.5 + hallFrontHalf;
-        const hallFrontRightWidth = hallFrontHalf - (hallDoorCenterX + hallDoorWidth * 0.5);
-        addWallX('frontHallWallLeft', hallFrontLeftWidth, -hallFrontHalf + hallFrontLeftWidth * 0.5, 4.28, 0xe3d4c4);
-        addWallX('frontHallWallRight', hallFrontRightWidth, hallDoorCenterX + hallDoorWidth * 0.5 + hallFrontRightWidth * 0.5, 4.28, 0xe3d4c4);
-        addBox('frontHallDoorHeader', hallDoorWidth, wallHeight - hallDoorHeight, wallThickness, hallDoorCenterX, floorY + hallDoorHeight + (wallHeight - hallDoorHeight) * 0.5, 4.28, makeMaterial(0xe3d4c4, 0.9, 0.02));
-        addHingedDoor(
-            this.scene,
-            'mainFrontDoor',
-            0.98,
-            hallDoorHeight,
-            0.06,
-            hallDoorCenterX,
-            floorY + hallDoorHeight * 0.5,
-            4.24,
-            makeMaterial(0x946d55, 0.72, 0.03),
-            { closedRotY: 0, openAngle: 1.18, hinge: 'left' }
-        );
+        addWallX('frontHallWall', 4.2, 0, 4.28, 0xe3d4c4);
         addWallZ('hallLeftWall', 2.45, -2.02, 3.06, 0xd7d0cb);
         addWallZ('hallRightReturn', 1.0, 2.02, 3.78, 0xd7d0cb);
 
@@ -1775,9 +1770,15 @@ class CRTScene {
         // 5) A bedroom nook sits through the new doorway in the left wall.
         addFloorPanel('bedroomFloor', 2.9, 3.8, -3.43, 1.1, 0xefe8f5);
         addCeilingPanel('bedroomCeiling', 2.9, 3.8, -3.43, 1.1, 0xfaf6fe);
-        addWallZ('bedroomLeftWall', 3.8, -4.84, 1.1, 0xd7d3de);
+        addWallZ('bedroomLeftWallLower', 2.11, -4.84, 0.255, 0xd7d3de);
+        addWallZ('bedroomLeftWallUpper', 0.67, -4.84, 2.665, 0xd7d3de);
+        addBox('bedroomSideEntryHeader', wallThickness, 0.66, 1.02, -4.84, floorY + 2.47, 1.82, makeMaterial(0xd7d3de, 0.9, 0.02));
         addWallX('bedroomFrontWall', 2.9, -3.43, 2.98, 0xe7d9e5);
         addWallX('bedroomBackWall', 2.9, -3.43, -0.78, 0xe7d9e5);
+        addBox('sideVestibuleFloor', 1.04, floorThickness, 1.38, -5.36, floorY - floorThickness * 0.5, 1.82, makeMaterial(0xf0ece6, 0.96, 0.01));
+        addBox('sideVestibuleCeiling', 1.04, floorThickness, 1.38, -5.36, ceilingY, 1.82, makeMaterial(0xfaf6fe, 0.95, 0.01));
+        addBox('sideVestibuleFrontWall', 1.04, 2.32, wallThickness, -5.36, floorY + 1.16, 2.47, makeMaterial(0xe2ddcf, 0.88, 0.02));
+        addBox('sideVestibuleBackWall', 1.04, 2.32, wallThickness, -5.36, floorY + 1.16, 1.17, makeMaterial(0xe2ddcf, 0.88, 0.02));
 
         addBox('bedFrame', 1.55, 0.28, 2.25, -3.63, floorY + 0.14, 1.2, makeMaterial(0xc7a2aa, 0.88, 0.01));
         addBox('bedMattress', 1.42, 0.22, 2.05, -3.63, floorY + 0.39, 1.2, makeMaterial(0xf4f1f6, 0.92, 0.01));
@@ -2744,12 +2745,14 @@ class FPSControls {
         this.domElement = domElement;
         this.enabled = true;
         this.isLocked = false;
+        this.isTouchDevice = window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
         this.floorY = -0.2;
         this.standEyeHeight = 1.05;
         this.crouchEyeHeight = 0.68;
         this.isCrouching = false;
         this.moveSpeed = 2.6;
         this.lookSpeed = 0.0022;
+        this.touchLookSpeed = 0.0032;
         this.pitchMin = -Math.PI / 2 + 0.08;
         this.pitchMax = Math.PI / 2 - 0.08;
         this.yaw = 0;
@@ -2766,9 +2769,23 @@ class FPSControls {
             minZ: -8,
             maxZ: 96
         };
+        this.touchState = {
+            movePointerId: null,
+            lookPointerId: null,
+            moveVector: new THREE.Vector2(),
+            lookLastX: 0,
+            lookLastY: 0
+        };
+        this.mobileUi = {
+            root: document.getElementById('mobile-controls'),
+            moveZone: document.getElementById('mobile-move-zone'),
+            moveKnob: document.getElementById('mobile-move-knob'),
+            lookZone: document.getElementById('mobile-look-zone')
+        };
 
         this.camera.position.set(1.15, this.floorY + this.currentEyeHeight(), 2.25);
         this.camera.lookAt(new THREE.Vector3(0, this.floorY + 1.0, 0));
+        document.body.classList.toggle('touch-device', this.isTouchDevice);
         this.syncAnglesFromCamera();
         this.setupEvents();
     }
@@ -2782,6 +2799,9 @@ class FPSControls {
         document.addEventListener('mousemove', (e) => this.onMouseMove(e));
         document.addEventListener('keydown', (e) => this.onKeyChange(e, true));
         document.addEventListener('keyup', (e) => this.onKeyChange(e, false));
+        if (this.isTouchDevice) {
+            this.setupTouchControls();
+        }
     }
 
     isTyping() {
@@ -2802,6 +2822,7 @@ class FPSControls {
 
     lock() {
         if (!this.enabled || this.isTyping()) return;
+        if (this.isTouchDevice) return;
         this.domElement.requestPointerLock();
     }
 
@@ -2815,12 +2836,123 @@ class FPSControls {
         }
     }
 
-    onMouseMove(event) {
-        if (!this.enabled || !this.isLocked) return;
-        this.yaw -= event.movementX * this.lookSpeed;
-        this.pitch -= event.movementY * this.lookSpeed;
+    setEnabled(enabled) {
+        this.enabled = enabled;
+        if (!enabled) {
+            this.resetMovePad();
+            this.touchState.lookPointerId = null;
+        }
+    }
+
+    setupTouchControls() {
+        const { moveZone, lookZone } = this.mobileUi;
+        if (!moveZone || !lookZone) return;
+
+        const releaseCapture = (target, pointerId) => {
+            try {
+                target.releasePointerCapture(pointerId);
+            } catch (e) {
+                // Ignore unsupported capture release
+            }
+        };
+
+        moveZone.addEventListener('pointerdown', (event) => {
+            if (event.pointerType === 'mouse') return;
+            if (!this.enabled) return;
+            this.touchState.movePointerId = event.pointerId;
+            try {
+                moveZone.setPointerCapture(event.pointerId);
+            } catch (e) {
+                // Ignore unsupported capture
+            }
+            this.updateMovePad(event);
+            event.preventDefault();
+        });
+        moveZone.addEventListener('pointermove', (event) => {
+            if (event.pointerId !== this.touchState.movePointerId) return;
+            this.updateMovePad(event);
+            event.preventDefault();
+        });
+        ['pointerup', 'pointercancel', 'lostpointercapture'].forEach((type) => {
+            moveZone.addEventListener(type, (event) => {
+                if (event.pointerId !== this.touchState.movePointerId) return;
+                releaseCapture(moveZone, event.pointerId);
+                this.touchState.movePointerId = null;
+                this.resetMovePad();
+            });
+        });
+
+        lookZone.addEventListener('pointerdown', (event) => {
+            if (event.pointerType === 'mouse') return;
+            if (!this.enabled) return;
+            this.touchState.lookPointerId = event.pointerId;
+            this.touchState.lookLastX = event.clientX;
+            this.touchState.lookLastY = event.clientY;
+            try {
+                lookZone.setPointerCapture(event.pointerId);
+            } catch (e) {
+                // Ignore unsupported capture
+            }
+            event.preventDefault();
+        });
+        lookZone.addEventListener('pointermove', (event) => {
+            if (event.pointerId !== this.touchState.lookPointerId) return;
+            if (!this.enabled) return;
+            const dx = event.clientX - this.touchState.lookLastX;
+            const dy = event.clientY - this.touchState.lookLastY;
+            this.touchState.lookLastX = event.clientX;
+            this.touchState.lookLastY = event.clientY;
+            this.applyLookDelta(dx, dy, this.touchLookSpeed);
+            event.preventDefault();
+        });
+        ['pointerup', 'pointercancel', 'lostpointercapture'].forEach((type) => {
+            lookZone.addEventListener(type, (event) => {
+                if (event.pointerId !== this.touchState.lookPointerId) return;
+                releaseCapture(lookZone, event.pointerId);
+                this.touchState.lookPointerId = null;
+            });
+        });
+    }
+
+    updateMovePad(event) {
+        const { moveZone, moveKnob } = this.mobileUi;
+        if (!moveZone || !moveKnob) return;
+
+        const rect = moveZone.getBoundingClientRect();
+        const centerX = rect.left + rect.width * 0.5;
+        const centerY = rect.top + rect.height * 0.5;
+        const radius = rect.width * 0.34;
+
+        let dx = event.clientX - centerX;
+        let dy = event.clientY - centerY;
+        const length = Math.hypot(dx, dy);
+        if (length > radius) {
+            const scale = radius / length;
+            dx *= scale;
+            dy *= scale;
+        }
+
+        this.touchState.moveVector.set(dx / radius, -dy / radius);
+        moveKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+    }
+
+    resetMovePad() {
+        this.touchState.moveVector.set(0, 0);
+        if (this.mobileUi.moveKnob) {
+            this.mobileUi.moveKnob.style.transform = 'translate(-50%, -50%)';
+        }
+    }
+
+    applyLookDelta(dx, dy, speed) {
+        this.yaw -= dx * speed;
+        this.pitch -= dy * speed;
         this.pitch = THREE.MathUtils.clamp(this.pitch, this.pitchMin, this.pitchMax);
         this.applyRotation();
+    }
+
+    onMouseMove(event) {
+        if (!this.enabled || !this.isLocked) return;
+        this.applyLookDelta(event.movementX, event.movementY, this.lookSpeed);
     }
 
     onKeyChange(event, pressed) {
@@ -2877,11 +3009,19 @@ class FPSControls {
         this.applyRotation();
         this.clampPosition();
 
-        if (!this.isLocked) return;
+        if (!this.isLocked && !this.isTouchDevice) return;
 
-        const inputX = (this.moveState.right ? 1 : 0) - (this.moveState.left ? 1 : 0);
-        const inputZ = (this.moveState.forward ? 1 : 0) - (this.moveState.backward ? 1 : 0);
-        if (!inputX && !inputZ) return;
+        const inputX = THREE.MathUtils.clamp(
+            ((this.moveState.right ? 1 : 0) - (this.moveState.left ? 1 : 0)) + this.touchState.moveVector.x,
+            -1,
+            1
+        );
+        const inputZ = THREE.MathUtils.clamp(
+            ((this.moveState.forward ? 1 : 0) - (this.moveState.backward ? 1 : 0)) + this.touchState.moveVector.y,
+            -1,
+            1
+        );
+        if (Math.abs(inputX) < 0.001 && Math.abs(inputZ) < 0.001) return;
 
         const move = new THREE.Vector3(inputX, 0, inputZ).normalize().multiplyScalar(this.moveSpeed * delta);
         const forward = new THREE.Vector3();
@@ -2971,8 +3111,9 @@ class InteractionSystem {
     enterScreen() {
         this.isOverScreen = true;
         this.css3dScreen.enableInput();
-        this.controls.enabled = false;
-        this.hint.textContent = 'Press ESC to leave the screen';
+        this.controls.setEnabled(false);
+        document.body.classList.add('screen-mode');
+        this.hint.textContent = this.controls.isTouchDevice ? 'Tap outside the screen to leave it' : 'Press ESC to leave the screen';
         this.hint.style.display = 'block';
         document.body.style.cursor = 'pointer';
     }
@@ -2980,7 +3121,8 @@ class InteractionSystem {
     exitScreen() {
         this.isOverScreen = false;
         this.css3dScreen.disableInput();
-        this.controls.enabled = true;
+        this.controls.setEnabled(true);
+        document.body.classList.remove('screen-mode');
         this.hint.style.display = 'none';
         document.body.style.cursor = 'default';
     }
@@ -3251,6 +3393,12 @@ class CRTApp {
             this.urlBar.show(); // Opens within same gesture = mobile keyboard shows
             return;
         }
+
+        const screenHits = this.pickRay.intersectObject(this.crtScene.screenMesh, false);
+        if (screenHits.length && this.css3dScreen.isViewable()) {
+            this.interaction.enterScreen();
+            return;
+        }
         
         // Then check other clickables
         const clickables = [];
@@ -3260,7 +3408,9 @@ class CRTApp {
         
         const hits = this.pickRay.intersectObjects(clickables, true);
         if (!hits.length) {
-            this.controls.lock();
+            if (!this.controls.isTouchDevice) {
+                this.controls.lock();
+            }
             return;
         }
         
@@ -3293,7 +3443,9 @@ class CRTApp {
     showMovementHint() {
         const hint = document.getElementById('hint');
         if (!hint) return;
-        hint.textContent = 'Click to walk, move the mouse to look, WASD to move, ESC to free the cursor';
+        hint.textContent = this.controls.isTouchDevice
+            ? 'Use the left stick to walk and drag the right pad to look around'
+            : 'Click to walk, move the mouse to look, WASD to move, ESC to free the cursor';
         hint.style.display = 'block';
         window.setTimeout(() => {
             if (!this.interaction.isOverScreen) {

@@ -8,7 +8,7 @@
 </head>
 <body>
     <div id="url-overlay">
-        <input type="text" id="url-input" placeholder="Enter URL to browse..." value="https://hedgeyos.github.io">
+        <input type="text" id="url-input" placeholder="Enter URL to browse..." value="https://agent1c-ai.github.io">
     </div>
     
     <canvas id="webgl"></canvas>
@@ -16,6 +16,15 @@
     
     <div id="hint" style="display: none;">Press ESC to exit screen</div>
     <div id="toast-container"></div>
+    <div id="mobile-controls" aria-hidden="true">
+        <div id="mobile-move-zone" class="mobile-pad">
+            <div class="mobile-pad-label">MOVE</div>
+            <div id="mobile-move-knob" class="mobile-pad-knob"></div>
+        </div>
+        <div id="mobile-look-zone" class="mobile-look-pad">
+            <div class="mobile-pad-label">LOOK</div>
+        </div>
+    </div>
 
     <footer style="position: fixed; bottom: 10px; right: 10px; color: rgba(255,255,255,0.5); font-size: 11px; z-index: 1000;">
         <a href="https://berrry.app" target="_blank" style="color: rgba(255,255,255,0.7); text-decoration: none;">made with 🍓 berrry.app</a>

@@ -8,6 +8,7 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     overflow: hidden;
     background: #000;
+    overscroll-behavior: none;
 }
 
 #webgl {
@@ -17,6 +18,7 @@ body {
     width: 100%;
     height: 100%;
     z-index: 1;
+    touch-action: none;
 }
 
 #css3d-root {
@@ -27,6 +29,7 @@ body {
     height: 100%;
     pointer-events: none;
     z-index: 2;
+    touch-action: none;
 }
 
 #css3d-renderer {
@@ -124,6 +127,72 @@ body {
     transform: translateX(0);
 }
 
+#mobile-controls {
+    position: fixed;
+    inset: 0;
+    z-index: 220;
+    pointer-events: none;
+    display: none;
+}
+
+body.touch-device #mobile-controls {
+    display: block;
+}
+
+.mobile-pad,
+.mobile-look-pad {
+    position: absolute;
+    bottom: 24px;
+    width: min(34vw, 190px);
+    height: min(34vw, 190px);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(6px);
+    pointer-events: auto;
+    touch-action: none;
+    user-select: none;
+}
+
+.mobile-pad {
+    left: 20px;
+}
+
+.mobile-look-pad {
+    right: 20px;
+}
+
+.mobile-pad-label {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.56);
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    pointer-events: none;
+}
+
+.mobile-pad-knob {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 44%;
+    height: 44%;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 255, 255, 0.28);
+    border: 1px solid rgba(255, 255, 255, 0.34);
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
+    pointer-events: none;
+}
+
+body.screen-mode #mobile-controls {
+    opacity: 0.4;
+}
+
 @media (max-width: 600px) {
     #url-overlay {
         width: calc(100% - 40px);
@@ -134,5 +203,20 @@ body {
     
     #url-input {
         width: 100%;
+    }
+
+    .mobile-pad,
+    .mobile-look-pad {
+        width: min(38vw, 170px);
+        height: min(38vw, 170px);
+        bottom: 18px;
+    }
+
+    .mobile-pad {
+        left: 14px;
+    }
+
+    .mobile-look-pad {
+        right: 14px;
     }
 }
