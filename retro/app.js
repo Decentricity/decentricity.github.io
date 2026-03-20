@@ -1243,8 +1243,8 @@ class CRTScene {
             const habitatRadius = this.oneillRadius || 1800;
             const habitatCenterY = this.oneillCenterY || (floorY + habitatRadius);
 
-            this.scene.background = new THREE.Color(0xe6f4ff);
-            this.scene.fog = new THREE.Fog(0xe6f4ff, 1200, 12000);
+            this.scene.background = new THREE.Color(0xdbeeff);
+            this.scene.fog = new THREE.Fog(0xdbeeff, 2200, 18000);
 
             const shellCanvas = document.createElement('canvas');
             shellCanvas.width = 4096;
@@ -1329,9 +1329,9 @@ class CRTScene {
                 const band = new THREE.Mesh(
                     new THREE.CylinderGeometry(4.2, 4.2, 900, 18, 1, true),
                     new THREE.MeshBasicMaterial({
-                        color: 0xf7fbff,
+                        color: 0xf2f8ff,
                         transparent: true,
-                        opacity: index === 1 ? 0.3 : 0.18
+                        opacity: index === 1 ? 0.12 : 0.07
                     })
                 );
                 band.rotation.z = Math.PI * 0.5;
@@ -1344,7 +1344,7 @@ class CRTScene {
                 this.scene.add(band);
             });
 
-            const habitatAmbient = new THREE.HemisphereLight(0xf1fbff, 0xb8d7b7, 1.1);
+            const habitatAmbient = new THREE.HemisphereLight(0xf1fbff, 0xb8d7b7, 0.72);
             habitatAmbient.name = 'oneillHemisphere';
             this.scene.add(habitatAmbient);
         };
@@ -1720,30 +1720,15 @@ class CRTScene {
             addShrub(84.2, 48.2, 0.38, 0x62884d);
             addShrub(87.9, 47.2, 0.32, 0x5a7f46);
 
-            addBox('mainHouseSidePorch', 1.22, 0.08, 1.72, -6.48, floorY + 0.01, 1.82, makeMaterial(0xd9cfbf, 0.93, 0.01));
-            addBox('mainHouseSidePathA', 2.56, 0.05, 1.08, -7.78, floorY - 0.005, 1.82, makeMaterial(0xd8d4ce, 0.96, 0.01));
-            addBox('mainHouseSidePathB', 1.08, 0.05, 2.34, -8.52, floorY - 0.005, 2.99, makeMaterial(0xd8d4ce, 0.96, 0.01));
-            addNumberPlaque(this.scene, '01', -5.72, floorY + 2.14, 1.82, Math.PI / 2);
+            addBox('mainHouseFrontWalkway', 1.25, 0.05, 4.1, 0.22, floorY - 0.005, 6.7, makeMaterial(0xd8d4ce, 0.96, 0.01));
+            addBox('mainHouseFrontPorch', 1.9, 0.08, 1.25, 0.22, floorY + 0.01, 4.92, makeMaterial(0xd9cfbf, 0.93, 0.01));
+            addNumberPlaque(this.scene, '01', 0.22, floorY + 2.42, 4.42);
             addWindowUnit(this.scene, -1.25, floorY + 1.5, 4.38, 0.92, 0.74, 0, true);
             addWindowUnit(this.scene, 1.9, floorY + 1.5, 4.38, 0.92, 0.74, 0, true);
 
-            addBox('mainHouseOuterLeftLower', wallThickness, 3.3, 5.59, -5.88, floorY + 1.65, -1.50, makeMaterial(0xe2ddcf, 0.86, 0.02));
-            addBox('mainHouseOuterLeftUpper', wallThickness, 3.3, 2.25, -5.88, floorY + 1.65, 3.47, makeMaterial(0xe2ddcf, 0.86, 0.02));
-            addBox('mainHouseOuterLeftHeader', wallThickness, 1.16, 1.06, -5.88, floorY + 2.72, 1.82, makeMaterial(0xe2ddcf, 0.86, 0.02));
+            addBox('mainHouseOuterLeft', wallThickness, 3.3, 8.9, -5.88, floorY + 1.65, 0.15, makeMaterial(0xe2ddcf, 0.86, 0.02));
             addBox('mainHouseOuterRight', wallThickness, 3.3, 8.9, 6.62, floorY + 1.65, 0.15, makeMaterial(0xe2ddcf, 0.86, 0.02));
             addBox('mainHouseOuterBack', 12.5, 3.3, wallThickness, 0.37, floorY + 1.65, -4.12, makeMaterial(0xe2ddcf, 0.86, 0.02));
-            addHingedDoor(
-                this.scene,
-                'mainSideDoor',
-                1.0,
-                2.14,
-                0.06,
-                -5.84,
-                floorY + 1.07,
-                1.82,
-                makeMaterial(0x946d55, 0.72, 0.03),
-                { closedRotY: Math.PI / 2, openAngle: 1.1, hinge: 'right' }
-            );
 
             const mainRoofAngle = 0.34;
             const mainHouseHalfDepth = 8.9 * 0.5;
@@ -1829,7 +1814,27 @@ class CRTScene {
         // 2) A front hall/gallery turns the open front edge into part of a house.
         addFloorPanel('hallFloor', 4.2, 2.4, 0, 3.1, 0xf1ece8);
         addCeilingPanel('hallCeiling', 4.2, 2.4, 0, 3.1, 0xfbf7f3);
-        addWallX('frontHallWall', 4.2, 0, 4.28, 0xe3d4c4);
+        const hallDoorCenterX = 0.22;
+        const hallDoorWidth = 1.04;
+        const hallDoorHeight = 2.14;
+        const hallFrontHalf = 2.1;
+        const hallFrontLeftWidth = hallDoorCenterX - hallDoorWidth * 0.5 + hallFrontHalf;
+        const hallFrontRightWidth = hallFrontHalf - (hallDoorCenterX + hallDoorWidth * 0.5);
+        addWallX('frontHallWallLeft', hallFrontLeftWidth, -hallFrontHalf + hallFrontLeftWidth * 0.5, 4.28, 0xe3d4c4);
+        addWallX('frontHallWallRight', hallFrontRightWidth, hallDoorCenterX + hallDoorWidth * 0.5 + hallFrontRightWidth * 0.5, 4.28, 0xe3d4c4);
+        addBox('frontHallDoorHeader', hallDoorWidth, wallHeight - hallDoorHeight, wallThickness, hallDoorCenterX, floorY + hallDoorHeight + (wallHeight - hallDoorHeight) * 0.5, 4.28, makeMaterial(0xe3d4c4, 0.9, 0.02));
+        addHingedDoor(
+            this.scene,
+            'mainFrontDoor',
+            0.98,
+            hallDoorHeight,
+            0.06,
+            hallDoorCenterX,
+            floorY + hallDoorHeight * 0.5,
+            4.24,
+            makeMaterial(0x946d55, 0.72, 0.03),
+            { closedRotY: 0, openAngle: 1.1, hinge: 'left' }
+        );
         addWallZ('hallLeftWall', 2.45, -2.02, 3.06, 0xd7d0cb);
         addWallZ('hallRightReturn', 1.0, 2.02, 3.78, 0xd7d0cb);
 
@@ -1884,15 +1889,9 @@ class CRTScene {
         // 5) A bedroom nook sits through the new doorway in the left wall.
         addFloorPanel('bedroomFloor', 2.9, 3.8, -3.43, 1.1, 0xefe8f5);
         addCeilingPanel('bedroomCeiling', 2.9, 3.8, -3.43, 1.1, 0xfaf6fe);
-        addWallZ('bedroomLeftWallLower', 2.11, -4.84, 0.255, 0xd7d3de);
-        addWallZ('bedroomLeftWallUpper', 0.67, -4.84, 2.665, 0xd7d3de);
-        addBox('bedroomSideEntryHeader', wallThickness, 0.66, 1.02, -4.84, floorY + 2.47, 1.82, makeMaterial(0xd7d3de, 0.9, 0.02));
+        addWallZ('bedroomLeftWall', 3.8, -4.84, 1.1, 0xd7d3de);
         addWallX('bedroomFrontWall', 2.9, -3.43, 2.98, 0xe7d9e5);
         addWallX('bedroomBackWall', 2.9, -3.43, -0.78, 0xe7d9e5);
-        addBox('sideVestibuleFloor', 1.04, floorThickness, 1.38, -5.36, floorY - floorThickness * 0.5, 1.82, makeMaterial(0xf0ece6, 0.96, 0.01));
-        addBox('sideVestibuleCeiling', 1.04, floorThickness, 1.38, -5.36, ceilingY, 1.82, makeMaterial(0xfaf6fe, 0.95, 0.01));
-        addBox('sideVestibuleFrontWall', 1.04, 2.32, wallThickness, -5.36, floorY + 1.16, 2.47, makeMaterial(0xe2ddcf, 0.88, 0.02));
-        addBox('sideVestibuleBackWall', 1.04, 2.32, wallThickness, -5.36, floorY + 1.16, 1.17, makeMaterial(0xe2ddcf, 0.88, 0.02));
 
         addBox('bedFrame', 1.55, 0.28, 2.25, -3.63, floorY + 0.14, 1.2, makeMaterial(0xc7a2aa, 0.88, 0.01));
         addBox('bedMattress', 1.42, 0.22, 2.05, -3.63, floorY + 0.39, 1.2, makeMaterial(0xf4f1f6, 0.92, 0.01));
@@ -2730,7 +2729,7 @@ class PostProcessing {
         // Bloom for CRT glow
         const bloomPass = new THREE.UnrealBloomPass(
             new THREE.Vector2(window.innerWidth, window.innerHeight),
-            0.3,  // strength
+            0.08,  // strength
             0.4,  // radius
             0.85  // threshold
         );
@@ -3435,7 +3434,7 @@ class CRTApp {
         this.renderer.setPixelRatio(dpr);
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        this.renderer.toneMappingExposure = 1.0;
+        this.renderer.toneMappingExposure = 0.68;
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         
