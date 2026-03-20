@@ -942,12 +942,14 @@ class CRTScene {
     constructor() {
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x1a1a1a);
+        this.oneillRadius = 1800;
+        this.oneillCenterY = -0.2 + this.oneillRadius;
         
         this.camera = new THREE.PerspectiveCamera(
             50,
             window.innerWidth / window.innerHeight,
             0.1,
-            1000
+            8000
         );
         this.camera.position.set(0.8, 0.5, 1.2);
         
@@ -1237,6 +1239,116 @@ class CRTScene {
             this.scene.add(bench);
         };
 
+        const buildOneillCylinderBackdrop = () => {
+            const habitatRadius = this.oneillRadius || 1800;
+            const habitatCenterY = this.oneillCenterY || (floorY + habitatRadius);
+
+            this.scene.background = new THREE.Color(0xe6f4ff);
+            this.scene.fog = new THREE.Fog(0xe6f4ff, 450, 5200);
+
+            const shellCanvas = document.createElement('canvas');
+            shellCanvas.width = 4096;
+            shellCanvas.height = 1536;
+            const ctx = shellCanvas.getContext('2d');
+            ctx.fillStyle = '#d6efd8';
+            ctx.fillRect(0, 0, shellCanvas.width, shellCanvas.height);
+
+            const paintBand = (y0, h, color) => {
+                ctx.fillStyle = color;
+                ctx.fillRect(0, y0 * shellCanvas.height, shellCanvas.width, h * shellCanvas.height);
+            };
+
+            paintBand(0.00, 0.17, '#cce9d0');
+            paintBand(0.17, 0.06, '#d8d2c8');
+            paintBand(0.23, 0.10, '#7d828a');
+            paintBand(0.33, 0.06, '#d8d2c8');
+            paintBand(0.39, 0.22, '#c9e6cf');
+            paintBand(0.61, 0.06, '#d8d2c8');
+            paintBand(0.67, 0.10, '#7d828a');
+            paintBand(0.77, 0.06, '#d8d2c8');
+            paintBand(0.83, 0.17, '#cce9d0');
+
+            [0.26, 0.70].forEach((yy) => {
+                ctx.fillStyle = '#f5e8a3';
+                for (let x = 0; x < shellCanvas.width; x += 170) {
+                    ctx.fillRect(x + 30, (yy + 0.022) * shellCanvas.height, 90, 6);
+                }
+            });
+
+            const lotCount = 100;
+            const lotW = shellCanvas.width / lotCount;
+            for (let i = 0; i < lotCount; i++) {
+                const rowTop = i % 2 === 0;
+                const baseY = (rowTop ? 0.03 : 0.44) * shellCanvas.height;
+                const bodyH = 58 + (i % 4) * 12;
+                const left = i * lotW + 8;
+                ctx.fillStyle = ['#f2ece5', '#ece6de', '#e9e3db'][i % 3];
+                ctx.fillRect(left, baseY, lotW - 16, bodyH);
+                ctx.beginPath();
+                ctx.moveTo(left - 4, baseY);
+                ctx.lineTo(left + lotW * 0.5, baseY - 24 - (i % 3) * 6);
+                ctx.lineTo(left + lotW - 12, baseY);
+                ctx.closePath();
+                ctx.fillStyle = ['#8b6c63', '#7a6157', '#9a7868'][i % 3];
+                ctx.fill();
+                ctx.fillStyle = '#f8f0c7';
+                ctx.fillRect(left + 14, baseY + 16, 18, 22);
+                ctx.fillRect(left + lotW - 38, baseY + 14, 16, 16);
+            }
+
+            for (let i = 0; i < 500; i++) {
+                const x = (i * 97) % shellCanvas.width;
+                const y = (i * 61) % shellCanvas.height;
+                ctx.fillStyle = i % 3 === 0 ? '#6fa266' : '#8fb482';
+                ctx.fillRect(x, y, 6 + (i % 5), 6 + (i % 4));
+            }
+
+            const shellTexture = new THREE.CanvasTexture(shellCanvas);
+            shellTexture.wrapS = THREE.RepeatWrapping;
+            shellTexture.wrapT = THREE.ClampToEdgeWrapping;
+            shellTexture.colorSpace = THREE.SRGBColorSpace || shellTexture.colorSpace;
+
+            const shell = new THREE.Mesh(
+                new THREE.CylinderGeometry(habitatRadius, habitatRadius, 900, 192, 1, true),
+                new THREE.MeshStandardMaterial({
+                    map: shellTexture,
+                    side: THREE.BackSide,
+                    roughness: 0.98,
+                    metalness: 0.0
+                })
+            );
+            shell.name = 'oneillShell';
+            shell.rotation.z = Math.PI * 0.5;
+            shell.position.set(0, habitatCenterY, 0);
+            shell.userData.ignoreScreenOcclusion = true;
+            this.scene.add(shell);
+
+            const lightAngles = [-1.1, 0, 1.1];
+            lightAngles.forEach((theta, index) => {
+                const bandRadius = habitatRadius - 18;
+                const band = new THREE.Mesh(
+                    new THREE.CylinderGeometry(4.2, 4.2, 900, 18, 1, true),
+                    new THREE.MeshBasicMaterial({
+                        color: 0xf7fbff,
+                        transparent: true,
+                        opacity: index === 1 ? 0.3 : 0.18
+                    })
+                );
+                band.rotation.z = Math.PI * 0.5;
+                band.position.set(
+                    0,
+                    habitatCenterY - Math.cos(theta) * bandRadius,
+                    Math.sin(theta) * bandRadius
+                );
+                band.userData.ignoreScreenOcclusion = true;
+                this.scene.add(band);
+            });
+
+            const habitatAmbient = new THREE.HemisphereLight(0xf1fbff, 0xb8d7b7, 1.1);
+            habitatAmbient.name = 'oneillHemisphere';
+            this.scene.add(habitatAmbient);
+        };
+
         const addDeadCRTStation = (group, seed, x, z) => {
             const deskColor = pick([0xb48d6b, 0x9f795a, 0xc3a17c], seed, 21);
             addGroupBox(group, 'deadDeskTop', 1.35, 0.08, 0.68, x, floorY + 0.42, z, makeMaterial(deskColor, 0.74, 0.03));
@@ -1513,7 +1625,7 @@ class CRTScene {
                         0,
                         makeMaterial(cfg.roofColor, 0.82, 0.03)
                     );
-                    panel.rotation.x = 0.28;
+                    panel.rotation.x = -0.28;
                     break;
                 }
                 default: {
@@ -1524,8 +1636,8 @@ class CRTScene {
                     const roofCenterY = floorY + bodyHeight + roofRise * 0.5;
                     const roofA = addGroupBox(house, 'gableRoofA', cfg.width + 0.6, 0.16, roofRun, 0, roofCenterY, halfDepth * 0.5, makeMaterial(cfg.roofColor, 0.82, 0.03));
                     const roofB = addGroupBox(house, 'gableRoofB', cfg.width + 0.6, 0.16, roofRun, 0, roofCenterY, -halfDepth * 0.5, makeMaterial(cfg.roofColor, 0.82, 0.03));
-                    roofA.rotation.x = -gableAngle;
-                    roofB.rotation.x = gableAngle;
+                    roofA.rotation.x = gableAngle;
+                    roofB.rotation.x = -gableAngle;
                     break;
                 }
             }
@@ -1585,29 +1697,7 @@ class CRTScene {
         };
 
         const addCurrentHouseExterior = () => {
-            this.scene.background = new THREE.Color(0x91d0ff);
-            this.scene.fog = new THREE.Fog(0x91d0ff, 58, 176);
-
-            const sky = new THREE.Mesh(
-                new THREE.SphereGeometry(220, 32, 18),
-                new THREE.MeshBasicMaterial({ color: 0x91d0ff, side: THREE.BackSide })
-            );
-            sky.name = 'skyDome';
-            sky.userData.ignoreScreenOcclusion = true;
-            this.scene.add(sky);
-
-            const sun = new THREE.Mesh(
-                new THREE.SphereGeometry(6, 24, 18),
-                new THREE.MeshBasicMaterial({ color: 0xfff1ae })
-            );
-            sun.position.set(56, 82, -42);
-            sun.name = 'sun';
-            sun.userData.ignoreScreenOcclusion = true;
-            this.scene.add(sun);
-
-            const sunLight = new THREE.DirectionalLight(0xfff2c7, 1.25);
-            sunLight.position.copy(sun.position);
-            this.scene.add(sunLight);
+            buildOneillCylinderBackdrop();
 
             addBox('complexGrass', 210, 0.04, 150, 0, floorY - 0.07, 40, makeMaterial(0x7cac67, 0.99, 0.0));
             addStreet('mainAvenue', 8.8, 190, 7.8);
@@ -1663,8 +1753,8 @@ class CRTScene {
             const mainRoofCenterZ = 0.15;
             const roofA = addBox('mainHouseRoofA', 12.9, 0.18, mainRoofRun, 0.37, mainRoofCenterY, mainRoofCenterZ + mainHouseHalfDepth * 0.5, makeMaterial(0x7c5648, 0.82, 0.03));
             const roofB = addBox('mainHouseRoofB', 12.9, 0.18, mainRoofRun, 0.37, mainRoofCenterY, mainRoofCenterZ - mainHouseHalfDepth * 0.5, makeMaterial(0x7c5648, 0.82, 0.03));
-            roofA.rotation.x = -mainRoofAngle;
-            roofB.rotation.x = mainRoofAngle;
+            roofA.rotation.x = mainRoofAngle;
+            roofB.rotation.x = -mainRoofAngle;
 
             addTree(-8.2, 6.8, 1001);
             addTree(8.4, 7.2, 1002);
@@ -2779,6 +2869,8 @@ class FPSControls {
         this.touchLookSpeed = 0.0032;
         this.pitchMin = -Math.PI / 2 + 0.08;
         this.pitchMax = Math.PI / 2 - 0.08;
+        this.cylinderRadius = 1800;
+        this.cylinderCenterY = this.floorY + this.cylinderRadius;
         this.yaw = 0;
         this.pitch = 0;
         this.moveState = {
@@ -2807,8 +2899,9 @@ class FPSControls {
             lookZone: document.getElementById('mobile-look-zone')
         };
 
-        this.camera.position.set(1.15, this.floorY + this.currentEyeHeight(), 2.25);
-        this.camera.lookAt(new THREE.Vector3(0, this.floorY + 1.0, 0));
+        this.surfaceX = 1.15;
+        this.surfaceArc = 2.25;
+        this.syncCameraToCylinder();
         document.body.classList.toggle('touch-device', this.isTouchDevice);
         this.syncAnglesFromCamera();
         this.setupEvents();
@@ -3016,15 +3109,32 @@ class FPSControls {
     }
 
     applyRotation() {
-        this.camera.rotation.order = 'YXZ';
-        this.camera.rotation.y = this.yaw;
-        this.camera.rotation.x = this.pitch;
+        const theta = this.surfaceArc / this.cylinderRadius;
+        const up = new THREE.Vector3(0, Math.cos(theta), -Math.sin(theta)).normalize();
+        const forwardBase = new THREE.Vector3(0, Math.sin(theta), Math.cos(theta)).normalize();
+        const rightBase = new THREE.Vector3().crossVectors(up, forwardBase).normalize();
+        const basis = new THREE.Matrix4().makeBasis(rightBase, up, forwardBase);
+        const basisQuat = new THREE.Quaternion().setFromRotationMatrix(basis);
+        const localQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(this.pitch, this.yaw, 0, 'YXZ'));
+        this.camera.quaternion.copy(basisQuat.multiply(localQuat));
+        this.camera.up.copy(up);
+    }
+
+    syncCameraToCylinder() {
+        const theta = this.surfaceArc / this.cylinderRadius;
+        const radius = this.cylinderRadius - this.currentEyeHeight();
+        this.camera.position.set(
+            this.surfaceX,
+            this.cylinderCenterY - Math.cos(theta) * radius,
+            Math.sin(theta) * radius
+        );
+        this.applyRotation();
     }
 
     clampPosition() {
-        this.camera.position.x = THREE.MathUtils.clamp(this.camera.position.x, this.bounds.minX, this.bounds.maxX);
-        this.camera.position.z = THREE.MathUtils.clamp(this.camera.position.z, this.bounds.minZ, this.bounds.maxZ);
-        this.camera.position.y = this.floorY + this.currentEyeHeight();
+        this.surfaceX = THREE.MathUtils.clamp(this.surfaceX, this.bounds.minX, this.bounds.maxX);
+        this.surfaceArc = THREE.MathUtils.clamp(this.surfaceArc, this.bounds.minZ, this.bounds.maxZ);
+        this.syncCameraToCylinder();
     }
 
     update(delta) {
@@ -3048,14 +3158,15 @@ class FPSControls {
         if (Math.abs(inputX) < 0.001 && Math.abs(inputZ) < 0.001) return;
 
         const move = new THREE.Vector3(inputX, 0, inputZ).normalize().multiplyScalar(this.moveSpeed * delta);
+        const theta = this.surfaceArc / this.cylinderRadius;
+        const up = new THREE.Vector3(0, Math.cos(theta), -Math.sin(theta)).normalize();
         const forward = new THREE.Vector3();
         this.camera.getWorldDirection(forward);
-        forward.y = 0;
-        forward.normalize();
-        const right = new THREE.Vector3(-forward.z, 0, forward.x);
+        forward.projectOnPlane(up).normalize();
+        const right = new THREE.Vector3().crossVectors(up, forward).normalize();
 
-        this.camera.position.addScaledVector(forward, move.z);
-        this.camera.position.addScaledVector(right, move.x);
+        this.surfaceX += right.x * move.x + forward.x * move.z;
+        this.surfaceArc += (right.z * move.x + forward.z * move.z);
         this.clampPosition();
     }
 }
