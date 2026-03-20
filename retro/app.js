@@ -1499,13 +1499,25 @@ class CRTScene {
                     break;
                 }
                 case 'shed': {
-                    const panel = addGroupBox(house, 'shedRoof', cfg.width + 0.7, 0.18, cfg.depth + 0.7, 0, roofBaseY + 0.16, 0, makeMaterial(cfg.roofColor, 0.82, 0.03));
+                    const panel = addGroupBox(
+                        house,
+                        'shedRoof',
+                        cfg.width + 0.7,
+                        0.18,
+                        cfg.depth + 0.4,
+                        0,
+                        roofBaseY + 0.32,
+                        0,
+                        makeMaterial(cfg.roofColor, 0.82, 0.03)
+                    );
                     panel.rotation.x = 0.28;
                     break;
                 }
                 default: {
-                    const roofA = addGroupBox(house, 'gableRoofA', cfg.width + 0.6, 0.16, cfg.depth * 0.58, 0, roofBaseY + 0.08, cfg.depth * 0.18, makeMaterial(cfg.roofColor, 0.82, 0.03));
-                    const roofB = addGroupBox(house, 'gableRoofB', cfg.width + 0.6, 0.16, cfg.depth * 0.58, 0, roofBaseY + 0.08, -cfg.depth * 0.18, makeMaterial(cfg.roofColor, 0.82, 0.03));
+                    const roofRun = cfg.depth * 0.5 + 0.36;
+                    const roofOffset = cfg.depth * 0.25 + 0.18;
+                    const roofA = addGroupBox(house, 'gableRoofA', cfg.width + 0.6, 0.16, roofRun, 0, roofBaseY + 0.22, roofOffset, makeMaterial(cfg.roofColor, 0.82, 0.03));
+                    const roofB = addGroupBox(house, 'gableRoofB', cfg.width + 0.6, 0.16, roofRun, 0, roofBaseY + 0.22, -roofOffset, makeMaterial(cfg.roofColor, 0.82, 0.03));
                     roofA.rotation.x = 0.33;
                     roofB.rotation.x = -0.33;
                     break;
@@ -1637,8 +1649,10 @@ class CRTScene {
                 { closedRotY: Math.PI / 2, openAngle: 1.1, hinge: 'right' }
             );
 
-            const roofA = addBox('mainHouseRoofA', 12.9, 0.18, 5.1, 0.37, floorY + 3.58, -1.0, makeMaterial(0x7c5648, 0.82, 0.03));
-            const roofB = addBox('mainHouseRoofB', 12.9, 0.18, 5.1, 0.37, floorY + 3.58, 1.3, makeMaterial(0x7c5648, 0.82, 0.03));
+            const mainRoofCenterZ = 0.15;
+            const mainRoofOffset = 2.38;
+            const roofA = addBox('mainHouseRoofA', 12.9, 0.18, 4.9, 0.37, floorY + 3.72, mainRoofCenterZ + mainRoofOffset, makeMaterial(0x7c5648, 0.82, 0.03));
+            const roofB = addBox('mainHouseRoofB', 12.9, 0.18, 4.9, 0.37, floorY + 3.72, mainRoofCenterZ - mainRoofOffset, makeMaterial(0x7c5648, 0.82, 0.03));
             roofA.rotation.x = 0.34;
             roofB.rotation.x = -0.34;
 
