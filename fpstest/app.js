@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import * as SkeletonUtils from "three/addons/utils/SkeletonUtils.js";
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x090b10);
@@ -99,23 +100,54 @@ function loadAvatar() {
   const loader = new GLTFLoader();
 
   loader.load(
-    "https://threejs.org/examples/models/gltf/Soldier.glb",
-    (gltf) => {
-      avatar = gltf.scene;
-      avatar.scale.setScalar(1.35);
-      avatar.traverse((child) => {
-        if (child.isMesh) {
-          child.castShadow = true;
-          child.receiveShadow = true;
-        }
-      });
-      scene.add(avatar);
+    "https://threejs.org/examples/models/gltf/Michelle.glb",
+    (michelleGltf) => {
+      loader.load(
+        "https://threejs.org/examples/models/gltf/Xbot.glb",
+        (xbotGltf) => {
+          avatar = michelleGltf.scene;
+          avatar.scale.setScalar(1.35);
+          avatar.traverse((child) => {
+            if (child.isMesh) {
+              child.castShadow = true;
+              child.receiveShadow = true;
+            }
+          });
+          scene.add(avatar);
 
-      mixer = new THREE.AnimationMixer(avatar);
-      idleAction = mixer.clipAction(THREE.AnimationClip.findByName(gltf.animations, "Idle"));
-      walkAction = mixer.clipAction(THREE.AnimationClip.findByName(gltf.animations, "Walk"));
-      setAction(idleAction);
-      updateAvatarTransform();
+          const sourceSkeleton = new THREE.SkeletonHelper(xbotGltf.scene);
+          const targetSkeleton = new THREE.SkeletonHelper(avatar);
+          const targetRoot = avatar.getObjectByName("mixamorigHips") || avatar;
+
+          const idleClip = THREE.AnimationClip.findByName(xbotGltf.animations, "idle");
+          const walkClip = THREE.AnimationClip.findByName(xbotGltf.animations, "walk");
+
+          const retargetOptions = {
+            hip: "mixamorigHips",
+            preservePosition: false,
+            preserveHipPosition: true,
+            useFirstFramePosition: true
+          };
+
+          mixer = new THREE.AnimationMixer(avatar);
+          idleAction = mixer.clipAction(
+            SkeletonUtils.retargetClip(targetSkeleton, sourceSkeleton, idleClip, retargetOptions),
+            targetRoot
+          );
+          walkAction = mixer.clipAction(
+            SkeletonUtils.retargetClip(targetSkeleton, sourceSkeleton, walkClip, retargetOptions),
+            targetRoot
+          );
+          setAction(idleAction);
+          updateAvatarTransform();
+        },
+        undefined,
+        (error) => {
+          overlay.classList.remove("overlay--hidden");
+          overlay.querySelector("p").textContent = "The movement clips failed to load. Reload the page to try again.";
+          console.error(error);
+        }
+      );
     },
     undefined,
     (error) => {
