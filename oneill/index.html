@@ -7,14 +7,30 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <div id="url-overlay">
+        <input type="text" id="url-input" placeholder="Enter URL to browse..." value="https://agent1c-ai.github.io">
+    </div>
+
     <canvas id="webgl"></canvas>
+    <div id="css3d-root"></div>
 
     <div id="hud">
         <div id="title">O'Neill Suburb</div>
-        <div id="hint">Click to enter. WASD move, mouse look, Esc releases the cursor.</div>
+        <div id="hint">Click to walk, move the mouse to look, WASD to move, ESC to free the cursor.</div>
+    </div>
+    <div id="toast-container"></div>
+    <div id="mobile-controls" aria-hidden="true">
+        <div id="mobile-move-zone" class="mobile-pad">
+            <div class="mobile-pad-label">MOVE</div>
+            <div id="mobile-move-knob" class="mobile-pad-knob"></div>
+        </div>
+        <div id="mobile-look-zone" class="mobile-look-pad">
+            <div class="mobile-pad-label">LOOK</div>
+        </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/renderers/CSS3DRenderer.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
