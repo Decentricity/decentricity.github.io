@@ -15,11 +15,11 @@
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.outputEncoding = THREE.sRGBEncoding;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 0.96;
+    renderer.toneMappingExposure = 0.74;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xf2fbff);
-    scene.fog = new THREE.Fog(0xf2fbff, 1500, 5200);
+    scene.background = new THREE.Color(0x02030a);
+    scene.fog = new THREE.Fog(0xe7f3f7, 3200, 12000);
 
     const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 7000);
 
@@ -625,6 +625,37 @@
         }
 
         buildHabitat() {
+            const starPositions = [];
+            const starColors = [];
+            const starColorChoices = [0xffffff, 0xd9ecff, 0xbfd7ff, 0xfff4dd];
+            for (let i = 0; i < 2600; i++) {
+                const theta = Math.random() * TAU;
+                const phi = Math.acos(THREE.MathUtils.randFloatSpread(2));
+                const radius = 3000 + Math.random() * 1200;
+                const x = radius * Math.sin(phi) * Math.cos(theta);
+                const y = radius * Math.cos(phi);
+                const z = radius * Math.sin(phi) * Math.sin(theta);
+                starPositions.push(x, y, z);
+                const c = new THREE.Color(starColorChoices[i % starColorChoices.length]);
+                starColors.push(c.r, c.g, c.b);
+            }
+            const starGeometry = new THREE.BufferGeometry();
+            starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starPositions, 3));
+            starGeometry.setAttribute('color', new THREE.Float32BufferAttribute(starColors, 3));
+            const stars = new THREE.Points(
+                starGeometry,
+                new THREE.PointsMaterial({
+                    size: 7,
+                    sizeAttenuation: true,
+                    vertexColors: true,
+                    transparent: true,
+                    opacity: 0.92,
+                    depthWrite: false
+                })
+            );
+            stars.name = 'spaceStars';
+            this.scene.add(stars);
+
             const terrain = new THREE.Mesh(
                 new THREE.CylinderGeometry(this.radius, this.radius, this.length, 256, 1, true),
                 new THREE.MeshStandardMaterial({
@@ -641,7 +672,7 @@
             [-90, -30, 30, 90].forEach((x, index) => {
                 const ring = new THREE.Mesh(
                     new THREE.TorusGeometry(this.radius + 0.6, 0.55, 10, 128),
-                    makeMaterial(index % 2 === 0 ? 0xe9eff1 : 0xdde5e8, 0.88, 0.01)
+                    makeMaterial(index % 2 === 0 ? 0xc7d4db : 0xbdc9d0, 0.9, 0.01)
                 );
                 ring.rotation.y = Math.PI * 0.5;
                 ring.position.x = x;
@@ -654,7 +685,7 @@
                     new THREE.MeshBasicMaterial({
                         color: 0xf8fdff,
                         transparent: true,
-                        opacity: index === 1 ? 0.24 : 0.15
+                        opacity: index === 1 ? 0.12 : 0.07
                     })
                 );
                 band.rotation.z = Math.PI * 0.5;
@@ -662,15 +693,15 @@
                 this.scene.add(band);
             });
 
-            const ambient = new THREE.AmbientLight(0xffffff, 1.08);
+            const ambient = new THREE.AmbientLight(0xffffff, 0.72);
             this.scene.add(ambient);
-            const fillA = new THREE.PointLight(0xf7fbff, 1.15, 1200, 2);
+            const fillA = new THREE.PointLight(0xf7fbff, 0.72, 1200, 2);
             fillA.position.set(0, 0, 0);
             this.scene.add(fillA);
-            const fillB = new THREE.PointLight(0xfff3e2, 0.45, 1100, 2);
+            const fillB = new THREE.PointLight(0xfff3e2, 0.2, 1100, 2);
             fillB.position.set(-70, 20, 40);
             this.scene.add(fillB);
-            const fillC = new THREE.PointLight(0xe6f6ff, 0.42, 1100, 2);
+            const fillC = new THREE.PointLight(0xe6f6ff, 0.18, 1100, 2);
             fillC.position.set(80, -20, -40);
             this.scene.add(fillC);
         }
