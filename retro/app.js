@@ -1244,7 +1244,7 @@ class CRTScene {
             const habitatCenterY = this.oneillCenterY || (floorY + habitatRadius);
 
             this.scene.background = new THREE.Color(0xe6f4ff);
-            this.scene.fog = new THREE.Fog(0xe6f4ff, 450, 5200);
+            this.scene.fog = new THREE.Fog(0xe6f4ff, 1200, 12000);
 
             const shellCanvas = document.createElement('canvas');
             shellCanvas.width = 4096;
@@ -3163,7 +3163,7 @@ class FPSControls {
         const forward = new THREE.Vector3();
         this.camera.getWorldDirection(forward);
         forward.projectOnPlane(up).normalize();
-        const right = new THREE.Vector3().crossVectors(up, forward).normalize();
+        const right = new THREE.Vector3().crossVectors(forward, up).normalize();
 
         this.surfaceX += right.x * move.x + forward.x * move.z;
         this.surfaceArc += (right.z * move.x + forward.z * move.z);
