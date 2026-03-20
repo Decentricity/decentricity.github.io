@@ -1998,7 +1998,8 @@ class FPSControls {
         this.domElement = domElement;
         this.enabled = true;
         this.isLocked = false;
-        this.eyeHeight = 1.45;
+        this.floorY = -0.2;
+        this.eyeHeight = 1.05;
         this.moveSpeed = 2.6;
         this.lookSpeed = 0.0022;
         this.pitchMin = -Math.PI / 2 + 0.08;
@@ -2018,8 +2019,8 @@ class FPSControls {
             maxZ: 4.1
         };
 
-        this.camera.position.set(1.15, this.eyeHeight, 2.25);
-        this.camera.lookAt(new THREE.Vector3(0, 1.2, 0));
+        this.camera.position.set(1.15, this.floorY + this.eyeHeight, 2.25);
+        this.camera.lookAt(new THREE.Vector3(0, this.floorY + 1.0, 0));
         this.syncAnglesFromCamera();
         this.setupEvents();
     }
@@ -2108,7 +2109,7 @@ class FPSControls {
     clampPosition() {
         this.camera.position.x = THREE.MathUtils.clamp(this.camera.position.x, this.bounds.minX, this.bounds.maxX);
         this.camera.position.z = THREE.MathUtils.clamp(this.camera.position.z, this.bounds.minZ, this.bounds.maxZ);
-        this.camera.position.y = this.eyeHeight;
+        this.camera.position.y = this.floorY + this.eyeHeight;
     }
 
     update(delta) {
@@ -2123,13 +2124,15 @@ class FPSControls {
         const inputZ = (this.moveState.forward ? 1 : 0) - (this.moveState.backward ? 1 : 0);
         if (!inputX && !inputZ) return;
 
-        const move = new THREE.Vector3(inputX, 0, inputZ);
-        move.normalize().multiplyScalar(this.moveSpeed * delta);
+        const move = new THREE.Vector3(inputX, 0, inputZ).normalize().multiplyScalar(this.moveSpeed * delta);
+        const forward = new THREE.Vector3();
+        this.camera.getWorldDirection(forward);
+        forward.y = 0;
+        forward.normalize();
+        const right = new THREE.Vector3(forward.z, 0, -forward.x);
 
-        const sin = Math.sin(this.yaw);
-        const cos = Math.cos(this.yaw);
-        this.camera.position.x += move.x * cos + move.z * sin;
-        this.camera.position.z += move.z * cos - move.x * sin;
+        this.camera.position.addScaledVector(forward, move.z);
+        this.camera.position.addScaledVector(right, move.x);
         this.clampPosition();
     }
 }
