@@ -3,7 +3,7 @@
 
 // Utility Functions
 const clampDPR = (dpr) => Math.min(dpr, 2);
-const DEFAULT_HOME_URL = 'https://hedgeyos.github.io';
+const DEFAULT_HOME_URL = 'https://agent1c-ai.github.io';
 
 // Desk Placement Utilities (adapted from TypeScript)
 const DeskPlacement = {
@@ -977,45 +977,142 @@ class CRTScene {
     }
     
     createRoom() {
-        // Floor - warm beige
-        const floorGeo = new THREE.PlaneGeometry(4, 4);
-        const floorMat = new THREE.MeshStandardMaterial({ 
-            color: 0xbcae92,
-            roughness: 0.8,
-            metalness: 0.1
-        });
-        const floor = new THREE.Mesh(floorGeo, floorMat);
-        floor.rotation.x = -Math.PI / 2;
-        floor.position.y = -0.2;
-        floor.receiveShadow = true;
-        floor.name = 'floor';
-        this.scene.add(floor);
-        
-        // Back Wall - charcoal
-        const backWallGeo = new THREE.PlaneGeometry(4, 3);
-        const backWallMat = new THREE.MeshStandardMaterial({ 
-            color: 0x383b44,
-            roughness: 0.9
-        });
-        const backWall = new THREE.Mesh(backWallGeo, backWallMat);
-        backWall.position.set(0, 1.3, -1);
-        backWall.receiveShadow = true;
-        backWall.name = 'backWall';
-        this.scene.add(backWall);
-        
-        // Side Wall - slate
-        const sideWallGeo = new THREE.PlaneGeometry(4, 3);
-        const sideWallMat = new THREE.MeshStandardMaterial({ 
-            color: 0x50545e,
-            roughness: 0.9
-        });
-        const sideWall = new THREE.Mesh(sideWallGeo, sideWallMat);
-        sideWall.position.set(-2, 1.3, 1);
-        sideWall.rotation.y = Math.PI / 2;
-        sideWall.receiveShadow = true;
-        sideWall.name = 'sideWall';
-        this.scene.add(sideWall);
-        
+        const floorY = -0.2;
+        const floorThickness = 0.06;
+        const wallHeight = 2.8;
+        const wallThickness = 0.08;
+        const wallY = floorY + wallHeight * 0.5;
+        const ceilingY = floorY + wallHeight + floorThickness * 0.5;
+
+        const makeMaterial = (color, roughness = 0.88, metalness = 0.03) => (
+            new THREE.MeshStandardMaterial({ color, roughness, metalness })
+        );
+
+        const addBox = (name, w, h, d, x, y, z, material) => {
+            const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
+            mesh.name = name;
+            mesh.position.set(x, y, z);
+            mesh.castShadow = h <= 0.12;
+            mesh.receiveShadow = true;
+            this.scene.add(mesh);
+            return mesh;
+        };
+
+        const addFloorPanel = (name, w, d, x, z, color) => (
+            addBox(name, w, floorThickness, d, x, floorY - floorThickness * 0.5, z, makeMaterial(color, 0.96, 0.01))
+        );
+
+        const addCeilingPanel = (name, w, d, x, z, color) => (
+            addBox(name, w, floorThickness, d, x, ceilingY, z, makeMaterial(color, 0.95, 0.01))
+        );
+
+        const addWallX = (name, width, x, z, color, height = wallHeight) => (
+            addBox(name, width, height, wallThickness, x, floorY + height * 0.5, z, makeMaterial(color, 0.9, 0.02))
+        );
+
+        const addWallZ = (name, depth, x, z, color, height = wallHeight) => (
+            addBox(name, wallThickness, height, depth, x, floorY + height * 0.5, z, makeMaterial(color, 0.9, 0.02))
+        );
+
+        const addTableLamp = (x, z, color) => {
+            const base = addBox('houseLampBase', 0.12, 0.02, 0.12, x, floorY + 0.16, z, makeMaterial(0xdccfd8, 0.55, 0.08));
+            const stem = addBox('houseLampStem', 0.02, 0.22, 0.02, x, floorY + 0.27, z, makeMaterial(0xf4e7f5, 0.4, 0.05));
+            const shade = new THREE.Mesh(
+                new THREE.SphereGeometry(0.18, 20, 14, 0, Math.PI * 2, 0, Math.PI * 0.55),
+                makeMaterial(color, 0.45, 0.04)
+            );
+            shade.position.set(x - 0.08, floorY + 0.4, z);
+            shade.rotation.z = Math.PI;
+            shade.castShadow = true;
+            shade.receiveShadow = true;
+            this.scene.add(shade);
+
+            const bulb = new THREE.PointLight(0xfff3dd, 0.8, 4.5);
+            bulb.position.set(x - 0.08, floorY + 0.28, z);
+            this.scene.add(bulb);
+            return { base, stem, shade, bulb };
+        };
+
+        // 1) The existing CRT nook stays the anchor room.
+        const floor = addFloorPanel('floor', 4, 4, 0, 0, 0xf3eee7);
+        addCeilingPanel('studyCeiling', 4, 4, 0, 0, 0xf7f1fb);
+        const backWall = addWallX('backWall', 4, 0, -1.02, 0xd7d3db);
+        const sideWall = addWallZ('sideWall', 1.55, -2.02, -0.225, 0xbdc0c9);
+        addWallZ('sideWallFront', 1.35, -2.02, 2.325, 0xbdc0c9);
+        addBox('sideWallHeader', wallThickness, 0.7, 1.1, -2.02, floorY + 2.45, 1.1, makeMaterial(0xbdc0c9, 0.9, 0.02));
+
+        // 2) A front hall/gallery turns the open front edge into part of a house.
+        addFloorPanel('hallFloor', 4.2, 2.4, 0, 3.1, 0xf1ece8);
+        addCeilingPanel('hallCeiling', 4.2, 2.4, 0, 3.1, 0xfbf7f3);
+        addWallX('frontHallWall', 4.2, 0, 4.28, 0xe3d4c4);
+        addWallZ('hallLeftWall', 2.45, -2.02, 3.06, 0xd7d0cb);
+        addWallZ('hallRightReturn', 1.0, 2.02, 3.78, 0xd7d0cb);
+
+        const hallConsole = addBox('hallConsole', 0.9, 0.12, 0.28, -0.35, floorY + 0.28, 4.0, makeMaterial(0x8f6f53, 0.72, 0.05));
+        addBox('hallConsoleLegA', 0.06, 0.34, 0.06, -0.72, floorY + 0.11, 4.0, makeMaterial(0x8f6f53, 0.72, 0.05));
+        addBox('hallConsoleLegB', 0.06, 0.34, 0.06, 0.02, floorY + 0.11, 4.0, makeMaterial(0x8f6f53, 0.72, 0.05));
+        addBox('hallMirror', 0.9, 0.7, 0.04, -0.35, floorY + 1.32, 4.0, makeMaterial(0xc8d3dc, 0.2, 0.15));
+        addBox('hallRunner', 0.9, 0.01, 1.8, 0.25, floorY + 0.005, 3.1, makeMaterial(0xc8b4da, 0.95, 0.01));
+
+        // 3) A living room extends through the open right side.
+        addFloorPanel('livingFloor', 4.2, 4.4, 4.1, 1.1, 0xf2ebe1);
+        addCeilingPanel('livingCeiling', 4.2, 4.4, 4.1, 1.1, 0xfbf7f2);
+        addWallZ('livingRightWall', 4.4, 6.18, 1.1, 0xd8d2cf);
+        addWallX('livingFrontWall', 4.2, 4.1, 3.28, 0xd4c8b8);
+        addWallX('livingBackWallLeft', 1.1, 2.55, -1.08, 0xd4c8b8);
+        addWallX('livingBackWallRight', 1.45, 5.47, -1.08, 0xd4c8b8);
+        addBox('livingBackHeader', 1.65, 0.7, wallThickness, 4.1, floorY + 2.45, -1.08, makeMaterial(0xd4c8b8, 0.9, 0.02));
+
+        addBox('livingSofaSeat', 1.5, 0.32, 0.8, 4.85, floorY + 0.16, 2.45, makeMaterial(0xb9988d, 0.92, 0.01));
+        addBox('livingSofaBack', 1.5, 0.58, 0.18, 4.85, floorY + 0.45, 2.14, makeMaterial(0xb9988d, 0.92, 0.01));
+        addBox('livingSofaArmA', 0.18, 0.46, 0.8, 4.08, floorY + 0.25, 2.45, makeMaterial(0xb9988d, 0.92, 0.01));
+        addBox('livingSofaArmB', 0.18, 0.46, 0.8, 5.62, floorY + 0.25, 2.45, makeMaterial(0xb9988d, 0.92, 0.01));
+        addBox('livingCoffeeTable', 1.0, 0.1, 0.55, 4.55, floorY + 0.24, 1.45, makeMaterial(0x9a7657, 0.72, 0.05));
+        addBox('livingBookshelf', 0.46, 1.6, 1.2, 5.76, floorY + 0.8, -0.18, makeMaterial(0x8b6b4d, 0.78, 0.05));
+        addBox('livingBooks', 0.34, 0.2, 0.9, 5.74, floorY + 1.02, -0.2, makeMaterial(0xc4b0de, 0.8, 0.02));
+        addTableLamp(5.4, 0.95, 0xf2cfe7);
+        const livingGlow = new THREE.PointLight(0xffead7, 0.55, 5.5);
+        livingGlow.position.set(4.6, floorY + 1.6, 1.2);
+        this.scene.add(livingGlow);
+
+        // 4) A kitchenette sits behind the living room, reached through a wide doorway.
+        addFloorPanel('kitchenFloor', 4.2, 2.5, 4.1, -2.45, 0xe9e5df);
+        addCeilingPanel('kitchenCeiling', 4.2, 2.5, 4.1, -2.45, 0xf8f5f0);
+        addWallX('kitchenBackWall', 4.2, 4.1, -3.68, 0xd4d7dc);
+        addWallZ('kitchenRightWall', 2.5, 6.18, -2.45, 0xd4d7dc);
+        addWallZ('kitchenLeftWall', 2.5, 2.02, -2.45, 0xd4d7dc);
+
+        addBox('kitchenCounterBack', 3.2, 0.92, 0.7, 4.1, floorY + 0.46, -3.05, makeMaterial(0xd9d0c8, 0.84, 0.02));
+        addBox('kitchenCounterRight', 0.7, 0.92, 1.5, 5.65, floorY + 0.46, -2.2, makeMaterial(0xd9d0c8, 0.84, 0.02));
+        addBox('kitchenFridge', 0.72, 1.7, 0.72, 2.55, floorY + 0.85, -3.08, makeMaterial(0xf0f5f6, 0.45, 0.03));
+        addBox('kitchenTable', 0.9, 0.08, 0.9, 3.65, floorY + 0.42, -2.15, makeMaterial(0xa47d61, 0.7, 0.04));
+        addBox('kitchenLegA', 0.06, 0.7, 0.06, 3.3, floorY + 0.07, -2.5, makeMaterial(0xa47d61, 0.7, 0.04));
+        addBox('kitchenLegB', 0.06, 0.7, 0.06, 4.0, floorY + 0.07, -2.5, makeMaterial(0xa47d61, 0.7, 0.04));
+        addBox('kitchenLegC', 0.06, 0.7, 0.06, 3.3, floorY + 0.07, -1.8, makeMaterial(0xa47d61, 0.7, 0.04));
+        addBox('kitchenLegD', 0.06, 0.7, 0.06, 4.0, floorY + 0.07, -1.8, makeMaterial(0xa47d61, 0.7, 0.04));
+        addBox('kitchenStoolA', 0.32, 0.44, 0.32, 3.1, floorY + 0.22, -2.1, makeMaterial(0xcdb8d4, 0.92, 0.01));
+        addBox('kitchenStoolB', 0.32, 0.44, 0.32, 4.25, floorY + 0.22, -2.8, makeMaterial(0xb6c6d7, 0.92, 0.01));
+        const kitchenLight = new THREE.PointLight(0xfff2e0, 0.65, 4.8);
+        kitchenLight.position.set(4.1, floorY + 2.25, -2.5);
+        this.scene.add(kitchenLight);
+
+        // 5) A bedroom nook sits through the new doorway in the left wall.
+        addFloorPanel('bedroomFloor', 2.9, 3.8, -3.95, 1.1, 0xefe8f5);
+        addCeilingPanel('bedroomCeiling', 2.9, 3.8, -3.95, 1.1, 0xfaf6fe);
+        addWallZ('bedroomLeftWall', 3.8, -5.36, 1.1, 0xd7d3de);
+        addWallX('bedroomFrontWall', 2.9, -3.95, 2.98, 0xe7d9e5);
+        addWallX('bedroomBackWall', 2.9, -3.95, -0.78, 0xe7d9e5);
+
+        addBox('bedFrame', 1.55, 0.28, 2.25, -4.15, floorY + 0.14, 1.2, makeMaterial(0xc7a2aa, 0.88, 0.01));
+        addBox('bedMattress', 1.42, 0.22, 2.05, -4.15, floorY + 0.39, 1.2, makeMaterial(0xf4f1f6, 0.92, 0.01));
+        addBox('bedPillowA', 0.42, 0.12, 0.32, -4.48, floorY + 0.56, 0.45, makeMaterial(0xf7f2ff, 0.95, 0.01));
+        addBox('bedPillowB', 0.42, 0.12, 0.32, -3.82, floorY + 0.56, 0.45, makeMaterial(0xf7f2ff, 0.95, 0.01));
+        addBox('dresser', 0.85, 0.82, 0.42, -5.0, floorY + 0.41, 2.25, makeMaterial(0x8e6b54, 0.76, 0.05));
+        addBox('bedroomRug', 1.45, 0.01, 1.0, -3.65, floorY + 0.005, 2.1, makeMaterial(0xe6c7ef, 0.95, 0.01));
+        const bedroomGlow = new THREE.PointLight(0xffecf2, 0.45, 4);
+        bedroomGlow.position.set(-4.2, floorY + 1.9, 1.75);
+        this.scene.add(bedroomGlow);
+
         // Desk
         const deskGeo = new THREE.BoxGeometry(1.2, 0.05, 0.6);
         const deskMat = new THREE.MeshStandardMaterial({ 
@@ -2160,7 +2257,7 @@ class CRTApp {
         this.controls.enableDamping = true;
         this.controls.dampingFactor = 0.05;
         this.controls.minDistance = 0.5;
-        this.controls.maxDistance = 3;
+        this.controls.maxDistance = 7;
         this.controls.target.set(0, 0.3, 0);
         
         // CSS3D Screen
