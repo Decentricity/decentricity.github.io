@@ -1097,20 +1097,20 @@ class CRTScene {
         this.scene.add(kitchenLight);
 
         // 5) A bedroom nook sits through the new doorway in the left wall.
-        addFloorPanel('bedroomFloor', 2.9, 3.8, -3.95, 1.1, 0xefe8f5);
-        addCeilingPanel('bedroomCeiling', 2.9, 3.8, -3.95, 1.1, 0xfaf6fe);
-        addWallZ('bedroomLeftWall', 3.8, -5.36, 1.1, 0xd7d3de);
-        addWallX('bedroomFrontWall', 2.9, -3.95, 2.98, 0xe7d9e5);
-        addWallX('bedroomBackWall', 2.9, -3.95, -0.78, 0xe7d9e5);
+        addFloorPanel('bedroomFloor', 2.9, 3.8, -3.43, 1.1, 0xefe8f5);
+        addCeilingPanel('bedroomCeiling', 2.9, 3.8, -3.43, 1.1, 0xfaf6fe);
+        addWallZ('bedroomLeftWall', 3.8, -4.84, 1.1, 0xd7d3de);
+        addWallX('bedroomFrontWall', 2.9, -3.43, 2.98, 0xe7d9e5);
+        addWallX('bedroomBackWall', 2.9, -3.43, -0.78, 0xe7d9e5);
 
-        addBox('bedFrame', 1.55, 0.28, 2.25, -4.15, floorY + 0.14, 1.2, makeMaterial(0xc7a2aa, 0.88, 0.01));
-        addBox('bedMattress', 1.42, 0.22, 2.05, -4.15, floorY + 0.39, 1.2, makeMaterial(0xf4f1f6, 0.92, 0.01));
-        addBox('bedPillowA', 0.42, 0.12, 0.32, -4.48, floorY + 0.56, 0.45, makeMaterial(0xf7f2ff, 0.95, 0.01));
-        addBox('bedPillowB', 0.42, 0.12, 0.32, -3.82, floorY + 0.56, 0.45, makeMaterial(0xf7f2ff, 0.95, 0.01));
-        addBox('dresser', 0.85, 0.82, 0.42, -5.0, floorY + 0.41, 2.25, makeMaterial(0x8e6b54, 0.76, 0.05));
-        addBox('bedroomRug', 1.45, 0.01, 1.0, -3.65, floorY + 0.005, 2.1, makeMaterial(0xe6c7ef, 0.95, 0.01));
+        addBox('bedFrame', 1.55, 0.28, 2.25, -3.63, floorY + 0.14, 1.2, makeMaterial(0xc7a2aa, 0.88, 0.01));
+        addBox('bedMattress', 1.42, 0.22, 2.05, -3.63, floorY + 0.39, 1.2, makeMaterial(0xf4f1f6, 0.92, 0.01));
+        addBox('bedPillowA', 0.42, 0.12, 0.32, -3.96, floorY + 0.56, 0.45, makeMaterial(0xf7f2ff, 0.95, 0.01));
+        addBox('bedPillowB', 0.42, 0.12, 0.32, -3.30, floorY + 0.56, 0.45, makeMaterial(0xf7f2ff, 0.95, 0.01));
+        addBox('dresser', 0.85, 0.82, 0.42, -4.48, floorY + 0.41, 2.25, makeMaterial(0x8e6b54, 0.76, 0.05));
+        addBox('bedroomRug', 1.45, 0.01, 1.0, -3.13, floorY + 0.005, 2.1, makeMaterial(0xe6c7ef, 0.95, 0.01));
         const bedroomGlow = new THREE.PointLight(0xffecf2, 0.45, 4);
-        bedroomGlow.position.set(-4.2, floorY + 1.9, 1.75);
+        bedroomGlow.position.set(-3.68, floorY + 1.9, 1.75);
         this.scene.add(bedroomGlow);
 
         // Desk
