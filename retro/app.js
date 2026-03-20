@@ -1719,6 +1719,11 @@ class CRTScene {
             addTree(89.4, 43.4, 1602);
             addShrub(84.2, 48.2, 0.38, 0x62884d);
             addShrub(87.9, 47.2, 0.32, 0x5a7f46);
+            addBox('mainHouseFrontGreen', 26, 0.04, 6.8, 0, floorY - 0.04, 12.3, makeMaterial(0x88b971, 0.99, 0.0));
+            addShrub(-6.8, 11.7, 0.46, 0x6d9d57);
+            addShrub(6.6, 11.5, 0.38, 0x6d9d57);
+            addTree(-11.8, 13.6, 1701);
+            addTree(11.5, 13.9, 1702);
 
             addBox('mainHouseFrontWalkway', 1.25, 0.05, 4.1, 0.22, floorY - 0.005, 6.7, makeMaterial(0xd8d4ce, 0.96, 0.01));
             addBox('mainHouseFrontPorch', 1.9, 0.08, 1.25, 0.22, floorY + 0.01, 4.92, makeMaterial(0xd9cfbf, 0.93, 0.01));
@@ -1750,6 +1755,9 @@ class CRTScene {
             let houseNumber = 2;
             [18, 33, 48, 63, 78].forEach((roadZ, laneIndex) => {
                 for (let slot = 0; slot < lotXs.length; slot++) {
+                    if (laneIndex === 0) {
+                        houseNumber += 1;
+                    } else {
                     const southSeed = houseNumber;
                     addGeneratedHouse({
                         seed: southSeed,
@@ -1771,6 +1779,7 @@ class CRTScene {
                         planType: Math.floor(rand01(southSeed, 11) * 10)
                     });
                     houseNumber += 1;
+                    }
 
                     const northSeed = houseNumber;
                     addGeneratedHouse({
