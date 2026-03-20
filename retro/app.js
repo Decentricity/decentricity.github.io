@@ -1195,6 +1195,8 @@ class CRTScene {
         });
         
         const glass = new THREE.Mesh(screenGeo, glassMat);
+        glass.name = 'crtGlass';
+        glass.userData.ignoreScreenOcclusion = true;
         glass.position.z = 0.042;
         crtGroup.add(glass);
         
@@ -1633,6 +1635,7 @@ class CSS3DScreen {
         this.raycaster = new THREE.Raycaster();
         this.pointer = new THREE.Vector2();
         this.hovering = false;
+        this.screenVisible = true;
         
         // Keep the width; derive height from actual screen aspect at runtime
         const VIRTUAL_W = 520;
@@ -1777,6 +1780,11 @@ class CSS3DScreen {
     }
     
     updateHover(e) {
+        if (!this.screenVisible) {
+            this.hovering = false;
+            this.wrapper.style.pointerEvents = 'none';
+            return;
+        }
         if (e) this.setPointerFromEvent(e);
         this.raycaster.setFromCamera(this.pointer, this.camera);
         const hit = this.raycaster.intersectObject(this.screenMesh, false);
@@ -1791,10 +1799,58 @@ class CSS3DScreen {
     
     update() {
         this.syncAnchor();
+        this.updateVisibility();
     }
     
     onResize() {
         this.fitElementToScreen();
+    }
+
+    isViewable() {
+        return this.screenVisible;
+    }
+
+    setScreenVisible(visible) {
+        this.screenVisible = visible;
+        this.wrapper.style.visibility = visible ? 'visible' : 'hidden';
+        this.wrapper.style.opacity = visible ? '1' : '0';
+        if (!visible) {
+            this.hovering = false;
+            this.wrapper.style.pointerEvents = 'none';
+        }
+    }
+
+    updateVisibility() {
+        const center = new THREE.Vector3();
+        this.screenMesh.getWorldPosition(center);
+
+        const screenNormal = new THREE.Vector3(0, 0, 1).applyQuaternion(this.screenMesh.getWorldQuaternion(new THREE.Quaternion())).normalize();
+        const eyeToScreen = center.clone().sub(this.camera.position).normalize();
+        const facingScore = screenNormal.dot(eyeToScreen);
+        if (facingScore <= 0.05) {
+            this.setScreenVisible(false);
+            return;
+        }
+
+        const toCenter = center.clone().sub(this.camera.position);
+        const distance = toCenter.length();
+        if (distance <= 0.001) {
+            this.setScreenVisible(true);
+            return;
+        }
+
+        const dir = toCenter.clone().normalize();
+        const rc = new THREE.Raycaster(this.camera.position, dir, 0.05, Math.max(0.05, distance - 0.03));
+        const blockers = [];
+        this.scene.traverse((o) => {
+            if (!o.isMesh) return;
+            if (o === this.screenMesh) return;
+            if (o.userData?.ignoreScreenOcclusion) return;
+            blockers.push(o);
+        });
+
+        const hits = rc.intersectObjects(blockers, true);
+        this.setScreenVisible(hits.length === 0);
     }
 
     showToast(message) {
@@ -1999,7 +2055,9 @@ class FPSControls {
         this.enabled = true;
         this.isLocked = false;
         this.floorY = -0.2;
-        this.eyeHeight = 1.05;
+        this.standEyeHeight = 1.05;
+        this.crouchEyeHeight = 0.68;
+        this.isCrouching = false;
         this.moveSpeed = 2.6;
         this.lookSpeed = 0.0022;
         this.pitchMin = -Math.PI / 2 + 0.08;
@@ -2019,7 +2077,7 @@ class FPSControls {
             maxZ: 4.1
         };
 
-        this.camera.position.set(1.15, this.floorY + this.eyeHeight, 2.25);
+        this.camera.position.set(1.15, this.floorY + this.currentEyeHeight(), 2.25);
         this.camera.lookAt(new THREE.Vector3(0, this.floorY + 1.0, 0));
         this.syncAnglesFromCamera();
         this.setupEvents();
@@ -2057,6 +2115,10 @@ class FPSControls {
         this.domElement.requestPointerLock();
     }
 
+    currentEyeHeight() {
+        return this.isCrouching ? this.crouchEyeHeight : this.standEyeHeight;
+    }
+
     unlock() {
         if (this.isLocked) {
             document.exitPointerLock();
@@ -2091,6 +2153,13 @@ class FPSControls {
             case 'ArrowRight':
                 this.moveState.right = pressed;
                 break;
+            case 'KeyC':
+                if (pressed) {
+                    this.isCrouching = !this.isCrouching;
+                    this.clampPosition();
+                    event.preventDefault();
+                }
+                return;
             default:
                 return;
         }
@@ -2109,7 +2178,7 @@ class FPSControls {
     clampPosition() {
         this.camera.position.x = THREE.MathUtils.clamp(this.camera.position.x, this.bounds.minX, this.bounds.maxX);
         this.camera.position.z = THREE.MathUtils.clamp(this.camera.position.z, this.bounds.minZ, this.bounds.maxZ);
-        this.camera.position.y = this.floorY + this.eyeHeight;
+        this.camera.position.y = this.floorY + this.currentEyeHeight();
     }
 
     update(delta) {
@@ -2129,7 +2198,7 @@ class FPSControls {
         this.camera.getWorldDirection(forward);
         forward.y = 0;
         forward.normalize();
-        const right = new THREE.Vector3(forward.z, 0, -forward.x);
+        const right = new THREE.Vector3(-forward.z, 0, forward.x);
 
         this.camera.position.addScaledVector(forward, move.z);
         this.camera.position.addScaledVector(right, move.x);
@@ -2166,6 +2235,10 @@ class InteractionSystem {
             if (this.isOverScreen) this.exitScreen();
             return;
         }
+        if (!this.css3dScreen.isViewable()) {
+            if (this.isOverScreen) this.exitScreen();
+            return;
+        }
         this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
         this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
         
@@ -2184,7 +2257,7 @@ class InteractionSystem {
     }
     
     onClick(event) {
-        if (this.isOverScreen) {
+        if (this.isOverScreen && this.css3dScreen.isViewable()) {
             this.raycaster.setFromCamera(this.mouse, this.camera);
             const intersects = this.raycaster.intersectObject(this.screenMesh);
             if (intersects.length === 0) {
