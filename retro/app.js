@@ -1033,6 +1033,662 @@ class CRTScene {
             return { base, stem, shade, bulb };
         };
 
+        const addGroupBox = (group, name, w, h, d, x, y, z, material) => {
+            const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
+            mesh.name = name;
+            mesh.position.set(x, y, z);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            group.add(mesh);
+            return mesh;
+        };
+
+        const addGroupPlane = (group, name, w, h, x, y, z, material, rotY = 0) => {
+            const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), material);
+            mesh.name = name;
+            mesh.position.set(x, y, z);
+            mesh.rotation.y = rotY;
+            mesh.receiveShadow = true;
+            group.add(mesh);
+            return mesh;
+        };
+
+        const addHingedDoor = (
+            group,
+            name,
+            width,
+            height,
+            thickness,
+            x,
+            y,
+            z,
+            material,
+            { closedRotY = 0, openAngle = 0, hinge = 'left' } = {}
+        ) => {
+            const pivot = new THREE.Group();
+            pivot.name = `${name}Pivot`;
+
+            const hingeSign = hinge === 'right' ? 1 : -1;
+            const localX = new THREE.Vector3(Math.cos(closedRotY), 0, -Math.sin(closedRotY));
+            const hingePoint = new THREE.Vector3(x, y, z).addScaledVector(localX, hingeSign * width * 0.5);
+
+            pivot.position.copy(hingePoint);
+            pivot.rotation.y = closedRotY + (hinge === 'right' ? openAngle : -openAngle);
+            group.add(pivot);
+
+            const door = new THREE.Mesh(new THREE.BoxGeometry(width, height, thickness), material);
+            door.name = name;
+            door.position.set(hinge === 'right' ? -width * 0.5 : width * 0.5, 0, 0);
+            door.castShadow = true;
+            door.receiveShadow = true;
+            pivot.add(door);
+
+            return { pivot, door };
+        };
+
+        const fract = (n) => n - Math.floor(n);
+        const rand01 = (seed, salt = 0) => fract(Math.sin(seed * 127.1 + salt * 311.7) * 43758.5453123);
+        const pick = (items, seed, salt = 0) => items[Math.floor(rand01(seed, salt) * items.length) % items.length];
+
+        const numberTextureCache = new Map();
+        const getNumberTexture = (label, bg = '#f8eed6', fg = '#4d3927') => {
+            const key = `${label}:${bg}:${fg}`;
+            if (numberTextureCache.has(key)) return numberTextureCache.get(key);
+
+            const canvas = document.createElement('canvas');
+            canvas.width = 192;
+            canvas.height = 96;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = bg;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#d3b785';
+            ctx.lineWidth = 6;
+            ctx.strokeRect(6, 6, canvas.width - 12, canvas.height - 12);
+            ctx.fillStyle = fg;
+            ctx.font = 'bold 54px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label, canvas.width / 2, canvas.height / 2 + 3);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.colorSpace = THREE.SRGBColorSpace || texture.colorSpace;
+            numberTextureCache.set(key, texture);
+            return texture;
+        };
+
+        const addNumberPlaque = (group, label, x, y, z, rotY = 0) => {
+            const mat = new THREE.MeshBasicMaterial({
+                map: getNumberTexture(label),
+                transparent: true
+            });
+            const plaque = addGroupPlane(group, `house_number_${label}`, 0.68, 0.34, x, y, z, mat, rotY);
+            plaque.userData.ignoreScreenOcclusion = true;
+            return plaque;
+        };
+
+        const addWindowUnit = (group, x, y, z, w, h, rotY = 0, lit = true) => {
+            const frameDepth = 0.07;
+            if (Math.abs(rotY) < 0.001 || Math.abs(rotY - Math.PI) < 0.001) {
+                addGroupBox(group, 'windowFrame', w + 0.1, h + 0.1, frameDepth, x, y, z, makeMaterial(0xf3f1ea, 0.55, 0.04));
+            } else {
+                addGroupBox(group, 'windowFrame', frameDepth, h + 0.1, w + 0.1, x, y, z, makeMaterial(0xf3f1ea, 0.55, 0.04));
+            }
+            const glass = addGroupPlane(
+                group,
+                'windowGlass',
+                w,
+                h,
+                x,
+                y,
+                z + (Math.abs(rotY) < 0.001 ? 0.041 : 0),
+                new THREE.MeshBasicMaterial({
+                    color: lit ? 0xfff4d6 : 0x9cc6e6,
+                    transparent: true,
+                    opacity: lit ? 0.82 : 0.55
+                }),
+                rotY
+            );
+            glass.userData.ignoreScreenOcclusion = true;
+        };
+
+        const addMailbox = (group, x, z, bodyColor) => {
+            addGroupBox(group, 'mailboxPost', 0.07, 0.58, 0.07, x, floorY + 0.15, z, makeMaterial(0x6f5a46, 0.75, 0.02));
+            addGroupBox(group, 'mailboxBody', 0.24, 0.18, 0.28, x, floorY + 0.47, z, makeMaterial(bodyColor, 0.7, 0.03));
+        };
+
+        const addTree = (x, z, seed = 0) => {
+            const tree = new THREE.Group();
+            tree.position.set(x, 0, z);
+            addGroupBox(tree, 'treeTrunk', 0.22, 1.45 + rand01(seed, 1) * 0.55, 0.22, 0, floorY + 0.48, 0, makeMaterial(0x70553d, 0.92, 0.01));
+            const canopyColor = pick([0x4d8a45, 0x5c9a50, 0x44793f, 0x6ea85f], seed, 2);
+            const canopy = new THREE.Mesh(
+                new THREE.SphereGeometry(0.95 + rand01(seed, 3) * 0.22, 18, 14),
+                makeMaterial(canopyColor, 0.9, 0.01)
+            );
+            canopy.position.set(0, floorY + 1.75, 0);
+            canopy.castShadow = true;
+            canopy.receiveShadow = true;
+            tree.add(canopy);
+            const canopy2 = new THREE.Mesh(
+                new THREE.SphereGeometry(0.62 + rand01(seed, 4) * 0.18, 16, 12),
+                makeMaterial(canopyColor, 0.92, 0.01)
+            );
+            canopy2.position.set(0.42, floorY + 1.55, -0.18);
+            canopy2.castShadow = true;
+            canopy2.receiveShadow = true;
+            tree.add(canopy2);
+            this.scene.add(tree);
+        };
+
+        const addShrub = (x, z, radius = 0.34, color = 0x4f7d43) => {
+            const shrub = new THREE.Mesh(
+                new THREE.SphereGeometry(radius, 14, 12),
+                makeMaterial(color, 0.95, 0.0)
+            );
+            shrub.position.set(x, floorY + radius * 0.7, z);
+            shrub.castShadow = true;
+            shrub.receiveShadow = true;
+            this.scene.add(shrub);
+        };
+
+        const addStreet = (name, z, length = 190, roadWidth = 7.4) => {
+            addBox(name, length, 0.04, roadWidth, 0, floorY - 0.06, z, makeMaterial(0x3f434a, 0.97, 0.01));
+            addBox(`${name}_sidewalk_n`, length, 0.05, 1.25, 0, floorY - 0.035, z - roadWidth * 0.5 - 0.82, makeMaterial(0xd7d1ca, 0.95, 0.01));
+            addBox(`${name}_sidewalk_s`, length, 0.05, 1.25, 0, floorY - 0.035, z + roadWidth * 0.5 + 0.82, makeMaterial(0xd7d1ca, 0.95, 0.01));
+            for (let x = -length * 0.5 + 6; x < length * 0.5 - 2; x += 8) {
+                addBox(`${name}_line_${x}`, 3.2, 0.01, 0.18, x, floorY - 0.015, z, makeMaterial(0xf6e394, 0.85, 0.01));
+            }
+        };
+
+        const addNorthSouthStreet = (name, x, z, length = 82, roadWidth = 7.2) => {
+            addBox(name, roadWidth, 0.04, length, x, floorY - 0.06, z, makeMaterial(0x3f434a, 0.97, 0.01));
+            addBox(`${name}_sidewalk_w`, 1.25, 0.05, length, x - roadWidth * 0.5 - 0.82, floorY - 0.035, z, makeMaterial(0xd7d1ca, 0.95, 0.01));
+            addBox(`${name}_sidewalk_e`, 1.25, 0.05, length, x + roadWidth * 0.5 + 0.82, floorY - 0.035, z, makeMaterial(0xd7d1ca, 0.95, 0.01));
+            for (let zz = z - length * 0.5 + 6; zz < z + length * 0.5 - 2; zz += 8) {
+                addBox(`${name}_line_${zz}`, 0.18, 0.01, 3.2, x, floorY - 0.015, zz, makeMaterial(0xf6e394, 0.85, 0.01));
+            }
+        };
+
+        const addStreetLamp = (x, z, height = 3.2) => {
+            addBox('streetLampPole', 0.09, height, 0.09, x, floorY + height * 0.5, z, makeMaterial(0x5f6472, 0.74, 0.08));
+            addBox('streetLampArm', 0.54, 0.08, 0.08, x + 0.18, floorY + height - 0.15, z, makeMaterial(0x5f6472, 0.74, 0.08));
+            const globe = new THREE.Mesh(
+                new THREE.SphereGeometry(0.14, 14, 12),
+                new THREE.MeshBasicMaterial({ color: 0xfff6d9 })
+            );
+            globe.position.set(x + 0.42, floorY + height - 0.16, z);
+            globe.userData.ignoreScreenOcclusion = true;
+            this.scene.add(globe);
+
+            const lampLight = new THREE.PointLight(0xfff0cf, 0.16, 14);
+            lampLight.position.copy(globe.position);
+            this.scene.add(lampLight);
+        };
+
+        const addBench = (x, z, rotY = 0) => {
+            const bench = new THREE.Group();
+            bench.position.set(x, 0, z);
+            bench.rotation.y = rotY;
+            addGroupBox(bench, 'benchSeat', 1.1, 0.07, 0.34, 0, floorY + 0.32, 0, makeMaterial(0x9c7958, 0.74, 0.03));
+            addGroupBox(bench, 'benchBack', 1.1, 0.36, 0.08, 0, floorY + 0.56, -0.13, makeMaterial(0x9c7958, 0.74, 0.03));
+            [-0.42, 0.42].forEach((dx) => {
+                addGroupBox(bench, 'benchLeg', 0.08, 0.32, 0.08, dx, floorY + 0.12, 0.08, makeMaterial(0x5f6472, 0.74, 0.08));
+            });
+            this.scene.add(bench);
+        };
+
+        const addDeadCRTStation = (group, seed, x, z) => {
+            const deskColor = pick([0xb48d6b, 0x9f795a, 0xc3a17c], seed, 21);
+            addGroupBox(group, 'deadDeskTop', 1.35, 0.08, 0.68, x, floorY + 0.42, z, makeMaterial(deskColor, 0.74, 0.03));
+            [-0.52, 0.52].forEach((dx) => {
+                [-0.22, 0.22].forEach((dz) => {
+                    addGroupBox(group, 'deadDeskLeg', 0.08, 0.7, 0.08, x + dx, floorY + 0.07, z + dz, makeMaterial(deskColor, 0.78, 0.02));
+                });
+            });
+
+            addGroupBox(group, 'deadCRTBody', 0.62, 0.52, 0.56, x - 0.08, floorY + 0.72, z - 0.06, makeMaterial(0xd8cfbf, 0.65, 0.03));
+            addGroupBox(group, 'deadCRTNeck', 0.16, 0.1, 0.16, x - 0.08, floorY + 0.48, z - 0.1, makeMaterial(0xd0c6b6, 0.65, 0.03));
+            addGroupBox(group, 'deadCRTScreen', 0.38, 0.28, 0.02, x - 0.08, floorY + 0.74, z + 0.19, makeMaterial(0x06080d, 0.98, 0.01));
+            addGroupBox(group, 'deadKeyboard', 0.48, 0.05, 0.18, x + 0.08, floorY + 0.47, z + 0.12, makeMaterial(0xe8e2d8, 0.82, 0.02));
+            addGroupBox(group, 'disketteA', 0.16, 0.02, 0.16, x + 0.35, floorY + 0.47, z - 0.06, makeMaterial(pick([0x3a526d, 0x6d3a4c, 0x4a6c58], seed, 22), 0.84, 0.01));
+            addGroupBox(group, 'disketteB', 0.16, 0.02, 0.16, x + 0.18, floorY + 0.47, z - 0.16, makeMaterial(pick([0x7b4d8a, 0x355d7d, 0x915e52], seed, 23), 0.84, 0.01));
+        };
+
+        const addGeneratedHouse = (cfg) => {
+            const house = new THREE.Group();
+            house.position.set(cfg.x, 0, cfg.z);
+            house.rotation.y = cfg.facingSouth ? Math.PI : 0;
+            this.scene.add(house);
+
+            const bodyHeight = cfg.stories === 2 ? 4.8 : 3.05;
+            const porchDepth = 0.8 + rand01(cfg.seed, 12) * 0.5;
+            const doorWidth = 1.02;
+            const doorHeight = 2.1;
+            const doorOffset = (rand01(cfg.seed, 13) - 0.5) * Math.min(1.6, cfg.width * 0.22);
+            const leftWidth = Math.max(1.0, cfg.width * 0.5 + doorOffset - doorWidth * 0.5);
+            const rightWidth = Math.max(0.9, cfg.width - leftWidth - doorWidth);
+            const leftCenter = -cfg.width * 0.5 + leftWidth * 0.5;
+            const rightCenter = cfg.width * 0.5 - rightWidth * 0.5;
+            const frontZ = cfg.depth * 0.5;
+            const roofBaseY = floorY + bodyHeight + 0.15;
+            const facadeType = Math.floor(rand01(cfg.seed, 14) * 5);
+
+            const makeFurnitureGroup = (name, x, z, rotY = 0) => {
+                const furniture = new THREE.Group();
+                furniture.name = name;
+                furniture.position.set(x, 0, z);
+                furniture.rotation.y = rotY;
+                house.add(furniture);
+                return furniture;
+            };
+
+            const addSofaCluster = (x, z, rotY, color) => {
+                const sofa = makeFurnitureGroup('houseSofaCluster', x, z, rotY);
+                addGroupBox(sofa, 'houseSofaSeat', 1.45, 0.28, 0.74, 0, floorY + 0.16, 0, makeMaterial(color, 0.93, 0.01));
+                addGroupBox(sofa, 'houseSofaBack', 1.45, 0.55, 0.16, 0, floorY + 0.42, -0.29, makeMaterial(color, 0.93, 0.01));
+                addGroupBox(sofa, 'houseSofaArmA', 0.18, 0.46, 0.8, -0.64, floorY + 0.25, 0, makeMaterial(color, 0.93, 0.01));
+                addGroupBox(sofa, 'houseSofaArmB', 0.18, 0.46, 0.8, 0.64, floorY + 0.25, 0, makeMaterial(color, 0.93, 0.01));
+            };
+
+            const addBedCluster = (x, z, rotY, frameColor) => {
+                const bed = makeFurnitureGroup('houseBedCluster', x, z, rotY);
+                addGroupBox(bed, 'houseBedBase', 1.5, 0.24, 2.0, 0, floorY + 0.12, 0, makeMaterial(frameColor, 0.9, 0.01));
+                addGroupBox(bed, 'houseMattress', 1.36, 0.18, 1.84, 0, floorY + 0.34, 0, makeMaterial(0xf7f4f8, 0.95, 0.01));
+                addGroupBox(bed, 'housePillowA', 0.42, 0.12, 0.32, -0.32, floorY + 0.47, -0.68, makeMaterial(0xf8f5fb, 0.95, 0.01));
+                addGroupBox(bed, 'housePillowB', 0.42, 0.12, 0.32, 0.32, floorY + 0.47, -0.68, makeMaterial(0xf8f5fb, 0.95, 0.01));
+            };
+
+            const addDiningCluster = (x, z, rotY, woodColor, stoolColor) => {
+                const dining = makeFurnitureGroup('houseDiningCluster', x, z, rotY);
+                addGroupBox(dining, 'houseDiningTable', 0.96, 0.08, 0.96, 0, floorY + 0.42, 0, makeMaterial(woodColor, 0.72, 0.03));
+                [-0.46, 0.46].forEach((offset, i) => {
+                    addGroupBox(dining, `houseDiningStool${i}`, 0.28, 0.42, 0.28, offset, floorY + 0.21, 0, makeMaterial(stoolColor, 0.93, 0.01));
+                });
+            };
+
+            const addStorageCluster = (x, z, rotY, woodColor) => {
+                const storage = makeFurnitureGroup('houseStorageCluster', x, z, rotY);
+                addGroupBox(storage, 'houseCabinet', 0.72, 0.92, 0.34, 0, floorY + 0.44, 0, makeMaterial(woodColor, 0.76, 0.03));
+                addGroupBox(storage, 'houseBooks', 0.52, 0.14, 0.2, 0, floorY + 0.78, -0.05, makeMaterial(0xb8c7db, 0.84, 0.01));
+            };
+
+            const addAccentTable = (x, z, woodColor) => {
+                addGroupBox(house, 'houseAccentTable', 0.42, 0.08, 0.42, x, floorY + 0.24, z, makeMaterial(woodColor, 0.75, 0.03));
+                addGroupBox(house, 'houseAccentLampBase', 0.1, 0.02, 0.1, x + 0.08, floorY + 0.3, z - 0.02, makeMaterial(0xddd7d0, 0.62, 0.03));
+                addGroupBox(house, 'houseAccentLampShade', 0.18, 0.16, 0.18, x + 0.08, floorY + 0.41, z - 0.02, makeMaterial(0xf0d8d1, 0.82, 0.02));
+            };
+
+            const addPottedPlant = (x, z, foliageColor) => {
+                addGroupBox(house, 'housePlantPot', 0.22, 0.18, 0.22, x, floorY + 0.09, z, makeMaterial(0xc9a688, 0.82, 0.02));
+                const foliage = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.24, 12, 10),
+                    makeMaterial(foliageColor, 0.95, 0.0)
+                );
+                foliage.position.set(x, floorY + 0.34, z);
+                foliage.castShadow = true;
+                foliage.receiveShadow = true;
+                house.add(foliage);
+            };
+
+            const layoutPresets = [
+                {
+                    walls: [{ axis: 'x', span: 0.45, x: -0.08, z: 0.12 }],
+                    rug: { w: 0.38, d: 0.22, x: -0.18, z: 0.08, rot: 0 },
+                    sofa: { x: -0.22, z: 0.14, rot: 0 },
+                    bed: { x: 0.22, z: -0.22, rot: 0 },
+                    dining: { x: 0.18, z: 0.22, rot: 0 },
+                    storage: { x: -0.34, z: -0.28, rot: 0 },
+                    crt: { x: 0.24, z: -0.02 },
+                    plant: { x: -0.36, z: 0.3 },
+                    accent: { x: 0.04, z: -0.34 }
+                },
+                {
+                    walls: [{ axis: 'z', span: 0.42, x: -0.02, z: -0.08 }],
+                    rug: { w: 0.26, d: 0.36, x: 0.1, z: 0.12, rot: Math.PI / 2 },
+                    sofa: { x: 0.26, z: 0.12, rot: Math.PI / 2 },
+                    bed: { x: -0.22, z: -0.16, rot: Math.PI / 2 },
+                    dining: { x: -0.06, z: 0.28, rot: Math.PI / 2 },
+                    storage: { x: 0.34, z: -0.22, rot: Math.PI / 2 },
+                    crt: { x: -0.3, z: 0.02 },
+                    plant: { x: 0.34, z: 0.3 },
+                    accent: { x: -0.26, z: -0.32 }
+                },
+                {
+                    walls: [
+                        { axis: 'x', span: 0.36, x: 0.06, z: -0.18 },
+                        { axis: 'z', span: 0.26, x: -0.24, z: 0.12 }
+                    ],
+                    rug: { w: 0.34, d: 0.22, x: 0.2, z: -0.02, rot: 0 },
+                    sofa: { x: 0.2, z: -0.26, rot: Math.PI },
+                    bed: { x: -0.22, z: 0.16, rot: 0 },
+                    dining: { x: -0.1, z: -0.28, rot: 0 },
+                    storage: { x: 0.34, z: 0.24, rot: Math.PI },
+                    crt: { x: -0.28, z: -0.1 },
+                    plant: { x: 0.38, z: -0.3 },
+                    accent: { x: -0.34, z: 0.28 }
+                },
+                {
+                    walls: [{ axis: 'x', span: 0.32, x: 0.18, z: 0.18 }],
+                    rug: { w: 0.22, d: 0.34, x: -0.12, z: -0.02, rot: Math.PI / 2 },
+                    sofa: { x: -0.18, z: 0.02, rot: -Math.PI / 2 },
+                    bed: { x: 0.24, z: -0.22, rot: 0 },
+                    dining: { x: 0.28, z: 0.2, rot: Math.PI / 2 },
+                    storage: { x: -0.34, z: -0.28, rot: 0 },
+                    crt: { x: 0.02, z: 0.28 },
+                    plant: { x: -0.34, z: 0.3 },
+                    accent: { x: 0.36, z: -0.3 }
+                },
+                {
+                    walls: [{ axis: 'z', span: 0.34, x: 0.2, z: 0.04 }],
+                    rug: { w: 0.38, d: 0.2, x: -0.2, z: -0.1, rot: 0 },
+                    sofa: { x: -0.24, z: -0.18, rot: Math.PI },
+                    bed: { x: 0.2, z: 0.18, rot: Math.PI / 2 },
+                    dining: { x: -0.02, z: 0.26, rot: 0 },
+                    storage: { x: 0.34, z: -0.28, rot: Math.PI / 2 },
+                    crt: { x: -0.3, z: 0.14 },
+                    plant: { x: 0.34, z: 0.28 },
+                    accent: { x: -0.04, z: -0.32 }
+                },
+                {
+                    walls: [{ axis: 'x', span: 0.34, x: -0.16, z: -0.04 }],
+                    rug: { w: 0.26, d: 0.36, x: 0.18, z: 0.14, rot: Math.PI / 2 },
+                    sofa: { x: 0.24, z: 0.18, rot: 0 },
+                    bed: { x: -0.2, z: -0.24, rot: Math.PI / 2 },
+                    dining: { x: -0.2, z: 0.24, rot: Math.PI / 2 },
+                    storage: { x: 0.34, z: -0.22, rot: 0 },
+                    crt: { x: 0.04, z: -0.04 },
+                    plant: { x: -0.38, z: 0.18 },
+                    accent: { x: 0.36, z: 0.32 }
+                },
+                {
+                    walls: [
+                        { axis: 'z', span: 0.26, x: -0.2, z: -0.16 },
+                        { axis: 'x', span: 0.24, x: 0.18, z: 0.12 }
+                    ],
+                    rug: { w: 0.3, d: 0.22, x: 0.02, z: -0.1, rot: 0 },
+                    sofa: { x: 0.02, z: -0.24, rot: Math.PI },
+                    bed: { x: -0.24, z: 0.16, rot: 0 },
+                    dining: { x: 0.24, z: 0.22, rot: 0 },
+                    storage: { x: -0.34, z: -0.28, rot: Math.PI / 2 },
+                    crt: { x: 0.32, z: -0.02 },
+                    plant: { x: 0.38, z: 0.18 },
+                    accent: { x: -0.36, z: 0.32 }
+                },
+                {
+                    walls: [{ axis: 'x', span: 0.4, x: 0.02, z: 0.2 }],
+                    rug: { w: 0.22, d: 0.34, x: -0.24, z: 0.02, rot: Math.PI / 2 },
+                    sofa: { x: -0.3, z: 0.04, rot: -Math.PI / 2 },
+                    bed: { x: 0.18, z: -0.18, rot: Math.PI / 2 },
+                    dining: { x: 0.18, z: 0.28, rot: 0 },
+                    storage: { x: 0.34, z: -0.3, rot: 0 },
+                    crt: { x: -0.02, z: -0.24 },
+                    plant: { x: -0.38, z: -0.28 },
+                    accent: { x: 0.34, z: 0.22 }
+                },
+                {
+                    walls: [{ axis: 'z', span: 0.4, x: 0.06, z: 0.02 }],
+                    rug: { w: 0.32, d: 0.22, x: -0.18, z: 0.16, rot: 0 },
+                    sofa: { x: -0.18, z: 0.28, rot: 0 },
+                    bed: { x: 0.26, z: -0.12, rot: 0 },
+                    dining: { x: -0.22, z: -0.24, rot: Math.PI / 2 },
+                    storage: { x: 0.32, z: 0.26, rot: Math.PI },
+                    crt: { x: -0.28, z: -0.02 },
+                    plant: { x: 0.36, z: -0.28 },
+                    accent: { x: 0.02, z: 0.34 }
+                },
+                {
+                    walls: [
+                        { axis: 'x', span: 0.22, x: -0.22, z: 0.1 },
+                        { axis: 'z', span: 0.28, x: 0.22, z: -0.1 }
+                    ],
+                    rug: { w: 0.22, d: 0.32, x: 0.12, z: 0.02, rot: Math.PI / 2 },
+                    sofa: { x: 0.18, z: 0.04, rot: Math.PI / 2 },
+                    bed: { x: -0.22, z: -0.22, rot: 0 },
+                    dining: { x: -0.22, z: 0.24, rot: 0 },
+                    storage: { x: 0.34, z: -0.28, rot: Math.PI / 2 },
+                    crt: { x: 0.24, z: 0.26 },
+                    plant: { x: -0.36, z: 0.3 },
+                    accent: { x: 0.34, z: -0.04 }
+                }
+            ];
+            const layout = layoutPresets[cfg.planType % layoutPresets.length];
+
+            addGroupBox(house, 'lotPad', cfg.width + 4.4, 0.06, cfg.depth + 6.8, 0, floorY - 0.03, 0, makeMaterial(0x78ad63, 0.98, 0.0));
+            addGroupBox(house, 'houseFoundation', cfg.width + 0.18, 0.18, cfg.depth + 0.2, 0, floorY - 0.01, 0, makeMaterial(0xcab9a6, 0.9, 0.01));
+            addGroupBox(house, 'houseFloor', cfg.width - 0.2, 0.06, cfg.depth - 0.2, 0, floorY - 0.03, 0, makeMaterial(cfg.floorColor, 0.96, 0.01));
+
+            addGroupBox(house, 'houseWallLeft', wallThickness, bodyHeight, cfg.depth, -cfg.width * 0.5, floorY + bodyHeight * 0.5, 0, makeMaterial(cfg.wallColor, 0.88, 0.02));
+            addGroupBox(house, 'houseWallRight', wallThickness, bodyHeight, cfg.depth, cfg.width * 0.5, floorY + bodyHeight * 0.5, 0, makeMaterial(cfg.wallColor, 0.88, 0.02));
+            addGroupBox(house, 'houseWallBack', cfg.width, bodyHeight, wallThickness, 0, floorY + bodyHeight * 0.5, -cfg.depth * 0.5, makeMaterial(cfg.wallColor, 0.88, 0.02));
+            addGroupBox(house, 'houseWallFrontLeft', leftWidth, bodyHeight, wallThickness, leftCenter, floorY + bodyHeight * 0.5, frontZ, makeMaterial(cfg.wallColor, 0.88, 0.02));
+            addGroupBox(house, 'houseWallFrontRight', rightWidth, bodyHeight, wallThickness, rightCenter, floorY + bodyHeight * 0.5, frontZ, makeMaterial(cfg.wallColor, 0.88, 0.02));
+            addGroupBox(house, 'houseDoorHeader', doorWidth, bodyHeight - doorHeight, wallThickness, doorOffset, floorY + doorHeight + (bodyHeight - doorHeight) * 0.5, frontZ, makeMaterial(cfg.wallColor, 0.9, 0.02));
+            addHingedDoor(
+                house,
+                'houseFrontDoor',
+                0.95,
+                doorHeight,
+                0.06,
+                doorOffset,
+                floorY + doorHeight * 0.5,
+                frontZ - 0.03,
+                makeMaterial(cfg.doorColor, 0.7, 0.03),
+                { closedRotY: 0, openAngle: cfg.enterable ? 1.15 : 0, hinge: rand01(cfg.seed, 15) > 0.5 ? 'right' : 'left' }
+            );
+
+            addGroupBox(house, 'housePorch', Math.max(1.45, doorWidth + 0.45), 0.08, porchDepth, doorOffset, floorY + 0.01, frontZ + porchDepth * 0.5 + 0.04, makeMaterial(0xd8cdb8, 0.92, 0.01));
+            addGroupBox(house, 'houseWalkway', 1.2, 0.05, 3.3, doorOffset, floorY - 0.005, frontZ + porchDepth + 1.62, makeMaterial(0xd9d4cf, 0.95, 0.01));
+            addNumberPlaque(house, cfg.number, doorOffset, floorY + 2.42, frontZ + 0.09);
+            addGroupBox(house, 'housePorchPostA', 0.12, 1.7, 0.12, doorOffset - 0.58, floorY + 0.85, frontZ + porchDepth * 0.9, makeMaterial(cfg.trimColor, 0.84, 0.02));
+            addGroupBox(house, 'housePorchPostB', 0.12, 1.7, 0.12, doorOffset + 0.58, floorY + 0.85, frontZ + porchDepth * 0.9, makeMaterial(cfg.trimColor, 0.84, 0.02));
+
+            addWindowUnit(house, -cfg.width * 0.27, floorY + 1.5, frontZ + 0.05, 0.95, 0.75, 0, cfg.windowLit);
+            addWindowUnit(house, cfg.width * 0.28, floorY + 1.5, frontZ + 0.05, 0.95, 0.75, 0, cfg.windowLit);
+            addWindowUnit(house, -cfg.width * 0.5 - 0.04, floorY + 1.4, -cfg.depth * 0.18, 0.9, 0.72, Math.PI / 2, cfg.windowLit);
+            addWindowUnit(house, cfg.width * 0.5 + 0.04, floorY + 1.4, cfg.depth * 0.15, 0.9, 0.72, Math.PI / 2, cfg.windowLit);
+            if (cfg.stories === 2) {
+                addWindowUnit(house, -cfg.width * 0.18, floorY + 3.25, frontZ + 0.05, 0.8, 0.62, 0, true);
+                addWindowUnit(house, cfg.width * 0.2, floorY + 3.25, frontZ + 0.05, 0.8, 0.62, 0, true);
+            }
+
+            switch (cfg.roofType) {
+                case 'flat': {
+                    addGroupBox(house, 'flatRoof', cfg.width + 0.55, 0.16, cfg.depth + 0.55, 0, roofBaseY, 0, makeMaterial(cfg.roofColor, 0.8, 0.03));
+                    addGroupBox(house, 'flatParapetFront', cfg.width + 0.7, 0.28, 0.16, 0, roofBaseY + 0.12, frontZ + 0.22, makeMaterial(cfg.trimColor, 0.8, 0.02));
+                    addGroupBox(house, 'flatParapetBack', cfg.width + 0.7, 0.28, 0.16, 0, roofBaseY + 0.12, -frontZ - 0.22, makeMaterial(cfg.trimColor, 0.8, 0.02));
+                    break;
+                }
+                case 'shed': {
+                    const panel = addGroupBox(house, 'shedRoof', cfg.width + 0.7, 0.18, cfg.depth + 0.7, 0, roofBaseY + 0.16, 0, makeMaterial(cfg.roofColor, 0.82, 0.03));
+                    panel.rotation.x = -0.28;
+                    break;
+                }
+                default: {
+                    const roofA = addGroupBox(house, 'gableRoofA', cfg.width + 0.6, 0.16, cfg.depth * 0.58, 0, roofBaseY + 0.08, cfg.depth * 0.18, makeMaterial(cfg.roofColor, 0.82, 0.03));
+                    const roofB = addGroupBox(house, 'gableRoofB', cfg.width + 0.6, 0.16, cfg.depth * 0.58, 0, roofBaseY + 0.08, -cfg.depth * 0.18, makeMaterial(cfg.roofColor, 0.82, 0.03));
+                    roofA.rotation.x = -0.33;
+                    roofB.rotation.x = 0.33;
+                    break;
+                }
+            }
+
+            if (facadeType === 1 || facadeType === 4) {
+                const wingSide = rand01(cfg.seed, 16) > 0.5 ? 1 : -1;
+                addGroupBox(house, 'houseGarageWing', 2.6, 2.34, 3.5, wingSide * (cfg.width * 0.5 + 1.26), floorY + 1.17, cfg.depth * 0.12, makeMaterial(cfg.wallColor, 0.88, 0.02));
+                addGroupBox(house, 'houseGarageRoof', 2.86, 0.16, 3.82, wingSide * (cfg.width * 0.5 + 1.26), floorY + 2.43, cfg.depth * 0.12, makeMaterial(cfg.roofColor, 0.82, 0.03));
+                addGroupBox(house, 'houseGarageDoor', 1.9, 1.72, 0.06, wingSide * (cfg.width * 0.5 + 1.26), floorY + 0.86, cfg.depth * 0.12 + 1.72, makeMaterial(0xe6e1db, 0.86, 0.01));
+            }
+            if (facadeType === 2) {
+                addGroupBox(house, 'houseBayFrame', 1.42, 0.88, 0.46, -cfg.width * 0.14, floorY + 1.42, frontZ + 0.22, makeMaterial(cfg.trimColor, 0.84, 0.02));
+                addWindowUnit(house, -cfg.width * 0.14, floorY + 1.44, frontZ + 0.28, 1.12, 0.56, 0, true);
+            }
+            if (facadeType === 3 || cfg.stories === 2) {
+                addGroupBox(house, 'houseChimney', 0.38, 1.55, 0.38, cfg.width * 0.24, floorY + bodyHeight + 0.72, -cfg.depth * 0.18, makeMaterial(0xc7b19a, 0.9, 0.01));
+            }
+            if (cfg.stories === 2 && cfg.roofType === 'gable') {
+                addGroupBox(house, 'houseDormer', 1.22, 0.9, 0.9, -cfg.width * 0.12, floorY + bodyHeight + 0.28, frontZ * 0.22, makeMaterial(cfg.wallColor, 0.88, 0.02));
+                addWindowUnit(house, -cfg.width * 0.12, floorY + bodyHeight + 0.28, frontZ * 0.5, 0.6, 0.5, 0, true);
+            }
+
+            layout.walls.forEach((wallCfg, index) => {
+                if (wallCfg.axis === 'x') {
+                    addGroupBox(house, `innerWallA_${index}`, cfg.width * wallCfg.span, 2.25, 0.08, cfg.width * wallCfg.x, floorY + 1.12, cfg.depth * wallCfg.z, makeMaterial(cfg.trimColor, 0.93, 0.01));
+                } else {
+                    addGroupBox(house, `innerWallB_${index}`, 0.08, 2.2, cfg.depth * wallCfg.span, cfg.width * wallCfg.x, floorY + 1.1, cfg.depth * wallCfg.z, makeMaterial(cfg.trimColor, 0.93, 0.01));
+                }
+            });
+
+            const sofaColor = pick([0xb78e83, 0x8aa5b8, 0x97b783, 0xc9a1ba], cfg.seed, 31);
+            const rugColor = pick([0xdcc8ed, 0xc9d9ea, 0xe9d4c8, 0xcfe2cc], cfg.seed, 32);
+            const woodColor = pick([0x9b765a, 0x8c684b, 0xb18a65], cfg.seed, 33);
+            const stoolColor = pick([0xe2bfd8, 0xbfd4e2, 0xded0bc, 0xc8ddb8], cfg.seed, 35);
+            const bedFrameColor = pick([0xc6a0a9, 0xb8a0c8, 0xa0b7c8, 0xd2b596], cfg.seed, 34);
+            const rug = addGroupBox(house, 'houseRug', cfg.width * layout.rug.w, 0.01, cfg.depth * layout.rug.d, cfg.width * layout.rug.x, floorY + 0.005, cfg.depth * layout.rug.z, makeMaterial(rugColor, 0.97, 0.01));
+            rug.rotation.y = layout.rug.rot;
+            addSofaCluster(cfg.width * layout.sofa.x, cfg.depth * layout.sofa.z, layout.sofa.rot, sofaColor);
+            addGroupBox(house, 'houseCoffeeTable', 0.9, 0.09, 0.5, cfg.width * (layout.sofa.x * 0.48 + layout.crt.x * 0.18), floorY + 0.22, cfg.depth * (layout.sofa.z * 0.45 + layout.rug.z * 0.3), makeMaterial(woodColor, 0.76, 0.03));
+            addBedCluster(cfg.width * layout.bed.x, cfg.depth * layout.bed.z, layout.bed.rot, bedFrameColor);
+            addDiningCluster(cfg.width * layout.dining.x, cfg.depth * layout.dining.z, layout.dining.rot, woodColor, stoolColor);
+            addStorageCluster(cfg.width * layout.storage.x, cfg.depth * layout.storage.z, layout.storage.rot, woodColor);
+            addAccentTable(cfg.width * layout.accent.x, cfg.depth * layout.accent.z, woodColor);
+            addPottedPlant(cfg.width * layout.plant.x, cfg.depth * layout.plant.z, pick([0x62884d, 0x4f7d43, 0x7ca15f], cfg.seed, 36));
+            addDeadCRTStation(house, cfg.seed, cfg.width * layout.crt.x, cfg.depth * layout.crt.z);
+
+            addMailbox(house, doorOffset - 0.95, frontZ + porchDepth + 0.95, cfg.trimColor);
+            addShrub(cfg.x - cfg.width * 0.24, cfg.z + (cfg.facingSouth ? -1 : 1) * (frontZ + porchDepth + 1.4), 0.34, pick([0x62884d, 0x4f7d43, 0x7ca15f], cfg.seed, 40));
+            addShrub(cfg.x + cfg.width * 0.3, cfg.z + (cfg.facingSouth ? -1 : 1) * (frontZ + porchDepth + 1.1), 0.28, pick([0x62884d, 0x4f7d43, 0x7ca15f], cfg.seed, 41));
+            if (rand01(cfg.seed, 42) > 0.35) {
+                addTree(
+                    cfg.x + (rand01(cfg.seed, 43) > 0.5 ? 1 : -1) * (cfg.width * 0.5 + 1.9),
+                    cfg.z + (cfg.facingSouth ? -1 : 1) * (cfg.depth * 0.5 + 2.6),
+                    cfg.seed
+                );
+            }
+        };
+
+        const addCurrentHouseExterior = () => {
+            this.scene.background = new THREE.Color(0x91d0ff);
+            this.scene.fog = new THREE.Fog(0x91d0ff, 58, 176);
+
+            const sky = new THREE.Mesh(
+                new THREE.SphereGeometry(220, 32, 18),
+                new THREE.MeshBasicMaterial({ color: 0x91d0ff, side: THREE.BackSide })
+            );
+            sky.name = 'skyDome';
+            sky.userData.ignoreScreenOcclusion = true;
+            this.scene.add(sky);
+
+            const sun = new THREE.Mesh(
+                new THREE.SphereGeometry(6, 24, 18),
+                new THREE.MeshBasicMaterial({ color: 0xfff1ae })
+            );
+            sun.position.set(56, 82, -42);
+            sun.name = 'sun';
+            sun.userData.ignoreScreenOcclusion = true;
+            this.scene.add(sun);
+
+            const sunLight = new THREE.DirectionalLight(0xfff2c7, 1.25);
+            sunLight.position.copy(sun.position);
+            this.scene.add(sunLight);
+
+            addBox('complexGrass', 210, 0.04, 150, 0, floorY - 0.07, 40, makeMaterial(0x7cac67, 0.99, 0.0));
+            addStreet('mainAvenue', 8.8, 190, 7.8);
+            [18, 33, 48, 63, 78].forEach((z, i) => addStreet(`lane_${i}`, z, 190, 7.2));
+            addNorthSouthStreet('collector_west', -20, 48, 92, 7.2);
+            addNorthSouthStreet('collector_east', 44, 48, 92, 7.2);
+
+            [
+                [-14, 5.1], [18, 5.1], [-14, 21.9], [18, 21.9],
+                [-14, 36.9], [18, 36.9], [-14, 51.9], [18, 51.9],
+                [-14, 66.9], [18, 66.9], [-14, 81.9], [18, 81.9]
+            ].forEach(([x, z]) => addStreetLamp(x, z));
+
+            addBox('pocketParkPath', 10.5, 0.05, 2.2, 86, floorY - 0.005, 48, makeMaterial(0xd7d1ca, 0.95, 0.01));
+            addBox('pocketParkPad', 8.8, 0.04, 8.8, 86, floorY - 0.04, 48, makeMaterial(0x89b46f, 0.98, 0.0));
+            addBench(83.4, 45.9, Math.PI / 2);
+            addBench(88.6, 50.1, -Math.PI / 2);
+            addTree(82.8, 52.4, 1601);
+            addTree(89.4, 43.4, 1602);
+            addShrub(84.2, 48.2, 0.38, 0x62884d);
+            addShrub(87.9, 47.2, 0.32, 0x5a7f46);
+
+            addBox('mainHouseWalkway', 1.25, 0.05, 4.1, 0.65, floorY - 0.005, 6.7, makeMaterial(0xd8d4ce, 0.96, 0.01));
+            addBox('mainHousePorch', 1.9, 0.08, 1.25, 0.65, floorY + 0.01, 4.92, makeMaterial(0xd9cfbf, 0.93, 0.01));
+            addNumberPlaque(this.scene, '01', 0.65, floorY + 2.42, 4.42);
+            addWindowUnit(this.scene, -1.25, floorY + 1.5, 4.38, 0.92, 0.74, 0, true);
+            addWindowUnit(this.scene, 1.9, floorY + 1.5, 4.38, 0.92, 0.74, 0, true);
+
+            addBox('mainHouseOuterLeft', wallThickness, 3.3, 8.9, -5.88, floorY + 1.65, 0.15, makeMaterial(0xe2ddcf, 0.86, 0.02));
+            addBox('mainHouseOuterRight', wallThickness, 3.3, 8.9, 6.62, floorY + 1.65, 0.15, makeMaterial(0xe2ddcf, 0.86, 0.02));
+            addBox('mainHouseOuterBack', 12.5, 3.3, wallThickness, 0.37, floorY + 1.65, -4.12, makeMaterial(0xe2ddcf, 0.86, 0.02));
+
+            const roofA = addBox('mainHouseRoofA', 12.9, 0.18, 5.1, 0.37, floorY + 3.58, -1.0, makeMaterial(0x7c5648, 0.82, 0.03));
+            const roofB = addBox('mainHouseRoofB', 12.9, 0.18, 5.1, 0.37, floorY + 3.58, 1.3, makeMaterial(0x7c5648, 0.82, 0.03));
+            roofA.rotation.x = -0.34;
+            roofB.rotation.x = 0.34;
+
+            addTree(-8.2, 6.8, 1001);
+            addTree(8.4, 7.2, 1002);
+            addShrub(-2.1, 5.7, 0.4, 0x62884d);
+            addShrub(3.1, 5.6, 0.34, 0x5a7f46);
+
+            const lotXs = [-72, -36, -4, 28, 60];
+            let houseNumber = 2;
+            [18, 33, 48, 63, 78].forEach((roadZ, laneIndex) => {
+                for (let slot = 0; slot < lotXs.length; slot++) {
+                    const southSeed = houseNumber;
+                    addGeneratedHouse({
+                        seed: southSeed,
+                        number: String(houseNumber).padStart(2, '0'),
+                        x: lotXs[slot],
+                        z: roadZ - 8.8,
+                        facingSouth: false,
+                        enterable: houseNumber % 2 === 0,
+                        width: 7.0 + rand01(southSeed, 1) * 2.8,
+                        depth: 8.0 + rand01(southSeed, 2) * 2.8,
+                        roofType: pick(['gable', 'flat', 'shed', 'gable', 'shed'], southSeed, 3),
+                        wallColor: pick([0xe7dccf, 0xd7e0e7, 0xe7d9d2, 0xdad5e3, 0xe4e1d0], southSeed, 4),
+                        trimColor: pick([0xb3826d, 0x7a6f83, 0x5e7c8f, 0x826558, 0x63835f], southSeed, 5),
+                        doorColor: pick([0xa87454, 0x5f6f84, 0x7c594b, 0x6a4a3d], southSeed, 6),
+                        roofColor: pick([0x7c5648, 0x5f6573, 0x845f53, 0x58675d], southSeed, 7),
+                        floorColor: pick([0xf0ece6, 0xf1ece7, 0xece7f0, 0xe9efe5], southSeed, 8),
+                        windowLit: rand01(southSeed, 9) > 0.2,
+                        stories: rand01(southSeed, 10) > 0.78 ? 2 : 1,
+                        planType: Math.floor(rand01(southSeed, 11) * 10)
+                    });
+                    houseNumber += 1;
+
+                    const northSeed = houseNumber;
+                    addGeneratedHouse({
+                        seed: northSeed,
+                        number: String(houseNumber).padStart(2, '0'),
+                        x: lotXs[slot],
+                        z: roadZ + 8.8,
+                        facingSouth: true,
+                        enterable: houseNumber % 2 === 0,
+                        width: 7.0 + rand01(northSeed, 1) * 2.8,
+                        depth: 8.0 + rand01(northSeed, 2) * 2.8,
+                        roofType: pick(['gable', 'flat', 'shed', 'gable', 'shed'], northSeed, 3),
+                        wallColor: pick([0xe7dccf, 0xd7e0e7, 0xe7d9d2, 0xdad5e3, 0xe4e1d0], northSeed, 4),
+                        trimColor: pick([0xb3826d, 0x7a6f83, 0x5e7c8f, 0x826558, 0x63835f], northSeed, 5),
+                        doorColor: pick([0xa87454, 0x5f6f84, 0x7c594b, 0x6a4a3d], northSeed, 6),
+                        roofColor: pick([0x7c5648, 0x5f6573, 0x845f53, 0x58675d], northSeed, 7),
+                        floorColor: pick([0xf0ece6, 0xf1ece7, 0xece7f0, 0xe9efe5], northSeed, 8),
+                        windowLit: rand01(northSeed, 9) > 0.2,
+                        stories: rand01(northSeed, 10) > 0.78 ? 2 : 1,
+                        planType: Math.floor(rand01(northSeed, 11) * 10)
+                    });
+                    houseNumber += 1;
+                }
+            });
+
+            for (let i = 0; i < 24; i++) {
+                const tx = -90 + i * 8;
+                addTree(tx, 11.9, 1200 + i);
+                if (i % 2 === 0) addTree(tx + 3.4, 85.5, 1400 + i);
+            }
+        };
+
         // 1) The existing CRT nook stays the anchor room.
         const floor = addFloorPanel('floor', 4, 4, 0, 0, 0xf3eee7);
         addCeilingPanel('studyCeiling', 4, 4, 0, 0, 0xf7f1fb);
@@ -1044,7 +1700,27 @@ class CRTScene {
         // 2) A front hall/gallery turns the open front edge into part of a house.
         addFloorPanel('hallFloor', 4.2, 2.4, 0, 3.1, 0xf1ece8);
         addCeilingPanel('hallCeiling', 4.2, 2.4, 0, 3.1, 0xfbf7f3);
-        addWallX('frontHallWall', 4.2, 0, 4.28, 0xe3d4c4);
+        const hallDoorCenterX = 0.65;
+        const hallDoorWidth = 1.06;
+        const hallDoorHeight = 2.14;
+        const hallFrontHalf = 2.1;
+        const hallFrontLeftWidth = hallDoorCenterX - hallDoorWidth * 0.5 + hallFrontHalf;
+        const hallFrontRightWidth = hallFrontHalf - (hallDoorCenterX + hallDoorWidth * 0.5);
+        addWallX('frontHallWallLeft', hallFrontLeftWidth, -hallFrontHalf + hallFrontLeftWidth * 0.5, 4.28, 0xe3d4c4);
+        addWallX('frontHallWallRight', hallFrontRightWidth, hallDoorCenterX + hallDoorWidth * 0.5 + hallFrontRightWidth * 0.5, 4.28, 0xe3d4c4);
+        addBox('frontHallDoorHeader', hallDoorWidth, wallHeight - hallDoorHeight, wallThickness, hallDoorCenterX, floorY + hallDoorHeight + (wallHeight - hallDoorHeight) * 0.5, 4.28, makeMaterial(0xe3d4c4, 0.9, 0.02));
+        addHingedDoor(
+            this.scene,
+            'mainFrontDoor',
+            0.98,
+            hallDoorHeight,
+            0.06,
+            hallDoorCenterX,
+            floorY + hallDoorHeight * 0.5,
+            4.24,
+            makeMaterial(0x946d55, 0.72, 0.03),
+            { closedRotY: 0, openAngle: 1.18, hinge: 'left' }
+        );
         addWallZ('hallLeftWall', 2.45, -2.02, 3.06, 0xd7d0cb);
         addWallZ('hallRightReturn', 1.0, 2.02, 3.78, 0xd7d0cb);
 
@@ -1112,6 +1788,8 @@ class CRTScene {
         const bedroomGlow = new THREE.PointLight(0xffecf2, 0.45, 4);
         bedroomGlow.position.set(-3.68, floorY + 1.9, 1.75);
         this.scene.add(bedroomGlow);
+
+        addCurrentHouseExterior();
 
         // Desk
         const deskGeo = new THREE.BoxGeometry(1.2, 0.05, 0.6);
@@ -1712,6 +2390,8 @@ class CSS3DScreen {
         this.urlRequested = '';
         this.loadTimer = null;
         this.lastWarningUrl = '';
+        this.occlusionBlockers = [];
+        this.occlusionRefreshCounter = 0;
     }
     
     computeScreenWorldSize() {
@@ -1820,6 +2500,18 @@ class CSS3DScreen {
         }
     }
 
+    refreshOcclusionBlockers() {
+        const blockers = [];
+        this.scene.traverse((o) => {
+            if (!o.isMesh) return;
+            if (o === this.screenMesh) return;
+            if (o.userData?.ignoreScreenOcclusion) return;
+            blockers.push(o);
+        });
+        this.occlusionBlockers = blockers;
+        this.occlusionRefreshCounter = 60;
+    }
+
     updateVisibility() {
         const center = new THREE.Vector3();
         this.screenMesh.getWorldPosition(center);
@@ -1841,15 +2533,13 @@ class CSS3DScreen {
 
         const dir = toCenter.clone().normalize();
         const rc = new THREE.Raycaster(this.camera.position, dir, 0.05, Math.max(0.05, distance - 0.03));
-        const blockers = [];
-        this.scene.traverse((o) => {
-            if (!o.isMesh) return;
-            if (o === this.screenMesh) return;
-            if (o.userData?.ignoreScreenOcclusion) return;
-            blockers.push(o);
-        });
+        if (!this.occlusionBlockers.length || this.occlusionRefreshCounter <= 0) {
+            this.refreshOcclusionBlockers();
+        } else {
+            this.occlusionRefreshCounter -= 1;
+        }
 
-        const hits = rc.intersectObjects(blockers, true);
+        const hits = rc.intersectObjects(this.occlusionBlockers, true);
         this.setScreenVisible(hits.length === 0);
     }
 
@@ -2071,10 +2761,10 @@ class FPSControls {
             right: false
         };
         this.bounds = {
-            minX: -5.1,
-            maxX: 5.9,
-            minZ: -3.3,
-            maxZ: 4.1
+            minX: -98,
+            maxX: 98,
+            minZ: -8,
+            maxZ: 96
         };
 
         this.camera.position.set(1.15, this.floorY + this.currentEyeHeight(), 2.25);
