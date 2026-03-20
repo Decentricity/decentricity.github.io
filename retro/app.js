@@ -1991,6 +1991,149 @@ class PostProcessing {
     }
 }
 
+// First-person walking controls
+class FPSControls {
+    constructor(camera, domElement) {
+        this.camera = camera;
+        this.domElement = domElement;
+        this.enabled = true;
+        this.isLocked = false;
+        this.eyeHeight = 1.45;
+        this.moveSpeed = 2.6;
+        this.lookSpeed = 0.0022;
+        this.pitchMin = -Math.PI / 2 + 0.08;
+        this.pitchMax = Math.PI / 2 - 0.08;
+        this.yaw = 0;
+        this.pitch = 0;
+        this.moveState = {
+            forward: false,
+            backward: false,
+            left: false,
+            right: false
+        };
+        this.bounds = {
+            minX: -5.1,
+            maxX: 5.9,
+            minZ: -3.3,
+            maxZ: 4.1
+        };
+
+        this.camera.position.set(1.15, this.eyeHeight, 2.25);
+        this.camera.lookAt(new THREE.Vector3(0, 1.2, 0));
+        this.syncAnglesFromCamera();
+        this.setupEvents();
+    }
+
+    setupEvents() {
+        document.addEventListener('pointerlockchange', () => {
+            this.isLocked = document.pointerLockElement === this.domElement;
+            document.body.style.cursor = this.isLocked ? 'none' : 'default';
+        });
+
+        document.addEventListener('mousemove', (e) => this.onMouseMove(e));
+        document.addEventListener('keydown', (e) => this.onKeyChange(e, true));
+        document.addEventListener('keyup', (e) => this.onKeyChange(e, false));
+    }
+
+    isTyping() {
+        const active = document.activeElement;
+        return !!active && (
+            active.tagName === 'INPUT' ||
+            active.tagName === 'TEXTAREA' ||
+            active.isContentEditable
+        );
+    }
+
+    syncAnglesFromCamera() {
+        const dir = new THREE.Vector3();
+        this.camera.getWorldDirection(dir);
+        this.yaw = Math.atan2(dir.x, dir.z);
+        this.pitch = Math.asin(THREE.MathUtils.clamp(dir.y, -1, 1));
+    }
+
+    lock() {
+        if (!this.enabled || this.isTyping()) return;
+        this.domElement.requestPointerLock();
+    }
+
+    unlock() {
+        if (this.isLocked) {
+            document.exitPointerLock();
+        }
+    }
+
+    onMouseMove(event) {
+        if (!this.enabled || !this.isLocked) return;
+        this.yaw -= event.movementX * this.lookSpeed;
+        this.pitch -= event.movementY * this.lookSpeed;
+        this.pitch = THREE.MathUtils.clamp(this.pitch, this.pitchMin, this.pitchMax);
+        this.applyRotation();
+    }
+
+    onKeyChange(event, pressed) {
+        if (this.isTyping()) return;
+
+        switch (event.code) {
+            case 'KeyW':
+            case 'ArrowUp':
+                this.moveState.forward = pressed;
+                break;
+            case 'KeyS':
+            case 'ArrowDown':
+                this.moveState.backward = pressed;
+                break;
+            case 'KeyA':
+            case 'ArrowLeft':
+                this.moveState.left = pressed;
+                break;
+            case 'KeyD':
+            case 'ArrowRight':
+                this.moveState.right = pressed;
+                break;
+            default:
+                return;
+        }
+
+        if (pressed) {
+            event.preventDefault();
+        }
+    }
+
+    applyRotation() {
+        this.camera.rotation.order = 'YXZ';
+        this.camera.rotation.y = this.yaw;
+        this.camera.rotation.x = this.pitch;
+    }
+
+    clampPosition() {
+        this.camera.position.x = THREE.MathUtils.clamp(this.camera.position.x, this.bounds.minX, this.bounds.maxX);
+        this.camera.position.z = THREE.MathUtils.clamp(this.camera.position.z, this.bounds.minZ, this.bounds.maxZ);
+        this.camera.position.y = this.eyeHeight;
+    }
+
+    update(delta) {
+        if (!this.enabled) return;
+
+        this.applyRotation();
+        this.clampPosition();
+
+        if (!this.isLocked) return;
+
+        const inputX = (this.moveState.right ? 1 : 0) - (this.moveState.left ? 1 : 0);
+        const inputZ = (this.moveState.forward ? 1 : 0) - (this.moveState.backward ? 1 : 0);
+        if (!inputX && !inputZ) return;
+
+        const move = new THREE.Vector3(inputX, 0, inputZ);
+        move.normalize().multiplyScalar(this.moveSpeed * delta);
+
+        const sin = Math.sin(this.yaw);
+        const cos = Math.cos(this.yaw);
+        this.camera.position.x += move.x * cos + move.z * sin;
+        this.camera.position.z += move.z * cos - move.x * sin;
+        this.clampPosition();
+    }
+}
+
 // Interaction System
 class InteractionSystem {
     constructor(camera, controls, screenMesh, css3dScreen) {
@@ -2012,9 +2155,14 @@ class InteractionSystem {
         document.addEventListener('pointermove', (e) => this.onPointerMove(e));
         document.addEventListener('keydown', (e) => this.onKeyDown(e));
         document.addEventListener('click', (e) => this.onClick(e));
+        document.addEventListener('pointerlockchange', () => this.onPointerLockChange());
     }
     
     onPointerMove(event) {
+        if (this.controls.isLocked) {
+            if (this.isOverScreen) this.exitScreen();
+            return;
+        }
         this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
         this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
         
@@ -2047,11 +2195,18 @@ class InteractionSystem {
             this.exitScreen();
         }
     }
+
+    onPointerLockChange() {
+        if (this.controls.isLocked && this.isOverScreen) {
+            this.exitScreen();
+        }
+    }
     
     enterScreen() {
         this.isOverScreen = true;
         this.css3dScreen.enableInput();
         this.controls.enabled = false;
+        this.hint.textContent = 'Press ESC to leave the screen';
         this.hint.style.display = 'block';
         document.body.style.cursor = 'pointer';
     }
@@ -2250,15 +2405,7 @@ class CRTApp {
         this.crtScene.renderer = this.renderer;
         
         // Controls
-        this.controls = new THREE.OrbitControls(
-            this.camera,
-            this.canvas
-        );
-        this.controls.enableDamping = true;
-        this.controls.dampingFactor = 0.05;
-        this.controls.minDistance = 0.5;
-        this.controls.maxDistance = 7;
-        this.controls.target.set(0, 0.3, 0);
+        this.controls = new FPSControls(this.camera, this.canvas);
         
         // CSS3D Screen
         this.css3dScreen = new CSS3DScreen(
@@ -2305,6 +2452,7 @@ class CRTApp {
         
         // Apply subtle film look
         this.renderer.domElement.style.filter = 'contrast(1.04) saturate(1.06)';
+        this.showMovementHint();
         
         // Animation
         this.clock = new THREE.Clock();
@@ -2321,6 +2469,7 @@ class CRTApp {
     onScenePointerDown(e) {
         // Ignore when clicking the CSS URL bar itself
         if (e.target && e.target.id === 'url-input') return;
+        if (this.controls.isLocked) return;
         
         this.updatePickNdc(e);
         this.pickRay.setFromCamera(this.pickNdc, this.camera);
@@ -2344,7 +2493,10 @@ class CRTApp {
         });
         
         const hits = this.pickRay.intersectObjects(clickables, true);
-        if (!hits.length) return;
+        if (!hits.length) {
+            this.controls.lock();
+            return;
+        }
         
         const obj = hits[0].object;
         let cur = obj;
@@ -2371,6 +2523,18 @@ class CRTApp {
         this.css3dScreen.renderer.setSize(width, height);
         this.post.resize(width, height);
     }
+
+    showMovementHint() {
+        const hint = document.getElementById('hint');
+        if (!hint) return;
+        hint.textContent = 'Click to walk, move the mouse to look, WASD to move, ESC to free the cursor';
+        hint.style.display = 'block';
+        window.setTimeout(() => {
+            if (!this.interaction.isOverScreen) {
+                hint.style.display = 'none';
+            }
+        }, 4200);
+    }
     
     animate() {
         requestAnimationFrame(() => this.animate());
@@ -2388,7 +2552,7 @@ class CRTApp {
             this.crtScene.onTickFns.forEach(fn => fn(delta, time));
         }
         
-        this.controls.update();
+        this.controls.update(delta);
         this.css3dScreen.update();
         
         // Render both layers
