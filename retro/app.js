@@ -3,7 +3,7 @@
 
 // Utility Functions
 const clampDPR = (dpr) => Math.min(dpr, 2);
-const DEFAULT_HOME_URL = 'https://agent1c-ai.github.io';
+const DEFAULT_HOME_URL = 'https://hedgeyos.github.io';
 
 // Desk Placement Utilities (adapted from TypeScript)
 const DeskPlacement = {
