@@ -1825,8 +1825,8 @@ class CSS3DScreen {
         this.screenMesh.getWorldPosition(center);
 
         const screenNormal = new THREE.Vector3(0, 0, 1).applyQuaternion(this.screenMesh.getWorldQuaternion(new THREE.Quaternion())).normalize();
-        const eyeToScreen = center.clone().sub(this.camera.position).normalize();
-        const facingScore = screenNormal.dot(eyeToScreen);
+        const screenToEye = this.camera.position.clone().sub(center).normalize();
+        const facingScore = screenNormal.dot(screenToEye);
         if (facingScore <= 0.05) {
             this.setScreenVisible(false);
             return;
