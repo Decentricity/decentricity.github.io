@@ -1407,7 +1407,7 @@
         }
     }
 
-    class CylinderFPSControls {
+    class ThirdPersonCylinderControls {
         constructor(camera, domElement, world) {
             this.camera = camera;
             this.domElement = domElement;
@@ -1420,13 +1420,14 @@
             this.standEyeHeight = 1.05;
             this.crouchEyeHeight = 0.68;
             this.isCrouching = false;
-            this.moveSpeed = 6.2;
-            this.lookSpeed = 0.0022;
+            this.moveSpeed = 2.2;
+            this.lookSpeed = 0.0025;
             this.touchLookSpeed = 0.0032;
-            this.pitchMin = -Math.PI / 2 + 0.08;
-            this.pitchMax = Math.PI / 2 - 0.08;
+            this.pitchMin = -0.75;
+            this.pitchMax = 0.35;
             this.yaw = world.spawn.yaw;
             this.pitch = world.spawn.pitch;
+            this.facingYaw = Math.PI;
             this.surfaceX = world.spawn.x;
             this.surfaceArc = world.spawn.theta * this.cylinderRadius;
             this.moveState = { forward: false, backward: false, left: false, right: false };
@@ -1443,10 +1444,75 @@
                 moveKnob: document.getElementById('mobile-move-knob'),
                 lookZone: document.getElementById('mobile-look-zone')
             };
+            this.cameraOffset = new THREE.Vector3(0, 1.85, 3.6);
+            this.cameraTargetLocal = new THREE.Vector3(0, 1.45, 0);
+            this.cameraLerp = 0.14;
+            this.playerPosition = new THREE.Vector3();
+            this.up = new THREE.Vector3();
+            this.forwardBase = new THREE.Vector3();
+            this.rightBase = new THREE.Vector3(1, 0, 0);
+            this.moveVector = new THREE.Vector3();
+            this.forward = new THREE.Vector3();
+            this.right = new THREE.Vector3();
+            this.cameraTarget = new THREE.Vector3();
+            this.desiredCameraPosition = new THREE.Vector3();
+            this.localCameraOffset = new THREE.Vector3();
+            this.yawQuaternion = new THREE.Quaternion();
+            this.pitchQuaternion = new THREE.Quaternion();
+            this.basisMatrix = new THREE.Matrix4();
+            this.playerGroup = new THREE.Group();
+            this.playerGroup.name = 'playerAvatarRoot';
+            scene.add(this.playerGroup);
+            this.model = null;
+            this.mixer = null;
+            this.idleAction = null;
+            this.walkAction = null;
+            this.currentAction = null;
+            this.loadAvatar();
 
             document.body.classList.toggle('touch-device', this.isTouchDevice);
-            this.syncCamera();
+            this.syncPlayerBasis();
+            this.updateModelTransform();
+            this.updateCamera(true);
             this.setupEvents();
+        }
+
+        loadAvatar() {
+            if (!THREE.GLTFLoader) {
+                console.error('[oneill] GLTFLoader unavailable; third-person avatar did not load');
+                return;
+            }
+            const loader = new THREE.GLTFLoader();
+            loader.load(
+                'https://threejs.org/examples/models/gltf/Xbot.glb',
+                (gltf) => {
+                    this.model = gltf.scene;
+                    this.model.name = 'playerAvatar';
+                    this.playerGroup.add(this.model);
+                    this.model.traverse((object) => {
+                        if (!object.isMesh) return;
+                        object.castShadow = true;
+                        object.userData.ignoreScreenOcclusion = true;
+                    });
+                    this.mixer = new THREE.AnimationMixer(this.model);
+                    this.idleAction = this.mixer.clipAction(THREE.AnimationClip.findByName(gltf.animations, 'idle'));
+                    this.walkAction = this.mixer.clipAction(THREE.AnimationClip.findByName(gltf.animations, 'walk'));
+                    this.setAction(this.idleAction);
+                    this.updateModelTransform();
+                    this.updateCamera(true);
+                },
+                undefined,
+                (error) => console.error('[oneill] Xbot failed to load', error)
+            );
+        }
+
+        setAction(nextAction) {
+            if (!nextAction || this.currentAction === nextAction) return;
+            if (this.currentAction) {
+                this.currentAction.fadeOut(0.2);
+            }
+            nextAction.reset().fadeIn(0.2).play();
+            this.currentAction = nextAction;
         }
 
         setupEvents() {
@@ -1586,7 +1652,6 @@
         applyLookDelta(dx, dy, speed) {
             this.yaw -= dx * speed;
             this.pitch = THREE.MathUtils.clamp(this.pitch - dy * speed, this.pitchMin, this.pitchMax);
-            this.applyRotation();
         }
 
         onMouseMove(event) {
@@ -1618,7 +1683,7 @@
                 case 'KeyC':
                     if (pressed) {
                         this.isCrouching = !this.isCrouching;
-                        this.syncCamera();
+                        this.updateCamera(true);
                         event.preventDefault();
                     }
                     return;
@@ -1629,34 +1694,63 @@
             if (pressed) event.preventDefault();
         }
 
-        applyRotation() {
+        syncPlayerBasis() {
             const theta = this.surfaceArc / this.cylinderRadius;
-            const up = new THREE.Vector3(0, Math.cos(theta), -Math.sin(theta)).normalize();
-            const forwardBase = new THREE.Vector3(0, Math.sin(theta), Math.cos(theta)).normalize();
-            const rightBase = new THREE.Vector3(1, 0, 0);
-            const basis = new THREE.Matrix4().makeBasis(rightBase, up, forwardBase);
-            const basisQuat = new THREE.Quaternion().setFromRotationMatrix(basis);
-            const localQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(this.pitch, this.yaw, 0, 'YXZ'));
-            this.camera.quaternion.copy(basisQuat.multiply(localQuat));
-            this.camera.up.copy(up);
+            this.up.set(0, Math.cos(theta), -Math.sin(theta)).normalize();
+            this.forwardBase.set(0, Math.sin(theta), Math.cos(theta)).normalize();
+            this.playerPosition.set(
+                this.surfaceX,
+                -Math.cos(theta) * this.cylinderRadius,
+                Math.sin(theta) * this.cylinderRadius
+            );
+            this.basisMatrix.makeBasis(this.rightBase, this.up, this.forwardBase);
         }
 
-        syncCamera() {
-            const theta = this.surfaceArc / this.cylinderRadius;
-            const radius = this.cylinderRadius - this.currentEyeHeight();
-            this.camera.position.set(
-                this.surfaceX,
-                -Math.cos(theta) * radius,
-                Math.sin(theta) * radius
-            );
-            this.applyRotation();
+        updateModelTransform() {
+            this.syncPlayerBasis();
+            if (!this.model) return;
+            const basisQuat = new THREE.Quaternion().setFromRotationMatrix(this.basisMatrix);
+            const localQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), this.facingYaw);
+            this.playerGroup.position.copy(this.playerPosition);
+            this.playerGroup.quaternion.copy(basisQuat).multiply(localQuat);
+            this.playerGroup.position.addScaledVector(this.up, 0.01);
+        }
+
+        updateCamera(snap = false) {
+            this.syncPlayerBasis();
+            this.yawQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), this.yaw);
+            this.pitchQuaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), this.pitch);
+
+            this.localCameraOffset.copy(this.cameraOffset);
+            this.localCameraOffset.y = this.isCrouching ? 1.25 : this.cameraOffset.y;
+            this.localCameraOffset.applyQuaternion(this.pitchQuaternion).applyQuaternion(this.yawQuaternion);
+            this.desiredCameraPosition.copy(this.localCameraOffset).applyMatrix4(this.basisMatrix).add(this.playerPosition);
+
+            if (snap) {
+                this.camera.position.copy(this.desiredCameraPosition);
+            } else {
+                this.camera.position.lerp(this.desiredCameraPosition, this.cameraLerp);
+            }
+
+            this.cameraTarget.copy(this.cameraTargetLocal);
+            this.cameraTarget.y = this.isCrouching ? 0.96 : this.cameraTargetLocal.y;
+            this.cameraTarget.applyMatrix4(this.basisMatrix).add(this.playerPosition);
+            this.camera.up.copy(this.up);
+            this.camera.lookAt(this.cameraTarget);
         }
 
         update(delta) {
             if (!this.enabled) return;
 
-            this.syncCamera();
-            if (!this.isLocked && !this.isTouchDevice) return;
+            if (this.mixer) {
+                this.mixer.update(delta);
+            }
+
+            if (!this.isLocked && !this.isTouchDevice) {
+                this.updateModelTransform();
+                this.updateCamera();
+                return;
+            }
 
             const inputX = THREE.MathUtils.clamp(
                 ((this.moveState.right ? 1 : 0) - (this.moveState.left ? 1 : 0)) + this.touchState.moveVector.x,
@@ -1668,23 +1762,33 @@
                 -1,
                 1
             );
-            if (Math.abs(inputX) < 0.001 && Math.abs(inputZ) < 0.001) return;
+            this.moveVector.set(0, 0, 0);
+            this.forward.set(-Math.sin(this.yaw), 0, -Math.cos(this.yaw)).normalize();
+            this.right.set(-this.forward.z, 0, this.forward.x).normalize();
 
-            const theta = this.surfaceArc / this.cylinderRadius;
-            const up = new THREE.Vector3(0, Math.cos(theta), -Math.sin(theta)).normalize();
-            const thetaDir = new THREE.Vector3(0, Math.sin(theta), Math.cos(theta)).normalize();
-            const forward = new THREE.Vector3();
-            this.camera.getWorldDirection(forward);
-            forward.projectOnPlane(up).normalize();
-            if (forward.lengthSq() < 0.0001) forward.copy(thetaDir);
-            const right = new THREE.Vector3().crossVectors(forward, up).normalize();
+            if (inputZ > 0.001) this.moveVector.add(this.forward);
+            if (inputZ < -0.001) this.moveVector.sub(this.forward);
+            if (inputX < -0.001) this.moveVector.sub(this.right);
+            if (inputX > 0.001) this.moveVector.add(this.right);
 
-            const move = new THREE.Vector3(inputX, 0, inputZ).normalize().multiplyScalar(this.moveSpeed * delta);
-            this.surfaceX += right.x * move.x + forward.x * move.z;
-            this.surfaceArc += right.dot(thetaDir) * move.x + forward.dot(thetaDir) * move.z;
+            const moving = this.moveVector.lengthSq() > 0;
+            if (moving) {
+                this.moveVector.normalize();
+                this.facingYaw = Math.atan2(this.moveVector.x, this.moveVector.z);
+                this.surfaceX += this.moveVector.x * this.moveSpeed * delta;
+                this.surfaceArc += this.moveVector.z * this.moveSpeed * delta;
+            } else {
+                this.facingYaw = this.yaw + Math.PI;
+            }
+
             this.clampX();
             this.wrapArc();
-            this.syncCamera();
+            this.updateModelTransform();
+            this.updateCamera();
+
+            if (this.idleAction && this.walkAction) {
+                this.setAction(moving ? this.walkAction : this.idleAction);
+            }
         }
     }
 
@@ -1767,7 +1871,7 @@
             document.body.classList.remove('screen-mode');
             this.hint.textContent = this.controls.isTouchDevice
                 ? 'Use the left pad to move and the right pad to look'
-                : 'Click to walk, move the mouse to look, WASD to move, ESC to free the cursor.';
+                : 'Click to walk, move the mouse to orbit, WASD to move, ESC to free the cursor.';
         }
     }
 
@@ -1813,7 +1917,7 @@
             this.pickMouse = new THREE.Vector2();
 
             this.world = new OneillWorld(scene);
-            this.controls = new CylinderFPSControls(camera, renderer.domElement, this.world);
+            this.controls = new ThirdPersonCylinderControls(camera, renderer.domElement, this.world);
             this.css3dScreen = new CSS3DScreen(scene, camera, this.world.starterScreenMesh);
             this.interaction = new InteractionSystem(camera, this.controls, this.world.starterScreenMesh, this.css3dScreen);
             this.urlBar = new URLBar(this.css3dScreen);
