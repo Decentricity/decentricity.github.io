@@ -134,7 +134,7 @@ function updateModelTransform() {
 function updateMovement(delta) {
   move.set(0, 0, 0);
   forward.set(-Math.sin(player.yaw), 0, -Math.cos(player.yaw)).normalize();
-  right.set(forward.z, 0, -forward.x).normalize();
+  right.set(-forward.z, 0, forward.x).normalize();
 
   if (keys.KeyW) {
     move.add(forward);
