@@ -1499,14 +1499,17 @@ class CRTScene {
                     break;
                 }
                 case 'shed': {
+                    const shedAngle = 0.28;
+                    const shedRun = cfg.depth / Math.cos(shedAngle);
+                    const shedRise = cfg.depth * Math.tan(shedAngle);
                     const panel = addGroupBox(
                         house,
                         'shedRoof',
                         cfg.width + 0.7,
                         0.18,
-                        cfg.depth + 0.4,
+                        shedRun,
                         0,
-                        roofBaseY + 0.32,
+                        floorY + bodyHeight + shedRise * 0.5,
                         0,
                         makeMaterial(cfg.roofColor, 0.82, 0.03)
                     );
@@ -1514,12 +1517,15 @@ class CRTScene {
                     break;
                 }
                 default: {
-                    const roofRun = cfg.depth * 0.5 + 0.36;
-                    const roofOffset = cfg.depth * 0.25 + 0.18;
-                    const roofA = addGroupBox(house, 'gableRoofA', cfg.width + 0.6, 0.16, roofRun, 0, roofBaseY + 0.22, roofOffset, makeMaterial(cfg.roofColor, 0.82, 0.03));
-                    const roofB = addGroupBox(house, 'gableRoofB', cfg.width + 0.6, 0.16, roofRun, 0, roofBaseY + 0.22, -roofOffset, makeMaterial(cfg.roofColor, 0.82, 0.03));
-                    roofA.rotation.x = 0.33;
-                    roofB.rotation.x = -0.33;
+                    const gableAngle = 0.33;
+                    const halfDepth = cfg.depth * 0.5;
+                    const roofRun = halfDepth / Math.cos(gableAngle);
+                    const roofRise = halfDepth * Math.tan(gableAngle);
+                    const roofCenterY = floorY + bodyHeight + roofRise * 0.5;
+                    const roofA = addGroupBox(house, 'gableRoofA', cfg.width + 0.6, 0.16, roofRun, 0, roofCenterY, halfDepth * 0.5, makeMaterial(cfg.roofColor, 0.82, 0.03));
+                    const roofB = addGroupBox(house, 'gableRoofB', cfg.width + 0.6, 0.16, roofRun, 0, roofCenterY, -halfDepth * 0.5, makeMaterial(cfg.roofColor, 0.82, 0.03));
+                    roofA.rotation.x = -gableAngle;
+                    roofB.rotation.x = gableAngle;
                     break;
                 }
             }
@@ -1649,12 +1655,16 @@ class CRTScene {
                 { closedRotY: Math.PI / 2, openAngle: 1.1, hinge: 'right' }
             );
 
+            const mainRoofAngle = 0.34;
+            const mainHouseHalfDepth = 8.9 * 0.5;
+            const mainRoofRun = mainHouseHalfDepth / Math.cos(mainRoofAngle);
+            const mainRoofRise = mainHouseHalfDepth * Math.tan(mainRoofAngle);
+            const mainRoofCenterY = floorY + 3.3 + mainRoofRise * 0.5;
             const mainRoofCenterZ = 0.15;
-            const mainRoofOffset = 2.38;
-            const roofA = addBox('mainHouseRoofA', 12.9, 0.18, 4.9, 0.37, floorY + 3.72, mainRoofCenterZ + mainRoofOffset, makeMaterial(0x7c5648, 0.82, 0.03));
-            const roofB = addBox('mainHouseRoofB', 12.9, 0.18, 4.9, 0.37, floorY + 3.72, mainRoofCenterZ - mainRoofOffset, makeMaterial(0x7c5648, 0.82, 0.03));
-            roofA.rotation.x = 0.34;
-            roofB.rotation.x = -0.34;
+            const roofA = addBox('mainHouseRoofA', 12.9, 0.18, mainRoofRun, 0.37, mainRoofCenterY, mainRoofCenterZ + mainHouseHalfDepth * 0.5, makeMaterial(0x7c5648, 0.82, 0.03));
+            const roofB = addBox('mainHouseRoofB', 12.9, 0.18, mainRoofRun, 0.37, mainRoofCenterY, mainRoofCenterZ - mainHouseHalfDepth * 0.5, makeMaterial(0x7c5648, 0.82, 0.03));
+            roofA.rotation.x = -mainRoofAngle;
+            roofB.rotation.x = mainRoofAngle;
 
             addTree(-8.2, 6.8, 1001);
             addTree(8.4, 7.2, 1002);
