@@ -30,6 +30,7 @@ const keys = {
 const player = {
   yaw: 0,
   pitch: -0.12,
+  facingYaw: Math.PI,
   position: new THREE.Vector3(0, 0, 0),
   speed: 2.2
 };
@@ -128,7 +129,7 @@ function updateModelTransform() {
   }
 
   model.position.copy(player.position);
-  model.rotation.set(0, player.yaw + Math.PI, 0);
+  model.rotation.set(0, player.facingYaw, 0);
 }
 
 function updateMovement(delta) {
@@ -153,9 +154,12 @@ function updateMovement(delta) {
 
   if (moving) {
     move.normalize();
+    player.facingYaw = Math.atan2(move.x, move.z);
     player.position.addScaledVector(move, player.speed * delta);
     player.position.x = THREE.MathUtils.clamp(player.position.x, -20, 20);
     player.position.z = THREE.MathUtils.clamp(player.position.z, -20, 20);
+  } else {
+    player.facingYaw = player.yaw + Math.PI;
   }
 
   if (idleAction && walkAction) {
