@@ -35,6 +35,41 @@
         new THREE.MeshStandardMaterial({ color, roughness, metalness, ...extra })
     );
 
+    const TextureLibrary = {
+        cache: new Map(),
+
+        get(url, repeatX = 1, repeatY = 1) {
+            const key = `${url}|${repeatX}|${repeatY}`;
+            if (this.cache.has(key)) return this.cache.get(key);
+            const loader = new THREE.TextureLoader();
+            loader.setCrossOrigin('anonymous');
+            const tex = loader.load(url);
+            setTextureEncoding(tex);
+            tex.wrapS = THREE.RepeatWrapping;
+            tex.wrapT = THREE.RepeatWrapping;
+            tex.repeat.set(repeatX, repeatY);
+            tex.anisotropy = 8;
+            this.cache.set(key, tex);
+            return tex;
+        },
+
+        grass(rx = 8, ry = 8) {
+            return this.get('https://threejs.org/examples/textures/terrain/grasslight-big.jpg', rx, ry);
+        },
+
+        wood(rx = 2, ry = 2) {
+            return this.get('https://threejs.org/examples/textures/hardwood2_diffuse.jpg', rx, ry);
+        },
+
+        brick(rx = 2, ry = 2) {
+            return this.get('https://threejs.org/examples/textures/brick_diffuse.jpg', rx, ry);
+        },
+
+        tile(rx = 2, ry = 2) {
+            return this.get('https://threejs.org/examples/textures/floors/FloorsCheckerboard_S_Diffuse.jpg', rx, ry);
+        }
+    };
+
     const RetroProps = {
         texture(url) {
             const loader = new THREE.TextureLoader();
@@ -343,6 +378,15 @@
             this.rowArcOffset = 14.2;
             this.numberTextureCache = new Map();
             this.starterScreenMesh = null;
+            this.textures = {
+                grass: TextureLibrary.grass(18, 10),
+                grassFine: TextureLibrary.grass(6, 6),
+                wall: TextureLibrary.brick(2, 2),
+                roof: TextureLibrary.brick(4, 3),
+                wood: TextureLibrary.wood(3, 2),
+                woodFine: TextureLibrary.wood(1.5, 1.5),
+                tile: TextureLibrary.tile(4, 4)
+            };
 
             this.buildHabitat();
             this.buildNeighborhood();
@@ -660,6 +704,7 @@
                 new THREE.CylinderGeometry(this.radius, this.radius, this.length, 256, 1, true),
                 new THREE.MeshStandardMaterial({
                     color: 0xb8d9ab,
+                    map: this.textures.grass,
                     roughness: 1.0,
                     metalness: 0.0,
                     side: THREE.BackSide
@@ -730,7 +775,7 @@
                     this.length - 8,
                     roadTheta,
                     roadThetaWidth,
-                    new THREE.MeshStandardMaterial({ color: 0x59606a, roughness: 0.98, metalness: 0.01, side: THREE.BackSide })
+                    new THREE.MeshStandardMaterial({ color: 0x59606a, map: this.textures.tile, roughness: 0.98, metalness: 0.01, side: THREE.BackSide })
                 );
                 this.addCylinderStrip(
                     `sidewalkA_${roadIndex}`,
@@ -738,7 +783,7 @@
                     this.length - 8,
                     roadTheta - sidewalkOffset,
                     sidewalkThetaWidth,
-                    new THREE.MeshStandardMaterial({ color: 0xebe4db, roughness: 0.96, metalness: 0.01, side: THREE.BackSide })
+                    new THREE.MeshStandardMaterial({ color: 0xebe4db, map: this.textures.tile, roughness: 0.96, metalness: 0.01, side: THREE.BackSide })
                 );
                 this.addCylinderStrip(
                     `sidewalkB_${roadIndex}`,
@@ -746,7 +791,7 @@
                     this.length - 8,
                     roadTheta + sidewalkOffset,
                     sidewalkThetaWidth,
-                    new THREE.MeshStandardMaterial({ color: 0xebe4db, roughness: 0.96, metalness: 0.01, side: THREE.BackSide })
+                    new THREE.MeshStandardMaterial({ color: 0xebe4db, map: this.textures.tile, roughness: 0.96, metalness: 0.01, side: THREE.BackSide })
                 );
 
                 laneXs.forEach((x) => {
@@ -928,8 +973,8 @@
             const mainRoofRise = mainHouseHalfDepth * Math.tan(mainRoofAngle);
             const mainRoofCenterY = floorY + 3.3 + mainRoofRise * 0.5;
             const mainRoofCenterZ = 0.15;
-            const roofA = addBox('mainHouseRoofA', 12.9, 0.18, mainRoofRun, 0.37, mainRoofCenterY, mainRoofCenterZ + mainHouseHalfDepth * 0.5, makeMaterial(0x7c5648, 0.82, 0.03));
-            const roofB = addBox('mainHouseRoofB', 12.9, 0.18, mainRoofRun, 0.37, mainRoofCenterY, mainRoofCenterZ - mainHouseHalfDepth * 0.5, makeMaterial(0x7c5648, 0.82, 0.03));
+            const roofA = addBox('mainHouseRoofA', 12.9, 0.18, mainRoofRun, 0.37, mainRoofCenterY, mainRoofCenterZ + mainHouseHalfDepth * 0.5, makeMaterial(0x7c5648, 0.82, 0.03, { map: this.textures.roof }));
+            const roofB = addBox('mainHouseRoofB', 12.9, 0.18, mainRoofRun, 0.37, mainRoofCenterY, mainRoofCenterZ - mainHouseHalfDepth * 0.5, makeMaterial(0x7c5648, 0.82, 0.03, { map: this.textures.roof }));
             roofA.rotation.x = mainRoofAngle;
             roofB.rotation.x = -mainRoofAngle;
 
@@ -938,7 +983,7 @@
             this.addShrub(cfg.x - 2.1, cfg.theta - 0.004, 1003, 0.4);
             this.addShrub(cfg.x + 3.1, cfg.theta + 0.004, 1004, 0.34);
 
-            const deskMat = new THREE.MeshStandardMaterial({ color: 0x8b6f47, roughness: 0.7 });
+            const deskMat = new THREE.MeshStandardMaterial({ color: 0x8b6f47, map: this.textures.woodFine, roughness: 0.7 });
             const desk = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.05, 0.6), deskMat);
             desk.position.set(0, 0.025, 0);
             desk.castShadow = true;
@@ -1061,12 +1106,12 @@
             const leftCenter = -width * 0.5 + leftWidth * 0.5;
             const rightCenter = width * 0.5 - rightWidth * 0.5;
 
-            const wallMat = makeMaterial(wallColor, 0.88, 0.02);
+            const wallMat = makeMaterial(wallColor, 0.88, 0.02, { map: this.textures.wall });
             const trimMat = makeMaterial(trimColor, 0.86, 0.02);
-            const floorMat = makeMaterial(floorColor, 0.96, 0.01);
-            const roofMat = new THREE.MeshStandardMaterial({ color: roofColor, roughness: 0.84, metalness: 0.02, side: THREE.DoubleSide });
+            const floorMat = makeMaterial(floorColor, 0.96, 0.01, { map: this.textures.tile });
+            const roofMat = new THREE.MeshStandardMaterial({ color: roofColor, map: this.textures.roof, roughness: 0.84, metalness: 0.02, side: THREE.DoubleSide });
 
-            this.addLocalBox(house, 'lotPad', width + 4.5, 0.08, depth + 6.6, 0, 0.04, 0, makeMaterial(0xa8cd8f, 0.99, 0.0));
+            this.addLocalBox(house, 'lotPad', width + 4.5, 0.08, depth + 6.6, 0, 0.04, 0, makeMaterial(0xa8cd8f, 0.99, 0.0, { map: this.textures.grassFine }));
             this.addLocalBox(house, 'foundation', width + 0.18, 0.18, depth + 0.18, 0, 0.09, 0, makeMaterial(0xd4c5b4, 0.92, 0.01));
             this.addLocalBox(house, 'houseFloor', width - 0.18, 0.06, depth - 0.18, 0, 0.03, 0, floorMat);
             this.addLocalBox(house, 'wallLeft', 0.08, wallHeight, depth, -width * 0.5, wallHeight * 0.5, 0, wallMat);
@@ -1093,8 +1138,8 @@
                 this.addLocalBox(house, 'houseFrontDoor', doorWidth, doorHeight, 0.06, doorOffset, doorHeight * 0.5, frontZ - 0.03, makeMaterial(doorColor, 0.7, 0.03));
             }
 
-            this.addLocalBox(house, 'housePorch', Math.max(1.45, doorWidth + 0.5), 0.08, porchDepth, doorOffset, 0.04, frontZ + porchDepth * 0.5 + 0.02, makeMaterial(0xe2d6c5, 0.92, 0.01));
-            this.addLocalBox(house, 'houseWalkway', 1.18, 0.05, 3.2, doorOffset, 0.025, frontZ + porchDepth + 1.58, makeMaterial(0xe5dfd8, 0.96, 0.01));
+            this.addLocalBox(house, 'housePorch', Math.max(1.45, doorWidth + 0.5), 0.08, porchDepth, doorOffset, 0.04, frontZ + porchDepth * 0.5 + 0.02, makeMaterial(0xe2d6c5, 0.92, 0.01, { map: this.textures.tile }));
+            this.addLocalBox(house, 'houseWalkway', 1.18, 0.05, 3.2, doorOffset, 0.025, frontZ + porchDepth + 1.58, makeMaterial(0xe5dfd8, 0.96, 0.01, { map: this.textures.tile }));
             this.addNumberPlaque(house, cfg.number, doorOffset, 2.4, frontZ + 0.08);
             this.addLocalBox(house, 'housePorchPostA', 0.12, 1.7, 0.12, doorOffset - 0.58, 0.85, frontZ + porchDepth * 0.9, trimMat);
             this.addLocalBox(house, 'housePorchPostB', 0.12, 1.7, 0.12, doorOffset + 0.58, 0.85, frontZ + porchDepth * 0.9, trimMat);
@@ -1127,15 +1172,15 @@
             this.addLocalBox(house, 'houseSofaSeat', 1.48, 0.3, 0.76, -0.2, 0.18, 0.18, makeMaterial(this.pick([0xd0aa9f, 0xb2c2d3, 0xa2c08c, 0xcda8c0], cfg.seed, 19), 0.92, 0.01));
             this.addLocalBox(house, 'houseBedBase', 1.5, 0.24, 2.0, 0.24, 0.12, -0.28, makeMaterial(this.pick([0xd0a7b1, 0xc3abd6, 0xa9bdd4, 0xe0c0a5], cfg.seed, 20), 0.9, 0.01));
             this.addLocalBox(house, 'houseMattress', 1.36, 0.18, 1.84, 0.24, 0.34, -0.28, makeMaterial(0xf8f5fb, 0.95, 0.01));
-            this.addLocalBox(house, 'houseDiningTable', 0.94, 0.08, 0.94, 0.02, 0.42, depth * 0.26, makeMaterial(this.pick([0xa07c5e, 0x927055, 0xb48e69], cfg.seed, 21), 0.72, 0.03));
-            this.addLocalBox(house, 'houseStorage', 0.72, 0.92, 0.34, width * 0.34, 0.46, -depth * 0.28, makeMaterial(0x8f6f54, 0.76, 0.03));
+            this.addLocalBox(house, 'houseDiningTable', 0.94, 0.08, 0.94, 0.02, 0.42, depth * 0.26, makeMaterial(this.pick([0xa07c5e, 0x927055, 0xb48e69], cfg.seed, 21), 0.72, 0.03, { map: this.textures.woodFine }));
+            this.addLocalBox(house, 'houseStorage', 0.72, 0.92, 0.34, width * 0.34, 0.46, -depth * 0.28, makeMaterial(0x8f6f54, 0.76, 0.03, { map: this.textures.woodFine }));
             this.addLocalBox(house, 'houseStorageBooks', 0.54, 0.14, 0.2, width * 0.34, 0.78, -depth * 0.33, makeMaterial(0xbecce0, 0.84, 0.01));
 
             const deskColor = this.pick([0xb48d6b, 0x9f795a, 0xc3a17c], cfg.seed, 22);
-            this.addLocalBox(house, 'deadDeskTop', 1.35, 0.08, 0.68, width * 0.22, 0.46, -depth * 0.04, makeMaterial(deskColor, 0.74, 0.03));
+            this.addLocalBox(house, 'deadDeskTop', 1.35, 0.08, 0.68, width * 0.22, 0.46, -depth * 0.04, makeMaterial(deskColor, 0.74, 0.03, { map: this.textures.woodFine }));
             [-0.52, 0.52].forEach((dx) => {
                 [-0.22, 0.22].forEach((dz) => {
-                    this.addLocalBox(house, 'deadDeskLeg', 0.08, 0.7, 0.08, width * 0.22 + dx, 0.07, -depth * 0.04 + dz, makeMaterial(deskColor, 0.78, 0.02));
+                    this.addLocalBox(house, 'deadDeskLeg', 0.08, 0.7, 0.08, width * 0.22 + dx, 0.07, -depth * 0.04 + dz, makeMaterial(deskColor, 0.78, 0.02, { map: this.textures.woodFine }));
                 });
             });
             this.addLocalBox(house, 'deadCRTBody', 0.62, 0.52, 0.56, width * 0.22 - 0.08, 0.76, -depth * 0.1, makeMaterial(0xd8cfbf, 0.65, 0.03));
@@ -1436,7 +1481,8 @@
                 lookPointerId: null,
                 moveVector: new THREE.Vector2(),
                 lookLastX: 0,
-                lookLastY: 0
+                lookLastY: 0,
+                pinchDistance: 0
             };
             this.mobileUi = {
                 root: document.getElementById('mobile-controls'),
@@ -1447,6 +1493,10 @@
             this.cameraOffset = new THREE.Vector3(0, 1.85, 3.6);
             this.cameraTargetLocal = new THREE.Vector3(0, 1.45, 0);
             this.cameraLerp = 0.14;
+            this.zoomDistance = 1;
+            this.minZoom = 0.35;
+            this.maxZoom = 1.7;
+            this.minVisibleDistance = 0.95;
             this.playerPosition = new THREE.Vector3();
             this.up = new THREE.Vector3();
             this.forwardBase = new THREE.Vector3();
@@ -1457,9 +1507,12 @@
             this.cameraTarget = new THREE.Vector3();
             this.desiredCameraPosition = new THREE.Vector3();
             this.localCameraOffset = new THREE.Vector3();
+            this.cameraDirection = new THREE.Vector3();
+            this.occludedCameraPosition = new THREE.Vector3();
             this.yawQuaternion = new THREE.Quaternion();
             this.pitchQuaternion = new THREE.Quaternion();
             this.basisMatrix = new THREE.Matrix4();
+            this.raycaster = new THREE.Raycaster();
             this.playerGroup = new THREE.Group();
             this.playerGroup.name = 'playerAvatarRoot';
             scene.add(this.playerGroup);
@@ -1493,6 +1546,7 @@
                         if (!object.isMesh) return;
                         object.castShadow = true;
                         object.userData.ignoreScreenOcclusion = true;
+                        object.userData.ignoreCameraOcclusion = true;
                     });
                     this.mixer = new THREE.AnimationMixer(this.model);
                     this.idleAction = this.mixer.clipAction(THREE.AnimationClip.findByName(gltf.animations, 'idle'));
@@ -1515,6 +1569,12 @@
             this.currentAction = nextAction;
         }
 
+        setModelVisible(visible) {
+            if (this.model) {
+                this.model.visible = visible;
+            }
+        }
+
         setupEvents() {
             document.addEventListener('pointerlockchange', () => {
                 this.isLocked = document.pointerLockElement === this.domElement;
@@ -1527,8 +1587,10 @@
             document.addEventListener('mousemove', (e) => this.onMouseMove(e));
             document.addEventListener('keydown', (e) => this.onKeyChange(e, true));
             document.addEventListener('keyup', (e) => this.onKeyChange(e, false));
+            window.addEventListener('wheel', (e) => this.onWheel(e), { passive: false });
             if (this.isTouchDevice) {
                 this.setupTouchControls();
+                this.setupPinchControls();
             }
         }
 
@@ -1623,6 +1685,34 @@
             });
         }
 
+        setupPinchControls() {
+            const pinchDistance = (touches) => {
+                const dx = touches[0].clientX - touches[1].clientX;
+                const dy = touches[0].clientY - touches[1].clientY;
+                return Math.hypot(dx, dy);
+            };
+
+            window.addEventListener('touchstart', (event) => {
+                if (event.touches.length === 2) {
+                    this.touchState.pinchDistance = pinchDistance(event.touches);
+                }
+            }, { passive: true });
+
+            window.addEventListener('touchmove', (event) => {
+                if (event.touches.length !== 2) return;
+                const nextDistance = pinchDistance(event.touches);
+                if (this.touchState.pinchDistance > 0) {
+                    const delta = nextDistance - this.touchState.pinchDistance;
+                    this.adjustZoom(-delta * 0.0025);
+                }
+                this.touchState.pinchDistance = nextDistance;
+            }, { passive: true });
+
+            window.addEventListener('touchend', () => {
+                this.touchState.pinchDistance = 0;
+            }, { passive: true });
+        }
+
         updateMovePad(event) {
             const { moveZone, moveKnob } = this.mobileUi;
             if (!moveZone || !moveKnob) return;
@@ -1652,6 +1742,15 @@
         applyLookDelta(dx, dy, speed) {
             this.yaw -= dx * speed;
             this.pitch = THREE.MathUtils.clamp(this.pitch - dy * speed, this.pitchMin, this.pitchMax);
+        }
+
+        adjustZoom(delta) {
+            this.zoomDistance = THREE.MathUtils.clamp(this.zoomDistance + delta, this.minZoom, this.maxZoom);
+        }
+
+        onWheel(event) {
+            event.preventDefault();
+            this.adjustZoom(event.deltaY * 0.0012);
         }
 
         onMouseMove(event) {
@@ -1716,6 +1815,16 @@
             this.playerGroup.position.addScaledVector(this.up, 0.01);
         }
 
+        shouldIgnoreCameraOcclusion(object) {
+            let current = object;
+            while (current) {
+                if (current === this.playerGroup) return true;
+                if (current.userData?.ignoreCameraOcclusion || current.userData?.ignoreScreenOcclusion) return true;
+                current = current.parent;
+            }
+            return false;
+        }
+
         updateCamera(snap = false) {
             this.syncPlayerBasis();
             this.yawQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), this.yaw);
@@ -1723,18 +1832,39 @@
 
             this.localCameraOffset.copy(this.cameraOffset);
             this.localCameraOffset.y = this.isCrouching ? 1.25 : this.cameraOffset.y;
+            this.localCameraOffset.multiplyScalar(this.zoomDistance);
             this.localCameraOffset.applyQuaternion(this.pitchQuaternion).applyQuaternion(this.yawQuaternion);
-            this.desiredCameraPosition.copy(this.localCameraOffset).applyMatrix4(this.basisMatrix).add(this.playerPosition);
-
-            if (snap) {
-                this.camera.position.copy(this.desiredCameraPosition);
-            } else {
-                this.camera.position.lerp(this.desiredCameraPosition, this.cameraLerp);
-            }
 
             this.cameraTarget.copy(this.cameraTargetLocal);
             this.cameraTarget.y = this.isCrouching ? 0.96 : this.cameraTargetLocal.y;
             this.cameraTarget.applyMatrix4(this.basisMatrix).add(this.playerPosition);
+
+            this.desiredCameraPosition.copy(this.localCameraOffset).applyMatrix4(this.basisMatrix).add(this.playerPosition);
+            this.cameraDirection.copy(this.desiredCameraPosition).sub(this.cameraTarget);
+            const desiredDistance = this.cameraDirection.length();
+            if (desiredDistance > 0.0001) {
+                this.cameraDirection.divideScalar(desiredDistance);
+                this.raycaster.set(this.cameraTarget, this.cameraDirection);
+                this.raycaster.far = desiredDistance;
+                const hits = this.raycaster.intersectObjects(scene.children, true);
+                let resolvedDistance = desiredDistance;
+                for (const hit of hits) {
+                    if (this.shouldIgnoreCameraOcclusion(hit.object)) continue;
+                    resolvedDistance = Math.max(0.14, hit.distance - 0.12);
+                    break;
+                }
+                this.occludedCameraPosition.copy(this.cameraTarget).addScaledVector(this.cameraDirection, resolvedDistance);
+            } else {
+                this.occludedCameraPosition.copy(this.desiredCameraPosition);
+            }
+
+            if (snap) {
+                this.camera.position.copy(this.occludedCameraPosition);
+            } else {
+                this.camera.position.lerp(this.occludedCameraPosition, this.cameraLerp);
+            }
+
+            this.setModelVisible(this.camera.position.distanceTo(this.cameraTarget) > this.minVisibleDistance);
             this.camera.up.copy(this.up);
             this.camera.lookAt(this.cameraTarget);
         }
