@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>FPS Test</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <div class="hud">
+      <div class="hud__title">FPS Test</div>
+      <div class="hud__hint">Click to lock the mouse. Move with WASD.</div>
+    </div>
+    <div class="crosshair" aria-hidden="true"></div>
+    <div class="overlay" id="overlay">
+      <div class="overlay__panel">
+        <h1>Third-Person Movement Test</h1>
+        <p>Built from the Three.js skinned-animation example flow with a mouse-look camera and a simple walkable arena.</p>
+        <button id="startButton" type="button">Click To Play</button>
+      </div>
+    </div>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/"
+        }
+      }
+    </script>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
