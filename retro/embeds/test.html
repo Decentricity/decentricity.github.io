@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRT Browser Test Page</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 30px;
+        }
+        
+        .box {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+        
+        h2 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #fff;
+        }
+        
+        p {
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        
+        button {
+            background: #fff;
+            color: #667eea;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: inherit;
+            transition: transform 0.2s;
+        }
+        
+        button:hover {
+            transform: scale(1.05);
+        }
+        
+        button:active {
+            transform: scale(0.95);
+        }
+        
+        .counter {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            font-family: inherit;
+            margin-bottom: 10px;
+        }
+        
+        input[type="text"]::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .color-box {
+            aspect-ratio: 1;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            border: 3px solid transparent;
+        }
+        
+        .color-box:hover {
+            transform: scale(1.1);
+        }
+        
+        .color-box.active {
+            border-color: #fff;
+        }
+        
+        .scroll-content {
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+        }
+        
+        .scroll-content::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .scroll-content::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+        
+        .scroll-content::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            opacity: 0.7;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🖥️ CRT Web Browser</h1>
+        <div class="subtitle">This page intentionally allows frame-ancestors * for demo purposes</div>
+        
+        <div class="box">
+            <h2>✨ Interactive Test</h2>
+            <p>Click the button to test interactivity:</p>
+            <div class="counter" id="counter">Clicks: 0</div>
+            <button onclick="incrementCounter()">Click Me!</button>
+        </div>
+        
+        <div class="box">
+            <h2>📝 Form Input Test</h2>
+            <p>Type something to test form inputs:</p>
+            <input type="text" id="textInput" placeholder="Type here...">
+            <div id="output" style="margin-top: 10px; min-height: 20px;"></div>
+        </div>
+        
+        <div class="box">
+            <h2>🎨 Color Selection</h2>
+            <p>Click colors to select:</p>
+            <div class="color-grid">
+                <div class="color-box" style="background: #FF6B6B" onclick="selectColor(this)"></div>
+                <div class="color-box" style="background: #4ECDC4" onclick="selectColor(this)"></div>
+                <div class="color-box" style="background: #45B7D1" onclick="selectColor(this)"></div>
+                <div class="color-box" style="background: #FFA07A" onclick="selectColor(this)"></div>
+                <div class="color-box" style="background: #98D8C8" onclick="selectColor(this)"></div>
+                <div class="color-box" style="background: #F7DC6F" onclick="selectColor(this)"></div>
+                <div class="color-box" style="background: #BB8FCE" onclick="selectColor(this)"></div>
+                <div class="color-box" style="background: #85C1E2" onclick="selectColor(this)"></div>
+            </div>
+        </div>
+        
+        <div class="box">
+            <h2>📜 Scroll Test</h2>
+            <p>Scroll inside this box:</p>
+            <div class="scroll-content">
+                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+                <p>Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+                <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</p>
+                <p>Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+                <p>Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium.</p>
+            </div>
+        </div>
+        
+        <div class="box">
+            <h2>🔗 External Links</h2>
+            <p>Try these embeddable sites:</p>
+            <p>
+                <a href="https://example.com" target="_blank" style="color: #fff; text-decoration: underline;">example.com</a><br>
+                <a href="https://wikipedia.org" target="_blank" style="color: #fff; text-decoration: underline;">wikipedia.org</a><br>
+                <small>(Note: Some sites block embedding via X-Frame-Options)</small>
+            </p>
+        </div>
+        
+        <div class="footer">
+            Made with 🍓 by <a href="https://berrry.app" target="_blank" style="color: #fff;">berrry.app</a>
+        </div>
+    </div>
+    
+    <script>
+        let clickCount = 0;
+        
+        function incrementCounter() {
+            clickCount++;
+            document.getElementById('counter').textContent = `Clicks: ${clickCount}`;
+        }
+        
+        document.getElementById('textInput').addEventListener('input', function(e) {
+            const output = document.getElementById('output');
+            output.textContent = e.target.value ? `You typed: "${e.target.value}"` : '';
+        });
+        
+        function selectColor(element) {
+            document.querySelectorAll('.color-box').forEach(box => {
+                box.classList.remove('active');
+            });
+            element.classList.add('active');
+        }
+    </script>
+</body>
+</html>
