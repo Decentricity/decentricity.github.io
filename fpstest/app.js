@@ -128,12 +128,12 @@ function updateModelTransform() {
   }
 
   model.position.copy(player.position);
-  model.rotation.set(0, player.yaw, 0);
+  model.rotation.set(0, player.yaw + Math.PI, 0);
 }
 
 function updateMovement(delta) {
   move.set(0, 0, 0);
-  forward.set(Math.sin(player.yaw), 0, Math.cos(player.yaw)).normalize();
+  forward.set(-Math.sin(player.yaw), 0, -Math.cos(player.yaw)).normalize();
   right.set(forward.z, 0, -forward.x).normalize();
 
   if (keys.KeyW) {
