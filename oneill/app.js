@@ -15,11 +15,11 @@
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.outputEncoding = THREE.sRGBEncoding;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 0.74;
+    renderer.toneMappingExposure = 0.6;
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x02030a);
-    scene.fog = new THREE.Fog(0xe7f3f7, 3200, 12000);
+    scene.fog = new THREE.Fog(0xc8d5dc, 9000, 22000);
 
     const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 7000);
 
@@ -379,13 +379,13 @@
             this.numberTextureCache = new Map();
             this.starterScreenMesh = null;
             this.textures = {
-                grass: TextureLibrary.grass(18, 10),
-                grassFine: TextureLibrary.grass(6, 6),
-                wall: TextureLibrary.brick(2, 2),
-                roof: TextureLibrary.brick(4, 3),
-                wood: TextureLibrary.wood(3, 2),
-                woodFine: TextureLibrary.wood(1.5, 1.5),
-                tile: TextureLibrary.tile(4, 4)
+                grass: TextureLibrary.grass(120, 60),
+                grassFine: TextureLibrary.grass(14, 14),
+                wall: TextureLibrary.brick(8, 4),
+                roof: TextureLibrary.brick(10, 6),
+                wood: TextureLibrary.wood(5, 3),
+                woodFine: TextureLibrary.wood(3.2, 2.4),
+                tile: TextureLibrary.tile(10, 10)
             };
 
             this.buildHabitat();
@@ -689,7 +689,7 @@
             const stars = new THREE.Points(
                 starGeometry,
                 new THREE.PointsMaterial({
-                    size: 7,
+                    size: 4.5,
                     sizeAttenuation: true,
                     vertexColors: true,
                     transparent: true,
@@ -730,7 +730,7 @@
                     new THREE.MeshBasicMaterial({
                         color: 0xf8fdff,
                         transparent: true,
-                        opacity: index === 1 ? 0.12 : 0.07
+                        opacity: index === 1 ? 0.05 : 0.025
                     })
                 );
                 band.rotation.z = Math.PI * 0.5;
@@ -738,15 +738,17 @@
                 this.scene.add(band);
             });
 
-            const ambient = new THREE.AmbientLight(0xffffff, 0.72);
+            const ambient = new THREE.AmbientLight(0xffffff, 0.4);
             this.scene.add(ambient);
-            const fillA = new THREE.PointLight(0xf7fbff, 0.72, 1200, 2);
+            const hemi = new THREE.HemisphereLight(0xe6f1f7, 0x2c3138, 0.22);
+            this.scene.add(hemi);
+            const fillA = new THREE.PointLight(0xf7fbff, 0.42, 1600, 2);
             fillA.position.set(0, 0, 0);
             this.scene.add(fillA);
-            const fillB = new THREE.PointLight(0xfff3e2, 0.2, 1100, 2);
+            const fillB = new THREE.PointLight(0xfff3e2, 0.11, 1400, 2);
             fillB.position.set(-70, 20, 40);
             this.scene.add(fillB);
-            const fillC = new THREE.PointLight(0xe6f6ff, 0.18, 1100, 2);
+            const fillC = new THREE.PointLight(0xe6f6ff, 0.1, 1400, 2);
             fillC.position.set(80, -20, -40);
             this.scene.add(fillC);
         }
@@ -775,7 +777,7 @@
                     this.length - 8,
                     roadTheta,
                     roadThetaWidth,
-                    new THREE.MeshStandardMaterial({ color: 0x59606a, map: this.textures.tile, roughness: 0.98, metalness: 0.01, side: THREE.BackSide })
+                    new THREE.MeshStandardMaterial({ color: 0x5f666f, roughness: 0.98, metalness: 0.01, side: THREE.BackSide })
                 );
                 this.addCylinderStrip(
                     `sidewalkA_${roadIndex}`,
@@ -866,8 +868,16 @@
             const addCeiling = (name, w, d, x, z, color) => this.addLocalCeilingPanel(house, name, ceilingY, floorThickness, w, d, x, z, color);
             const addWallX = (name, width, x, z, color, height = wallHeight) => this.addLocalWallX(house, name, floorY, width, height, wallThickness, x, z, color);
             const addWallZ = (name, depth, x, z, color, height = wallHeight) => this.addLocalWallZ(house, name, floorY, depth, height, wallThickness, x, z, color);
+            const addFinishFloor = (name, w, d, x, z, material) => this.addLocalBox(house, name, w, 0.012, d, x, floorY + 0.036, z, material);
+
+            const studyFloorMat = makeMaterial(0xf3eee7, 0.95, 0.01, { map: this.textures.wood });
+            const hallFloorMat = makeMaterial(0xf1ece8, 0.96, 0.01, { map: this.textures.tile });
+            const livingFloorMat = makeMaterial(0xf2ebe1, 0.95, 0.01, { map: this.textures.wood });
+            const kitchenFloorMat = makeMaterial(0xe9e5df, 0.96, 0.01, { map: this.textures.tile });
+            const bedroomFloorMat = makeMaterial(0xefe8f5, 0.95, 0.01, { map: this.textures.wood });
 
             addFloor('floor', 4, 4, 0, 0, 0xf3eee7);
+            addFinishFloor('studyFinishFloor', 3.92, 3.92, 0, 0, studyFloorMat);
             addCeiling('studyCeiling', 4, 4, 0, 0, 0xf7f1fb);
             addWallX('backWall', 4, 0, -1.02, 0xd7d3db);
             addWallZ('sideWall', 1.55, -2.02, -0.225, 0xbdc0c9);
@@ -875,6 +885,7 @@
             addBox('sideWallHeader', wallThickness, 0.7, 1.1, -2.02, floorY + 2.45, 1.1, makeMaterial(0xbdc0c9, 0.9, 0.02));
 
             addFloor('hallFloor', 4.2, 2.4, 0, 3.1, 0xf1ece8);
+            addFinishFloor('hallFinishFloor', 4.12, 2.32, 0, 3.1, hallFloorMat);
             addCeiling('hallCeiling', 4.2, 2.4, 0, 3.1, 0xfbf7f3);
             const hallDoorCenterX = 0.22;
             const hallDoorWidth = 1.04;
@@ -906,6 +917,7 @@
             addBox('hallRunner', 0.9, 0.01, 1.8, 0.25, floorY + 0.005, 3.1, makeMaterial(0xc8b4da, 0.95, 0.01));
 
             addFloor('livingFloor', 4.2, 4.4, 4.1, 1.1, 0xf2ebe1);
+            addFinishFloor('livingFinishFloor', 4.12, 4.32, 4.1, 1.1, livingFloorMat);
             addCeiling('livingCeiling', 4.2, 4.4, 4.1, 1.1, 0xfbf7f2);
             addWallZ('livingRightWall', 4.4, 6.18, 1.1, 0xd8d2cf);
             addWallX('livingFrontWall', 4.2, 4.1, 3.28, 0xd4c8b8);
@@ -924,6 +936,7 @@
             house.add(livingGlow);
 
             addFloor('kitchenFloor', 4.2, 2.5, 4.1, -2.45, 0xe9e5df);
+            addFinishFloor('kitchenFinishFloor', 4.12, 2.42, 4.1, -2.45, kitchenFloorMat);
             addCeiling('kitchenCeiling', 4.2, 2.5, 4.1, -2.45, 0xf8f5f0);
             addWallX('kitchenBackWall', 4.2, 4.1, -3.68, 0xd4d7dc);
             addWallZ('kitchenRightWall', 2.5, 6.18, -2.45, 0xd4d7dc);
@@ -943,6 +956,7 @@
             house.add(kitchenLight);
 
             addFloor('bedroomFloor', 2.9, 3.8, -3.43, 1.1, 0xefe8f5);
+            addFinishFloor('bedroomFinishFloor', 2.82, 3.72, -3.43, 1.1, bedroomFloorMat);
             addCeiling('bedroomCeiling', 2.9, 3.8, -3.43, 1.1, 0xfaf6fe);
             addWallZ('bedroomLeftWall', 3.8, -4.84, 1.1, 0xd7d3de);
             addWallX('bedroomFrontWall', 2.9, -3.43, 2.98, 0xe7d9e5);
@@ -1109,11 +1123,13 @@
             const wallMat = makeMaterial(wallColor, 0.88, 0.02, { map: this.textures.wall });
             const trimMat = makeMaterial(trimColor, 0.86, 0.02);
             const floorMat = makeMaterial(floorColor, 0.96, 0.01, { map: this.textures.tile });
+            const interiorFinishMat = makeMaterial(floorColor, 0.95, 0.01, { map: this.rand01(cfg.seed, 26) > 0.45 ? this.textures.wood : this.textures.tile });
             const roofMat = new THREE.MeshStandardMaterial({ color: roofColor, map: this.textures.roof, roughness: 0.84, metalness: 0.02, side: THREE.DoubleSide });
 
             this.addLocalBox(house, 'lotPad', width + 4.5, 0.08, depth + 6.6, 0, 0.04, 0, makeMaterial(0xa8cd8f, 0.99, 0.0, { map: this.textures.grassFine }));
             this.addLocalBox(house, 'foundation', width + 0.18, 0.18, depth + 0.18, 0, 0.09, 0, makeMaterial(0xd4c5b4, 0.92, 0.01));
             this.addLocalBox(house, 'houseFloor', width - 0.18, 0.06, depth - 0.18, 0, 0.03, 0, floorMat);
+            this.addLocalBox(house, 'interiorFinishFloor', width - 0.34, 0.012, depth - 0.34, 0, 0.036, 0, interiorFinishMat);
             this.addLocalBox(house, 'wallLeft', 0.08, wallHeight, depth, -width * 0.5, wallHeight * 0.5, 0, wallMat);
             this.addLocalBox(house, 'wallRight', 0.08, wallHeight, depth, width * 0.5, wallHeight * 0.5, 0, wallMat);
             this.addLocalBox(house, 'wallBack', width, wallHeight, 0.08, 0, wallHeight * 0.5, -depth * 0.5, wallMat);
@@ -1258,6 +1274,13 @@
             this.setupEvents();
             this.fitElementToScreen();
             this.syncAnchor();
+        }
+
+        setScreenMesh(screenMesh) {
+            this.screenMesh = screenMesh;
+            this.fitElementToScreen();
+            this.syncAnchor();
+            this.refreshOcclusionBlockers();
         }
 
         computeScreenWorldSize() {
@@ -1517,6 +1540,8 @@
             this.playerGroup.name = 'playerAvatarRoot';
             scene.add(this.playerGroup);
             this.model = null;
+            this.avatarHeadAnchor = null;
+            this.avatarScreenMesh = null;
             this.mixer = null;
             this.idleAction = null;
             this.walkAction = null;
@@ -1552,12 +1577,113 @@
                     this.idleAction = this.mixer.clipAction(THREE.AnimationClip.findByName(gltf.animations, 'idle'));
                     this.walkAction = this.mixer.clipAction(THREE.AnimationClip.findByName(gltf.animations, 'walk'));
                     this.setAction(this.idleAction);
+                    this.attachAvatarCRT();
                     this.updateModelTransform();
                     this.updateCamera(true);
+                    if (this.onAvatarScreenReady && this.avatarScreenMesh) {
+                        this.onAvatarScreenReady(this.avatarScreenMesh);
+                    }
                 },
                 undefined,
                 (error) => console.error('[oneill] Xbot failed to load', error)
             );
+        }
+
+        attachAvatarCRT() {
+            if (!this.model) return;
+
+            let headAnchor = null;
+            this.model.traverse((object) => {
+                if (headAnchor) return;
+                if ((object.isBone || object.isObject3D) && /head/i.test(object.name || '')) {
+                    headAnchor = object;
+                }
+            });
+
+            if (!headAnchor) {
+                headAnchor = new THREE.Group();
+                headAnchor.position.set(0, 1.58, 0);
+                this.playerGroup.add(headAnchor);
+            }
+
+            this.avatarHeadAnchor = headAnchor;
+
+            const crtGroup = new THREE.Group();
+            crtGroup.name = 'avatarCRT';
+            crtGroup.position.set(0, 0.04, 0.02);
+
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0xd4c5a9, roughness: 0.6, metalness: 0.1 });
+            const body = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.24, 0.28), bodyMat);
+            body.position.z = -0.1;
+            body.castShadow = true;
+            body.receiveShadow = true;
+            crtGroup.add(body);
+
+            const bezel = new THREE.Mesh(new THREE.BoxGeometry(0.295, 0.255, 0.03), bodyMat);
+            bezel.position.z = 0.04;
+            bezel.castShadow = true;
+            bezel.receiveShadow = true;
+            crtGroup.add(bezel);
+
+            const screenGeo = new THREE.PlaneGeometry(0.235, 0.18, 8, 8);
+            const positions = screenGeo.attributes.position;
+            for (let i = 0; i < positions.count; i++) {
+                const x = positions.getX(i);
+                const y = positions.getY(i);
+                positions.setZ(i, -0.014 * (x * x + y * y));
+            }
+            positions.needsUpdate = true;
+            screenGeo.computeVertexNormals();
+
+            this.avatarScreenMesh = new THREE.Mesh(
+                screenGeo,
+                new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.DoubleSide })
+            );
+            this.avatarScreenMesh.name = 'avatarCRTScreen';
+            this.avatarScreenMesh.position.z = 0.056;
+            this.avatarScreenMesh.userData.ignoreCameraOcclusion = true;
+            crtGroup.add(this.avatarScreenMesh);
+
+            const glass = new THREE.Mesh(
+                new THREE.PlaneGeometry(0.235, 0.18),
+                new THREE.MeshPhysicalMaterial({
+                    color: 0xffffff,
+                    metalness: 0.1,
+                    roughness: 0.22,
+                    transmission: 0.03,
+                    ior: 1.5,
+                    clearcoat: 0.28,
+                    clearcoatRoughness: 0.1,
+                    transparent: true,
+                    opacity: 0.95,
+                    side: THREE.DoubleSide
+                })
+            );
+            glass.position.z = 0.058;
+            glass.userData.ignoreScreenOcclusion = true;
+            glass.userData.ignoreCameraOcclusion = true;
+            crtGroup.add(glass);
+
+            const stand = new THREE.Mesh(new THREE.CylinderGeometry(0.048, 0.07, 0.05, 14), bodyMat);
+            stand.position.set(0, -0.14, -0.04);
+            stand.castShadow = true;
+            stand.receiveShadow = true;
+            crtGroup.add(stand);
+
+            const base = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.028, 0.08), bodyMat);
+            base.position.set(0, -0.175, -0.03);
+            base.castShadow = true;
+            base.receiveShadow = true;
+            crtGroup.add(base);
+
+            crtGroup.traverse((object) => {
+                if (!object.isMesh) return;
+                object.castShadow = true;
+                object.receiveShadow = true;
+                object.userData.ignoreCameraOcclusion = true;
+            });
+
+            headAnchor.add(crtGroup);
         }
 
         setAction(nextAction) {
@@ -2050,6 +2176,10 @@
             this.controls = new ThirdPersonCylinderControls(camera, renderer.domElement, this.world);
             this.css3dScreen = new CSS3DScreen(scene, camera, this.world.starterScreenMesh);
             this.interaction = new InteractionSystem(camera, this.controls, this.world.starterScreenMesh, this.css3dScreen);
+            this.controls.onAvatarScreenReady = (screenMesh) => {
+                this.css3dScreen.setScreenMesh(screenMesh);
+                this.interaction.screenMesh = screenMesh;
+            };
             this.urlBar = new URLBar(this.css3dScreen);
             this.clock = new THREE.Clock();
 
