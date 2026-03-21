@@ -1489,9 +1489,13 @@
             this.standEyeHeight = 1.05;
             this.crouchEyeHeight = 0.68;
             this.isCrouching = false;
-            this.moveSpeed = 2.2;
+            this.walkSpeed = 2.2;
+            this.runSpeed = 4.1;
             this.lookSpeed = 0.0025;
             this.touchLookSpeed = 0.0032;
+            this.jumpSpeed = 4.4;
+            this.jumpGravity = 12.5;
+            this.jumpPeakHeight = (this.jumpSpeed * this.jumpSpeed) / (2 * this.jumpGravity);
             this.pitchMin = -0.75;
             this.pitchMax = 0.35;
             this.yaw = world.spawn.yaw;
@@ -1499,7 +1503,7 @@
             this.facingYaw = Math.PI;
             this.surfaceX = world.spawn.x;
             this.surfaceArc = world.spawn.theta * this.cylinderRadius;
-            this.moveState = { forward: false, backward: false, left: false, right: false };
+            this.moveState = { forward: false, backward: false, left: false, right: false, run: false };
             this.touchState = {
                 movePointerId: null,
                 lookPointerId: null,
@@ -1547,7 +1551,12 @@
             this.mixer = null;
             this.idleAction = null;
             this.walkAction = null;
+            this.runAction = null;
+            this.jumpPoseAction = null;
             this.currentAction = null;
+            this.jumpOffset = 0;
+            this.jumpVelocity = 0;
+            this.jumpBlend = 0;
             this.loadAvatar();
 
             document.body.classList.toggle('touch-device', this.isTouchDevice);
@@ -1578,6 +1587,15 @@
                     this.mixer = new THREE.AnimationMixer(this.model);
                     this.idleAction = this.mixer.clipAction(THREE.AnimationClip.findByName(gltf.animations, 'idle'));
                     this.walkAction = this.mixer.clipAction(THREE.AnimationClip.findByName(gltf.animations, 'walk'));
+                    this.runAction = this.mixer.clipAction(THREE.AnimationClip.findByName(gltf.animations, 'run'));
+                    const sneakClip = THREE.AnimationClip.findByName(gltf.animations, 'sneak_pose');
+                    if (sneakClip) {
+                        const additiveClip = sneakClip.clone();
+                        THREE.AnimationUtils.makeClipAdditive(additiveClip);
+                        this.jumpPoseAction = this.mixer.clipAction(additiveClip);
+                        this.jumpPoseAction.play();
+                        this.jumpPoseAction.setEffectiveWeight(0);
+                    }
                     this.setAction(this.idleAction);
                     this.attachAvatarCRT();
                     this.updateModelTransform();
@@ -1905,6 +1923,15 @@
                 case 'ArrowRight':
                     this.moveState.right = pressed;
                     break;
+                case 'ShiftLeft':
+                    this.moveState.run = pressed;
+                    break;
+                case 'Space':
+                    if (pressed && !this.isJumping()) {
+                        this.jumpVelocity = this.jumpSpeed;
+                        event.preventDefault();
+                    }
+                    return;
                 case 'KeyC':
                     if (pressed) {
                         this.isCrouching = !this.isCrouching;
@@ -1931,12 +1958,19 @@
             this.basisMatrix.makeBasis(this.rightBase, this.up, this.forwardBase);
         }
 
+        isJumping() {
+            return this.jumpOffset > 0.0001 || this.jumpVelocity > 0.0001;
+        }
+
         updateModelTransform() {
             this.syncPlayerBasis();
             if (!this.model) return;
             const basisQuat = new THREE.Quaternion().setFromRotationMatrix(this.basisMatrix);
             const localQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), this.facingYaw);
             this.playerGroup.position.copy(this.playerPosition);
+            if (this.jumpOffset > 0) {
+                this.playerGroup.position.addScaledVector(this.up, this.jumpOffset);
+            }
             this.playerGroup.quaternion.copy(basisQuat).multiply(localQuat);
             this.playerGroup.position.addScaledVector(this.up, 0.01);
 
@@ -2033,6 +2067,8 @@
                 -1,
                 1
             );
+            const isRunning = this.moveState.run && !this.isCrouching;
+            const travelSpeed = isRunning ? this.runSpeed : this.walkSpeed;
             this.moveVector.set(0, 0, 0);
             this.forward.set(-Math.sin(this.yaw), 0, -Math.cos(this.yaw)).normalize();
             this.right.set(-this.forward.z, 0, this.forward.x).normalize();
@@ -2046,10 +2082,26 @@
             if (moving) {
                 this.moveVector.normalize();
                 this.facingYaw = Math.atan2(this.moveVector.x, this.moveVector.z);
-                this.surfaceX += this.moveVector.x * this.moveSpeed * delta;
-                this.surfaceArc += this.moveVector.z * this.moveSpeed * delta;
+                this.surfaceX += this.moveVector.x * travelSpeed * delta;
+                this.surfaceArc += this.moveVector.z * travelSpeed * delta;
             } else {
                 this.facingYaw = this.yaw + Math.PI;
+            }
+
+            if (this.isJumping()) {
+                this.jumpVelocity -= this.jumpGravity * delta;
+                this.jumpOffset = Math.max(0, this.jumpOffset + this.jumpVelocity * delta);
+                if (this.jumpOffset === 0 && this.jumpVelocity < 0) {
+                    this.jumpVelocity = 0;
+                }
+            }
+
+            const jumpTargetBlend = this.isJumping()
+                ? THREE.MathUtils.clamp(this.jumpOffset / this.jumpPeakHeight, 0, 1)
+                : 0;
+            this.jumpBlend = THREE.MathUtils.lerp(this.jumpBlend, jumpTargetBlend, Math.min(1, delta * 10));
+            if (this.jumpPoseAction) {
+                this.jumpPoseAction.setEffectiveWeight(this.jumpBlend);
             }
 
             this.clampX();
@@ -2058,7 +2110,13 @@
             this.updateCamera();
 
             if (this.idleAction && this.walkAction) {
-                this.setAction(moving ? this.walkAction : this.idleAction);
+                if (moving && isRunning && this.runAction) {
+                    this.setAction(this.runAction);
+                } else if (moving) {
+                    this.setAction(this.walkAction);
+                } else {
+                    this.setAction(this.idleAction);
+                }
             }
         }
     }
