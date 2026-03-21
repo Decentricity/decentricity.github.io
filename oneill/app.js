@@ -431,6 +431,8 @@
             this.rowArcOffset = 14.2;
             this.numberTextureCache = new Map();
             this.starterScreenMesh = null;
+            this.groundPickTargets = [];
+            this.collisionDiscs = [];
             this.textures = {
                 grass: TextureLibrary.grass(120, 60),
                 grassFine: TextureLibrary.grass(14, 14),
@@ -473,6 +475,11 @@
             ).addScaledVector(up, lift);
         }
 
+        shortestArcDelta(fromArc, toArc) {
+            const circumference = TAU * this.radius;
+            return THREE.MathUtils.euclideanModulo((toArc - fromArc) + circumference * 0.5, circumference) - circumference * 0.5;
+        }
+
         cylinderBasis(theta) {
             const right = new THREE.Vector3(1, 0, 0);
             const up = new THREE.Vector3(0, Math.cos(theta), -Math.sin(theta)).normalize();
@@ -487,6 +494,94 @@
             const localQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
             object.quaternion.copy(baseQuat).multiply(localQuat);
             object.position.copy(this.surfacePoint(x, theta, lift));
+        }
+
+        groundPlacementFromPoint(point) {
+            return {
+                x: THREE.MathUtils.clamp(point.x, -this.maxWalkX, this.maxWalkX),
+                theta: Math.atan2(point.z, -point.y)
+            };
+        }
+
+        registerGroundPick(mesh) {
+            this.groundPickTargets.push(mesh);
+            return mesh;
+        }
+
+        registerCollisionDiscArc(x, arc, radius) {
+            this.collisionDiscs.push({ x, arc, radius });
+        }
+
+        registerCollisionDisc(x, theta, radius) {
+            this.registerCollisionDiscArc(x, theta * this.radius, radius);
+        }
+
+        registerFootprintDiscs(x, theta, yaw, discs) {
+            const centerArc = theta * this.radius;
+            const cos = Math.cos(yaw);
+            const sin = Math.sin(yaw);
+            discs.forEach((disc) => {
+                const dx = disc.x * cos + disc.z * sin;
+                const dz = -disc.x * sin + disc.z * cos;
+                this.registerCollisionDiscArc(x + dx, centerArc + dz, disc.radius);
+            });
+        }
+
+        resolveSurfaceCollisions(x, arc, coreRadius, padding = 0.08) {
+            let nextX = THREE.MathUtils.clamp(x, -this.maxWalkX, this.maxWalkX);
+            let nextArc = arc;
+            for (let i = 0; i < 4; i++) {
+                let adjusted = false;
+                for (const disc of this.collisionDiscs) {
+                    const dx = nextX - disc.x;
+                    const dz = this.shortestArcDelta(disc.arc, nextArc);
+                    const minDistance = coreRadius + disc.radius + padding;
+                    const distance = Math.hypot(dx, dz);
+                    if (distance >= minDistance) continue;
+                    const nx = distance > 0.0001 ? dx / distance : 1;
+                    const nz = distance > 0.0001 ? dz / distance : 0;
+                    const push = minDistance - distance;
+                    nextX += nx * push;
+                    nextArc += nz * push;
+                    nextX = THREE.MathUtils.clamp(nextX, -this.maxWalkX, this.maxWalkX);
+                    adjusted = true;
+                }
+                if (!adjusted) break;
+            }
+            return { x: nextX, arc: nextArc };
+        }
+
+        moveOnSurface(x, arc, deltaX, deltaArc, coreRadius) {
+            const first = this.resolveSurfaceCollisions(x + deltaX, arc, coreRadius);
+            return this.resolveSurfaceCollisions(first.x, first.arc + deltaArc, coreRadius);
+        }
+
+        placeImportedObject(object, placement, name = 'worldAsset') {
+            const wrapper = new THREE.Group();
+            wrapper.name = name.replace(/[^a-z0-9_-]/gi, '_');
+            wrapper.add(object);
+            this.scene.add(wrapper);
+
+            wrapper.updateWorldMatrix(true, true);
+            const box = new THREE.Box3().setFromObject(wrapper);
+            const center = box.getCenter(new THREE.Vector3());
+            object.position.sub(center);
+            object.position.y -= box.min.y;
+
+            wrapper.updateWorldMatrix(true, true);
+            const adjustedBox = new THREE.Box3().setFromObject(wrapper);
+            const size = adjustedBox.getSize(new THREE.Vector3());
+
+            wrapper.traverse((child) => {
+                if (!child.isMesh) return;
+                child.castShadow = true;
+                child.receiveShadow = true;
+            });
+
+            this.placeOnCylinder(wrapper, placement.x, placement.theta, 0, 0);
+            const radius = Math.max(0.55, Math.min(6.5, Math.max(size.x, size.z) * 0.45));
+            this.registerCollisionDisc(placement.x, placement.theta, radius);
+            return wrapper;
         }
 
         addLocalBox(group, name, w, h, d, x, y, z, material) {
@@ -624,6 +719,7 @@
             canopy2.receiveShadow = true;
             tree.add(canopy2);
             this.scene.add(tree);
+            this.registerCollisionDisc(x, theta, 0.8 * scale);
         }
 
         addShrub(x, theta, seed, radius = 0.34) {
@@ -638,6 +734,7 @@
             mesh.receiveShadow = true;
             shrub.add(mesh);
             this.scene.add(shrub);
+            this.registerCollisionDisc(x, theta, radius * 0.9);
         }
 
         addStreetLamp(x, theta) {
@@ -655,6 +752,7 @@
             pointLight.position.copy(globe.position);
             lamp.add(pointLight);
             this.scene.add(lamp);
+            this.registerCollisionDisc(x, theta, 0.34);
         }
 
         addCylinderStrip(name, radius, length, thetaCenter, thetaLength, material) {
@@ -766,6 +864,7 @@
             terrain.rotation.z = Math.PI * 0.5;
             terrain.name = 'oneillTerrainShell';
             this.scene.add(terrain);
+            this.registerGroundPick(terrain);
 
             [-90, -30, 30, 90].forEach((x, index) => {
                 const ring = new THREE.Mesh(
@@ -832,7 +931,7 @@
                     roadThetaWidth,
                     new THREE.MeshStandardMaterial({ color: 0x5f666f, roughness: 0.98, metalness: 0.01, side: THREE.BackSide })
                 );
-                this.addCylinderStrip(
+                const sidewalkA = this.addCylinderStrip(
                     `sidewalkA_${roadIndex}`,
                     this.radius - 0.015,
                     this.length - 8,
@@ -840,7 +939,7 @@
                     sidewalkThetaWidth,
                     new THREE.MeshStandardMaterial({ color: 0xebe4db, map: this.textures.tile, roughness: 0.96, metalness: 0.01, side: THREE.BackSide })
                 );
-                this.addCylinderStrip(
+                const sidewalkB = this.addCylinderStrip(
                     `sidewalkB_${roadIndex}`,
                     this.radius - 0.015,
                     this.length - 8,
@@ -848,6 +947,8 @@
                     sidewalkThetaWidth,
                     new THREE.MeshStandardMaterial({ color: 0xebe4db, map: this.textures.tile, roughness: 0.96, metalness: 0.01, side: THREE.BackSide })
                 );
+                this.registerGroundPick(sidewalkA);
+                this.registerGroundPick(sidewalkB);
 
                 laneXs.forEach((x) => {
                     const marker = new THREE.Group();
@@ -910,6 +1011,13 @@
             this.placeOnCylinder(house, cfg.x, cfg.theta, cfg.yaw);
             house.translateY(0.2);
             this.scene.add(house);
+            this.registerFootprintDiscs(cfg.x, cfg.theta, cfg.yaw, [
+                { x: 0.37, z: 0, radius: 2.8 },
+                { x: 0.37, z: 2.6, radius: 2.4 },
+                { x: 0.37, z: -2.6, radius: 2.4 },
+                { x: 3.8, z: 1.0, radius: 1.8 },
+                { x: -3.45, z: 1.1, radius: 1.6 }
+            ]);
 
             const floorY = -0.2;
             const floorThickness = 0.06;
@@ -1179,6 +1287,11 @@
             const floorMat = makeMaterial(floorColor, 0.96, 0.01, { map: this.textures.tile });
             const interiorFinishMat = makeMaterial(floorColor, 0.95, 0.01, { map: this.rand01(cfg.seed, 26) > 0.45 ? this.textures.wood : this.textures.tile });
             const roofMat = new THREE.MeshStandardMaterial({ color: roofColor, map: this.textures.roof, roughness: 0.84, metalness: 0.02, side: THREE.DoubleSide });
+            this.registerFootprintDiscs(cfg.x, cfg.theta, cfg.yaw, [
+                { x: 0, z: 0, radius: Math.min(width, depth) * 0.22 },
+                { x: 0, z: depth * 0.24, radius: Math.min(width, depth) * 0.2 },
+                { x: 0, z: -depth * 0.24, radius: Math.min(width, depth) * 0.2 }
+            ]);
 
             this.addLocalBox(house, 'lotPad', width + 4.5, 0.08, depth + 6.6, 0, 0.04, 0, makeMaterial(0xa8cd8f, 0.99, 0.0, { map: this.textures.grassFine }));
             this.addLocalBox(house, 'foundation', width + 0.18, 0.18, depth + 0.18, 0, 0.09, 0, makeMaterial(0xd4c5b4, 0.92, 0.01));
@@ -1556,6 +1669,7 @@
             this.facingYaw = Math.PI;
             this.surfaceX = world.spawn.x;
             this.surfaceArc = world.spawn.theta * this.cylinderRadius;
+            this.coreRadius = 0.5;
             this.moveState = { forward: false, backward: false, left: false, right: false, run: false };
             this.touchState = {
                 movePointerId: null,
@@ -2167,8 +2281,15 @@
             if (moving) {
                 this.moveVector.normalize();
                 this.facingYaw = Math.atan2(this.moveVector.x, this.moveVector.z);
-                this.surfaceX += this.moveVector.x * travelSpeed * delta;
-                this.surfaceArc += this.moveVector.z * travelSpeed * delta;
+                const next = this.world.moveOnSurface(
+                    this.surfaceX,
+                    this.surfaceArc,
+                    this.moveVector.x * travelSpeed * delta,
+                    this.moveVector.z * travelSpeed * delta,
+                    this.coreRadius
+                );
+                this.surfaceX = next.x;
+                this.surfaceArc = next.arc;
             } else {
                 this.facingYaw = this.yaw + Math.PI;
             }
@@ -2213,6 +2334,7 @@
             this.spawnArc = world.spawn.theta * this.cylinderRadius - 3.2;
             this.surfaceX = this.spawnX;
             this.surfaceArc = this.spawnArc;
+            this.coreRadius = 0.5;
             this.wanderRadius = 4.5;
             this.walkSpeed = 1.25;
             this.pauseTimer = 0.8;
@@ -2484,8 +2606,15 @@
             const moveX = dx / distance;
             const moveZ = dz / distance;
             this.facingYaw = Math.atan2(moveX, moveZ);
-            this.surfaceX += moveX * step;
-            this.surfaceArc += moveZ * step;
+            const next = this.world.moveOnSurface(
+                this.surfaceX,
+                this.surfaceArc,
+                moveX * step,
+                moveZ * step,
+                this.coreRadius
+            );
+            this.surfaceX = next.x;
+            this.surfaceArc = next.arc;
             this.clampX();
             this.wrapArc();
             this.setAction(this.walkAction || this.idleAction);
@@ -2612,10 +2741,96 @@
         }
     }
 
+    class WorldAssetLoader {
+        load(file) {
+            const ext = file.name.split('.').pop()?.toLowerCase() || '';
+            const url = URL.createObjectURL(file);
+
+            return new Promise((resolve, reject) => {
+                const finishResolve = (object) => {
+                    URL.revokeObjectURL(url);
+                    resolve(object);
+                };
+                const finishReject = (error) => {
+                    URL.revokeObjectURL(url);
+                    reject(error);
+                };
+
+                const onObjectReady = (object) => {
+                    if (!object) {
+                        finishReject(new Error(`Unsupported or empty asset: ${file.name}`));
+                        return;
+                    }
+                    object.traverse?.((child) => {
+                        if (!child.isMesh) return;
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                        if (!child.material) {
+                            child.material = makeMaterial(0xcfcfcf, 0.8, 0.05);
+                        }
+                    });
+                    finishResolve(object);
+                };
+
+                try {
+                    if (ext === 'glb' || ext === 'gltf') {
+                        new THREE.GLTFLoader().load(url, (gltf) => onObjectReady(gltf.scene), undefined, finishReject);
+                        return;
+                    }
+                    if (ext === 'obj') {
+                        new THREE.OBJLoader().load(url, onObjectReady, undefined, finishReject);
+                        return;
+                    }
+                    if (ext === 'fbx') {
+                        new THREE.FBXLoader().load(url, onObjectReady, undefined, finishReject);
+                        return;
+                    }
+                    if (ext === 'stl') {
+                        new THREE.STLLoader().load(url, (geometry) => {
+                            geometry.computeVertexNormals();
+                            onObjectReady(new THREE.Mesh(geometry, makeMaterial(0xcfcfcf, 0.8, 0.05)));
+                        }, undefined, finishReject);
+                        return;
+                    }
+                    if (ext === 'ply') {
+                        new THREE.PLYLoader().load(url, (geometry) => {
+                            geometry.computeVertexNormals();
+                            const material = geometry.getAttribute('color')
+                                ? new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.82, metalness: 0.04 })
+                                : makeMaterial(0xcfcfcf, 0.82, 0.04);
+                            onObjectReady(new THREE.Mesh(geometry, material));
+                        }, undefined, finishReject);
+                        return;
+                    }
+                    if (ext === 'vox') {
+                        new THREE.VOXLoader().load(url, (chunks) => {
+                            const group = new THREE.Group();
+                            chunks.forEach((chunk, index) => {
+                                const voxMesh = new THREE.VOXMesh(chunk);
+                                voxMesh.name = `voxChunk_${index}`;
+                                group.add(voxMesh);
+                            });
+                            onObjectReady(group);
+                        }, undefined, finishReject);
+                        return;
+                    }
+                } catch (error) {
+                    finishReject(error);
+                    return;
+                }
+
+                finishReject(new Error(`Unsupported file type: .${ext || 'unknown'}`));
+            });
+        }
+    }
+
     class OneillApp {
         constructor() {
             this.pickRay = new THREE.Raycaster();
             this.pickMouse = new THREE.Vector2();
+            this.fileInput = document.getElementById('world-object-input');
+            this.pendingAssetPlacement = null;
+            this.assetLoader = new WorldAssetLoader();
 
             this.world = new OneillWorld(scene);
             this.controls = new ThirdPersonCylinderControls(camera, renderer.domElement, this.world);
@@ -2639,6 +2854,8 @@
         bindEvents() {
             window.addEventListener('resize', () => this.onResize());
             renderer.domElement.addEventListener('click', (event) => this.handleWorldClick(event));
+            renderer.domElement.addEventListener('contextmenu', (event) => this.handleGroundContextMenu(event));
+            this.fileInput?.addEventListener('change', (event) => this.handleAssetUpload(event));
         }
 
         onResize() {
@@ -2674,6 +2891,40 @@
             }
 
             this.controls.lock();
+        }
+
+        handleGroundContextMenu(event) {
+            if (this.interaction.isOverScreen) return;
+            if (this.controls.isLocked) return;
+            if (event.target === document.getElementById('url-input')) return;
+
+            this.setPickMouse(event);
+            this.pickRay.setFromCamera(this.pickMouse, camera);
+            const hits = this.pickRay.intersectObjects(this.world.groundPickTargets, true);
+            if (!hits.length) return;
+
+            event.preventDefault();
+            this.pendingAssetPlacement = this.world.groundPlacementFromPoint(hits[0].point);
+            if (this.fileInput) {
+                this.fileInput.value = '';
+                this.fileInput.click();
+            }
+        }
+
+        async handleAssetUpload(event) {
+            const file = event.target.files?.[0];
+            const placement = this.pendingAssetPlacement;
+            this.pendingAssetPlacement = null;
+            if (!file || !placement) return;
+
+            try {
+                const object = await this.assetLoader.load(file);
+                this.world.placeImportedObject(object, placement, file.name);
+                this.css3dScreen.showToast(`Placed ${file.name}`);
+            } catch (error) {
+                console.error('[oneill] asset import failed', error);
+                this.css3dScreen.showToast(`Could not load ${file.name}`);
+            }
         }
 
         animate() {
