@@ -1541,6 +1541,7 @@
             this.playerGroup.name = 'playerAvatarRoot';
             scene.add(this.playerGroup);
             this.model = null;
+            this.avatarHeadBone = null;
             this.avatarHeadAnchor = null;
             this.avatarScreenMesh = null;
             this.mixer = null;
@@ -1599,22 +1600,12 @@
                     headAnchor = object;
                 }
             });
+            this.avatarHeadBone = headAnchor;
 
             const crtAnchor = new THREE.Group();
             crtAnchor.name = 'avatarCRTAnchor';
-            if (headAnchor) {
-                headAnchor.add(crtAnchor);
-                this.model.traverse((object) => {
-                    if (!object.isMesh && !object.isSkinnedMesh) return;
-                    const name = (object.name || '').toLowerCase();
-                    if (name.includes('head') || name.includes('face')) {
-                        object.visible = false;
-                    }
-                });
-            } else {
-                this.playerGroup.add(crtAnchor);
-                crtAnchor.position.set(0, 1.62, 0.02);
-            }
+            this.playerGroup.add(crtAnchor);
+            crtAnchor.position.set(0, 1.62, 0.02);
             this.avatarHeadAnchor = crtAnchor;
 
             const crtGroup = new THREE.Group();
@@ -1948,6 +1939,21 @@
             this.playerGroup.position.copy(this.playerPosition);
             this.playerGroup.quaternion.copy(basisQuat).multiply(localQuat);
             this.playerGroup.position.addScaledVector(this.up, 0.01);
+
+            if (this.avatarHeadBone && this.avatarHeadAnchor) {
+                this.avatarHeadBone.updateWorldMatrix(true, false);
+                const headWorldPos = new THREE.Vector3();
+                const headWorldQuat = new THREE.Quaternion();
+                const headWorldScale = new THREE.Vector3();
+                this.avatarHeadBone.matrixWorld.decompose(headWorldPos, headWorldQuat, headWorldScale);
+
+                const inverseRoot = this.playerGroup.matrixWorld.clone().invert();
+                this.avatarHeadAnchor.position.copy(headWorldPos.applyMatrix4(inverseRoot));
+
+                const rootWorldQuat = new THREE.Quaternion();
+                this.playerGroup.getWorldQuaternion(rootWorldQuat);
+                this.avatarHeadAnchor.quaternion.copy(rootWorldQuat.invert().multiply(headWorldQuat));
+            }
         }
 
         shouldIgnoreCameraOcclusion(object) {
