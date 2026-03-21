@@ -35,6 +35,59 @@
         new THREE.MeshStandardMaterial({ color, roughness, metalness, ...extra })
     );
 
+    const createCurvedCRTScreenGeometry = () => {
+        const screenGeo = new THREE.PlaneGeometry(0.36, 0.27, 10, 10);
+        const positions = screenGeo.attributes.position;
+        for (let i = 0; i < positions.count; i++) {
+            const x = positions.getX(i);
+            const y = positions.getY(i);
+            positions.setZ(i, -0.02 * (x * x + y * y));
+        }
+        positions.needsUpdate = true;
+        screenGeo.computeVertexNormals();
+        return screenGeo;
+    };
+
+    const createCRTTextTexture = (text, {
+        width = 512,
+        height = 384,
+        background = '#071421',
+        glow = '#17324f',
+        foreground = '#d7e7ff'
+    } = {}) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+
+        const gradient = ctx.createLinearGradient(0, 0, 0, height);
+        gradient.addColorStop(0, background);
+        gradient.addColorStop(1, glow);
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, width, height);
+
+        ctx.strokeStyle = 'rgba(170, 210, 255, 0.35)';
+        ctx.lineWidth = 10;
+        ctx.strokeRect(10, 10, width - 20, height - 20);
+
+        ctx.fillStyle = foreground;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = 'bold 92px monospace';
+
+        const lines = String(text).split('\n');
+        const lineHeight = 90;
+        const startY = height * 0.5 - ((lines.length - 1) * lineHeight * 0.5);
+        lines.forEach((line, index) => {
+            ctx.fillText(line, width * 0.5, startY + index * lineHeight);
+        });
+
+        const texture = new THREE.CanvasTexture(canvas);
+        setTextureEncoding(texture);
+        texture.anisotropy = 4;
+        return texture;
+    };
+
     const TextureLibrary = {
         cache: new Map(),
 
@@ -2118,6 +2171,296 @@
         }
     }
 
+    class WanderingNPC {
+        constructor(scene, world) {
+            this.scene = scene;
+            this.world = world;
+            this.cylinderRadius = world.radius;
+            this.maxX = world.maxWalkX;
+            this.spawnX = world.spawn.x + 1.2;
+            this.spawnArc = world.spawn.theta * this.cylinderRadius - 3.2;
+            this.surfaceX = this.spawnX;
+            this.surfaceArc = this.spawnArc;
+            this.wanderRadius = 4.5;
+            this.walkSpeed = 1.25;
+            this.pauseTimer = 0.8;
+            this.destinationX = this.surfaceX;
+            this.destinationArc = this.surfaceArc;
+            this.hasDestination = false;
+            this.facingYaw = Math.PI;
+            this.up = new THREE.Vector3();
+            this.forwardBase = new THREE.Vector3();
+            this.rightBase = new THREE.Vector3(1, 0, 0);
+            this.playerPosition = new THREE.Vector3();
+            this.basisMatrix = new THREE.Matrix4();
+            this.playerGroup = new THREE.Group();
+            this.playerGroup.name = 'npcAvatarRoot';
+            this.scene.add(this.playerGroup);
+            this.model = null;
+            this.avatarHeadBone = null;
+            this.avatarHeadAnchor = null;
+            this.mixer = null;
+            this.idleAction = null;
+            this.walkAction = null;
+            this.currentAction = null;
+
+            this.loadAvatar();
+            this.syncBasis();
+            this.updateTransform();
+        }
+
+        shortestArcDelta(fromArc, toArc) {
+            const circumference = TAU * this.cylinderRadius;
+            return THREE.MathUtils.euclideanModulo((toArc - fromArc) + circumference * 0.5, circumference) - circumference * 0.5;
+        }
+
+        wrapArc() {
+            const circumference = TAU * this.cylinderRadius;
+            this.surfaceArc = THREE.MathUtils.euclideanModulo(this.surfaceArc, circumference);
+        }
+
+        clampX() {
+            this.surfaceX = THREE.MathUtils.clamp(this.surfaceX, -this.maxX, this.maxX);
+        }
+
+        setAction(nextAction) {
+            if (!nextAction || this.currentAction === nextAction) return;
+            if (this.currentAction) {
+                this.currentAction.fadeOut(0.2);
+            }
+            nextAction.reset().fadeIn(0.2).play();
+            this.currentAction = nextAction;
+        }
+
+        syncBasis() {
+            const theta = this.surfaceArc / this.cylinderRadius;
+            this.up.set(0, Math.cos(theta), -Math.sin(theta)).normalize();
+            this.forwardBase.set(0, Math.sin(theta), Math.cos(theta)).normalize();
+            this.playerPosition.set(
+                this.surfaceX,
+                -Math.cos(theta) * this.cylinderRadius,
+                Math.sin(theta) * this.cylinderRadius
+            );
+            this.basisMatrix.makeBasis(this.rightBase, this.up, this.forwardBase);
+        }
+
+        chooseDestination() {
+            const angle = Math.random() * TAU;
+            const radius = Math.random() * this.wanderRadius;
+            this.destinationX = THREE.MathUtils.clamp(this.spawnX + Math.cos(angle) * radius, -this.maxX, this.maxX);
+            this.destinationArc = this.spawnArc + Math.sin(angle) * radius;
+            this.hasDestination = true;
+        }
+
+        applyBlueAvatarMaterial(mesh) {
+            mesh.material = new THREE.MeshStandardMaterial({
+                color: mesh.name && /eye/i.test(mesh.name) ? 0xe8f2ff : 0x4d76ff,
+                emissive: mesh.name && /eye/i.test(mesh.name) ? 0x1a2235 : 0x173275,
+                emissiveIntensity: mesh.name && /eye/i.test(mesh.name) ? 0.08 : 0.26,
+                roughness: 0.72,
+                metalness: 0.08,
+                skinning: !!mesh.isSkinnedMesh
+            });
+        }
+
+        loadAvatar() {
+            if (!THREE.GLTFLoader) {
+                console.error('[oneill] GLTFLoader unavailable; wandering NPC did not load');
+                return;
+            }
+
+            const loader = new THREE.GLTFLoader();
+            loader.load(
+                'https://threejs.org/examples/models/gltf/Xbot.glb',
+                (gltf) => {
+                    this.model = gltf.scene;
+                    this.model.name = 'npcAvatar';
+                    this.playerGroup.add(this.model);
+                    this.model.traverse((object) => {
+                        if (!object.isMesh) return;
+                        this.applyBlueAvatarMaterial(object);
+                        object.castShadow = true;
+                        object.receiveShadow = true;
+                    });
+
+                    this.mixer = new THREE.AnimationMixer(this.model);
+                    const idleClip = THREE.AnimationClip.findByName(gltf.animations, 'idle');
+                    const walkClip = THREE.AnimationClip.findByName(gltf.animations, 'walk');
+                    if (idleClip) this.idleAction = this.mixer.clipAction(idleClip);
+                    if (walkClip) this.walkAction = this.mixer.clipAction(walkClip);
+                    this.setAction(this.idleAction || this.walkAction);
+
+                    this.attachAvatarCRT();
+                    this.updateTransform();
+                },
+                undefined,
+                (error) => console.error('[oneill] NPC Xbot failed to load', error)
+            );
+        }
+
+        attachAvatarCRT() {
+            if (!this.model) return;
+
+            let headAnchor = null;
+            this.model.traverse((object) => {
+                if (headAnchor) return;
+                if ((object.isBone || object.isObject3D) && /head/i.test(object.name || '')) {
+                    headAnchor = object;
+                }
+            });
+            this.avatarHeadBone = headAnchor;
+
+            const crtAnchor = new THREE.Group();
+            crtAnchor.name = 'npcCRTAnchor';
+            crtAnchor.position.set(0, 1.62, 0.02);
+            this.playerGroup.add(crtAnchor);
+            this.avatarHeadAnchor = crtAnchor;
+
+            const crtGroup = new THREE.Group();
+            crtGroup.name = 'npcCRT';
+            crtGroup.position.set(0, 0.09, 0.05);
+
+            const bodyMat = new THREE.MeshStandardMaterial({
+                color: 0x547dff,
+                emissive: 0x18316f,
+                emissiveIntensity: 0.22,
+                roughness: 0.54,
+                metalness: 0.14
+            });
+            const body = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.34, 0.38), bodyMat);
+            body.position.z = -0.12;
+            crtGroup.add(body);
+
+            const bezel = new THREE.Mesh(
+                new THREE.BoxGeometry(0.445, 0.355, 0.04),
+                new THREE.MeshStandardMaterial({
+                    color: 0x7aa0ff,
+                    emissive: 0x224487,
+                    emissiveIntensity: 0.2,
+                    roughness: 0.48,
+                    metalness: 0.16
+                })
+            );
+            bezel.position.z = 0.07;
+            crtGroup.add(bezel);
+
+            const screen = new THREE.Mesh(
+                createCurvedCRTScreenGeometry(),
+                new THREE.MeshBasicMaterial({
+                    map: createCRTTextTexture('NOT\nFREN'),
+                    side: THREE.DoubleSide
+                })
+            );
+            screen.name = 'npcCRTScreen';
+            screen.position.z = 0.092;
+            crtGroup.add(screen);
+
+            const glass = new THREE.Mesh(
+                new THREE.PlaneGeometry(0.36, 0.27),
+                new THREE.MeshPhysicalMaterial({
+                    color: 0xbfd4ff,
+                    metalness: 0.08,
+                    roughness: 0.24,
+                    transmission: 0.02,
+                    ior: 1.45,
+                    clearcoat: 0.24,
+                    clearcoatRoughness: 0.1,
+                    transparent: true,
+                    opacity: 0.9,
+                    side: THREE.DoubleSide
+                })
+            );
+            glass.position.z = 0.094;
+            crtGroup.add(glass);
+
+            const stand = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.11, 0.06, 14), bodyMat);
+            stand.position.set(0, -0.21, -0.04);
+            crtGroup.add(stand);
+
+            const base = new THREE.Mesh(new THREE.BoxGeometry(0.19, 0.03, 0.11), bodyMat);
+            base.position.set(0, -0.25, -0.02);
+            crtGroup.add(base);
+
+            crtGroup.traverse((object) => {
+                if (!object.isMesh) return;
+                object.castShadow = true;
+                object.receiveShadow = true;
+            });
+
+            crtAnchor.add(crtGroup);
+        }
+
+        updateTransform() {
+            this.syncBasis();
+            if (!this.model) return;
+
+            const basisQuat = new THREE.Quaternion().setFromRotationMatrix(this.basisMatrix);
+            const localQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), this.facingYaw);
+            this.playerGroup.position.copy(this.playerPosition).addScaledVector(this.up, 0.01);
+            this.playerGroup.quaternion.copy(basisQuat).multiply(localQuat);
+
+            if (this.avatarHeadBone && this.avatarHeadAnchor) {
+                this.avatarHeadBone.updateWorldMatrix(true, false);
+                const headWorldPos = new THREE.Vector3();
+                const headWorldQuat = new THREE.Quaternion();
+                const headWorldScale = new THREE.Vector3();
+                this.avatarHeadBone.matrixWorld.decompose(headWorldPos, headWorldQuat, headWorldScale);
+
+                const inverseRoot = this.playerGroup.matrixWorld.clone().invert();
+                this.avatarHeadAnchor.position.copy(headWorldPos.applyMatrix4(inverseRoot));
+
+                const rootWorldQuat = new THREE.Quaternion();
+                this.playerGroup.getWorldQuaternion(rootWorldQuat);
+                this.avatarHeadAnchor.quaternion.copy(rootWorldQuat.invert().multiply(headWorldQuat));
+            }
+        }
+
+        update(delta) {
+            if (this.mixer) {
+                this.mixer.update(delta);
+            }
+
+            if (!this.model) return;
+
+            if (this.pauseTimer > 0) {
+                this.pauseTimer = Math.max(0, this.pauseTimer - delta);
+                if (this.pauseTimer === 0) {
+                    this.chooseDestination();
+                }
+                this.setAction(this.idleAction || this.walkAction);
+                this.updateTransform();
+                return;
+            }
+
+            if (!this.hasDestination) {
+                this.chooseDestination();
+            }
+
+            const dx = this.destinationX - this.surfaceX;
+            const dz = this.shortestArcDelta(this.surfaceArc, this.destinationArc);
+            const distance = Math.hypot(dx, dz);
+
+            if (distance < 0.16) {
+                this.hasDestination = false;
+                this.pauseTimer = THREE.MathUtils.randFloat(0.7, 2.1);
+                this.setAction(this.idleAction || this.walkAction);
+                this.updateTransform();
+                return;
+            }
+
+            const step = Math.min(distance, this.walkSpeed * delta);
+            const moveX = dx / distance;
+            const moveZ = dz / distance;
+            this.facingYaw = Math.atan2(moveX, moveZ);
+            this.surfaceX += moveX * step;
+            this.surfaceArc += moveZ * step;
+            this.clampX();
+            this.wrapArc();
+            this.setAction(this.walkAction || this.idleAction);
+            this.updateTransform();
+        }
+    }
+
     class InteractionSystem {
         constructor(camera, controls, screenMesh, css3dScreen) {
             this.camera = camera;
@@ -2244,6 +2587,7 @@
 
             this.world = new OneillWorld(scene);
             this.controls = new ThirdPersonCylinderControls(camera, renderer.domElement, this.world);
+            this.npc = new WanderingNPC(scene, this.world);
             this.css3dScreen = new CSS3DScreen(scene, camera, this.world.starterScreenMesh);
             this.interaction = new InteractionSystem(camera, this.controls, this.world.starterScreenMesh, this.css3dScreen);
             this.controls.onAvatarScreenReady = (screenMesh) => {
@@ -2304,6 +2648,7 @@
             requestAnimationFrame(() => this.animate());
             const delta = Math.min(this.clock.getDelta(), 0.05);
             this.controls.update(delta);
+            this.npc.update(delta);
             renderer.render(scene, camera);
             this.css3dScreen.update();
         }
