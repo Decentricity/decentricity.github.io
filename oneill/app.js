@@ -1610,6 +1610,7 @@
             this.jumpOffset = 0;
             this.jumpVelocity = 0;
             this.jumpBlend = 0;
+            this.jumpPoseTime = 0.18;
             this.loadAvatar();
 
             document.body.classList.toggle('touch-device', this.isTouchDevice);
@@ -1643,10 +1644,13 @@
                     this.runAction = this.mixer.clipAction(THREE.AnimationClip.findByName(gltf.animations, 'run'));
                     const sneakClip = THREE.AnimationClip.findByName(gltf.animations, 'sneak_pose');
                     if (sneakClip) {
-                        const additiveClip = sneakClip.clone();
+                        let additiveClip = sneakClip.clone();
                         THREE.AnimationUtils.makeClipAdditive(additiveClip);
+                        additiveClip = THREE.AnimationUtils.subclip(additiveClip, 'sneak_pose_jump', 2, 3, 30);
                         this.jumpPoseAction = this.mixer.clipAction(additiveClip);
                         this.jumpPoseAction.play();
+                        this.jumpPoseAction.paused = true;
+                        this.jumpPoseAction.time = 0;
                         this.jumpPoseAction.setEffectiveWeight(0);
                     }
                     this.setAction(this.idleAction);
@@ -1760,9 +1764,11 @@
         setAction(nextAction) {
             if (!nextAction || this.currentAction === nextAction) return;
             if (this.currentAction) {
+                this.currentAction.paused = false;
                 this.currentAction.fadeOut(0.2);
             }
             nextAction.reset().fadeIn(0.2).play();
+            nextAction.paused = false;
             this.currentAction = nextAction;
         }
 
@@ -1981,7 +1987,7 @@
                     break;
                 case 'Space':
                     if (pressed && !this.isJumping()) {
-                        this.jumpVelocity = this.jumpSpeed;
+                        this.beginJump();
                         event.preventDefault();
                     }
                     return;
@@ -2013,6 +2019,32 @@
 
         isJumping() {
             return this.jumpOffset > 0.0001 || this.jumpVelocity > 0.0001;
+        }
+
+        beginJump() {
+            this.jumpVelocity = this.jumpSpeed;
+            this.jumpBlend = 1;
+            if (this.currentAction) {
+                this.currentAction.paused = true;
+            }
+            if (this.jumpPoseAction) {
+                this.jumpPoseAction.paused = true;
+                this.jumpPoseAction.enabled = true;
+                this.jumpPoseAction.time = 0;
+                this.jumpPoseAction.setEffectiveWeight(1);
+            }
+        }
+
+        endJump() {
+            this.jumpOffset = 0;
+            this.jumpVelocity = 0;
+            this.jumpBlend = 0;
+            if (this.currentAction) {
+                this.currentAction.paused = false;
+            }
+            if (this.jumpPoseAction) {
+                this.jumpPoseAction.setEffectiveWeight(0);
+            }
         }
 
         updateModelTransform() {
@@ -2145,7 +2177,7 @@
                 this.jumpVelocity -= this.jumpGravity * delta;
                 this.jumpOffset = Math.max(0, this.jumpOffset + this.jumpVelocity * delta);
                 if (this.jumpOffset === 0 && this.jumpVelocity < 0) {
-                    this.jumpVelocity = 0;
+                    this.endJump();
                 }
             }
 
@@ -2159,7 +2191,7 @@
             this.updateModelTransform();
             this.updateCamera();
 
-            if (this.idleAction && this.walkAction) {
+            if (this.idleAction && this.walkAction && !this.isJumping()) {
                 if (moving && isRunning && this.runAction) {
                     this.setAction(this.runAction);
                 } else if (moving) {
