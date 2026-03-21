@@ -1592,15 +1592,34 @@
 
         attachAvatarCRT() {
             if (!this.model) return;
+            let headAnchor = null;
+            this.model.traverse((object) => {
+                if (headAnchor) return;
+                if ((object.isBone || object.isObject3D) && /head/i.test(object.name || '')) {
+                    headAnchor = object;
+                }
+            });
+
             const crtAnchor = new THREE.Group();
             crtAnchor.name = 'avatarCRTAnchor';
-            crtAnchor.position.set(0, 1.58, 0.02);
-            this.playerGroup.add(crtAnchor);
+            if (headAnchor) {
+                headAnchor.add(crtAnchor);
+                this.model.traverse((object) => {
+                    if (!object.isMesh && !object.isSkinnedMesh) return;
+                    const name = (object.name || '').toLowerCase();
+                    if (name.includes('head') || name.includes('face')) {
+                        object.visible = false;
+                    }
+                });
+            } else {
+                this.playerGroup.add(crtAnchor);
+                crtAnchor.position.set(0, 1.62, 0.02);
+            }
             this.avatarHeadAnchor = crtAnchor;
 
             const crtGroup = new THREE.Group();
             crtGroup.name = 'avatarCRT';
-            crtGroup.position.set(0, 0.02, 0.06);
+            crtGroup.position.set(0, 0.09, 0.05);
 
             const bodyMat = new THREE.MeshStandardMaterial({ color: 0xd4c5a9, roughness: 0.6, metalness: 0.1 });
             const body = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.34, 0.38), bodyMat);
