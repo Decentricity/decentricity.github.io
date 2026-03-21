@@ -15,11 +15,11 @@
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.outputEncoding = THREE.sRGBEncoding;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 0.6;
+    renderer.toneMappingExposure = 0.48;
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x02030a);
-    scene.fog = new THREE.Fog(0xc8d5dc, 9000, 22000);
+    scene.fog = new THREE.Fog(0x121923, 6500, 18000);
 
     const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 7000);
 
@@ -738,17 +738,17 @@
                 this.scene.add(band);
             });
 
-            const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+            const ambient = new THREE.AmbientLight(0xcbd6e2, 0.22);
             this.scene.add(ambient);
-            const hemi = new THREE.HemisphereLight(0xe6f1f7, 0x2c3138, 0.22);
+            const hemi = new THREE.HemisphereLight(0x556678, 0x14181f, 0.1);
             this.scene.add(hemi);
-            const fillA = new THREE.PointLight(0xf7fbff, 0.42, 1600, 2);
+            const fillA = new THREE.PointLight(0xbfd4e6, 0.2, 1600, 2);
             fillA.position.set(0, 0, 0);
             this.scene.add(fillA);
-            const fillB = new THREE.PointLight(0xfff3e2, 0.11, 1400, 2);
+            const fillB = new THREE.PointLight(0xffe0b8, 0.05, 1400, 2);
             fillB.position.set(-70, 20, 40);
             this.scene.add(fillB);
-            const fillC = new THREE.PointLight(0xe6f6ff, 0.1, 1400, 2);
+            const fillC = new THREE.PointLight(0xc3dfff, 0.04, 1400, 2);
             fillC.position.set(80, -20, -40);
             this.scene.add(fillC);
         }
@@ -2096,10 +2096,7 @@
                 }
             }
 
-            const jumpTargetBlend = this.isJumping()
-                ? THREE.MathUtils.clamp(this.jumpOffset / this.jumpPeakHeight, 0, 1)
-                : 0;
-            this.jumpBlend = THREE.MathUtils.lerp(this.jumpBlend, jumpTargetBlend, Math.min(1, delta * 10));
+            this.jumpBlend = this.isJumping() ? 1 : 0;
             if (this.jumpPoseAction) {
                 this.jumpPoseAction.setEffectiveWeight(this.jumpBlend);
             }
