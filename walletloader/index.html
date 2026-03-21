@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Wallet Loader</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <p class="eyebrow">Ethereum Wallet Loader</p>
+        <h1>Load coins, tokens, and NFTs from a wallet address.</h1>
+        <p class="lede">Paste an Ethereum address to enumerate fungible assets and NFTs, including image previews and direct links to embedded NFT media when available.</p>
+
+        <form id="walletForm" class="wallet-form">
+          <label class="sr-only" for="addressInput">Ethereum address</label>
+          <input id="addressInput" name="address" type="text" placeholder="0x..." autocomplete="off" spellcheck="false">
+          <button type="submit">Load Wallet</button>
+        </form>
+
+        <p id="status" class="status">Enter an Ethereum address to begin.</p>
+      </section>
+
+      <section class="summary" id="summary" hidden></section>
+
+      <section class="results-grid">
+        <section class="panel">
+          <div class="panel__header">
+            <h2>Coins And Tokens</h2>
+            <span id="fungibleCount" class="count-pill">0</span>
+          </div>
+          <div id="fungibleResults" class="card-list empty-state">
+            <p>No fungible assets loaded yet.</p>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel__header">
+            <h2>NFTs</h2>
+            <span id="nftCount" class="count-pill">0</span>
+          </div>
+          <div id="nftResults" class="card-list empty-state">
+            <p>No NFTs loaded yet.</p>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.5/dist/ethers.umd.min.js"></script>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
