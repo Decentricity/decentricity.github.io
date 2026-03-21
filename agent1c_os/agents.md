@@ -6,6 +6,7 @@ Scope:
 
 Important:
 - This document is based on code behavior, not README claims.
+- Default delivery rule for agents working in this repo: if you make changes, commit and push them unless the user explicitly says not to push.
 
 ---
 
