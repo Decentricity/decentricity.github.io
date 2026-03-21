@@ -855,6 +855,7 @@
             const house = new THREE.Group();
             house.name = 'starterHouse';
             this.placeOnCylinder(house, cfg.x, cfg.theta, cfg.yaw);
+            house.translateY(0.2);
             this.scene.add(house);
 
             const floorY = -0.2;
@@ -1591,46 +1592,35 @@
 
         attachAvatarCRT() {
             if (!this.model) return;
-
-            let headAnchor = null;
-            this.model.traverse((object) => {
-                if (headAnchor) return;
-                if ((object.isBone || object.isObject3D) && /head/i.test(object.name || '')) {
-                    headAnchor = object;
-                }
-            });
-
-            if (!headAnchor) {
-                headAnchor = new THREE.Group();
-                headAnchor.position.set(0, 1.58, 0);
-                this.playerGroup.add(headAnchor);
-            }
-
-            this.avatarHeadAnchor = headAnchor;
+            const crtAnchor = new THREE.Group();
+            crtAnchor.name = 'avatarCRTAnchor';
+            crtAnchor.position.set(0, 1.58, 0.02);
+            this.playerGroup.add(crtAnchor);
+            this.avatarHeadAnchor = crtAnchor;
 
             const crtGroup = new THREE.Group();
             crtGroup.name = 'avatarCRT';
-            crtGroup.position.set(0, 0.04, 0.02);
+            crtGroup.position.set(0, 0.02, 0.06);
 
             const bodyMat = new THREE.MeshStandardMaterial({ color: 0xd4c5a9, roughness: 0.6, metalness: 0.1 });
-            const body = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.24, 0.28), bodyMat);
-            body.position.z = -0.1;
+            const body = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.34, 0.38), bodyMat);
+            body.position.z = -0.12;
             body.castShadow = true;
             body.receiveShadow = true;
             crtGroup.add(body);
 
-            const bezel = new THREE.Mesh(new THREE.BoxGeometry(0.295, 0.255, 0.03), bodyMat);
-            bezel.position.z = 0.04;
+            const bezel = new THREE.Mesh(new THREE.BoxGeometry(0.445, 0.355, 0.04), bodyMat);
+            bezel.position.z = 0.07;
             bezel.castShadow = true;
             bezel.receiveShadow = true;
             crtGroup.add(bezel);
 
-            const screenGeo = new THREE.PlaneGeometry(0.235, 0.18, 8, 8);
+            const screenGeo = new THREE.PlaneGeometry(0.36, 0.27, 10, 10);
             const positions = screenGeo.attributes.position;
             for (let i = 0; i < positions.count; i++) {
                 const x = positions.getX(i);
                 const y = positions.getY(i);
-                positions.setZ(i, -0.014 * (x * x + y * y));
+                positions.setZ(i, -0.02 * (x * x + y * y));
             }
             positions.needsUpdate = true;
             screenGeo.computeVertexNormals();
@@ -1640,12 +1630,12 @@
                 new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.DoubleSide })
             );
             this.avatarScreenMesh.name = 'avatarCRTScreen';
-            this.avatarScreenMesh.position.z = 0.056;
+            this.avatarScreenMesh.position.z = 0.092;
             this.avatarScreenMesh.userData.ignoreCameraOcclusion = true;
             crtGroup.add(this.avatarScreenMesh);
 
             const glass = new THREE.Mesh(
-                new THREE.PlaneGeometry(0.235, 0.18),
+                new THREE.PlaneGeometry(0.36, 0.27),
                 new THREE.MeshPhysicalMaterial({
                     color: 0xffffff,
                     metalness: 0.1,
@@ -1659,19 +1649,19 @@
                     side: THREE.DoubleSide
                 })
             );
-            glass.position.z = 0.058;
+            glass.position.z = 0.094;
             glass.userData.ignoreScreenOcclusion = true;
             glass.userData.ignoreCameraOcclusion = true;
             crtGroup.add(glass);
 
-            const stand = new THREE.Mesh(new THREE.CylinderGeometry(0.048, 0.07, 0.05, 14), bodyMat);
-            stand.position.set(0, -0.14, -0.04);
+            const stand = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.11, 0.06, 14), bodyMat);
+            stand.position.set(0, -0.21, -0.04);
             stand.castShadow = true;
             stand.receiveShadow = true;
             crtGroup.add(stand);
 
-            const base = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.028, 0.08), bodyMat);
-            base.position.set(0, -0.175, -0.03);
+            const base = new THREE.Mesh(new THREE.BoxGeometry(0.19, 0.03, 0.11), bodyMat);
+            base.position.set(0, -0.25, -0.02);
             base.castShadow = true;
             base.receiveShadow = true;
             crtGroup.add(base);
@@ -1683,7 +1673,7 @@
                 object.userData.ignoreCameraOcclusion = true;
             });
 
-            headAnchor.add(crtGroup);
+            crtAnchor.add(crtGroup);
         }
 
         setAction(nextAction) {
