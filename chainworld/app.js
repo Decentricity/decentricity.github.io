@@ -2170,7 +2170,8 @@ import { loadWalletData } from '../walletloader/app.js';
             this.jumpBlend = 0;
             this.jumpPoseTime = 0.18;
             this.attackTimer = 0;
-            this.attackDuration = 0.72;
+            this.attackPlaybackRate = 2;
+            this.attackDuration = 0.36;
             this.loadAvatar();
 
             document.body.classList.toggle('touch-device', this.isTouchDevice);
@@ -2219,7 +2220,8 @@ import { loadWalletData } from '../walletloader/app.js';
                         this.attackAction = this.mixer.clipAction(attackClip);
                         this.attackAction.setLoop(THREE.LoopOnce, 1);
                         this.attackAction.clampWhenFinished = true;
-                        this.attackDuration = Math.max(0.35, attackClip.duration || this.attackDuration);
+                        this.attackAction.timeScale = this.attackPlaybackRate;
+                        this.attackDuration = Math.max(0.18, (attackClip.duration || this.attackDuration) / this.attackPlaybackRate);
                     }
                     const sneakClip = THREE.AnimationClip.findByName(gltf.animations, 'sneak_pose');
                     if (sneakClip) {
@@ -2364,6 +2366,7 @@ import { loadWalletData } from '../walletloader/app.js';
             this.attackTimer = this.attackDuration;
             this.attackAction.enabled = true;
             this.attackAction.paused = false;
+            this.attackAction.timeScale = this.attackPlaybackRate;
             this.attackAction.reset();
             this.attackAction.fadeIn(0.05).play();
             this.currentAction = this.attackAction;
@@ -2875,6 +2878,9 @@ import { loadWalletData } from '../walletloader/app.js';
             this.playerGroup = new THREE.Group();
             this.playerGroup.name = 'npcAvatarRoot';
             this.scene.add(this.playerGroup);
+            this.visualRoot = new THREE.Group();
+            this.visualRoot.name = 'npcVisualRoot';
+            this.playerGroup.add(this.visualRoot);
             this.model = null;
             this.avatarHeadBone = null;
             this.avatarHeadAnchor = null;
@@ -2886,6 +2892,11 @@ import { loadWalletData } from '../walletloader/app.js';
             this.walkAction = null;
             this.currentAction = null;
             this.isDestroyed = false;
+            this.isFallen = false;
+            this.fallProgress = 0;
+            this.fallDuration = 0.34;
+            this.fallAxis = new THREE.Vector3(1, 0, 0);
+            this.fallTargetAngle = Math.PI * 0.5;
             this.readyPromise = new Promise((resolve) => {
                 this.resolveReady = resolve;
             });
@@ -2969,7 +2980,7 @@ import { loadWalletData } from '../walletloader/app.js';
                         ? THREE.SkeletonUtils.clone(gltf.scene)
                         : gltf.scene.clone(true);
                     this.model.name = 'npcAvatar';
-                    this.playerGroup.add(this.model);
+                    this.visualRoot.add(this.model);
                     this.model.traverse((object) => {
                         if (!object.isMesh) return;
                         this.applyNpcAvatarMaterial(object);
@@ -3014,7 +3025,7 @@ import { loadWalletData } from '../walletloader/app.js';
             const crtAnchor = new THREE.Group();
             crtAnchor.name = 'npcCRTAnchor';
             crtAnchor.position.set(0, 1.62, 0.02);
-            this.playerGroup.add(crtAnchor);
+            this.visualRoot.add(crtAnchor);
             this.avatarHeadAnchor = crtAnchor;
 
             const crtGroup = new THREE.Group();
@@ -3179,21 +3190,26 @@ import { loadWalletData } from '../walletloader/app.js';
             this.resolveReady = null;
         }
 
-        pushAway(deltaX, deltaArc) {
-            const next = this.world.moveOnSurface(
-                this.surfaceX,
-                this.surfaceArc,
-                deltaX,
-                deltaArc,
-                this.coreRadius
-            );
-            this.surfaceX = next.x;
-            this.surfaceArc = next.arc;
-            this.clampX();
-            this.wrapArc();
-            this.facingYaw = Math.atan2(deltaX, deltaArc);
+        knockDown(awayX, awayArc) {
+            if (this.isFallen) return;
+            const length = Math.hypot(awayX, awayArc) || 1;
+            const worldX = awayX / length;
+            const worldZ = awayArc / length;
+            const sinYaw = Math.sin(this.facingYaw);
+            const cosYaw = Math.cos(this.facingYaw);
+            const localX = (worldX * cosYaw) - (worldZ * sinYaw);
+            const localZ = (worldX * sinYaw) + (worldZ * cosYaw);
+
+            this.fallAxis.set(localZ, 0, -localX).normalize();
+            if (this.fallAxis.lengthSq() < 0.0001) {
+                this.fallAxis.set(1, 0, 0);
+            }
+            this.isFallen = true;
+            this.fallProgress = 0;
             this.hasDestination = false;
-            this.pauseTimer = this.randomPauseDuration();
+            this.pauseTimer = Number.POSITIVE_INFINITY;
+            this.mixer?.stopAllAction();
+            this.currentAction = null;
             this.updateTransform();
         }
 
@@ -3205,6 +3221,14 @@ import { loadWalletData } from '../walletloader/app.js';
             const localQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), this.facingYaw);
             this.playerGroup.position.copy(this.playerPosition).addScaledVector(this.up, 0.01);
             this.playerGroup.quaternion.copy(basisQuat).multiply(localQuat);
+            if (this.visualRoot) {
+                if (this.isFallen) {
+                    const eased = 1 - Math.pow(1 - this.fallProgress, 3);
+                    this.visualRoot.quaternion.setFromAxisAngle(this.fallAxis, this.fallTargetAngle * eased);
+                } else {
+                    this.visualRoot.quaternion.identity();
+                }
+            }
 
             if (this.avatarHeadBone && this.avatarHeadAnchor) {
                 this.avatarHeadBone.updateWorldMatrix(true, false);
@@ -3224,6 +3248,11 @@ import { loadWalletData } from '../walletloader/app.js';
 
         update(delta) {
             if (this.isDestroyed) return;
+            if (this.isFallen) {
+                this.fallProgress = Math.min(1, this.fallProgress + (delta / this.fallDuration));
+                this.updateTransform();
+                return;
+            }
             if (this.mixer) {
                 this.mixer.update(delta);
             }
@@ -3524,7 +3553,7 @@ import { loadWalletData } from '../walletloader/app.js';
         bindEvents() {
             window.addEventListener('resize', () => this.onResize());
             renderer.domElement.addEventListener('click', (event) => this.handleWorldClick(event));
-            renderer.domElement.addEventListener('mousedown', (event) => this.handleAttackMouseDown(event));
+            renderer.domElement.addEventListener('click', (event) => this.handleAttackClick(event));
             renderer.domElement.addEventListener('contextmenu', (event) => this.handleGroundContextMenu(event));
             this.fileInput?.addEventListener('change', (event) => this.handleAssetUpload(event));
             this.walletForm?.addEventListener('submit', (event) => this.handleWalletSubmit(event));
@@ -3565,25 +3594,21 @@ import { loadWalletData } from '../walletloader/app.js';
             this.controls.lock();
         }
 
-        handleAttackMouseDown(event) {
-            if (event.button !== 0) return;
+        handleAttackClick(event) {
             if (this.interaction.isOverScreen) return;
             if (!this.controls.isLocked) return;
             if (!this.controls.triggerAttack()) return;
-            this.pushNpcInFrontOfPlayer();
+            this.attackNpcsInFrontOfPlayer();
             event.preventDefault();
         }
 
         getAttackableNpcs() {
-            return [this.npc, ...this.walletNpcs].filter((npc) => npc && !npc.isDestroyed);
+            return [this.npc, ...this.walletNpcs].filter((npc) => npc && !npc.isDestroyed && !npc.isFallen);
         }
 
-        pushNpcInFrontOfPlayer() {
+        attackNpcsInFrontOfPlayer() {
             const attackDir = this.controls.getAttackSurfaceDirection();
-            const attackRange = 2.4;
-            const attackCone = 0.55;
-            let targetNpc = null;
-            let bestScore = -Infinity;
+            const attackRange = 2;
 
             this.getAttackableNpcs().forEach((npc) => {
                 const dx = npc.surfaceX - this.controls.surfaceX;
@@ -3592,19 +3617,10 @@ import { loadWalletData } from '../walletloader/app.js';
                 if (distance <= 0.001 || distance > attackRange) return;
 
                 const align = ((dx / distance) * attackDir.x) + ((dz / distance) * attackDir.y);
-                if (align < attackCone) return;
+                if (align < 0) return;
 
-                const score = (align * 10) - distance;
-                if (score > bestScore) {
-                    bestScore = score;
-                    targetNpc = npc;
-                }
+                npc.knockDown(dx, dz);
             });
-
-            if (!targetNpc) return;
-
-            const pushDistance = 1.85;
-            targetNpc.pushAway(attackDir.x * pushDistance, attackDir.y * pushDistance);
         }
 
         handleGroundContextMenu(event) {
