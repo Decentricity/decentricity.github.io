@@ -17,6 +17,11 @@
     <div id="hud">
         <div id="title">O'Neill Suburb</div>
         <div id="hint">Click to walk, move the mouse to look, WASD to move, ESC to free the cursor.</div>
+        <form id="wallet-form" class="wallet-form-overlay">
+            <input id="wallet-address-input" type="text" placeholder="0x... load NFT cubes" autocomplete="off" spellcheck="false">
+            <button type="submit">Load NFTs</button>
+        </form>
+        <div id="wallet-status" class="wallet-status">Enter an Ethereum address to place NFT cubes near the spawn point.</div>
     </div>
     <div id="toast-container"></div>
     <div id="mobile-controls" aria-hidden="true">
@@ -31,6 +36,7 @@
     <input type="file" id="world-object-input" accept=".glb,.gltf,.obj,.fbx,.stl,.ply,.vox" hidden>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.5/dist/ethers.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/renderers/CSS3DRenderer.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
@@ -38,6 +44,6 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/PLYLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/VOXLoader.js"></script>
-    <script src="app.js"></script>
+    <script type="module" src="app.js"></script>
 </body>
 </html>

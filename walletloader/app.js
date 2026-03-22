@@ -21,6 +21,9 @@ const RENDER_BATCH_SIZE = 100;
 let activeRequest = 0;
 
 function setStatus(message, isError = false) {
+  if (!statusNode) {
+    return;
+  }
   statusNode.textContent = message;
   statusNode.style.color = isError ? "#9a2d12" : "";
 }
@@ -57,6 +60,9 @@ function truncate(text, length = 180) {
 }
 
 function clearNode(node) {
+  if (!node) {
+    return;
+  }
   node.innerHTML = "";
   node.classList.remove("empty-state");
 }
@@ -161,6 +167,9 @@ function normalizeLegacyCollectible(token, ownerAddress) {
 }
 
 function renderFungibles(assets) {
+  if (!fungibleCountNode || !fungibleNode) {
+    return;
+  }
   fungibleCountNode.textContent = String(assets.length);
   clearNode(fungibleNode);
 
@@ -218,6 +227,9 @@ function renderFungibles(assets) {
 }
 
 function renderNfts(nfts) {
+  if (!nftCountNode || !nftNode) {
+    return;
+  }
   nftCountNode.textContent = String(nfts.length);
   clearNode(nftNode);
 
@@ -443,6 +455,9 @@ async function fetchNfts(address) {
 }
 
 function renderSummary(address, fungibles, nfts) {
+  if (!summaryNode) {
+    return;
+  }
   const nftMediaCount = nfts.filter((item) => item.mediaUrl).length;
   summaryNode.hidden = false;
   summaryNode.innerHTML = "";
@@ -455,6 +470,9 @@ function renderSummary(address, fungibles, nfts) {
 }
 
 function resetResults() {
+  if (!summaryNode || !fungibleNode || !nftNode || !fungibleCountNode || !nftCountNode) {
+    return;
+  }
   summaryNode.hidden = true;
   summaryNode.innerHTML = "";
   fungibleNode.classList.add("empty-state");
@@ -517,13 +535,44 @@ async function loadWallet(rawAddress) {
   }
 }
 
-walletForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-  loadWallet(addressInput.value);
-});
+export async function loadWalletData(rawAddress) {
+  let address;
+  try {
+    address = ethers.getAddress(rawAddress.trim());
+  } catch {
+    throw new Error("That is not a valid Ethereum address.");
+  }
 
-const presetAddress = new URL(window.location.href).searchParams.get("address");
-if (presetAddress) {
-  addressInput.value = presetAddress;
-  loadWallet(presetAddress);
+  const [fungibleResult, fetchedNfts] = await Promise.all([
+    fetchFungibles(address),
+    fetchNfts(address)
+  ]);
+
+  const fungibles = fungibleResult.fungibles;
+  const indexedContracts = new Set(
+    fetchedNfts
+      .map((item) => item.contractAddress?.toLowerCase())
+      .filter(Boolean)
+  );
+  const legacyCollectibles = fungibleResult.legacyCollectibles.filter(
+    (item) => !indexedContracts.has(item.contractAddress?.toLowerCase())
+  );
+  const nfts = [...fetchedNfts, ...legacyCollectibles];
+
+  return { address, fungibles, nfts };
+}
+
+export { fetchFungibles, fetchNfts, normalizeNft };
+
+if (walletForm && addressInput) {
+  walletForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    loadWallet(addressInput.value);
+  });
+
+  const presetAddress = new URL(window.location.href).searchParams.get("address");
+  if (presetAddress) {
+    addressInput.value = presetAddress;
+    loadWallet(presetAddress);
+  }
 }

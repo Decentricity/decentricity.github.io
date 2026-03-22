@@ -1,3 +1,5 @@
+import { loadWalletData } from '../walletloader/app.js';
+
 (() => {
     const clampDPR = (dpr) => Math.min(dpr, 2);
     const DEFAULT_HOME_URL = 'https://agent1c-ai.github.io';
@@ -5,6 +7,9 @@
 
     const canvas = document.getElementById('webgl');
     const hint = document.getElementById('hint');
+    const walletForm = document.getElementById('wallet-form');
+    const walletAddressInput = document.getElementById('wallet-address-input');
+    const walletStatus = document.getElementById('wallet-status');
 
     const renderer = new THREE.WebGLRenderer({
         canvas,
@@ -31,9 +36,66 @@
         }
     };
 
+    const textureLoader = new THREE.TextureLoader();
+    textureLoader.setCrossOrigin('anonymous');
+
     const makeMaterial = (color, roughness = 0.9, metalness = 0.02, extra = {}) => (
         new THREE.MeshStandardMaterial({ color, roughness, metalness, ...extra })
     );
+
+    const makeRepeatedMaterials = (material) => Array.from({ length: 6 }, () => material);
+
+    const createBlankCubeMaterial = () => makeMaterial(0xe8edf2, 0.88, 0.02, {
+        emissive: 0x101820,
+        emissiveIntensity: 0.05
+    });
+
+    const createTexturedCubeMaterial = (texture) => new THREE.MeshStandardMaterial({
+        map: texture,
+        roughness: 0.78,
+        metalness: 0.04
+    });
+
+    const loadTexture = (url) => new Promise((resolve, reject) => {
+        textureLoader.load(
+            url,
+            (texture) => {
+                setTextureEncoding(texture);
+                texture.anisotropy = 8;
+                resolve(texture);
+            },
+            undefined,
+            reject
+        );
+    });
+
+    const sanitizeNodeText = (value, fallback = '') => {
+        const text = String(value || '').trim();
+        return text || fallback;
+    };
+
+    const setWalletStatus = (message, isError = false) => {
+        if (!walletStatus) return;
+        walletStatus.textContent = message;
+        walletStatus.classList.toggle('error', Boolean(isError));
+    };
+
+    const shortWalletAddress = (address) => (
+        address && address.length > 10
+            ? `${address.slice(0, 6)}...${address.slice(-4)}`
+            : address
+    );
+
+    const getNftTextureCandidates = (nft) => {
+        const urls = [];
+        if (nft.previewType === 'image' && nft.previewUrl) {
+            urls.push(nft.previewUrl);
+        }
+        if (nft.imageUrl) {
+            urls.push(nft.imageUrl);
+        }
+        return [...new Set(urls.filter(Boolean))];
+    };
 
     const createCurvedCRTScreenGeometry = () => {
         const screenGeo = new THREE.PlaneGeometry(0.36, 0.27, 10, 10);
@@ -433,6 +495,11 @@
             this.starterScreenMesh = null;
             this.groundPickTargets = [];
             this.collisionDiscs = [];
+            this.nftDisplayRoot = new THREE.Group();
+            this.nftDisplayRoot.name = 'nftDisplayRoot';
+            this.nftCollisionEntries = [];
+            this.nftCubeSize = 2.25;
+            this.nftCubeRadius = 1.55;
             this.textures = {
                 grass: TextureLibrary.grass(120, 60),
                 grassFine: TextureLibrary.grass(14, 14),
@@ -443,6 +510,7 @@
                 tile: TextureLibrary.tile(10, 10)
             };
 
+            this.scene.add(this.nftDisplayRoot);
             this.buildHabitat();
             this.buildNeighborhood();
 
@@ -509,7 +577,9 @@
         }
 
         registerCollisionDiscArc(x, arc, radius) {
-            this.collisionDiscs.push({ x, arc, radius });
+            const disc = { x, arc, radius };
+            this.collisionDiscs.push(disc);
+            return disc;
         }
 
         registerCollisionDisc(x, theta, radius) {
@@ -606,6 +676,112 @@
             const radius = Math.max(0.55, Math.min(6.5, Math.max(localSize.x, localSize.z) * 0.45));
             this.registerCollisionDisc(placement.x, placement.theta, radius);
             return wrapper;
+        }
+
+        clearNftDisplays() {
+            this.nftDisplayRoot.traverse((child) => {
+                if (child.geometry) {
+                    child.geometry.dispose?.();
+                }
+                const materials = Array.isArray(child.material) ? child.material : [child.material];
+                [...new Set(materials.filter(Boolean))].forEach((material) => {
+                    material.map?.dispose?.();
+                    material.dispose?.();
+                });
+            });
+            this.nftDisplayRoot.clear();
+            if (this.nftCollisionEntries.length) {
+                const reserved = new Set(this.nftCollisionEntries);
+                this.collisionDiscs = this.collisionDiscs.filter((entry) => !reserved.has(entry));
+                this.nftCollisionEntries = [];
+            }
+        }
+
+        buildNftPlacementQueue(count, seedText = '') {
+            const totalNeeded = Math.max(count * 6, count + 24);
+            const baseSeed = Array.from(String(seedText)).reduce(
+                (acc, char, index) => (Math.imul(acc ^ char.charCodeAt(0), 16777619) + index) >>> 0,
+                2166136261
+            );
+            const cells = [];
+            const maxRing = Math.max(5, Math.ceil(Math.sqrt(count)) + 6);
+
+            for (let ring = 1; ring <= maxRing && cells.length < totalNeeded; ring++) {
+                const ringCells = [];
+                for (let gx = -ring; gx <= ring; gx++) {
+                    for (let gy = -ring; gy <= ring; gy++) {
+                        if (Math.max(Math.abs(gx), Math.abs(gy)) !== ring) continue;
+                        if (Math.abs(gx) <= 1 && Math.abs(gy) <= 1) continue;
+                        const weight = this.rand01(baseSeed + gx * 97 + gy * 193, ring + 7);
+                        ringCells.push({ gx, gy, ring, weight });
+                    }
+                }
+                ringCells.sort((a, b) => a.weight - b.weight);
+                cells.push(...ringCells);
+            }
+
+            return cells;
+        }
+
+        reserveNftPlacements(count, seedText = '') {
+            const placements = [];
+            const queue = this.buildNftPlacementQueue(count, seedText);
+            const cellSize = 3.8;
+            const centerArc = this.spawn.theta * this.radius;
+
+            for (let index = 0; index < queue.length && placements.length < count; index++) {
+                const cell = queue[index];
+                const jitterX = (this.rand01(index + count, 13) - 0.5) * 0.55;
+                const jitterArc = (this.rand01(index + count, 29) - 0.5) * 0.55;
+                const candidateX = this.spawn.x + cell.gx * cellSize + jitterX;
+                const candidateArc = centerArc + cell.gy * cellSize + jitterArc;
+                const resolved = this.resolveSurfaceCollisions(candidateX, candidateArc, this.nftCubeRadius, 0.16);
+                const theta = resolved.arc / this.radius;
+                const yaw = this.rand01(index + count, 41) * TAU;
+                const collision = this.registerCollisionDiscArc(resolved.x, resolved.arc, this.nftCubeRadius);
+                this.nftCollisionEntries.push(collision);
+                placements.push({ x: resolved.x, theta, yaw });
+            }
+
+            return placements;
+        }
+
+        createNftCubeDisplay(nft, placement, index) {
+            const wrapper = new THREE.Group();
+            wrapper.name = `nft_cube_${index}`;
+            wrapper.userData.nft = nft;
+
+            const cube = new THREE.Mesh(
+                new THREE.BoxGeometry(this.nftCubeSize, this.nftCubeSize, this.nftCubeSize),
+                makeRepeatedMaterials(createBlankCubeMaterial())
+            );
+            cube.name = 'nftCube';
+            cube.position.y = this.nftCubeSize * 0.5;
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+            wrapper.add(cube);
+
+            const title = sanitizeNodeText(nft.name, sanitizeNodeText(nft.collection, 'Untitled NFT'));
+            const plaque = new THREE.Sprite(
+                new THREE.SpriteMaterial({
+                    map: createCRTTextTexture(title.length > 18 ? `${title.slice(0, 18)}...` : title, {
+                        width: 384,
+                        height: 128,
+                        background: '#0d1a29',
+                        glow: '#1e354c',
+                        foreground: '#edf4ff'
+                    }),
+                    transparent: true
+                })
+            );
+            plaque.scale.set(1.9, 0.58, 1);
+            plaque.position.set(0, this.nftCubeSize + 0.48, 0);
+            wrapper.add(plaque);
+
+            this.nftDisplayRoot.add(wrapper);
+            this.placeOnCylinder(wrapper, placement.x, placement.theta, placement.yaw, 0.02);
+            this.liftObjectAboveCylinder(wrapper, placement.theta, 0.03);
+            return { wrapper, cube };
         }
 
         addLocalBox(group, name, w, h, d, x, y, z, material) {
@@ -2855,6 +3031,9 @@
             this.fileInput = document.getElementById('world-object-input');
             this.pendingAssetPlacement = null;
             this.assetLoader = new WorldAssetLoader();
+            this.walletForm = walletForm;
+            this.walletAddressInput = walletAddressInput;
+            this.currentWalletRequest = 0;
 
             this.world = new OneillWorld(scene);
             this.controls = new ThirdPersonCylinderControls(camera, renderer.domElement, this.world);
@@ -2871,6 +3050,7 @@
             const startupUrl = localStorage.getItem('crt.url') || DEFAULT_HOME_URL;
             this.css3dScreen.loadURL(startupUrl);
             this.bindEvents();
+            this.restoreWalletFromQuery();
             this.onResize();
             this.animate();
         }
@@ -2880,6 +3060,7 @@
             renderer.domElement.addEventListener('click', (event) => this.handleWorldClick(event));
             renderer.domElement.addEventListener('contextmenu', (event) => this.handleGroundContextMenu(event));
             this.fileInput?.addEventListener('change', (event) => this.handleAssetUpload(event));
+            this.walletForm?.addEventListener('submit', (event) => this.handleWalletSubmit(event));
         }
 
         onResize() {
@@ -2949,6 +3130,129 @@
                 console.error('[oneill] asset import failed', error);
                 this.css3dScreen.showToast(`Could not load ${file.name}`);
             }
+        }
+
+        restoreWalletFromQuery() {
+            if (!this.walletAddressInput) return;
+            const presetAddress = new URL(window.location.href).searchParams.get('wallet');
+            if (!presetAddress) return;
+            this.walletAddressInput.value = presetAddress;
+            this.loadWalletNfts(presetAddress);
+        }
+
+        handleWalletSubmit(event) {
+            event.preventDefault();
+            this.loadWalletNfts(this.walletAddressInput?.value || '');
+        }
+
+        updateWalletQuery(address) {
+            const url = new URL(window.location.href);
+            if (address) {
+                url.searchParams.set('wallet', address);
+            } else {
+                url.searchParams.delete('wallet');
+            }
+            window.history.replaceState({}, '', url);
+        }
+
+        disposeCubeMaterials(cube) {
+            const materials = Array.isArray(cube.material) ? cube.material : [cube.material];
+            const uniqueMaterials = [...new Set(materials.filter(Boolean))];
+            uniqueMaterials.forEach((material) => {
+                if (material.map) {
+                    material.map.dispose?.();
+                }
+                material.dispose?.();
+            });
+        }
+
+        async applyNftTexture(cube, nft) {
+            const candidates = getNftTextureCandidates(nft);
+            for (const candidate of candidates) {
+                try {
+                    const texture = await loadTexture(candidate);
+                    const material = createTexturedCubeMaterial(texture);
+                    this.disposeCubeMaterials(cube);
+                    cube.material = makeRepeatedMaterials(material);
+                    cube.material.forEach((entry) => {
+                        entry.needsUpdate = true;
+                    });
+                    return true;
+                } catch (error) {
+                    console.warn('[oneill] nft texture failed', candidate, error);
+                }
+            }
+            return false;
+        }
+
+        async loadWalletNfts(rawAddress) {
+            const requestId = ++this.currentWalletRequest;
+            const inputAddress = sanitizeNodeText(rawAddress);
+            if (!inputAddress) {
+                this.world.clearNftDisplays();
+                this.updateWalletQuery('');
+                setWalletStatus('Enter an Ethereum address to place NFT cubes near the spawn point.', false);
+                return;
+            }
+
+            setWalletStatus('Loading wallet NFTs into the neighborhood...');
+
+            let walletData;
+            try {
+                walletData = await loadWalletData(inputAddress);
+            } catch (error) {
+                if (requestId !== this.currentWalletRequest) return;
+                this.world.clearNftDisplays();
+                setWalletStatus(error.message || 'Unable to load wallet NFTs right now.', true);
+                return;
+            }
+
+            if (requestId !== this.currentWalletRequest) return;
+
+            const nfts = walletData.nfts;
+            this.world.clearNftDisplays();
+            this.updateWalletQuery(walletData.address);
+
+            if (!nfts.length) {
+                setWalletStatus(`No NFTs found for ${shortWalletAddress(walletData.address)}.`, false);
+                this.css3dScreen.showToast('No NFTs found for that wallet');
+                return;
+            }
+
+            const placements = this.world.reserveNftPlacements(nfts.length, walletData.address);
+            const cubeDisplays = nfts.map((nft, index) => this.world.createNftCubeDisplay(nft, placements[index], index));
+            let texturedCount = 0;
+
+            setWalletStatus(`Placed ${nfts.length} NFT cubes for ${shortWalletAddress(walletData.address)}. Loading images...`);
+
+            const textureJobs = cubeDisplays.map(async (display, index) => {
+                const textured = await this.applyNftTexture(display.cube, nfts[index]);
+                if (requestId !== this.currentWalletRequest) return;
+                if (textured) {
+                    texturedCount += 1;
+                    if (texturedCount === nfts.length || texturedCount % 10 === 0) {
+                        setWalletStatus(
+                            `Placed ${nfts.length} NFT cubes for ${shortWalletAddress(walletData.address)}. Loaded ${texturedCount} images so far.`,
+                            false
+                        );
+                    }
+                }
+            });
+
+            await Promise.allSettled(textureJobs);
+
+            if (requestId !== this.currentWalletRequest) return;
+
+            const blankCount = nfts.length - texturedCount;
+            if (blankCount > 0) {
+                setWalletStatus(
+                    `Placed ${nfts.length} NFT cubes for ${shortWalletAddress(walletData.address)}. ${blankCount} stayed blank because their images would not load.`,
+                    false
+                );
+            } else {
+                setWalletStatus(`Placed ${nfts.length} NFT cubes for ${shortWalletAddress(walletData.address)}.`, false);
+            }
+            this.css3dScreen.showToast(`Placed ${nfts.length} NFT cubes`);
         }
 
         animate() {
