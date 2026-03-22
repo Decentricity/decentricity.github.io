@@ -120,6 +120,46 @@ function formatTokenBalance(rawBalance, decimals) {
   }
 }
 
+function looksLikeLegacyCollectible(token) {
+  const info = token.tokenInfo || {};
+  const decimals = Number(info.decimals || 0);
+  const rawBalance = Number(token.rawBalance ?? token.balance ?? 0);
+  const totalSupply = Number(info.totalSupply || 0);
+  const hasPrice = Number.isFinite(Number(info.price?.rate));
+
+  return (
+    Boolean(info.address) &&
+    Boolean(info.name || info.symbol) &&
+    decimals === 0 &&
+    !hasPrice &&
+    Number.isInteger(rawBalance) &&
+    rawBalance > 0 &&
+    rawBalance <= 10000 &&
+    (totalSupply === 0 || totalSupply <= 1000000)
+  );
+}
+
+function normalizeLegacyCollectible(token, ownerAddress) {
+  const info = token.tokenInfo || {};
+  const balance = String(token.rawBalance ?? token.balance ?? "1");
+
+  return {
+    contractAddress: info.address || "",
+    collection: info.name || info.symbol || "Legacy Collectible",
+    tokenId: "",
+    tokenType: "Legacy Collectible",
+    name: info.name || info.symbol || "Legacy Collectible",
+    description: "This asset is being surfaced from the wallet's token balances because the upstream NFT indexer does not classify this older Ethereum collectible cleanly.",
+    balance,
+    previewUrl: "",
+    previewType: "image",
+    imageUrl: "",
+    mediaUrl: "",
+    metadataUrl: "",
+    explorerUrl: `${ETHERSCAN_TOKEN_URL}${info.address}?a=${ownerAddress}`
+  };
+}
+
 function renderFungibles(assets) {
   fungibleCountNode.textContent = String(assets.length);
   clearNode(fungibleNode);
@@ -274,6 +314,7 @@ async function fetchJson(url) {
 async function fetchFungibles(address) {
   const data = await fetchJson(`${ETHPLORER_URL}/${address}?apiKey=${ETHPLORER_KEY}`);
   const assets = [];
+  const legacyCollectibles = [];
 
   const ethBalance = Number(data?.ETH?.balance || 0);
   const ethPrice = Number(data?.ETH?.price?.rate || 0);
@@ -301,6 +342,11 @@ async function fetchFungibles(address) {
       continue;
     }
 
+    if (looksLikeLegacyCollectible(token)) {
+      legacyCollectibles.push(normalizeLegacyCollectible(token, address));
+      continue;
+    }
+
     assets.push({
       address: info.address,
       name: info.name || "Unnamed Token",
@@ -314,11 +360,14 @@ async function fetchFungibles(address) {
     });
   }
 
-  return assets.sort((a, b) => {
-    const aValue = a.usdValue ?? -1;
-    const bValue = b.usdValue ?? -1;
-    return bValue - aValue;
-  });
+  return {
+    fungibles: assets.sort((a, b) => {
+      const aValue = a.usdValue ?? -1;
+      const bValue = b.usdValue ?? -1;
+      return bValue - aValue;
+    }),
+    legacyCollectibles
+  };
 }
 
 function normalizeNft(nft) {
@@ -435,7 +484,7 @@ async function loadWallet(rawAddress) {
   setStatus("Loading fungible assets and NFTs...");
 
   try {
-    const [fungibles, nfts] = await Promise.all([
+    const [fungibleResult, fetchedNfts] = await Promise.all([
       fetchFungibles(address),
       fetchNfts(address)
     ]);
@@ -444,6 +493,16 @@ async function loadWallet(rawAddress) {
       return;
     }
 
+    const fungibles = fungibleResult.fungibles;
+    const indexedContracts = new Set(
+      fetchedNfts
+        .map((item) => item.contractAddress?.toLowerCase())
+        .filter(Boolean)
+    );
+    const legacyCollectibles = fungibleResult.legacyCollectibles.filter(
+      (item) => !indexedContracts.has(item.contractAddress?.toLowerCase())
+    );
+    const nfts = [...fetchedNfts, ...legacyCollectibles];
     renderSummary(address, fungibles, nfts);
     renderFungibles(fungibles);
     renderNfts(nfts);
