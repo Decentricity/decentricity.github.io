@@ -380,43 +380,6 @@ import { loadWalletData } from '../walletloader/app.js';
         return texture;
     };
 
-    const createFireSpriteTexture = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = 256;
-        canvas.height = 256;
-        const ctx = canvas.getContext('2d');
-
-        const core = ctx.createRadialGradient(128, 170, 10, 128, 170, 120);
-        core.addColorStop(0, 'rgba(255, 248, 220, 1)');
-        core.addColorStop(0.18, 'rgba(255, 208, 96, 0.96)');
-        core.addColorStop(0.46, 'rgba(255, 116, 28, 0.84)');
-        core.addColorStop(0.76, 'rgba(175, 28, 0, 0.28)');
-        core.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        ctx.fillStyle = core;
-        ctx.beginPath();
-        ctx.ellipse(128, 168, 90, 110, 0, 0, TAU);
-        ctx.fill();
-
-        const flame = ctx.createLinearGradient(128, 24, 128, 236);
-        flame.addColorStop(0, 'rgba(255, 255, 255, 0)');
-        flame.addColorStop(0.22, 'rgba(255, 248, 214, 0.98)');
-        flame.addColorStop(0.48, 'rgba(255, 180, 54, 0.92)');
-        flame.addColorStop(0.76, 'rgba(255, 86, 16, 0.7)');
-        flame.addColorStop(1, 'rgba(50, 0, 0, 0)');
-        ctx.fillStyle = flame;
-        ctx.beginPath();
-        ctx.moveTo(128, 18);
-        ctx.bezierCurveTo(194, 64, 190, 152, 146, 228);
-        ctx.bezierCurveTo(136, 244, 120, 244, 110, 228);
-        ctx.bezierCurveTo(68, 154, 64, 64, 128, 18);
-        ctx.fill();
-
-        const texture = new THREE.CanvasTexture(canvas);
-        setTextureEncoding(texture);
-        texture.anisotropy = 4;
-        return texture;
-    };
-
     const TextureLibrary = {
         cache: new Map(),
 
@@ -2209,11 +2172,6 @@ import { loadWalletData } from '../walletloader/app.js';
             this.attackTimer = 0;
             this.attackPlaybackRate = 2;
             this.attackDuration = 0.36;
-            this.attackEffectRoot = null;
-            this.attackEffectLight = null;
-            this.attackEffectSprites = [];
-            this.attackEffectTime = 0;
-            this.setupAttackFireEffect();
             this.loadAvatar();
 
             document.body.classList.toggle('touch-device', this.isTouchDevice);
@@ -2384,76 +2342,6 @@ import { loadWalletData } from '../walletloader/app.js';
             crtAnchor.add(crtGroup);
         }
 
-        setupAttackFireEffect() {
-            const fireRoot = new THREE.Group();
-            fireRoot.name = 'playerAttackFire';
-            fireRoot.visible = false;
-            fireRoot.position.set(0.28, 1.12, 0.34);
-            fireRoot.userData.ignoreCameraOcclusion = true;
-            this.playerGroup.add(fireRoot);
-            this.attackEffectRoot = fireRoot;
-
-            const fireTexture = createFireSpriteTexture();
-            const flameConfigs = [
-                { position: [0.02, 0.02, 0], scale: [0.24, 0.42], phase: 0 },
-                { position: [-0.03, 0.08, -0.02], scale: [0.19, 0.34], phase: 1.2 },
-                { position: [0.05, 0.14, 0.03], scale: [0.15, 0.28], phase: 2.3 },
-                { position: [0, 0.18, -0.01], scale: [0.12, 0.22], phase: 3.4 }
-            ];
-
-            flameConfigs.forEach((config) => {
-                const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
-                    map: fireTexture,
-                    transparent: true,
-                    depthWrite: false,
-                    blending: THREE.AdditiveBlending
-                }));
-                sprite.userData.fireConfig = config;
-                fireRoot.add(sprite);
-                this.attackEffectSprites.push(sprite);
-            });
-
-            const fireLight = new THREE.PointLight(0xff7a1f, 0, 3.2, 2);
-            fireLight.position.set(0.02, 0.12, 0.02);
-            fireLight.userData.ignoreCameraOcclusion = true;
-            fireRoot.add(fireLight);
-            this.attackEffectLight = fireLight;
-        }
-
-        updateAttackFireEffect(delta) {
-            if (!this.attackEffectRoot) return;
-
-            const active = this.isAttacking() && this.model?.visible !== false;
-            this.attackEffectRoot.visible = active;
-            if (!active) {
-                if (this.attackEffectLight) {
-                    this.attackEffectLight.intensity = 0;
-                }
-                return;
-            }
-
-            this.attackEffectTime += delta * 11;
-            const normalized = 1 - (this.attackTimer / Math.max(0.001, this.attackDuration));
-            const burst = 0.9 + (Math.sin(normalized * Math.PI) * 0.55);
-
-            this.attackEffectSprites.forEach((sprite) => {
-                const { position, scale, phase } = sprite.userData.fireConfig;
-                const drift = this.attackEffectTime + phase;
-                const pulse = 0.88 + (Math.sin(drift * 1.7) * 0.2);
-                sprite.position.set(
-                    position[0] + Math.sin(drift * 1.3) * 0.028,
-                    position[1] + Math.sin(drift * 2.2) * 0.032,
-                    position[2] + Math.cos(drift * 1.5) * 0.024
-                );
-                sprite.scale.set(scale[0] * burst * pulse, scale[1] * burst * (1.04 + pulse * 0.14), 1);
-                sprite.material.opacity = 0.42 + (pulse * 0.3);
-            });
-
-            if (this.attackEffectLight) {
-                this.attackEffectLight.intensity = 1.6 * burst;
-            }
-        }
-
         setAction(nextAction) {
             if (!nextAction || this.currentAction === nextAction) return;
             if (this.currentAction) {
@@ -2501,9 +2389,6 @@ import { loadWalletData } from '../walletloader/app.js';
         setModelVisible(visible) {
             if (this.model) {
                 this.model.visible = visible;
-            }
-            if (this.attackEffectRoot && !visible) {
-                this.attackEffectRoot.visible = false;
             }
         }
 
@@ -2872,8 +2757,6 @@ import { loadWalletData } from '../walletloader/app.js';
                 }
             }
 
-            this.updateAttackFireEffect(delta);
-
             if (!this.isLocked && !this.isTouchDevice) {
                 this.updateModelTransform();
                 this.updateCamera();
@@ -3003,7 +2886,6 @@ import { loadWalletData } from '../walletloader/app.js';
             this.avatarHeadAnchor = null;
             this.avatarScreenMesh = null;
             this.avatarLabelSprite = null;
-            this.avatarBodyMaterials = [];
             this.pendingWalletNfts = null;
             this.mixer = null;
             this.idleAction = null;
@@ -3074,18 +2956,14 @@ import { loadWalletData } from '../walletloader/app.js';
         }
 
         applyNpcAvatarMaterial(mesh) {
-            const isEye = mesh.name && /eye/i.test(mesh.name);
             mesh.material = new THREE.MeshStandardMaterial({
-                color: isEye ? 0xfff0ea : 0xff3a3a,
-                emissive: isEye ? 0x341812 : 0x7a1212,
-                emissiveIntensity: isEye ? 0.08 : 0.28,
+                color: mesh.name && /eye/i.test(mesh.name) ? 0xfff0ea : 0xff3a3a,
+                emissive: mesh.name && /eye/i.test(mesh.name) ? 0x341812 : 0x7a1212,
+                emissiveIntensity: mesh.name && /eye/i.test(mesh.name) ? 0.08 : 0.28,
                 roughness: 0.72,
                 metalness: 0.08,
                 skinning: !!mesh.isSkinnedMesh
             });
-            if (!isEye) {
-                this.avatarBodyMaterials.push(mesh.material);
-            }
         }
 
         loadAvatar() {
@@ -3252,18 +3130,8 @@ import { loadWalletData } from '../walletloader/app.js';
             this.avatarScreenMesh.material.needsUpdate = true;
         }
 
-        setAvatarBodyTexture(texture) {
-            this.avatarBodyMaterials.forEach((material) => {
-                material.color?.setHex(0xffffff);
-                material.map = texture;
-                material.needsUpdate = true;
-            });
-        }
-
         setMonitorText(text) {
-            const texture = createMonitorTextTexture(text);
-            this.setMonitorTexture(texture);
-            this.setAvatarBodyTexture(texture);
+            this.setMonitorTexture(createMonitorTextTexture(text));
         }
 
         setMonitorLabel(text) {
@@ -3293,7 +3161,6 @@ import { loadWalletData } from '../walletloader/app.js';
                 try {
                     const texture = await loadTexture(candidate);
                     this.setMonitorTexture(texture);
-                    this.setAvatarBodyTexture(texture);
                     return true;
                 } catch (error) {
                     console.warn('[chainworld] npc monitor nft texture failed', candidate, error);
