@@ -142,6 +142,24 @@ import { loadWalletData } from '../walletloader/app.js';
         return [...new Set(urls.filter(Boolean))];
     };
 
+    const npcModelTemplateCache = new Map();
+
+    const loadNpcModelTemplate = (url) => {
+        if (npcModelTemplateCache.has(url)) {
+            return npcModelTemplateCache.get(url);
+        }
+        const promise = new Promise((resolve, reject) => {
+            if (!THREE.GLTFLoader) {
+                reject(new Error('GLTFLoader unavailable'));
+                return;
+            }
+            const loader = new THREE.GLTFLoader();
+            loader.load(url, resolve, undefined, reject);
+        });
+        npcModelTemplateCache.set(url, promise);
+        return promise;
+    };
+
     const createCurvedCRTScreenGeometry = () => {
         const screenGeo = new THREE.PlaneGeometry(0.36, 0.27, 10, 10);
         const positions = screenGeo.attributes.position;
@@ -838,6 +856,31 @@ import { loadWalletData } from '../walletloader/app.js';
             return this.resolveSurfaceCollisions(first.x, first.arc + deltaArc, coreRadius);
         }
 
+        resolveSurfaceCollisionsWithExtraDiscs(x, arc, coreRadius, extraDiscs = [], padding = 0.08) {
+            let nextX = THREE.MathUtils.clamp(x, -this.maxWalkX, this.maxWalkX);
+            let nextArc = arc;
+            const blockers = this.collisionDiscs.concat(extraDiscs);
+            for (let i = 0; i < 4; i++) {
+                let adjusted = false;
+                for (const disc of blockers) {
+                    const dx = nextX - disc.x;
+                    const dz = this.shortestArcDelta(disc.arc, nextArc);
+                    const minDistance = coreRadius + disc.radius + padding;
+                    const distance = Math.hypot(dx, dz);
+                    if (distance >= minDistance) continue;
+                    const nx = distance > 0.0001 ? dx / distance : 1;
+                    const nz = distance > 0.0001 ? dz / distance : 0;
+                    const push = minDistance - distance;
+                    nextX += nx * push;
+                    nextArc += nz * push;
+                    nextX = THREE.MathUtils.clamp(nextX, -this.maxWalkX, this.maxWalkX);
+                    adjusted = true;
+                }
+                if (!adjusted) break;
+            }
+            return { x: nextX, arc: nextArc };
+        }
+
         liftObjectAboveCylinder(wrapper, theta, clearance = 0.03) {
             const inwardUp = new THREE.Vector3(0, Math.cos(theta), -Math.sin(theta)).normalize();
             wrapper.updateWorldMatrix(true, true);
@@ -940,6 +983,7 @@ import { loadWalletData } from '../walletloader/app.js';
             const queue = this.buildNftPlacementQueue(count, seedText);
             const cellSize = 8.5;
             const centerArc = this.spawn.theta * this.radius;
+            const occupiedDiscs = [];
 
             for (let index = 0; index < queue.length && placements.length < count; index++) {
                 const cell = queue[index];
@@ -947,11 +991,10 @@ import { loadWalletData } from '../walletloader/app.js';
                 const jitterArc = (this.rand01(index + count, 29) - 0.5) * 1.6;
                 const candidateX = this.spawn.x + cell.gx * cellSize + jitterX;
                 const candidateArc = centerArc + cell.gy * cellSize + jitterArc;
-                const resolved = this.resolveSurfaceCollisions(candidateX, candidateArc, this.nftCubeRadius, 0.16);
+                const resolved = this.resolveSurfaceCollisionsWithExtraDiscs(candidateX, candidateArc, this.nftCubeRadius, occupiedDiscs, 0.16);
                 const theta = resolved.arc / this.radius;
                 const yaw = this.rand01(index + count, 41) * TAU;
-                const collision = this.registerCollisionDiscArc(resolved.x, resolved.arc, this.nftCubeRadius);
-                this.nftCollisionEntries.push(collision);
+                occupiedDiscs.push({ x: resolved.x, arc: resolved.arc, radius: this.nftCubeRadius });
                 placements.push({ x: resolved.x, theta, yaw });
             }
 
@@ -2749,6 +2792,9 @@ import { loadWalletData } from '../walletloader/app.js';
                 spawnArcOffset: -3.2,
                 walkSpeed: 1.25,
                 wanderRadius: 4.5,
+                logicInterval: 0,
+                pauseDurationMin: 0.8,
+                pauseDurationMax: 1.4,
                 logLabel: 'NPC',
                 ...options
             };
@@ -2761,7 +2807,9 @@ import { loadWalletData } from '../walletloader/app.js';
             this.coreRadius = 0.5;
             this.wanderRadius = this.options.wanderRadius;
             this.walkSpeed = this.options.walkSpeed;
-            this.pauseTimer = 0.8;
+            this.logicInterval = this.options.logicInterval;
+            this.logicAccumulator = Math.random() * this.logicInterval;
+            this.pauseTimer = this.randomPauseDuration();
             this.destinationX = this.surfaceX;
             this.destinationArc = this.surfaceArc;
             this.hasDestination = false;
@@ -2778,14 +2826,26 @@ import { loadWalletData } from '../walletloader/app.js';
             this.avatarHeadBone = null;
             this.avatarHeadAnchor = null;
             this.avatarScreenMesh = null;
+            this.avatarLabelSprite = null;
+            this.pendingWalletNfts = null;
             this.mixer = null;
             this.idleAction = null;
             this.walkAction = null;
             this.currentAction = null;
+            this.isDestroyed = false;
+            this.readyPromise = new Promise((resolve) => {
+                this.resolveReady = resolve;
+            });
 
             this.loadAvatar();
             this.syncBasis();
             this.updateTransform();
+        }
+
+        randomPauseDuration() {
+            const min = this.options.pauseDurationMin;
+            const max = this.options.pauseDurationMax;
+            return min + Math.random() * Math.max(0, max - min);
         }
 
         shortestArcDelta(fromArc, toArc) {
@@ -2845,14 +2905,16 @@ import { loadWalletData } from '../walletloader/app.js';
         loadAvatar() {
             if (!THREE.GLTFLoader) {
                 console.error('[chainworld] GLTFLoader unavailable; wandering NPC did not load');
+                this.resolveReady?.(null);
+                this.resolveReady = null;
                 return;
             }
 
-            const loader = new THREE.GLTFLoader();
-            loader.load(
-                this.options.modelUrl,
+            loadNpcModelTemplate(this.options.modelUrl).then(
                 (gltf) => {
-                    this.model = gltf.scene;
+                    this.model = THREE.SkeletonUtils?.clone
+                        ? THREE.SkeletonUtils.clone(gltf.scene)
+                        : gltf.scene.clone(true);
                     this.model.name = 'npcAvatar';
                     this.playerGroup.add(this.model);
                     this.model.traverse((object) => {
@@ -2873,9 +2935,14 @@ import { loadWalletData } from '../walletloader/app.js';
                         this.attachAvatarCRT();
                     }
                     this.updateTransform();
+                    this.resolveReady?.(this);
+                    this.resolveReady = null;
                 },
-                undefined,
-                (error) => console.error(`[chainworld] ${this.options.logLabel} failed to load`, error)
+                (error) => {
+                    console.error(`[chainworld] ${this.options.logLabel} failed to load`, error);
+                    this.resolveReady?.(null);
+                    this.resolveReady = null;
+                }
             );
         }
 
@@ -3011,12 +3078,12 @@ import { loadWalletData } from '../walletloader/app.js';
         async showRandomWalletNft(nfts) {
             if (!this.avatarScreenMesh?.material) {
                 this.pendingWalletNfts = [...nfts];
-                return;
+                return false;
             }
             if (!nfts.length) {
                 this.setMonitorText('NO NFT');
                 this.setMonitorLabel('NO NFT');
-                return;
+                return false;
             }
 
             const nft = nfts[Math.floor(Math.random() * nfts.length)];
@@ -3028,13 +3095,33 @@ import { loadWalletData } from '../walletloader/app.js';
                 try {
                     const texture = await loadTexture(candidate);
                     this.setMonitorTexture(texture);
-                    return;
+                    return true;
                 } catch (error) {
                     console.warn('[chainworld] npc monitor nft texture failed', candidate, error);
                 }
             }
 
             this.setMonitorText(nftTitle);
+            return false;
+        }
+
+        destroy() {
+            this.isDestroyed = true;
+            if (this.playerGroup.parent) {
+                this.playerGroup.parent.remove(this.playerGroup);
+            }
+            this.playerGroup.traverse((object) => {
+                if (object.geometry) {
+                    object.geometry.dispose?.();
+                }
+                const materials = Array.isArray(object.material) ? object.material : [object.material];
+                [...new Set(materials.filter(Boolean))].forEach((material) => {
+                    material.map?.dispose?.();
+                    material.dispose?.();
+                });
+            });
+            this.resolveReady?.(null);
+            this.resolveReady = null;
         }
 
         updateTransform() {
@@ -3063,14 +3150,26 @@ import { loadWalletData } from '../walletloader/app.js';
         }
 
         update(delta) {
+            if (this.isDestroyed) return;
             if (this.mixer) {
                 this.mixer.update(delta);
             }
 
             if (!this.model) return;
 
+            let stepDelta = delta;
+            if (this.logicInterval > 0) {
+                this.logicAccumulator += delta;
+                if (this.logicAccumulator < this.logicInterval) {
+                    this.updateTransform();
+                    return;
+                }
+                stepDelta = this.logicAccumulator;
+                this.logicAccumulator = 0;
+            }
+
             if (this.pauseTimer > 0) {
-                this.pauseTimer = Math.max(0, this.pauseTimer - delta);
+                this.pauseTimer = Math.max(0, this.pauseTimer - stepDelta);
                 if (this.pauseTimer === 0) {
                     this.chooseDestination();
                 }
@@ -3089,13 +3188,13 @@ import { loadWalletData } from '../walletloader/app.js';
 
             if (distance < 0.16) {
                 this.hasDestination = false;
-                this.pauseTimer = THREE.MathUtils.randFloat(0.7, 2.1);
+                this.pauseTimer = this.randomPauseDuration();
                 this.setAction(this.idleAction || this.walkAction);
                 this.updateTransform();
                 return;
             }
 
-            const step = Math.min(distance, this.walkSpeed * delta);
+            const step = Math.min(distance, this.walkSpeed * stepDelta);
             const moveX = dx / distance;
             const moveZ = dz / distance;
             this.facingYaw = Math.atan2(moveX, moveZ);
@@ -3331,6 +3430,7 @@ import { loadWalletData } from '../walletloader/app.js';
             this.world = new OneillWorld(scene);
             this.controls = new ThirdPersonCylinderControls(camera, renderer.domElement, this.world);
             this.npc = new WanderingNPC(scene, this.world);
+            this.walletNpcs = [];
             this.css3dScreen = new CSS3DScreen(scene, camera, this.world.starterScreenMesh);
             this.interaction = new InteractionSystem(camera, this.controls, this.world.starterScreenMesh, this.css3dScreen);
             this.controls.onAvatarScreenReady = (screenMesh) => {
@@ -3448,6 +3548,56 @@ import { loadWalletData } from '../walletloader/app.js';
             window.history.replaceState({}, '', url);
         }
 
+        restoreDefaultNpc() {
+            if (!this.npc) {
+                this.npc = new WanderingNPC(scene, this.world);
+            }
+        }
+
+        removeDefaultNpc() {
+            if (!this.npc) return;
+            this.npc.destroy();
+            this.npc = null;
+        }
+
+        clearWalletNpcs() {
+            this.walletNpcs.forEach((npc) => npc.destroy());
+            this.walletNpcs = [];
+        }
+
+        async spawnWalletNpcsForNfts(nfts, placements) {
+            const spawnArcBase = this.world.spawn.theta * this.world.radius;
+            this.removeDefaultNpc();
+            this.clearWalletNpcs();
+
+            this.walletNpcs = nfts.map((nft, index) => (
+                new WanderingNPC(scene, this.world, {
+                    spawnXOffset: placements[index].x - this.world.spawn.x,
+                    spawnArcOffset: placements[index].theta * this.world.radius - spawnArcBase,
+                    walkSpeed: 0.95 + Math.random() * 0.45,
+                    wanderRadius: 2.8 + Math.random() * 4.6,
+                    logicInterval: 0.05 + Math.random() * 0.11,
+                    pauseDurationMin: 0.45,
+                    pauseDurationMax: 1.9,
+                    logLabel: `wallet NPC ${index + 1}`
+                })
+            ));
+
+            const results = await Promise.allSettled(
+                this.walletNpcs.map((npc, index) => npc.readyPromise.then((readyNpc) => (
+                    readyNpc ? readyNpc.showRandomWalletNft([nfts[index]]) : false
+                )))
+            );
+
+            let imageCount = 0;
+            results.forEach((result) => {
+                if (result.status === 'fulfilled' && result.value) {
+                    imageCount += 1;
+                }
+            });
+            return imageCount;
+        }
+
         disposeCubeMaterials(cube) {
             const materials = Array.isArray(cube.material) ? cube.material : [cube.material];
             const uniqueMaterials = [...new Set(materials.filter(Boolean))];
@@ -3483,8 +3633,10 @@ import { loadWalletData } from '../walletloader/app.js';
             const inputAddress = sanitizeNodeText(rawAddress);
             if (!inputAddress) {
                 this.world.clearNftDisplays();
+                this.clearWalletNpcs();
+                this.restoreDefaultNpc();
                 this.updateWalletQuery('');
-                setWalletStatus('Enter an Ethereum address to place NFT cubes near the spawn point.', false);
+                setWalletStatus('Enter an Ethereum address to spawn NFT NPCs near the starting area.', false);
                 return;
             }
 
@@ -3496,6 +3648,8 @@ import { loadWalletData } from '../walletloader/app.js';
             } catch (error) {
                 if (requestId !== this.currentWalletRequest) return;
                 this.world.clearNftDisplays();
+                this.clearWalletNpcs();
+                this.restoreDefaultNpc();
                 setWalletStatus(error.message || 'Unable to load wallet NFTs right now.', true);
                 return;
             }
@@ -3507,55 +3661,38 @@ import { loadWalletData } from '../walletloader/app.js';
             this.updateWalletQuery(walletData.address);
 
             if (!nfts.length) {
+                this.clearWalletNpcs();
+                this.restoreDefaultNpc();
                 this.npc.showRandomWalletNft([]);
                 setWalletStatus(`No NFTs found for ${shortWalletAddress(walletData.address)}.`, false);
                 this.css3dScreen.showToast('No NFTs found for that wallet');
                 return;
             }
 
-            this.npc.showRandomWalletNft(nfts);
-
             const placements = this.world.reserveNftPlacements(nfts.length, walletData.address);
-            const cubeDisplays = nfts.map((nft, index) => this.world.createNftCubeDisplay(nft, placements[index], index));
-            let texturedCount = 0;
-
-            setWalletStatus(`Placed ${nfts.length} NFT cubes for ${shortWalletAddress(walletData.address)}. Loading images...`);
-
-            const textureJobs = cubeDisplays.map(async (display, index) => {
-                const textured = await this.applyNftTexture(display.cube, nfts[index]);
-                if (requestId !== this.currentWalletRequest) return;
-                if (textured) {
-                    texturedCount += 1;
-                    if (texturedCount === nfts.length || texturedCount % 10 === 0) {
-                        setWalletStatus(
-                            `Placed ${nfts.length} NFT cubes for ${shortWalletAddress(walletData.address)}. Loaded ${texturedCount} images so far.`,
-                            false
-                        );
-                    }
-                }
-            });
-
-            await Promise.allSettled(textureJobs);
+            setWalletStatus(`Spawning ${nfts.length} NFT NPCs for ${shortWalletAddress(walletData.address)}...`);
+            const imageCount = await this.spawnWalletNpcsForNfts(nfts, placements);
 
             if (requestId !== this.currentWalletRequest) return;
 
-            const blankCount = nfts.length - texturedCount;
+            const blankCount = nfts.length - imageCount;
             if (blankCount > 0) {
                 setWalletStatus(
-                    `Placed ${nfts.length} NFT cubes for ${shortWalletAddress(walletData.address)}. ${blankCount} stayed blank because their images would not load.`,
+                    `Spawned ${nfts.length} NFT NPCs for ${shortWalletAddress(walletData.address)}. ${blankCount} monitors fell back to text because their images would not load.`,
                     false
                 );
             } else {
-                setWalletStatus(`Placed ${nfts.length} NFT cubes for ${shortWalletAddress(walletData.address)}.`, false);
+                setWalletStatus(`Spawned ${nfts.length} NFT NPCs for ${shortWalletAddress(walletData.address)}.`, false);
             }
-            this.css3dScreen.showToast(`Placed ${nfts.length} NFT cubes`);
+            this.css3dScreen.showToast(`Spawned ${nfts.length} NFT NPCs`);
         }
 
         animate() {
             requestAnimationFrame(() => this.animate());
             const delta = Math.min(this.clock.getDelta(), 0.05);
             this.controls.update(delta);
-            this.npc.update(delta);
+            this.npc?.update(delta);
+            this.walletNpcs.forEach((npc) => npc.update(delta));
             renderer.render(scene, camera);
             this.css3dScreen.update();
         }

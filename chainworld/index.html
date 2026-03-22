@@ -18,10 +18,10 @@
         <div id="title">Chainworld</div>
         <div id="hint">Click to walk, move the mouse to look, WASD to move, ESC to free the cursor.</div>
         <form id="wallet-form" class="wallet-form-overlay">
-            <input id="wallet-address-input" type="text" placeholder="0x... load NFT cubes" autocomplete="off" spellcheck="false">
+            <input id="wallet-address-input" type="text" placeholder="0x... spawn NFT NPCs" autocomplete="off" spellcheck="false">
             <button type="submit">Load NFTs</button>
         </form>
-        <div id="wallet-status" class="wallet-status">Enter an Ethereum address to place NFT cubes near the spawn point.</div>
+        <div id="wallet-status" class="wallet-status">Enter an Ethereum address to spawn NFT NPCs near the starting area.</div>
     </div>
     <div id="toast-container"></div>
     <div id="mobile-controls" aria-hidden="true">
@@ -44,6 +44,7 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/PLYLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/VOXLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/SkeletonUtils.js"></script>
     <script type="module" src="app.js"></script>
 </body>
 </html>
