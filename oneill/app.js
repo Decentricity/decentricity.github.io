@@ -774,6 +774,7 @@ import { loadWalletData } from '../walletloader/app.js';
                     transparent: true
                 })
             );
+            plaque.raycast = () => {};
             plaque.scale.set(1.9, 0.58, 1);
             plaque.position.set(0, this.nftCubeSize + 0.48, 0);
             wrapper.add(plaque);
