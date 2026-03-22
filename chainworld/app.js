@@ -2157,6 +2157,7 @@ import { loadWalletData } from '../walletloader/app.js';
             this.avatarHeadAnchor = null;
             this.avatarScreenMesh = null;
             this.avatarLabelSprite = null;
+            this.avatarBodyMaterials = [];
             this.pendingWalletNfts = null;
             this.mixer = null;
             this.idleAction = null;
@@ -2779,10 +2780,12 @@ import { loadWalletData } from '../walletloader/app.js';
             this.forward.set(-Math.sin(this.yaw), 0, -Math.cos(this.yaw)).normalize();
             this.right.set(-this.forward.z, 0, this.forward.x).normalize();
 
-            if (inputZ > 0.001) this.moveVector.add(this.forward);
-            if (inputZ < -0.001) this.moveVector.sub(this.forward);
-            if (inputX < -0.001) this.moveVector.sub(this.right);
-            if (inputX > 0.001) this.moveVector.add(this.right);
+            if (!this.isAttacking()) {
+                if (inputZ > 0.001) this.moveVector.add(this.forward);
+                if (inputZ < -0.001) this.moveVector.sub(this.forward);
+                if (inputX < -0.001) this.moveVector.sub(this.right);
+                if (inputX > 0.001) this.moveVector.add(this.right);
+            }
 
             const moving = this.moveVector.lengthSq() > 0;
             if (moving) {
@@ -2956,14 +2959,18 @@ import { loadWalletData } from '../walletloader/app.js';
         }
 
         applyNpcAvatarMaterial(mesh) {
+            const isEye = mesh.name && /eye/i.test(mesh.name);
             mesh.material = new THREE.MeshStandardMaterial({
-                color: mesh.name && /eye/i.test(mesh.name) ? 0xfff0ea : 0xff3a3a,
-                emissive: mesh.name && /eye/i.test(mesh.name) ? 0x341812 : 0x7a1212,
-                emissiveIntensity: mesh.name && /eye/i.test(mesh.name) ? 0.08 : 0.28,
+                color: isEye ? 0xfff0ea : 0xff3a3a,
+                emissive: isEye ? 0x341812 : 0x7a1212,
+                emissiveIntensity: isEye ? 0.08 : 0.28,
                 roughness: 0.72,
                 metalness: 0.08,
                 skinning: !!mesh.isSkinnedMesh
             });
+            if (!isEye) {
+                this.avatarBodyMaterials.push(mesh.material);
+            }
         }
 
         loadAvatar() {
@@ -3130,8 +3137,18 @@ import { loadWalletData } from '../walletloader/app.js';
             this.avatarScreenMesh.material.needsUpdate = true;
         }
 
+        setAvatarBodyTexture(texture) {
+            this.avatarBodyMaterials.forEach((material) => {
+                material.color?.setHex(0xffffff);
+                material.map = texture;
+                material.needsUpdate = true;
+            });
+        }
+
         setMonitorText(text) {
-            this.setMonitorTexture(createMonitorTextTexture(text));
+            const texture = createMonitorTextTexture(text);
+            this.setMonitorTexture(texture);
+            this.setAvatarBodyTexture(texture);
         }
 
         setMonitorLabel(text) {
@@ -3161,6 +3178,7 @@ import { loadWalletData } from '../walletloader/app.js';
                 try {
                     const texture = await loadTexture(candidate);
                     this.setMonitorTexture(texture);
+                    this.setAvatarBodyTexture(texture);
                     return true;
                 } catch (error) {
                     console.warn('[chainworld] npc monitor nft texture failed', candidate, error);
