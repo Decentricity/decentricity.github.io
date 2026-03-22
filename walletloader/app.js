@@ -108,6 +108,18 @@ function normalizeTokenId(rawTokenId) {
   }
 }
 
+function formatTokenBalance(rawBalance, decimals) {
+  if (rawBalance == null || rawBalance === "") {
+    return 0;
+  }
+
+  try {
+    return Number(ethers.formatUnits(String(rawBalance), decimals));
+  } catch {
+    return Number(rawBalance) / 10 ** decimals;
+  }
+}
+
 function renderFungibles(assets) {
   fungibleCountNode.textContent = String(assets.length);
   clearNode(fungibleNode);
@@ -282,7 +294,7 @@ async function fetchFungibles(address) {
   for (const token of data.tokens || []) {
     const info = token.tokenInfo || {};
     const decimals = Number(info.decimals || 0);
-    const balance = Number(token.balance || 0);
+    const balance = formatTokenBalance(token.rawBalance ?? token.balance, decimals);
     const price = Number(info.price?.rate || 0);
 
     if (!info.address || !Number.isFinite(balance) || balance <= 0) {
