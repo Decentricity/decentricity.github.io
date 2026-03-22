@@ -557,20 +557,19 @@
         }
 
         placeImportedObject(object, placement, name = 'worldAsset') {
+            object.updateWorldMatrix?.(true, true);
+            const localBox = new THREE.Box3().setFromObject(object);
+            const localCenter = localBox.getCenter(new THREE.Vector3());
+            const localMin = localBox.min.clone();
+            const localSize = localBox.getSize(new THREE.Vector3());
+
+            object.position.sub(localCenter);
+            object.position.y -= localMin.y;
+
             const wrapper = new THREE.Group();
             wrapper.name = name.replace(/[^a-z0-9_-]/gi, '_');
             wrapper.add(object);
             this.scene.add(wrapper);
-
-            wrapper.updateWorldMatrix(true, true);
-            const box = new THREE.Box3().setFromObject(wrapper);
-            const center = box.getCenter(new THREE.Vector3());
-            object.position.sub(center);
-            object.position.y -= box.min.y;
-
-            wrapper.updateWorldMatrix(true, true);
-            const adjustedBox = new THREE.Box3().setFromObject(wrapper);
-            const size = adjustedBox.getSize(new THREE.Vector3());
 
             wrapper.traverse((child) => {
                 if (!child.isMesh) return;
@@ -578,8 +577,8 @@
                 child.receiveShadow = true;
             });
 
-            this.placeOnCylinder(wrapper, placement.x, placement.theta, 0, 0);
-            const radius = Math.max(0.55, Math.min(6.5, Math.max(size.x, size.z) * 0.45));
+            this.placeOnCylinder(wrapper, placement.x, placement.theta, 0, 0.02);
+            const radius = Math.max(0.55, Math.min(6.5, Math.max(localSize.x, localSize.z) * 0.45));
             this.registerCollisionDisc(placement.x, placement.theta, radius);
             return wrapper;
         }
