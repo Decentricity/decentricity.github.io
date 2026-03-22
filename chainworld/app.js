@@ -3,6 +3,8 @@ import { loadWalletData } from '../walletloader/app.js';
 (() => {
     const clampDPR = (dpr) => Math.min(dpr, 2);
     const DEFAULT_HOME_URL = 'https://agent1c-ai.github.io';
+    const DEFAULT_NPC_MODEL_URL = 'https://threejs.org/examples/models/gltf/Xbot.glb';
+    const FEMALE_NPC_MODEL_URL = './assets/base-female.glb';
     const TAU = Math.PI * 2;
 
     const canvas = document.getElementById('webgl');
@@ -85,6 +87,14 @@ import { loadWalletData } from '../walletloader/app.js';
             ? `${address.slice(0, 6)}...${address.slice(-4)}`
             : address
     );
+
+    const findFirstClipByNames = (animations, names) => {
+        for (const name of names) {
+            const clip = THREE.AnimationClip.findByName(animations, name);
+            if (clip) return clip;
+        }
+        return null;
+    };
 
     const getNftTextureCandidates = (nft) => {
         const urls = [];
@@ -2599,18 +2609,30 @@ import { loadWalletData } from '../walletloader/app.js';
     }
 
     class WanderingNPC {
-        constructor(scene, world) {
+        constructor(scene, world, options = {}) {
             this.scene = scene;
             this.world = world;
+            this.options = {
+                modelUrl: DEFAULT_NPC_MODEL_URL,
+                idleClipNames: ['idle'],
+                walkClipNames: ['walk'],
+                attachCrtHead: true,
+                spawnXOffset: 1.2,
+                spawnArcOffset: -3.2,
+                walkSpeed: 1.25,
+                wanderRadius: 4.5,
+                logLabel: 'NPC',
+                ...options
+            };
             this.cylinderRadius = world.radius;
             this.maxX = world.maxWalkX;
-            this.spawnX = world.spawn.x + 1.2;
-            this.spawnArc = world.spawn.theta * this.cylinderRadius - 3.2;
+            this.spawnX = world.spawn.x + this.options.spawnXOffset;
+            this.spawnArc = world.spawn.theta * this.cylinderRadius + this.options.spawnArcOffset;
             this.surfaceX = this.spawnX;
             this.surfaceArc = this.spawnArc;
             this.coreRadius = 0.5;
-            this.wanderRadius = 4.5;
-            this.walkSpeed = 1.25;
+            this.wanderRadius = this.options.wanderRadius;
+            this.walkSpeed = this.options.walkSpeed;
             this.pauseTimer = 0.8;
             this.destinationX = this.surfaceX;
             this.destinationArc = this.surfaceArc;
@@ -2699,7 +2721,7 @@ import { loadWalletData } from '../walletloader/app.js';
 
             const loader = new THREE.GLTFLoader();
             loader.load(
-                'https://threejs.org/examples/models/gltf/Xbot.glb',
+                this.options.modelUrl,
                 (gltf) => {
                     this.model = gltf.scene;
                     this.model.name = 'npcAvatar';
@@ -2712,17 +2734,19 @@ import { loadWalletData } from '../walletloader/app.js';
                     });
 
                     this.mixer = new THREE.AnimationMixer(this.model);
-                    const idleClip = THREE.AnimationClip.findByName(gltf.animations, 'idle');
-                    const walkClip = THREE.AnimationClip.findByName(gltf.animations, 'walk');
+                    const idleClip = findFirstClipByNames(gltf.animations, this.options.idleClipNames);
+                    const walkClip = findFirstClipByNames(gltf.animations, this.options.walkClipNames);
                     if (idleClip) this.idleAction = this.mixer.clipAction(idleClip);
                     if (walkClip) this.walkAction = this.mixer.clipAction(walkClip);
                     this.setAction(this.idleAction || this.walkAction);
 
-                    this.attachAvatarCRT();
+                    if (this.options.attachCrtHead) {
+                        this.attachAvatarCRT();
+                    }
                     this.updateTransform();
                 },
                 undefined,
-                (error) => console.error('[chainworld] NPC Xbot failed to load', error)
+                (error) => console.error(`[chainworld] ${this.options.logLabel} failed to load`, error)
             );
         }
 
@@ -3112,6 +3136,17 @@ import { loadWalletData } from '../walletloader/app.js';
             this.world = new OneillWorld(scene);
             this.controls = new ThirdPersonCylinderControls(camera, renderer.domElement, this.world);
             this.npc = new WanderingNPC(scene, this.world);
+            this.femaleNpc = new WanderingNPC(scene, this.world, {
+                modelUrl: FEMALE_NPC_MODEL_URL,
+                idleClipNames: ['female_Idle'],
+                walkClipNames: ['female_Walk', 'female_Run'],
+                attachCrtHead: false,
+                spawnXOffset: -2.8,
+                spawnArcOffset: 5.2,
+                walkSpeed: 1.1,
+                wanderRadius: 5.6,
+                logLabel: 'female NPC'
+            });
             this.css3dScreen = new CSS3DScreen(scene, camera, this.world.starterScreenMesh);
             this.interaction = new InteractionSystem(camera, this.controls, this.world.starterScreenMesh, this.css3dScreen);
             this.controls.onAvatarScreenReady = (screenMesh) => {
@@ -3334,6 +3369,7 @@ import { loadWalletData } from '../walletloader/app.js';
             const delta = Math.min(this.clock.getDelta(), 0.05);
             this.controls.update(delta);
             this.npc.update(delta);
+            this.femaleNpc.update(delta);
             renderer.render(scene, camera);
             this.css3dScreen.update();
         }
