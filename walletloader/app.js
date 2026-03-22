@@ -1,6 +1,7 @@
 const ETHPLORER_URL = "https://api.ethplorer.io/getAddressInfo";
 const ETHPLORER_KEY = "freekey";
-const ALCHEMY_NFT_URL = "https://eth-mainnet.g.alchemy.com/nft/v3/demo/getNFTsForOwner";
+const ALCHEMY_NFT_URL = "https://eth-mainnet.g.alchemy.com/nft/v2/demo/getNFTsForOwner";
+const ALCHEMY_NFT_PAGE_SIZE = 50;
 const ETHERSCAN_ADDRESS_URL = "https://etherscan.io/address/";
 const ETHERSCAN_TOKEN_URL = "https://etherscan.io/token/";
 const TRUSTWALLET_ETH_LOGO = "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/info/logo.png";
@@ -297,39 +298,45 @@ async function fetchFungibles(address) {
 }
 
 function normalizeNft(nft) {
-  const metadata = nft.raw?.metadata || {};
-  const image = nft.image || {};
-  const animation = nft.animation || {};
-  const imageUrl = image.cachedUrl || image.pngUrl || image.thumbnailUrl || image.originalUrl || metadata.image || "";
+  const metadata = nft.metadata || {};
+  const media = Array.isArray(nft.media) ? nft.media[0] || {} : {};
+  const tokenId = nft.id?.tokenId ? BigInt(nft.id.tokenId).toString() : "";
+  const imageUrl =
+    media.gateway ||
+    media.thumbnail ||
+    media.raw ||
+    metadata.image ||
+    metadata.image_url ||
+    "";
   const mediaUrl =
-    animation.originalUrl ||
-    animation.cachedUrl ||
     metadata.animation_url ||
     metadata.animation ||
+    media.raw ||
+    media.gateway ||
     "";
 
   let previewUrl = imageUrl;
   let previewType = "image";
 
-  if (!previewUrl && mediaUrl && (animation.contentType || "").startsWith("video/")) {
+  if (!previewUrl && mediaUrl && (media.format || "").match(/mp4|webm|mov/i)) {
     previewUrl = mediaUrl;
     previewType = "video";
   }
 
   return {
     contractAddress: nft.contract?.address || "",
-    collection: nft.collection?.name || nft.contract?.openSeaMetadata?.collectionName || "",
-    tokenId: nft.tokenId || "",
-    tokenType: nft.tokenType || nft.contract?.tokenType || "NFT",
-    name: nft.name || metadata.name || "",
+    collection: nft.contractMetadata?.openSea?.collectionName || nft.contractMetadata?.name || "",
+    tokenId,
+    tokenType: nft.id?.tokenMetadata?.tokenType || nft.contractMetadata?.tokenType || "NFT",
+    name: nft.title || metadata.name || "",
     description: nft.description || metadata.description || "",
     balance: nft.balance || "1",
     previewUrl,
     previewType,
     imageUrl,
     mediaUrl,
-    metadataUrl: nft.tokenUri || nft.raw?.tokenUri || "",
-    explorerUrl: `${ETHERSCAN_TOKEN_URL}${nft.contract?.address}?a=${nft.tokenId}`
+    metadataUrl: nft.tokenUri?.gateway || nft.tokenUri?.raw || "",
+    explorerUrl: `${ETHERSCAN_TOKEN_URL}${nft.contract?.address}?a=${tokenId}`
   };
 }
 
@@ -341,7 +348,7 @@ async function fetchNfts(address) {
   while (page < 10) {
     const url = new URL(ALCHEMY_NFT_URL);
     url.searchParams.set("owner", address);
-    url.searchParams.set("pageSize", "100");
+    url.searchParams.set("pageSize", String(ALCHEMY_NFT_PAGE_SIZE));
     if (pageKey) {
       url.searchParams.set("pageKey", pageKey);
     }
