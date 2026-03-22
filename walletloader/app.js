@@ -96,6 +96,18 @@ function assetMetric(label, value) {
   `;
 }
 
+function normalizeTokenId(rawTokenId) {
+  if (rawTokenId == null || rawTokenId === "") {
+    return "";
+  }
+
+  try {
+    return BigInt(rawTokenId).toString();
+  } catch {
+    return String(rawTokenId);
+  }
+}
+
 function renderFungibles(assets) {
   fungibleCountNode.textContent = String(assets.length);
   clearNode(fungibleNode);
@@ -300,7 +312,7 @@ async function fetchFungibles(address) {
 function normalizeNft(nft) {
   const metadata = nft.metadata || {};
   const media = Array.isArray(nft.media) ? nft.media[0] || {} : {};
-  const tokenId = nft.id?.tokenId ? BigInt(nft.id.tokenId).toString() : "";
+  const tokenId = normalizeTokenId(nft.id?.tokenId);
   const imageUrl =
     media.gateway ||
     media.thumbnail ||
