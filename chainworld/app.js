@@ -283,6 +283,85 @@ import { loadWalletData } from '../walletloader/app.js';
         return texture;
     };
 
+    const createNpcMonitorLabelTexture = (text) => {
+        const title = sanitizeNodeText(text, 'Untitled NFT');
+        const width = 512;
+        const height = 128;
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+
+        const gradient = ctx.createLinearGradient(0, 0, 0, height);
+        gradient.addColorStop(0, '#0d1a29');
+        gradient.addColorStop(1, '#1e354c');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, width, height);
+
+        ctx.strokeStyle = 'rgba(170, 210, 255, 0.35)';
+        ctx.lineWidth = 8;
+        ctx.strokeRect(8, 8, width - 16, height - 16);
+
+        const maxWidth = width - 56;
+        const maxLines = 2;
+        const minFontSize = 18;
+        let fontSize = 46;
+        let lines = [title];
+
+        const wrapIntoLines = (input) => {
+            const words = input.split(/\s+/).filter(Boolean);
+            if (!words.length) return ['Untitled NFT'];
+            const nextLines = [];
+            let current = words[0];
+
+            for (let i = 1; i < words.length; i++) {
+                const candidate = `${current} ${words[i]}`;
+                if (ctx.measureText(candidate).width <= maxWidth) {
+                    current = candidate;
+                    continue;
+                }
+                nextLines.push(current);
+                current = words[i];
+            }
+            nextLines.push(current);
+            return nextLines;
+        };
+
+        while (fontSize >= minFontSize) {
+            ctx.font = `bold ${fontSize}px monospace`;
+            const wrapped = wrapIntoLines(title);
+            const widest = Math.max(...wrapped.map((line) => ctx.measureText(line).width));
+            if (wrapped.length <= maxLines && widest <= maxWidth) {
+                lines = wrapped;
+                break;
+            }
+            fontSize -= 2;
+        }
+
+        ctx.font = `bold ${fontSize}px monospace`;
+        lines = wrapIntoLines(title);
+        if (lines.length > maxLines) {
+            const merged = lines.slice(0, maxLines - 1);
+            const lastLine = lines.slice(maxLines - 1).join(' ');
+            merged.push(lastLine.length > 22 ? `${lastLine.slice(0, 19)}...` : lastLine);
+            lines = merged;
+        }
+
+        ctx.fillStyle = '#edf4ff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const lineHeight = fontSize * 1.08;
+        const startY = height * 0.5 - ((lines.length - 1) * lineHeight * 0.5);
+        lines.forEach((line, index) => {
+            ctx.fillText(line, width * 0.5, startY + index * lineHeight);
+        });
+
+        const texture = new THREE.CanvasTexture(canvas);
+        setTextureEncoding(texture);
+        texture.anisotropy = 4;
+        return texture;
+    };
+
     const TextureLibrary = {
         cache: new Map(),
 
@@ -2034,6 +2113,7 @@ import { loadWalletData } from '../walletloader/app.js';
             this.avatarHeadBone = null;
             this.avatarHeadAnchor = null;
             this.avatarScreenMesh = null;
+            this.avatarLabelSprite = null;
             this.pendingWalletNfts = null;
             this.mixer = null;
             this.idleAction = null;
@@ -2883,6 +2963,20 @@ import { loadWalletData } from '../walletloader/app.js';
             base.position.set(0, -0.25, -0.02);
             crtGroup.add(base);
 
+            const labelSprite = new THREE.Sprite(
+                new THREE.SpriteMaterial({
+                    map: createNpcMonitorLabelTexture('NFT'),
+                    transparent: true
+                })
+            );
+            labelSprite.name = 'npcMonitorLabel';
+            labelSprite.raycast = () => {};
+            labelSprite.visible = false;
+            labelSprite.scale.set(1.45, 0.36, 1);
+            labelSprite.position.set(0, 0.42, 0.02);
+            crtAnchor.add(labelSprite);
+            this.avatarLabelSprite = labelSprite;
+
             crtGroup.traverse((object) => {
                 if (!object.isMesh) return;
                 object.castShadow = true;
@@ -2907,6 +3001,13 @@ import { loadWalletData } from '../walletloader/app.js';
             this.setMonitorTexture(createMonitorTextTexture(text));
         }
 
+        setMonitorLabel(text) {
+            if (!this.avatarLabelSprite?.material) return;
+            this.avatarLabelSprite.material.map = createNpcMonitorLabelTexture(text);
+            this.avatarLabelSprite.material.needsUpdate = true;
+            this.avatarLabelSprite.visible = true;
+        }
+
         async showRandomWalletNft(nfts) {
             if (!this.avatarScreenMesh?.material) {
                 this.pendingWalletNfts = [...nfts];
@@ -2914,10 +3015,13 @@ import { loadWalletData } from '../walletloader/app.js';
             }
             if (!nfts.length) {
                 this.setMonitorText('NO NFT');
+                this.setMonitorLabel('NO NFT');
                 return;
             }
 
             const nft = nfts[Math.floor(Math.random() * nfts.length)];
+            const nftTitle = nft.name || nft.collection || 'UNKNOWN NFT';
+            this.setMonitorLabel(nftTitle);
             const candidates = getNftTextureCandidates(nft);
 
             for (const candidate of candidates) {
@@ -2930,7 +3034,7 @@ import { loadWalletData } from '../walletloader/app.js';
                 }
             }
 
-            this.setMonitorText(nft.name || nft.collection || 'UNKNOWN NFT');
+            this.setMonitorText(nftTitle);
         }
 
         updateTransform() {
