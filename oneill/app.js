@@ -556,6 +556,30 @@
             return this.resolveSurfaceCollisions(first.x, first.arc + deltaArc, coreRadius);
         }
 
+        liftObjectAboveCylinder(wrapper, theta, clearance = 0.03) {
+            const inwardUp = new THREE.Vector3(0, Math.cos(theta), -Math.sin(theta)).normalize();
+            wrapper.updateWorldMatrix(true, true);
+
+            let maxPenetration = -Infinity;
+            const samplePoint = new THREE.Vector3();
+
+            wrapper.traverse((child) => {
+                if (!child.isMesh || !child.geometry?.attributes?.position) return;
+                const position = child.geometry.attributes.position;
+                const step = Math.max(1, Math.floor(position.count / 240));
+                for (let i = 0; i < position.count; i += step) {
+                    samplePoint.fromBufferAttribute(position, i).applyMatrix4(child.matrixWorld);
+                    const radialDistance = Math.hypot(samplePoint.y, samplePoint.z);
+                    maxPenetration = Math.max(maxPenetration, radialDistance - this.radius);
+                }
+            });
+
+            if (!Number.isFinite(maxPenetration)) return;
+            if (maxPenetration >= -clearance) {
+                wrapper.position.addScaledVector(inwardUp, maxPenetration + clearance);
+            }
+        }
+
         placeImportedObject(object, placement, name = 'worldAsset') {
             object.updateWorldMatrix?.(true, true);
             const localBox = new THREE.Box3().setFromObject(object);
@@ -578,6 +602,7 @@
             });
 
             this.placeOnCylinder(wrapper, placement.x, placement.theta, 0, 0.02);
+            this.liftObjectAboveCylinder(wrapper, placement.theta, 0.03);
             const radius = Math.max(0.55, Math.min(6.5, Math.max(localSize.x, localSize.z) * 0.45));
             this.registerCollisionDisc(placement.x, placement.theta, radius);
             return wrapper;
