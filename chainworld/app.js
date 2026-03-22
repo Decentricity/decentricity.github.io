@@ -2996,7 +2996,8 @@ import { loadWalletData } from '../walletloader/app.js';
                 createCurvedCRTScreenGeometry(),
                 new THREE.MeshBasicMaterial({
                     map: createCRTTextTexture('NOT\nFREN'),
-                    side: THREE.DoubleSide
+                    side: THREE.DoubleSide,
+                    toneMapped: false
                 })
             );
             screen.name = 'npcCRTScreen';
@@ -3007,15 +3008,15 @@ import { loadWalletData } from '../walletloader/app.js';
             const glass = new THREE.Mesh(
                 new THREE.PlaneGeometry(0.36, 0.27),
                 new THREE.MeshPhysicalMaterial({
-                    color: 0xbfd4ff,
-                    metalness: 0.08,
-                    roughness: 0.24,
-                    transmission: 0.02,
+                    color: 0xffffff,
+                    metalness: 0.04,
+                    roughness: 0.18,
+                    transmission: 0,
                     ior: 1.45,
-                    clearcoat: 0.24,
+                    clearcoat: 0.18,
                     clearcoatRoughness: 0.1,
                     transparent: true,
-                    opacity: 0.9,
+                    opacity: 0.12,
                     side: THREE.DoubleSide
                 })
             );
@@ -3060,6 +3061,7 @@ import { loadWalletData } from '../walletloader/app.js';
 
         setMonitorTexture(texture) {
             if (!this.avatarScreenMesh?.material) return;
+            this.avatarScreenMesh.material.color?.setHex(0xffffff);
             this.avatarScreenMesh.material.map = texture;
             this.avatarScreenMesh.material.needsUpdate = true;
         }
