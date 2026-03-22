@@ -1145,7 +1145,7 @@ import { loadWalletData } from '../walletloader/app.js';
                 })
             );
             terrain.rotation.z = Math.PI * 0.5;
-            terrain.name = 'oneillTerrainShell';
+            terrain.name = 'chainworldTerrainShell';
             this.scene.add(terrain);
             this.registerGroundPick(terrain);
 
@@ -1294,13 +1294,6 @@ import { loadWalletData } from '../walletloader/app.js';
             this.placeOnCylinder(house, cfg.x, cfg.theta, cfg.yaw);
             house.translateY(0.2);
             this.scene.add(house);
-            this.registerFootprintDiscs(cfg.x, cfg.theta, cfg.yaw, [
-                { x: 0.37, z: 0, radius: 2.8 },
-                { x: 0.37, z: 2.6, radius: 2.4 },
-                { x: 0.37, z: -2.6, radius: 2.4 },
-                { x: 3.8, z: 1.0, radius: 1.8 },
-                { x: -3.45, z: 1.1, radius: 1.6 }
-            ]);
 
             const floorY = -0.2;
             const floorThickness = 0.06;
@@ -1355,10 +1348,6 @@ import { loadWalletData } from '../walletloader/app.js';
             );
             addWallZ('hallLeftWall', 2.45, -2.02, 3.06, 0xd7d0cb);
             addWallZ('hallRightReturn', 1.0, 2.02, 3.78, 0xd7d0cb);
-            addBox('hallConsole', 0.9, 0.12, 0.28, -0.35, floorY + 0.28, 4.0, makeMaterial(0x8f6f53, 0.72, 0.05));
-            addBox('hallConsoleLegA', 0.06, 0.34, 0.06, -0.72, floorY + 0.11, 4.0, makeMaterial(0x8f6f53, 0.72, 0.05));
-            addBox('hallConsoleLegB', 0.06, 0.34, 0.06, 0.02, floorY + 0.11, 4.0, makeMaterial(0x8f6f53, 0.72, 0.05));
-            addBox('hallMirror', 0.9, 0.7, 0.04, -0.35, floorY + 1.32, 4.0, makeMaterial(0xc8d3dc, 0.2, 0.15));
             addBox('hallRunner', 0.9, 0.01, 1.8, 0.25, floorY + 0.005, 3.1, makeMaterial(0xc8b4da, 0.95, 0.01));
 
             addFloor('livingFloor', 4.2, 4.4, 4.1, 1.1, 0xf2ebe1);
@@ -1570,11 +1559,13 @@ import { loadWalletData } from '../walletloader/app.js';
             const floorMat = makeMaterial(floorColor, 0.96, 0.01, { map: this.textures.tile });
             const interiorFinishMat = makeMaterial(floorColor, 0.95, 0.01, { map: this.rand01(cfg.seed, 26) > 0.45 ? this.textures.wood : this.textures.tile });
             const roofMat = new THREE.MeshStandardMaterial({ color: roofColor, map: this.textures.roof, roughness: 0.84, metalness: 0.02, side: THREE.DoubleSide });
-            this.registerFootprintDiscs(cfg.x, cfg.theta, cfg.yaw, [
-                { x: 0, z: 0, radius: Math.min(width, depth) * 0.22 },
-                { x: 0, z: depth * 0.24, radius: Math.min(width, depth) * 0.2 },
-                { x: 0, z: -depth * 0.24, radius: Math.min(width, depth) * 0.2 }
-            ]);
+            if (!cfg.enterable) {
+                this.registerFootprintDiscs(cfg.x, cfg.theta, cfg.yaw, [
+                    { x: 0, z: 0, radius: Math.min(width, depth) * 0.22 },
+                    { x: 0, z: depth * 0.24, radius: Math.min(width, depth) * 0.2 },
+                    { x: 0, z: -depth * 0.24, radius: Math.min(width, depth) * 0.2 }
+                ]);
+            }
 
             this.addLocalBox(house, 'lotPad', width + 4.5, 0.08, depth + 6.6, 0, 0.04, 0, makeMaterial(0xa8cd8f, 0.99, 0.0, { map: this.textures.grassFine }));
             this.addLocalBox(house, 'foundation', width + 0.18, 0.18, depth + 0.18, 0, 0.09, 0, makeMaterial(0xd4c5b4, 0.92, 0.01));
@@ -1898,7 +1889,7 @@ import { loadWalletData } from '../walletloader/app.js';
                 const urlInput = document.getElementById('url-input');
                 if (urlInput) urlInput.value = url;
             } catch (e) {
-                console.error('[oneill] Error loading URL:', e);
+                console.error('[chainworld] Error loading URL:', e);
             }
             this.lastWarningUrl = '';
             this.loadTimer = window.setTimeout(() => {
@@ -1906,7 +1897,7 @@ import { loadWalletData } from '../walletloader/app.js';
                 if (this.embedWarningMode === 'toast') {
                     this.showToast('This site may block embedding. Try another URL if the screen stays blank.');
                 }
-                console.warn('[oneill] iframe might be blocked or slow:', this.urlRequested);
+                console.warn('[chainworld] iframe might be blocked or slow:', this.urlRequested);
             }, 6000);
         }
 
@@ -2019,7 +2010,7 @@ import { loadWalletData } from '../walletloader/app.js';
 
         loadAvatar() {
             if (!THREE.GLTFLoader) {
-                console.error('[oneill] GLTFLoader unavailable; third-person avatar did not load');
+                console.error('[chainworld] GLTFLoader unavailable; third-person avatar did not load');
                 return;
             }
             const loader = new THREE.GLTFLoader();
@@ -2059,7 +2050,7 @@ import { loadWalletData } from '../walletloader/app.js';
                     }
                 },
                 undefined,
-                (error) => console.error('[oneill] Xbot failed to load', error)
+                (error) => console.error('[chainworld] Xbot failed to load', error)
             );
         }
 
@@ -2702,7 +2693,7 @@ import { loadWalletData } from '../walletloader/app.js';
 
         loadAvatar() {
             if (!THREE.GLTFLoader) {
-                console.error('[oneill] GLTFLoader unavailable; wandering NPC did not load');
+                console.error('[chainworld] GLTFLoader unavailable; wandering NPC did not load');
                 return;
             }
 
@@ -2731,7 +2722,7 @@ import { loadWalletData } from '../walletloader/app.js';
                     this.updateTransform();
                 },
                 undefined,
-                (error) => console.error('[oneill] NPC Xbot failed to load', error)
+                (error) => console.error('[chainworld] NPC Xbot failed to load', error)
             );
         }
 
@@ -3210,7 +3201,7 @@ import { loadWalletData } from '../walletloader/app.js';
                 this.world.placeImportedObject(object, placement, file.name);
                 this.css3dScreen.showToast(`Placed ${file.name}`);
             } catch (error) {
-                console.error('[oneill] asset import failed', error);
+                console.error('[chainworld] asset import failed', error);
                 this.css3dScreen.showToast(`Could not load ${file.name}`);
             }
         }
@@ -3262,7 +3253,7 @@ import { loadWalletData } from '../walletloader/app.js';
                     });
                     return true;
                 } catch (error) {
-                    console.warn('[oneill] nft texture failed', candidate, error);
+                    console.warn('[chainworld] nft texture failed', candidate, error);
                 }
             }
             return false;
