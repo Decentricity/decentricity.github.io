@@ -150,6 +150,94 @@ import { loadWalletData } from '../walletloader/app.js';
         return texture;
     };
 
+    const createNftLabelTexture = (text) => {
+        const title = sanitizeNodeText(text, 'Untitled NFT');
+        const width = 768;
+        const height = 192;
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+
+        const gradient = ctx.createLinearGradient(0, 0, 0, height);
+        gradient.addColorStop(0, '#0d1a29');
+        gradient.addColorStop(1, '#1e354c');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, width, height);
+
+        ctx.strokeStyle = 'rgba(170, 210, 255, 0.35)';
+        ctx.lineWidth = 10;
+        ctx.strokeRect(10, 10, width - 20, height - 20);
+
+        const maxWidth = width - 88;
+        const maxLines = 2;
+        const minFontSize = 28;
+        let fontSize = 78;
+        let lines = [title];
+
+        const wrapIntoLines = (input) => {
+            const words = input.split(/\s+/).filter(Boolean);
+            if (!words.length) return ['Untitled NFT'];
+            const nextLines = [];
+            let current = words[0];
+
+            for (let i = 1; i < words.length; i++) {
+                const candidate = `${current} ${words[i]}`;
+                if (ctx.measureText(candidate).width <= maxWidth) {
+                    current = candidate;
+                    continue;
+                }
+                nextLines.push(current);
+                current = words[i];
+            }
+            nextLines.push(current);
+            return nextLines;
+        };
+
+        while (fontSize >= minFontSize) {
+            ctx.font = `bold ${fontSize}px monospace`;
+            const wrapped = wrapIntoLines(title);
+            const widest = Math.max(...wrapped.map((line) => ctx.measureText(line).width));
+            if (wrapped.length <= maxLines && widest <= maxWidth) {
+                lines = wrapped;
+                break;
+            }
+            fontSize -= 4;
+        }
+
+        ctx.font = `bold ${fontSize}px monospace`;
+        lines = wrapIntoLines(title);
+        while (lines.length > maxLines && fontSize > minFontSize) {
+            fontSize -= 2;
+            ctx.font = `bold ${fontSize}px monospace`;
+            lines = wrapIntoLines(title);
+        }
+
+        if (lines.length > maxLines) {
+            const merged = lines.slice(0, maxLines - 1);
+            merged.push(lines.slice(maxLines - 1).join(' '));
+            lines = merged;
+            while (ctx.measureText(lines[maxLines - 1]).width > maxWidth && fontSize > minFontSize) {
+                fontSize -= 2;
+                ctx.font = `bold ${fontSize}px monospace`;
+            }
+        }
+
+        ctx.fillStyle = '#edf4ff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const lineHeight = fontSize * 1.08;
+        const startY = height * 0.5 - ((lines.length - 1) * lineHeight * 0.5);
+        lines.forEach((line, index) => {
+            ctx.fillText(line, width * 0.5, startY + index * lineHeight);
+        });
+
+        const texture = new THREE.CanvasTexture(canvas);
+        setTextureEncoding(texture);
+        texture.anisotropy = 4;
+        return texture;
+    };
+
     const TextureLibrary = {
         cache: new Map(),
 
@@ -726,13 +814,13 @@ import { loadWalletData } from '../walletloader/app.js';
         reserveNftPlacements(count, seedText = '') {
             const placements = [];
             const queue = this.buildNftPlacementQueue(count, seedText);
-            const cellSize = 3.8;
+            const cellSize = 8.5;
             const centerArc = this.spawn.theta * this.radius;
 
             for (let index = 0; index < queue.length && placements.length < count; index++) {
                 const cell = queue[index];
-                const jitterX = (this.rand01(index + count, 13) - 0.5) * 0.55;
-                const jitterArc = (this.rand01(index + count, 29) - 0.5) * 0.55;
+                const jitterX = (this.rand01(index + count, 13) - 0.5) * 1.6;
+                const jitterArc = (this.rand01(index + count, 29) - 0.5) * 1.6;
                 const candidateX = this.spawn.x + cell.gx * cellSize + jitterX;
                 const candidateArc = centerArc + cell.gy * cellSize + jitterArc;
                 const resolved = this.resolveSurfaceCollisions(candidateX, candidateArc, this.nftCubeRadius, 0.16);
@@ -764,18 +852,12 @@ import { loadWalletData } from '../walletloader/app.js';
             const title = sanitizeNodeText(nft.name, sanitizeNodeText(nft.collection, 'Untitled NFT'));
             const plaque = new THREE.Sprite(
                 new THREE.SpriteMaterial({
-                    map: createCRTTextTexture(title.length > 18 ? `${title.slice(0, 18)}...` : title, {
-                        width: 384,
-                        height: 128,
-                        background: '#0d1a29',
-                        glow: '#1e354c',
-                        foreground: '#edf4ff'
-                    }),
+                    map: createNftLabelTexture(title),
                     transparent: true
                 })
             );
             plaque.raycast = () => {};
-            plaque.scale.set(1.9, 0.58, 1);
+            plaque.scale.set(3.35, 0.84, 1);
             plaque.position.set(0, this.nftCubeSize + 0.48, 0);
             wrapper.add(plaque);
 
