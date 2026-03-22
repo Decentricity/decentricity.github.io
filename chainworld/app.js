@@ -2162,12 +2162,15 @@ import { loadWalletData } from '../walletloader/app.js';
             this.idleAction = null;
             this.walkAction = null;
             this.runAction = null;
+            this.attackAction = null;
             this.jumpPoseAction = null;
             this.currentAction = null;
             this.jumpOffset = 0;
             this.jumpVelocity = 0;
             this.jumpBlend = 0;
             this.jumpPoseTime = 0.18;
+            this.attackTimer = 0;
+            this.attackDuration = 0.72;
             this.loadAvatar();
 
             document.body.classList.toggle('touch-device', this.isTouchDevice);
@@ -2208,9 +2211,16 @@ import { loadWalletData } from '../walletloader/app.js';
                     const idleClip = findFirstClipByNames(gltf.animations, ['female_Idle']);
                     const walkClip = findFirstClipByNames(gltf.animations, ['female_Walk']);
                     const runClip = findFirstClipByNames(gltf.animations, ['female_Run']);
+                    const attackClip = findFirstClipByNames(gltf.animations, ['female_Attack']);
                     if (idleClip) this.idleAction = this.mixer.clipAction(idleClip);
                     if (walkClip) this.walkAction = this.mixer.clipAction(walkClip);
                     if (runClip) this.runAction = this.mixer.clipAction(runClip);
+                    if (attackClip) {
+                        this.attackAction = this.mixer.clipAction(attackClip);
+                        this.attackAction.setLoop(THREE.LoopOnce, 1);
+                        this.attackAction.clampWhenFinished = true;
+                        this.attackDuration = Math.max(0.35, attackClip.duration || this.attackDuration);
+                    }
                     const sneakClip = THREE.AnimationClip.findByName(gltf.animations, 'sneak_pose');
                     if (sneakClip) {
                         let additiveClip = sneakClip.clone();
@@ -2339,6 +2349,38 @@ import { loadWalletData } from '../walletloader/app.js';
             nextAction.reset().fadeIn(0.2).play();
             nextAction.paused = false;
             this.currentAction = nextAction;
+        }
+
+        isAttacking() {
+            return this.attackTimer > 0;
+        }
+
+        triggerAttack() {
+            if (!this.attackAction || !this.enabled || !this.isLocked || this.isAttacking()) return false;
+            if (this.currentAction && this.currentAction !== this.attackAction) {
+                this.currentAction.paused = false;
+                this.currentAction.fadeOut(0.08);
+            }
+            this.attackTimer = this.attackDuration;
+            this.attackAction.enabled = true;
+            this.attackAction.paused = false;
+            this.attackAction.reset();
+            this.attackAction.fadeIn(0.05).play();
+            this.currentAction = this.attackAction;
+            return true;
+        }
+
+        finishAttack() {
+            if (!this.attackAction) return;
+            this.attackTimer = 0;
+            this.attackAction.stop();
+            if (this.currentAction === this.attackAction) {
+                this.currentAction = null;
+            }
+        }
+
+        getAttackSurfaceDirection() {
+            return new THREE.Vector2(-Math.sin(this.yaw), -Math.cos(this.yaw)).normalize();
         }
 
         setModelVisible(visible) {
@@ -2705,6 +2747,13 @@ import { loadWalletData } from '../walletloader/app.js';
                 this.mixer.update(delta);
             }
 
+            if (this.attackTimer > 0) {
+                this.attackTimer = Math.max(0, this.attackTimer - delta);
+                if (this.attackTimer === 0) {
+                    this.finishAttack();
+                }
+            }
+
             if (!this.isLocked && !this.isTouchDevice) {
                 this.updateModelTransform();
                 this.updateCamera();
@@ -2766,6 +2815,10 @@ import { loadWalletData } from '../walletloader/app.js';
             this.wrapArc();
             this.updateModelTransform();
             this.updateCamera();
+
+            if (this.isAttacking()) {
+                return;
+            }
 
             if (this.idleAction && this.walkAction && !this.isJumping()) {
                 if (moving && isRunning && this.runAction) {
@@ -3126,6 +3179,24 @@ import { loadWalletData } from '../walletloader/app.js';
             this.resolveReady = null;
         }
 
+        pushAway(deltaX, deltaArc) {
+            const next = this.world.moveOnSurface(
+                this.surfaceX,
+                this.surfaceArc,
+                deltaX,
+                deltaArc,
+                this.coreRadius
+            );
+            this.surfaceX = next.x;
+            this.surfaceArc = next.arc;
+            this.clampX();
+            this.wrapArc();
+            this.facingYaw = Math.atan2(deltaX, deltaArc);
+            this.hasDestination = false;
+            this.pauseTimer = this.randomPauseDuration();
+            this.updateTransform();
+        }
+
         updateTransform() {
             this.syncBasis();
             if (!this.model) return;
@@ -3453,6 +3524,7 @@ import { loadWalletData } from '../walletloader/app.js';
         bindEvents() {
             window.addEventListener('resize', () => this.onResize());
             renderer.domElement.addEventListener('click', (event) => this.handleWorldClick(event));
+            renderer.domElement.addEventListener('mousedown', (event) => this.handleAttackMouseDown(event));
             renderer.domElement.addEventListener('contextmenu', (event) => this.handleGroundContextMenu(event));
             this.fileInput?.addEventListener('change', (event) => this.handleAssetUpload(event));
             this.walletForm?.addEventListener('submit', (event) => this.handleWalletSubmit(event));
@@ -3491,6 +3563,48 @@ import { loadWalletData } from '../walletloader/app.js';
             }
 
             this.controls.lock();
+        }
+
+        handleAttackMouseDown(event) {
+            if (event.button !== 0) return;
+            if (this.interaction.isOverScreen) return;
+            if (!this.controls.isLocked) return;
+            if (!this.controls.triggerAttack()) return;
+            this.pushNpcInFrontOfPlayer();
+            event.preventDefault();
+        }
+
+        getAttackableNpcs() {
+            return [this.npc, ...this.walletNpcs].filter((npc) => npc && !npc.isDestroyed);
+        }
+
+        pushNpcInFrontOfPlayer() {
+            const attackDir = this.controls.getAttackSurfaceDirection();
+            const attackRange = 2.4;
+            const attackCone = 0.55;
+            let targetNpc = null;
+            let bestScore = -Infinity;
+
+            this.getAttackableNpcs().forEach((npc) => {
+                const dx = npc.surfaceX - this.controls.surfaceX;
+                const dz = this.world.shortestArcDelta(this.controls.surfaceArc, npc.surfaceArc);
+                const distance = Math.hypot(dx, dz);
+                if (distance <= 0.001 || distance > attackRange) return;
+
+                const align = ((dx / distance) * attackDir.x) + ((dz / distance) * attackDir.y);
+                if (align < attackCone) return;
+
+                const score = (align * 10) - distance;
+                if (score > bestScore) {
+                    bestScore = score;
+                    targetNpc = npc;
+                }
+            });
+
+            if (!targetNpc) return;
+
+            const pushDistance = 1.85;
+            targetNpc.pushAway(attackDir.x * pushDistance, attackDir.y * pushDistance);
         }
 
         handleGroundContextMenu(event) {
