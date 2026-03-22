@@ -3,8 +3,8 @@ import { loadWalletData } from '../walletloader/app.js';
 (() => {
     const clampDPR = (dpr) => Math.min(dpr, 2);
     const DEFAULT_HOME_URL = 'https://agent1c-ai.github.io';
+    const PLAYER_MODEL_URL = './assets/base-female.glb';
     const DEFAULT_NPC_MODEL_URL = 'https://threejs.org/examples/models/gltf/Xbot.glb';
-    const FEMALE_NPC_MODEL_URL = './assets/base-female.glb';
     const TAU = Math.PI * 2;
 
     const canvas = document.getElementById('webgl');
@@ -95,6 +95,41 @@ import { loadWalletData } from '../walletloader/app.js';
         }
         return null;
     };
+
+    const wrapTextLines = (text, maxCharsPerLine = 12, maxLines = 3) => {
+        const words = sanitizeNodeText(text, 'NFT').split(/\s+/).filter(Boolean);
+        if (!words.length) return ['NFT'];
+        const lines = [];
+        let current = words[0];
+
+        for (let i = 1; i < words.length; i++) {
+            const candidate = `${current} ${words[i]}`;
+            if (candidate.length <= maxCharsPerLine) {
+                current = candidate;
+                continue;
+            }
+            lines.push(current);
+            current = words[i];
+        }
+        lines.push(current);
+
+        if (lines.length <= maxLines) return lines;
+        const clipped = lines.slice(0, maxLines - 1);
+        const lastLine = lines.slice(maxLines - 1).join(' ');
+        clipped.push(lastLine.length > maxCharsPerLine ? `${lastLine.slice(0, maxCharsPerLine - 3)}...` : lastLine);
+        return clipped;
+    };
+
+    const createMonitorTextTexture = (text) => createCRTTextTexture(
+        wrapTextLines(text, 12, 3).join('\n'),
+        {
+            width: 512,
+            height: 384,
+            background: '#071421',
+            glow: '#17324f',
+            foreground: '#d7e7ff'
+        }
+    );
 
     const getNftTextureCandidates = (nft) => {
         const urls = [];
@@ -1999,6 +2034,7 @@ import { loadWalletData } from '../walletloader/app.js';
             this.avatarHeadBone = null;
             this.avatarHeadAnchor = null;
             this.avatarScreenMesh = null;
+            this.pendingWalletNfts = null;
             this.mixer = null;
             this.idleAction = null;
             this.walkAction = null;
@@ -2025,21 +2061,33 @@ import { loadWalletData } from '../walletloader/app.js';
             }
             const loader = new THREE.GLTFLoader();
             loader.load(
-                'https://threejs.org/examples/models/gltf/Xbot.glb',
+                PLAYER_MODEL_URL,
                 (gltf) => {
                     this.model = gltf.scene;
                     this.model.name = 'playerAvatar';
                     this.playerGroup.add(this.model);
                     this.model.traverse((object) => {
                         if (!object.isMesh) return;
+                        object.material = new THREE.MeshStandardMaterial({
+                            color: /eye/i.test(object.name || '') ? 0xfff2fd : 0xff4fb3,
+                            emissive: /eye/i.test(object.name || '') ? 0x2d1525 : 0x7a0f52,
+                            emissiveIntensity: /eye/i.test(object.name || '') ? 0.08 : 0.34,
+                            roughness: 0.58,
+                            metalness: 0.12,
+                            skinning: !!object.isSkinnedMesh
+                        });
                         object.castShadow = true;
+                        object.receiveShadow = true;
                         object.userData.ignoreScreenOcclusion = true;
                         object.userData.ignoreCameraOcclusion = true;
                     });
                     this.mixer = new THREE.AnimationMixer(this.model);
-                    this.idleAction = this.mixer.clipAction(THREE.AnimationClip.findByName(gltf.animations, 'idle'));
-                    this.walkAction = this.mixer.clipAction(THREE.AnimationClip.findByName(gltf.animations, 'walk'));
-                    this.runAction = this.mixer.clipAction(THREE.AnimationClip.findByName(gltf.animations, 'run'));
+                    const idleClip = findFirstClipByNames(gltf.animations, ['female_Idle']);
+                    const walkClip = findFirstClipByNames(gltf.animations, ['female_Walk']);
+                    const runClip = findFirstClipByNames(gltf.animations, ['female_Run']);
+                    if (idleClip) this.idleAction = this.mixer.clipAction(idleClip);
+                    if (walkClip) this.walkAction = this.mixer.clipAction(walkClip);
+                    if (runClip) this.runAction = this.mixer.clipAction(runClip);
                     const sneakClip = THREE.AnimationClip.findByName(gltf.animations, 'sneak_pose');
                     if (sneakClip) {
                         let additiveClip = sneakClip.clone();
@@ -2060,7 +2108,7 @@ import { loadWalletData } from '../walletloader/app.js';
                     }
                 },
                 undefined,
-                (error) => console.error('[chainworld] Xbot failed to load', error)
+                (error) => console.error('[chainworld] player avatar failed to load', error)
             );
         }
 
@@ -2649,6 +2697,7 @@ import { loadWalletData } from '../walletloader/app.js';
             this.model = null;
             this.avatarHeadBone = null;
             this.avatarHeadAnchor = null;
+            this.avatarScreenMesh = null;
             this.mixer = null;
             this.idleAction = null;
             this.walkAction = null;
@@ -2702,11 +2751,11 @@ import { loadWalletData } from '../walletloader/app.js';
             this.hasDestination = true;
         }
 
-        applyBlueAvatarMaterial(mesh) {
+        applyNpcAvatarMaterial(mesh) {
             mesh.material = new THREE.MeshStandardMaterial({
-                color: mesh.name && /eye/i.test(mesh.name) ? 0xe8f2ff : 0x4d76ff,
-                emissive: mesh.name && /eye/i.test(mesh.name) ? 0x1a2235 : 0x173275,
-                emissiveIntensity: mesh.name && /eye/i.test(mesh.name) ? 0.08 : 0.26,
+                color: mesh.name && /eye/i.test(mesh.name) ? 0xfff0ea : 0xff3a3a,
+                emissive: mesh.name && /eye/i.test(mesh.name) ? 0x341812 : 0x7a1212,
+                emissiveIntensity: mesh.name && /eye/i.test(mesh.name) ? 0.08 : 0.28,
                 roughness: 0.72,
                 metalness: 0.08,
                 skinning: !!mesh.isSkinnedMesh
@@ -2728,7 +2777,7 @@ import { loadWalletData } from '../walletloader/app.js';
                     this.playerGroup.add(this.model);
                     this.model.traverse((object) => {
                         if (!object.isMesh) return;
-                        this.applyBlueAvatarMaterial(object);
+                        this.applyNpcAvatarMaterial(object);
                         object.castShadow = true;
                         object.receiveShadow = true;
                     });
@@ -2805,6 +2854,7 @@ import { loadWalletData } from '../walletloader/app.js';
             );
             screen.name = 'npcCRTScreen';
             screen.position.z = 0.092;
+            this.avatarScreenMesh = screen;
             crtGroup.add(screen);
 
             const glass = new THREE.Mesh(
@@ -2840,6 +2890,47 @@ import { loadWalletData } from '../walletloader/app.js';
             });
 
             crtAnchor.add(crtGroup);
+            if (this.pendingWalletNfts) {
+                const pendingNfts = this.pendingWalletNfts;
+                this.pendingWalletNfts = null;
+                this.showRandomWalletNft(pendingNfts);
+            }
+        }
+
+        setMonitorTexture(texture) {
+            if (!this.avatarScreenMesh?.material) return;
+            this.avatarScreenMesh.material.map = texture;
+            this.avatarScreenMesh.material.needsUpdate = true;
+        }
+
+        setMonitorText(text) {
+            this.setMonitorTexture(createMonitorTextTexture(text));
+        }
+
+        async showRandomWalletNft(nfts) {
+            if (!this.avatarScreenMesh?.material) {
+                this.pendingWalletNfts = [...nfts];
+                return;
+            }
+            if (!nfts.length) {
+                this.setMonitorText('NO NFT');
+                return;
+            }
+
+            const nft = nfts[Math.floor(Math.random() * nfts.length)];
+            const candidates = getNftTextureCandidates(nft);
+
+            for (const candidate of candidates) {
+                try {
+                    const texture = await loadTexture(candidate);
+                    this.setMonitorTexture(texture);
+                    return;
+                } catch (error) {
+                    console.warn('[chainworld] npc monitor nft texture failed', candidate, error);
+                }
+            }
+
+            this.setMonitorText(nft.name || nft.collection || 'UNKNOWN NFT');
         }
 
         updateTransform() {
@@ -3136,17 +3227,6 @@ import { loadWalletData } from '../walletloader/app.js';
             this.world = new OneillWorld(scene);
             this.controls = new ThirdPersonCylinderControls(camera, renderer.domElement, this.world);
             this.npc = new WanderingNPC(scene, this.world);
-            this.femaleNpc = new WanderingNPC(scene, this.world, {
-                modelUrl: FEMALE_NPC_MODEL_URL,
-                idleClipNames: ['female_Idle'],
-                walkClipNames: ['female_Walk', 'female_Run'],
-                attachCrtHead: false,
-                spawnXOffset: -2.8,
-                spawnArcOffset: 5.2,
-                walkSpeed: 1.1,
-                wanderRadius: 5.6,
-                logLabel: 'female NPC'
-            });
             this.css3dScreen = new CSS3DScreen(scene, camera, this.world.starterScreenMesh);
             this.interaction = new InteractionSystem(camera, this.controls, this.world.starterScreenMesh, this.css3dScreen);
             this.controls.onAvatarScreenReady = (screenMesh) => {
@@ -3323,10 +3403,13 @@ import { loadWalletData } from '../walletloader/app.js';
             this.updateWalletQuery(walletData.address);
 
             if (!nfts.length) {
+                this.npc.showRandomWalletNft([]);
                 setWalletStatus(`No NFTs found for ${shortWalletAddress(walletData.address)}.`, false);
                 this.css3dScreen.showToast('No NFTs found for that wallet');
                 return;
             }
+
+            this.npc.showRandomWalletNft(nfts);
 
             const placements = this.world.reserveNftPlacements(nfts.length, walletData.address);
             const cubeDisplays = nfts.map((nft, index) => this.world.createNftCubeDisplay(nft, placements[index], index));
@@ -3369,7 +3452,6 @@ import { loadWalletData } from '../walletloader/app.js';
             const delta = Math.min(this.clock.getDelta(), 0.05);
             this.controls.update(delta);
             this.npc.update(delta);
-            this.femaleNpc.update(delta);
             renderer.render(scene, camera);
             this.css3dScreen.update();
         }
