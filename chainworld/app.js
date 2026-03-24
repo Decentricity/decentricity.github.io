@@ -2294,6 +2294,7 @@ const playPunchSound = () => {
                     if (this.onAvatarScreenReady && this.avatarScreenMesh) {
                         this.onAvatarScreenReady(this.avatarScreenMesh);
                     }
+                    this.onAvatarReady?.();
                 },
                 undefined,
                 (error) => console.error('[chainworld] player avatar failed to load', error)
@@ -3031,6 +3032,38 @@ const playPunchSound = () => {
                 metalness: 0.08,
                 skinning: !!mesh.isSkinnedMesh
             });
+            mesh.userData.npcDefaultMaterial = {
+                color: mesh.material.color.clone(),
+                emissive: mesh.material.emissive.clone()
+            };
+        }
+
+        wrapBodyTexture(texture) {
+            if (!this.model || !texture) return;
+            this.model.traverse((object) => {
+                if (!object.isMesh || /eye/i.test(object.name || '')) return;
+                object.material.map = texture;
+                object.material.color.setHex(0xffffff);
+                object.material.emissive.setHex(0x111111);
+                object.material.needsUpdate = true;
+            });
+        }
+
+        clearBodyTexture() {
+            if (!this.model) return;
+            this.model.traverse((object) => {
+                if (!object.isMesh || /eye/i.test(object.name || '')) return;
+                const defaults = object.userData.npcDefaultMaterial;
+                if (defaults) {
+                    object.material.color.copy(defaults.color);
+                    object.material.emissive.copy(defaults.emissive);
+                } else {
+                    object.material.color.setHex(0xff3a3a);
+                    object.material.emissive.setHex(0x7a1212);
+                }
+                object.material.map = null;
+                object.material.needsUpdate = true;
+            });
         }
 
         loadAvatar() {
@@ -3213,6 +3246,7 @@ const playPunchSound = () => {
                 this.pendingWalletNfts = [...nfts];
                 return false;
             }
+            this.clearBodyTexture();
             if (!nfts.length) {
                 this.setMonitorText('NO NFT');
                 this.setMonitorLabel('NO NFT');
@@ -3228,6 +3262,7 @@ const playPunchSound = () => {
                 try {
                     const texture = await loadTexture(candidate);
                     this.setMonitorTexture(texture);
+                    this.wrapBodyTexture(texture);
                     return true;
                 } catch (error) {
                     console.warn('[chainworld] npc monitor nft texture failed', candidate, error);
@@ -3235,6 +3270,7 @@ const playPunchSound = () => {
             }
 
             this.setMonitorText(nftTitle);
+            this.clearBodyTexture();
             return false;
         }
 
@@ -3606,16 +3642,30 @@ const playPunchSound = () => {
                 this.css3dScreen.setScreenMesh(screenMesh);
                 this.interaction.screenMesh = screenMesh;
             };
+            this.sceneReady = false;
+            this.avatarReady = false;
+            this.checkLoadingOverlay = () => {
+                if (this.sceneReady && this.avatarReady) {
+                    loadingOverlay?.classList.add('hidden');
+                }
+            };
+            this.controls.onAvatarReady = () => {
+                this.avatarReady = true;
+                this.checkLoadingOverlay();
+            };
             this.urlBar = new URLBar(this.css3dScreen);
             this.clock = new THREE.Clock();
 
+            window.requestAnimationFrame(() => {
+                this.sceneReady = true;
+                this.checkLoadingOverlay();
+            });
             const startupUrl = localStorage.getItem('crt.url') || DEFAULT_HOME_URL;
             this.css3dScreen.loadURL(startupUrl);
             this.bindEvents();
             this.restoreWalletFromQuery();
             this.onResize();
             this.animate();
-            window.requestAnimationFrame(() => loadingOverlay?.classList.add('hidden'));
         }
 
         bindEvents() {
