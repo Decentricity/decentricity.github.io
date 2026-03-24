@@ -3734,16 +3734,26 @@ const playCelebrationSound = () => {
             };
             this.currentTargetNpc = null;
             this.targetCycleTimeoutId = null;
-            const arrowGeometry = new THREE.ConeGeometry(0.18, 0.5, 12);
-            arrowGeometry.rotateX(-Math.PI / 2);
-            const arrowMaterial = new THREE.MeshBasicMaterial({
-                color: 0x66ff66,
-                emissive: 0x99ff99
-            });
-            this.targetArrow = new THREE.Mesh(arrowGeometry, arrowMaterial);
-            this.targetArrow.position.set(0, 0.05, 0);
+            this.targetArrow = new THREE.ArrowHelper(
+                new THREE.Vector3(0, 0, 1),
+                new THREE.Vector3(),
+                1.25,
+                0x66ff66,
+                0.42,
+                0.24
+            );
             this.targetArrow.visible = false;
             scene.add(this.targetArrow);
+            this.targetDebugLineGeometry = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(),
+                new THREE.Vector3()
+            ]);
+            this.targetDebugLine = new THREE.Line(
+                this.targetDebugLineGeometry,
+                new THREE.LineBasicMaterial({ color: 0xa7ff8a })
+            );
+            this.targetDebugLine.visible = false;
+            scene.add(this.targetDebugLine);
             this.targetArrowUp = new THREE.Vector3();
             this.targetArrowDir = new THREE.Vector3();
             this.targetArrowRight = new THREE.Vector3();
@@ -3861,12 +3871,18 @@ const playCelebrationSound = () => {
             const target = this.currentTargetNpc;
             if (!target || target.isDestroyed || target.isFallen) {
                 this.targetArrow.visible = false;
+                if (this.targetDebugLine) this.targetDebugLine.visible = false;
                 return;
             }
             const playerPos = new THREE.Vector3();
             this.controls.playerGroup.getWorldPosition(playerPos);
             const targetPos = new THREE.Vector3();
             target.playerGroup.getWorldPosition(targetPos);
+            if (this.targetDebugLine) {
+                this.targetDebugLineGeometry.setFromPoints([playerPos, targetPos]);
+                this.targetDebugLineGeometry.attributes.position.needsUpdate = true;
+                this.targetDebugLine.visible = true;
+            }
             const arrowPos = playerPos.clone();
             this.targetArrowUp.copy(this.controls.up).normalize();
             arrowPos.addScaledVector(this.targetArrowUp, 0.25);
@@ -3876,16 +3892,12 @@ const playCelebrationSound = () => {
             this.targetArrowDir.addScaledVector(this.targetArrowUp, -alongUp);
             if (this.targetArrowDir.lengthSq() < 0.0001) {
                 this.targetArrow.visible = false;
+                if (this.targetDebugLine) this.targetDebugLine.visible = false;
                 return;
             }
             this.targetArrowDir.normalize();
-            this.targetArrowRight.crossVectors(this.targetArrowUp, this.targetArrowDir).normalize();
-            if (this.targetArrowRight.lengthSq() < 0.0001) {
-                this.targetArrow.visible = false;
-                return;
-            }
-            this.targetArrowMatrix.makeBasis(this.targetArrowRight, this.targetArrowUp, this.targetArrowDir);
-            this.targetArrow.quaternion.setFromRotationMatrix(this.targetArrowMatrix);
+            this.targetArrow.setDirection(this.targetArrowDir);
+            this.targetArrow.setLength(1.25, 0.42, 0.24);
             this.targetArrow.visible = true;
         }
 
@@ -3936,6 +3948,9 @@ const playCelebrationSound = () => {
             if (this.targetArrow) {
                 this.targetArrow.visible = false;
             }
+            if (this.targetDebugLine) {
+                this.targetDebugLine.visible = false;
+            }
             if (this.targetCycleTimeoutId) {
                 window.clearTimeout(this.targetCycleTimeoutId);
                 this.targetCycleTimeoutId = null;
@@ -3951,6 +3966,7 @@ const playCelebrationSound = () => {
             playCelebrationSound();
             this.currentTargetNpc = null;
             if (this.targetArrow) this.targetArrow.visible = false;
+            if (this.targetDebugLine) this.targetDebugLine.visible = false;
             if (this.targetCycleTimeoutId) {
                 window.clearTimeout(this.targetCycleTimeoutId);
             }
