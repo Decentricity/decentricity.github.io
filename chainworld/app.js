@@ -36,6 +36,7 @@ import { loadWalletData } from '../walletloader/app.js';
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x02030a);
     scene.fog = new THREE.Fog(0x121923, 6500, 18000);
+    scene.add(new THREE.HemisphereLight(0xf0f6ff, 0x101820, 0.55));
 
     const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 7000);
 
@@ -717,6 +718,10 @@ import { loadWalletData } from '../walletloader/app.js';
     class OneillWorld {
         constructor(scene) {
             this.scene = scene;
+            const ambientFill = new THREE.AmbientLight(0xf8f5ff, 0.45);
+            const warmth = new THREE.PointLight(0xfff4d4, 0.72, 400, 2);
+            warmth.position.set(0, 60, 0);
+            this.scene.add(ambientFill, warmth);
             this.radius = 260;
             this.length = 280;
             this.maxWalkX = this.length * 0.5 - 10;
@@ -1840,7 +1845,7 @@ import { loadWalletData } from '../walletloader/app.js';
             this.occlusionBlockers = [];
             this.occlusionRefreshCounter = 0;
 
-            this.renderer = new CSS3DRenderer();
+        this.renderer = new CSS3DRenderer();
             this.renderer.setSize(window.innerWidth, window.innerHeight);
             this.renderer.domElement.id = 'css3d-renderer';
             this.dom = document.getElementById('css3d-root');
@@ -2304,6 +2309,12 @@ import { loadWalletData } from '../walletloader/app.js';
             this.avatarScreenMesh.position.z = 0.092;
             this.avatarScreenMesh.userData.ignoreCameraOcclusion = true;
             crtGroup.add(this.avatarScreenMesh);
+
+            const monitorLight = new THREE.PointLight(0x9fd3ff, 0.6, 2.2, 2);
+            monitorLight.position.set(0, 0, 0.15);
+            monitorLight.userData.ignoreCameraOcclusion = true;
+            monitorLight.visible = true;
+            crtGroup.add(monitorLight);
 
             const glass = new THREE.Mesh(
                 new THREE.PlaneGeometry(0.36, 0.27),
