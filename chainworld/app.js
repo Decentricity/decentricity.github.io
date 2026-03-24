@@ -1,3 +1,12 @@
+import * as THREE from 'three';
+import { CSS3DObject, CSS3DRenderer } from 'three/addons/renderers/CSS3DRenderer.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+import { PLYLoader } from 'three/addons/loaders/PLYLoader.js';
+import { VOXLoader, VOXMesh } from 'three/addons/loaders/VOXLoader.js';
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { loadWalletData } from '../walletloader/app.js';
 
 (() => {
@@ -20,7 +29,7 @@ import { loadWalletData } from '../walletloader/app.js';
     });
     renderer.setPixelRatio(clampDPR(window.devicePixelRatio));
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 0.48;
 
@@ -31,11 +40,7 @@ import { loadWalletData } from '../walletloader/app.js';
     const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 7000);
 
     const setTextureEncoding = (texture) => {
-        if ('colorSpace' in texture && THREE.SRGBColorSpace) {
-            texture.colorSpace = THREE.SRGBColorSpace;
-        } else {
-            texture.encoding = THREE.sRGBEncoding;
-        }
+        texture.colorSpace = THREE.SRGBColorSpace;
     };
 
     const textureLoader = new THREE.TextureLoader();
@@ -149,11 +154,11 @@ import { loadWalletData } from '../walletloader/app.js';
             return npcModelTemplateCache.get(url);
         }
         const promise = new Promise((resolve, reject) => {
-            if (!THREE.GLTFLoader) {
+            if (!GLTFLoader) {
                 reject(new Error('GLTFLoader unavailable'));
                 return;
             }
-            const loader = new THREE.GLTFLoader();
+            const loader = new GLTFLoader();
             loader.load(url, resolve, undefined, reject);
         });
         npcModelTemplateCache.set(url, promise);
@@ -1835,7 +1840,7 @@ import { loadWalletData } from '../walletloader/app.js';
             this.occlusionBlockers = [];
             this.occlusionRefreshCounter = 0;
 
-            this.renderer = new THREE.CSS3DRenderer();
+            this.renderer = new CSS3DRenderer();
             this.renderer.setSize(window.innerWidth, window.innerHeight);
             this.renderer.domElement.id = 'css3d-renderer';
             this.dom = document.getElementById('css3d-root');
@@ -1874,7 +1879,7 @@ import { loadWalletData } from '../walletloader/app.js';
 
             this.wrapper = wrapper;
             this.inner = inner;
-            this.cssObject = new THREE.CSS3DObject(wrapper);
+            this.cssObject = new CSS3DObject(wrapper);
             this.cssScreenAnchor = new THREE.Object3D();
             this.cssScreenAnchor.add(this.cssObject);
             scene.add(this.cssScreenAnchor);
@@ -2182,11 +2187,11 @@ import { loadWalletData } from '../walletloader/app.js';
         }
 
         loadAvatar() {
-            if (!THREE.GLTFLoader) {
+            if (!GLTFLoader) {
                 console.error('[chainworld] GLTFLoader unavailable; third-person avatar did not load');
                 return;
             }
-            const loader = new THREE.GLTFLoader();
+            const loader = new GLTFLoader();
             loader.load(
                 PLAYER_MODEL_URL,
                 (gltf) => {
@@ -2967,7 +2972,7 @@ import { loadWalletData } from '../walletloader/app.js';
         }
 
         loadAvatar() {
-            if (!THREE.GLTFLoader) {
+            if (!GLTFLoader) {
                 console.error('[chainworld] GLTFLoader unavailable; wandering NPC did not load');
                 this.resolveReady?.(null);
                 this.resolveReady = null;
@@ -2976,8 +2981,8 @@ import { loadWalletData } from '../walletloader/app.js';
 
             loadNpcModelTemplate(this.options.modelUrl).then(
                 (gltf) => {
-                    this.model = THREE.SkeletonUtils?.clone
-                        ? THREE.SkeletonUtils.clone(gltf.scene)
+                    this.model = SkeletonUtils?.clone
+                        ? SkeletonUtils.clone(gltf.scene)
                         : gltf.scene.clone(true);
                     this.model.name = 'npcAvatar';
                     this.visualRoot.add(this.model);
@@ -3468,26 +3473,26 @@ import { loadWalletData } from '../walletloader/app.js';
 
                 try {
                     if (ext === 'glb' || ext === 'gltf') {
-                        new THREE.GLTFLoader().load(url, (gltf) => onObjectReady(gltf.scene), undefined, finishReject);
+                        new GLTFLoader().load(url, (gltf) => onObjectReady(gltf.scene), undefined, finishReject);
                         return;
                     }
                     if (ext === 'obj') {
-                        new THREE.OBJLoader().load(url, onObjectReady, undefined, finishReject);
+                        new OBJLoader().load(url, onObjectReady, undefined, finishReject);
                         return;
                     }
                     if (ext === 'fbx') {
-                        new THREE.FBXLoader().load(url, onObjectReady, undefined, finishReject);
+                        new FBXLoader().load(url, onObjectReady, undefined, finishReject);
                         return;
                     }
                     if (ext === 'stl') {
-                        new THREE.STLLoader().load(url, (geometry) => {
+                        new STLLoader().load(url, (geometry) => {
                             geometry.computeVertexNormals();
                             onObjectReady(new THREE.Mesh(geometry, makeMaterial(0xcfcfcf, 0.8, 0.05)));
                         }, undefined, finishReject);
                         return;
                     }
                     if (ext === 'ply') {
-                        new THREE.PLYLoader().load(url, (geometry) => {
+                        new PLYLoader().load(url, (geometry) => {
                             geometry.computeVertexNormals();
                             const material = geometry.getAttribute('color')
                                 ? new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.82, metalness: 0.04 })
@@ -3497,10 +3502,10 @@ import { loadWalletData } from '../walletloader/app.js';
                         return;
                     }
                     if (ext === 'vox') {
-                        new THREE.VOXLoader().load(url, (chunks) => {
+                        new VOXLoader().load(url, (chunks) => {
                             const group = new THREE.Group();
                             chunks.forEach((chunk, index) => {
-                                const voxMesh = new THREE.VOXMesh(chunk);
+                                const voxMesh = new VOXMesh(chunk);
                                 voxMesh.name = `voxChunk_${index}`;
                                 group.add(voxMesh);
                             });
