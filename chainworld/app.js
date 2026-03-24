@@ -1348,19 +1348,6 @@ import { loadWalletData } from '../walletloader/app.js';
                 this.scene.add(band);
             });
 
-            const ambient = new THREE.AmbientLight(0xcbd6e2, 0.22);
-            this.scene.add(ambient);
-            const hemi = new THREE.HemisphereLight(0x556678, 0x14181f, 0.1);
-            this.scene.add(hemi);
-            const fillA = new THREE.PointLight(0xbfd4e6, 0.2, 1600, 2);
-            fillA.position.set(0, 0, 0);
-            this.scene.add(fillA);
-            const fillB = new THREE.PointLight(0xffe0b8, 0.05, 1400, 2);
-            fillB.position.set(-70, 20, 40);
-            this.scene.add(fillB);
-            const fillC = new THREE.PointLight(0xc3dfff, 0.04, 1400, 2);
-            fillC.position.set(80, -20, -40);
-            this.scene.add(fillC);
         }
 
         buildNeighborhood() {
