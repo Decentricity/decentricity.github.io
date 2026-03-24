@@ -719,9 +719,7 @@ import { loadWalletData } from '../walletloader/app.js';
         constructor(scene) {
             this.scene = scene;
             const ambientFill = new THREE.AmbientLight(0xf8f5ff, 0.45);
-            const warmth = new THREE.PointLight(0xfff4d4, 0.72, 400, 2);
-            warmth.position.set(0, 60, 0);
-            this.scene.add(ambientFill, warmth);
+            this.scene.add(ambientFill);
             this.radius = 260;
             this.length = 280;
             this.maxWalkX = this.length * 0.5 - 10;
@@ -2168,6 +2166,7 @@ import { loadWalletData } from '../walletloader/app.js';
             this.avatarScreenMesh = null;
             this.avatarLabelSprite = null;
             this.pendingWalletNfts = null;
+            this.monitorLight = null;
             this.mixer = null;
             this.idleAction = null;
             this.walkAction = null;
@@ -2315,6 +2314,8 @@ import { loadWalletData } from '../walletloader/app.js';
             monitorLight.userData.ignoreCameraOcclusion = true;
             monitorLight.visible = true;
             crtGroup.add(monitorLight);
+            this.crtPointLight = monitorLight;
+            this.monitorLight = monitorLight;
 
             const glass = new THREE.Mesh(
                 new THREE.PlaneGeometry(0.36, 0.27),
@@ -2897,6 +2898,7 @@ import { loadWalletData } from '../walletloader/app.js';
             this.visualRoot = new THREE.Group();
             this.visualRoot.name = 'npcVisualRoot';
             this.playerGroup.add(this.visualRoot);
+            this.playerControls = this.options.playerControls || null;
             this.model = null;
             this.avatarHeadBone = null;
             this.avatarHeadAnchor = null;
@@ -3547,10 +3549,12 @@ import { loadWalletData } from '../walletloader/app.js';
 
             this.world = new OneillWorld(scene);
             this.controls = new ThirdPersonCylinderControls(camera, renderer.domElement, this.world);
-            this.npc = new WanderingNPC(scene, this.world);
+            this.npc = new WanderingNPC(scene, this.world, { playerControls: this.controls });
             this.walletNpcs = [];
             this.css3dScreen = new CSS3DScreen(scene, camera, this.world.starterScreenMesh);
             this.interaction = new InteractionSystem(camera, this.controls, this.world.starterScreenMesh, this.css3dScreen);
+            this.npcLightCheckAccumulator = 0;
+            this.npcLightCheckInterval = 0.32;
             this.controls.onAvatarScreenReady = (screenMesh) => {
                 this.css3dScreen.setScreenMesh(screenMesh);
                 this.interaction.screenMesh = screenMesh;
@@ -3637,6 +3641,22 @@ import { loadWalletData } from '../walletloader/app.js';
 
                 npc.knockDown(dx, dz);
             });
+        }
+
+        updateNpcMonitorLights(delta) {
+            this.npcLightCheckAccumulator += delta;
+            if (this.npcLightCheckAccumulator < this.npcLightCheckInterval) return;
+            this.npcLightCheckAccumulator = 0;
+            const playerX = this.controls.surfaceX;
+            const playerArc = this.controls.surfaceArc;
+            const nearRadiusSq = 9;
+            const candidates = [this.npc, ...this.walletNpcs];
+            for (const npc of candidates) {
+                if (!npc || !npc.monitorLight) continue;
+                const dx = npc.surfaceX - playerX;
+                const dz = this.world.shortestArcDelta(playerArc, npc.surfaceArc);
+                npc.monitorLight.intensity = (dx * dx + dz * dz <= nearRadiusSq) ? 0.92 : 0;
+            }
         }
 
         handleGroundContextMenu(event) {
@@ -3727,7 +3747,8 @@ import { loadWalletData } from '../walletloader/app.js';
                     logicInterval: 0.05 + Math.random() * 0.11,
                     pauseDurationMin: 0.45,
                     pauseDurationMax: 1.9,
-                    logLabel: `wallet NPC ${index + 1}`
+                    logLabel: `wallet NPC ${index + 1}`,
+                    playerControls: this.controls
                 })
             ));
 
@@ -3839,6 +3860,7 @@ import { loadWalletData } from '../walletloader/app.js';
             requestAnimationFrame(() => this.animate());
             const delta = Math.min(this.clock.getDelta(), 0.05);
             this.controls.update(delta);
+            this.updateNpcMonitorLights(delta);
             this.npc?.update(delta);
             this.walletNpcs.forEach((npc) => npc.update(delta));
             renderer.render(scene, camera);
