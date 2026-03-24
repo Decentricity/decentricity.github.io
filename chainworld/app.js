@@ -3866,14 +3866,10 @@ const playCelebrationSound = () => {
             const arrowPos = playerPos.clone();
             arrowPos.y += 0.25;
             this.targetArrow.position.copy(arrowPos);
-            const direction = new THREE.Vector3(targetPos.x - playerPos.x, 0, targetPos.z - playerPos.z);
-            if (direction.lengthSq() < 0.0001) {
-                this.targetArrow.visible = false;
-                return;
-            }
-            direction.normalize();
-            const angle = Math.atan2(direction.x, direction.z);
-            this.targetArrow.rotation.y = angle;
+            const dx = targetPos.x - playerPos.x;
+            const dz = targetPos.z - playerPos.z;
+            const angle = Math.atan2(dx, dz);
+            this.targetArrow.rotation.set(-Math.PI / 2, angle, 0);
             this.targetArrow.visible = true;
         }
 
