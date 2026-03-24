@@ -125,14 +125,35 @@ const playPunchSound = () => {
         metalness: 0.04
     });
 
+    const loadImageElement = (url) => new Promise((resolve, reject) => {
+        const image = new Image();
+        image.crossOrigin = 'anonymous';
+        image.onload = () => resolve(image);
+        image.onerror = reject;
+        image.src = url;
+    });
+
+    const optimizeImageCanvas = (image, maxSize = 1024) => {
+        const maxDim = Math.max(image.width, image.height);
+        const scale = maxDim > maxSize ? maxSize / maxDim : 1;
+        const width = Math.max(1, Math.floor(image.width * scale));
+        const height = Math.max(1, Math.floor(image.height * scale));
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(image, 0, 0, width, height);
+        return canvas;
+    };
+
     const loadTexture = (url) => new Promise((resolve, reject) => {
-        textureLoader.load(
-            url,
-            (texture) => {
+        loadImageElement(url).then(
+            (image) => {
+                const canvas = optimizeImageCanvas(image);
+                const texture = new THREE.CanvasTexture(canvas);
                 configureWebTexture(texture);
                 resolve(texture);
             },
-            undefined,
             reject
         );
     });
