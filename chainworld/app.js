@@ -3737,13 +3737,16 @@ const playCelebrationSound = () => {
             const arrowGeometry = new THREE.ConeGeometry(0.18, 0.5, 12);
             arrowGeometry.rotateX(-Math.PI / 2);
             const arrowMaterial = new THREE.MeshBasicMaterial({
-                color: 0xffff88,
-                emissive: 0xffffcc
+                color: 0x66ff66,
+                emissive: 0x99ff99
             });
             this.targetArrow = new THREE.Mesh(arrowGeometry, arrowMaterial);
             this.targetArrow.position.set(0, 0.05, 0);
             this.targetArrow.visible = false;
             scene.add(this.targetArrow);
+            this.targetNameLabel = document.getElementById('current-target-name');
+            this.targetPreviewImage = document.getElementById('current-target-preview');
+            this.updateTargetHUD('None', '');
             this.sceneReady = false;
             this.avatarReady = false;
             this.checkLoadingOverlay = () => {
@@ -3861,7 +3864,7 @@ const playCelebrationSound = () => {
             const targetPos = new THREE.Vector3();
             target.playerGroup.getWorldPosition(targetPos);
             const arrowPos = playerPos.clone();
-            arrowPos.y = 0.05;
+            arrowPos.y += 0.25;
             this.targetArrow.position.copy(arrowPos);
             const direction = new THREE.Vector3(targetPos.x - playerPos.x, 0, targetPos.z - playerPos.z);
             if (direction.lengthSq() < 0.0001) {
@@ -3897,6 +3900,23 @@ const playCelebrationSound = () => {
             );
             showKillOverlay(`Kill ${name} NFT`);
             this.updateTargetArrow();
+            const preview = this.currentTargetNpc.nftData?.previewUrl || this.currentTargetNpc.nftData?.imageUrl || '';
+            this.updateTargetHUD(name, preview);
+        }
+
+        updateTargetHUD(name, previewUrl) {
+            if (this.targetNameLabel) {
+                this.targetNameLabel.textContent = name;
+            }
+            if (this.targetPreviewImage) {
+                if (previewUrl) {
+                    this.targetPreviewImage.src = previewUrl;
+                    this.targetPreviewImage.style.opacity = '1';
+                } else {
+                    this.targetPreviewImage.src = '';
+                    this.targetPreviewImage.style.opacity = '0';
+                }
+            }
         }
 
         stopTargetCycle() {
@@ -3911,6 +3931,7 @@ const playCelebrationSound = () => {
             if (killOverlay) {
                 killOverlay.classList.add('hidden');
             }
+            this.updateTargetHUD('None', '');
         }
 
         handleNpcKilled(npc) {

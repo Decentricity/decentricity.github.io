@@ -110,6 +110,31 @@ body {
     color: rgba(49, 64, 74, 0.86);
 }
 
+#target-label {
+    margin-top: 6px;
+    font-size: 14px;
+    color: rgba(49, 64, 74, 0.9);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#current-target-name {
+    color: #ff3f3f;
+    font-weight: 700;
+}
+
+#current-target-preview {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 2px solid rgba(255, 255, 255, 0.9);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
 .wallet-form-overlay {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
