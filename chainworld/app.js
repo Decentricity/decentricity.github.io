@@ -1236,9 +1236,6 @@ const showKillOverlay = () => {
             );
             globe.position.set(0.42, 3.04, 0);
             lamp.add(globe);
-            const pointLight = new THREE.PointLight(0xfff0cf, 0.16, 14);
-            pointLight.position.copy(globe.position);
-            lamp.add(pointLight);
             this.scene.add(lamp);
             this.registerCollisionDisc(x, theta, 0.34);
         }
@@ -3570,8 +3567,6 @@ const showKillOverlay = () => {
             this.walletNpcs = [];
             this.css3dScreen = new CSS3DScreen(scene, camera, this.world.starterScreenMesh);
             this.interaction = new InteractionSystem(camera, this.controls, this.world.starterScreenMesh, this.css3dScreen);
-            this.npcLightCheckAccumulator = 0;
-            this.npcLightCheckInterval = 0.32;
             this.controls.onAvatarScreenReady = (screenMesh) => {
                 this.css3dScreen.setScreenMesh(screenMesh);
                 this.interaction.screenMesh = screenMesh;
@@ -3659,22 +3654,6 @@ const showKillOverlay = () => {
 
                 npc.knockDown(dx, dz);
             });
-        }
-
-        updateNpcMonitorLights(delta) {
-            this.npcLightCheckAccumulator += delta;
-            if (this.npcLightCheckAccumulator < this.npcLightCheckInterval) return;
-            this.npcLightCheckAccumulator = 0;
-            const playerX = this.controls.surfaceX;
-            const playerArc = this.controls.surfaceArc;
-            const nearRadiusSq = 9;
-            const candidates = [this.npc, ...this.walletNpcs];
-            for (const npc of candidates) {
-                if (!npc || !npc.monitorLight) continue;
-                const dx = npc.surfaceX - playerX;
-                const dz = this.world.shortestArcDelta(playerArc, npc.surfaceArc);
-                npc.monitorLight.intensity = (dx * dx + dz * dz <= nearRadiusSq) ? 0.92 : 0;
-            }
         }
 
         handleGroundContextMenu(event) {
@@ -3881,7 +3860,6 @@ const showKillOverlay = () => {
             requestAnimationFrame(() => this.animate());
             const delta = Math.min(this.clock.getDelta(), 0.05);
             this.controls.update(delta);
-            this.updateNpcMonitorLights(delta);
             this.npc?.update(delta);
             this.walletNpcs.forEach((npc) => npc.update(delta));
             renderer.render(scene, camera);
