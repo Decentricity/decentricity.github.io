@@ -748,8 +748,6 @@ const showKillOverlay = () => {
     class OneillWorld {
         constructor(scene) {
             this.scene = scene;
-            const ambientFill = new THREE.AmbientLight(0xf8f5ff, 0.45);
-            this.scene.add(ambientFill);
             this.radius = 260;
             this.length = 280;
             this.maxWalkX = this.length * 0.5 - 10;
@@ -1236,6 +1234,9 @@ const showKillOverlay = () => {
             );
             globe.position.set(0.42, 3.04, 0);
             lamp.add(globe);
+            const pointLight = new THREE.PointLight(0xfff0cf, 0.16, 14);
+            pointLight.position.copy(globe.position);
+            lamp.add(pointLight);
             this.scene.add(lamp);
             this.registerCollisionDisc(x, theta, 0.34);
         }
