@@ -9,6 +9,36 @@ import { VOXLoader, VOXMesh } from 'three/addons/loaders/VOXLoader.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { loadWalletData } from '../walletloader/app.js';
 
+const loadingOverlay = typeof document !== 'undefined' ? document.getElementById('loading-overlay') : null;
+const killOverlay = typeof document !== 'undefined' ? document.getElementById('kill-overlay') : null;
+const overlayAudioCtx = typeof window !== 'undefined' && (window.AudioContext || window.webkitAudioContext)
+    ? new (window.AudioContext || window.webkitAudioContext)()
+    : null;
+
+const playKillSound = () => {
+    if (!overlayAudioCtx) return;
+    overlayAudioCtx.resume().catch(() => {});
+    const ctx = overlayAudioCtx;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.value = 190;
+    gain.gain.value = 0.08;
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    const now = ctx.currentTime;
+    osc.start(now);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.42);
+    osc.stop(now + 0.42);
+};
+
+const showKillOverlay = () => {
+    if (!killOverlay) return;
+    killOverlay.classList.remove('hidden');
+    playKillSound();
+    window.setTimeout(() => killOverlay.classList.add('hidden'), 2200);
+};
+
 (() => {
     const clampDPR = (dpr) => Math.min(dpr, 2);
     const DEFAULT_HOME_URL = 'https://agent1c-ai.github.io';
@@ -3555,6 +3585,7 @@ import { loadWalletData } from '../walletloader/app.js';
             this.restoreWalletFromQuery();
             this.onResize();
             this.animate();
+            window.requestAnimationFrame(() => loadingOverlay?.classList.add('hidden'));
         }
 
         bindEvents() {
@@ -3751,6 +3782,9 @@ import { loadWalletData } from '../walletloader/app.js';
                     imageCount += 1;
                 }
             });
+            if (nfts.length) {
+                showKillOverlay();
+            }
             return imageCount;
         }
 
