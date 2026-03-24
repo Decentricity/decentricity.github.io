@@ -32,11 +32,19 @@ const playKillSound = () => {
     osc.stop(now + 0.42);
 };
 
-const showKillOverlay = () => {
+const killOverlayLabel = typeof document !== 'undefined' ? document.getElementById('kill-overlay-label') : null;
+let killOverlayTimerId = null;
+const showKillOverlay = (message = 'Kill All NFTs', duration = 2400) => {
     if (!killOverlay) return;
+    if (killOverlayLabel) {
+        killOverlayLabel.textContent = message;
+    }
     killOverlay.classList.remove('hidden');
     playKillSound();
-    window.setTimeout(() => killOverlay.classList.add('hidden'), 2200);
+    if (killOverlayTimerId) {
+        window.clearTimeout(killOverlayTimerId);
+    }
+    killOverlayTimerId = window.setTimeout(() => killOverlay.classList.add('hidden'), duration);
 };
 
 const attackAudioCtx = overlayAudioCtx || (typeof window !== 'undefined' && (window.AudioContext || window.webkitAudioContext)
@@ -58,6 +66,23 @@ const playPunchSound = () => {
     const now = ctx.currentTime;
     osc.start(now);
     osc.stop(now + 0.24);
+};
+
+const playCelebrationSound = () => {
+    if (!overlayAudioCtx) return;
+    overlayAudioCtx.resume().catch(() => {});
+    const ctx = overlayAudioCtx;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = 260;
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.88);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    const now = ctx.currentTime;
+    osc.start(now);
+    osc.stop(now + 0.88);
 };
 
 (() => {
@@ -2978,6 +3003,7 @@ const playPunchSound = () => {
             this.visualRoot.name = 'npcVisualRoot';
             this.playerGroup.add(this.visualRoot);
             this.playerControls = this.options.playerControls || null;
+            this.onKnockedDown = this.options.onKnockedDown || null;
             this.model = null;
             this.avatarHeadBone = null;
             this.avatarHeadAnchor = null;
@@ -3375,6 +3401,7 @@ const playPunchSound = () => {
             this.mixer?.stopAllAction();
             this.currentAction = null;
             this.updateTransform();
+            this.onKnockedDown?.(this);
         }
 
         updateTransform() {
@@ -3705,6 +3732,18 @@ const playPunchSound = () => {
                 this.css3dScreen.setScreenMesh(screenMesh);
                 this.interaction.screenMesh = screenMesh;
             };
+            this.currentTargetNpc = null;
+            this.targetCycleTimeoutId = null;
+            const arrowGeometry = new THREE.ConeGeometry(0.18, 0.5, 12);
+            arrowGeometry.rotateX(-Math.PI / 2);
+            const arrowMaterial = new THREE.MeshBasicMaterial({
+                color: 0xffff88,
+                emissive: 0xffffcc
+            });
+            this.targetArrow = new THREE.Mesh(arrowGeometry, arrowMaterial);
+            this.targetArrow.position.set(0, 0.05, 0);
+            this.targetArrow.visible = false;
+            scene.add(this.targetArrow);
             this.sceneReady = false;
             this.avatarReady = false;
             this.checkLoadingOverlay = () => {
@@ -3810,6 +3849,83 @@ const playPunchSound = () => {
             });
         }
 
+        updateTargetArrow() {
+            if (!this.targetArrow) return;
+            const target = this.currentTargetNpc;
+            if (!target || target.isDestroyed || target.isFallen) {
+                this.targetArrow.visible = false;
+                return;
+            }
+            const playerPos = new THREE.Vector3();
+            this.controls.playerGroup.getWorldPosition(playerPos);
+            const targetPos = new THREE.Vector3();
+            target.playerGroup.getWorldPosition(targetPos);
+            const arrowPos = playerPos.clone();
+            arrowPos.y = 0.05;
+            this.targetArrow.position.copy(arrowPos);
+            const direction = new THREE.Vector3(targetPos.x - playerPos.x, 0, targetPos.z - playerPos.z);
+            if (direction.lengthSq() < 0.0001) {
+                this.targetArrow.visible = false;
+                return;
+            }
+            direction.normalize();
+            const angle = Math.atan2(direction.x, direction.z);
+            this.targetArrow.rotation.y = angle;
+            this.targetArrow.visible = true;
+        }
+
+        startTargetCycle() {
+            if (this.targetCycleTimeoutId) {
+                window.clearTimeout(this.targetCycleTimeoutId);
+                this.targetCycleTimeoutId = null;
+            }
+            this.selectNextTarget();
+        }
+
+        selectNextTarget() {
+            const candidates = this.walletNpcs.filter((npc) => npc && !npc.isDestroyed && !npc.isFallen);
+            if (!candidates.length) {
+                this.stopTargetCycle();
+                return;
+            }
+            const targetIndex = Math.floor(Math.random() * candidates.length);
+            this.currentTargetNpc = candidates[targetIndex];
+            const name = sanitizeNodeText(
+                this.currentTargetNpc.nftData?.name ||
+                    this.currentTargetNpc.nftData?.collection ||
+                    'Unknown'
+            );
+            showKillOverlay(`Kill ${name} NFT`);
+            this.updateTargetArrow();
+        }
+
+        stopTargetCycle() {
+            this.currentTargetNpc = null;
+            if (this.targetArrow) {
+                this.targetArrow.visible = false;
+            }
+            if (this.targetCycleTimeoutId) {
+                window.clearTimeout(this.targetCycleTimeoutId);
+                this.targetCycleTimeoutId = null;
+            }
+            if (killOverlay) {
+                killOverlay.classList.add('hidden');
+            }
+        }
+
+        handleNpcKilled(npc) {
+            if (npc !== this.currentTargetNpc) return;
+            playCelebrationSound();
+            this.currentTargetNpc = null;
+            if (this.targetArrow) this.targetArrow.visible = false;
+            if (this.targetCycleTimeoutId) {
+                window.clearTimeout(this.targetCycleTimeoutId);
+            }
+            this.targetCycleTimeoutId = window.setTimeout(() => {
+                this.selectNextTarget();
+            }, 3000);
+        }
+
         handleGroundContextMenu(event) {
             if (this.interaction.isOverScreen) return;
             if (this.controls.isLocked) return;
@@ -3882,6 +3998,7 @@ const playPunchSound = () => {
         clearWalletNpcs() {
             this.walletNpcs.forEach((npc) => npc.destroy());
             this.walletNpcs = [];
+            this.stopTargetCycle();
         }
 
         async spawnWalletNpcsForNfts(nfts, placements) {
@@ -3889,8 +4006,8 @@ const playPunchSound = () => {
             this.removeDefaultNpc();
             this.clearWalletNpcs();
 
-            this.walletNpcs = nfts.map((nft, index) => (
-                new WanderingNPC(scene, this.world, {
+            this.walletNpcs = nfts.map((nft, index) => {
+                const npc = new WanderingNPC(scene, this.world, {
                     spawnXOffset: placements[index].x - this.world.spawn.x,
                     spawnArcOffset: placements[index].theta * this.world.radius - spawnArcBase,
                     walkSpeed: 0.95 + Math.random() * 0.45,
@@ -3900,8 +4017,11 @@ const playPunchSound = () => {
                     pauseDurationMax: 1.9,
                     logLabel: `wallet NPC ${index + 1}`,
                     playerControls: this.controls
-                })
-            ));
+                });
+                npc.nftData = nft;
+                npc.onKnockedDown = (instance) => this.handleNpcKilled(instance);
+                return npc;
+            });
 
             const results = await Promise.allSettled(
                 this.walletNpcs.map((npc, index) => npc.readyPromise.then((readyNpc) => (
@@ -3916,7 +4036,7 @@ const playPunchSound = () => {
                 }
             });
             if (nfts.length) {
-                showKillOverlay();
+                this.startTargetCycle();
             }
             return imageCount;
         }
@@ -4018,6 +4138,7 @@ const playPunchSound = () => {
             this.walletNpcs.forEach((npc) => npc.update(delta));
             renderer.render(scene, camera);
             this.css3dScreen.update();
+            this.updateTargetArrow();
         }
     }
 
