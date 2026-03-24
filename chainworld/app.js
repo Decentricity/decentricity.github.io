@@ -2375,8 +2375,16 @@ const playPunchSound = () => {
             this.avatarScreenMesh.userData.ignoreCameraOcclusion = true;
             crtGroup.add(this.avatarScreenMesh);
 
-            const monitorLight = new THREE.PointLight(0x9fd3ff, 0.6, 2.2, 2);
+            const monitorLight = new THREE.SpotLight(0x9fd3ff, 1.8, 4, 0.16, 0.4, 1);
             monitorLight.position.set(0, 0, 0.15);
+            const monitorTarget = new THREE.Object3D();
+            monitorTarget.position.set(0, 0, 0.7);
+            crtGroup.add(monitorTarget);
+            monitorLight.target = monitorTarget;
+            monitorLight.angle = 0.18;
+            monitorLight.penumbra = 0.2;
+            monitorLight.decay = 1;
+            monitorLight.distance = 5;
             monitorLight.userData.ignoreCameraOcclusion = true;
             monitorLight.visible = true;
             crtGroup.add(monitorLight);
@@ -2993,6 +3001,9 @@ const playPunchSound = () => {
             this.loadAvatar();
             this.syncBasis();
             this.updateTransform();
+            this.stuckAccumulator = 0;
+            this.stuckCheckX = this.surfaceX;
+            this.stuckCheckArc = this.surfaceArc;
         }
 
         randomPauseDuration() {
@@ -3009,6 +3020,34 @@ const playPunchSound = () => {
         wrapArc() {
             const circumference = TAU * this.cylinderRadius;
             this.surfaceArc = THREE.MathUtils.euclideanModulo(this.surfaceArc, circumference);
+        }
+
+        resetStuckTracker() {
+            this.stuckAccumulator = 0;
+            this.stuckCheckX = this.surfaceX;
+            this.stuckCheckArc = this.surfaceArc;
+        }
+
+        updateStuckWatcher(stepDelta) {
+            if (!this.hasDestination || this.isFallen || this.pauseTimer > 0) {
+                this.resetStuckTracker();
+                return;
+            }
+            const moved = Math.hypot(
+                this.surfaceX - this.stuckCheckX,
+                this.shortestArcDelta(this.surfaceArc, this.stuckCheckArc)
+            );
+            if (moved > 0.15) {
+                this.resetStuckTracker();
+                return;
+            }
+            this.stuckAccumulator += stepDelta;
+            if (this.stuckAccumulator >= 3) {
+                this.stuckAccumulator = 0;
+                this.hasDestination = false;
+                this.chooseDestination();
+                this.resetStuckTracker();
+            }
         }
 
         clampX() {
@@ -3042,6 +3081,7 @@ const playPunchSound = () => {
             this.destinationX = THREE.MathUtils.clamp(this.spawnX + Math.cos(angle) * radius, -this.maxX, this.maxX);
             this.destinationArc = this.spawnArc + Math.sin(angle) * radius;
             this.hasDestination = true;
+            this.resetStuckTracker();
         }
 
         applyNpcAvatarMaterial(mesh) {
@@ -3416,6 +3456,7 @@ const playPunchSound = () => {
                 this.hasDestination = false;
                 this.pauseTimer = this.randomPauseDuration();
                 this.setAction(this.idleAction || this.walkAction);
+                this.resetStuckTracker();
                 this.updateTransform();
                 return;
             }
@@ -3435,6 +3476,7 @@ const playPunchSound = () => {
             this.surfaceArc = next.arc;
             this.clampX();
             this.wrapArc();
+            this.updateStuckWatcher(stepDelta);
             this.setAction(this.walkAction || this.idleAction);
             this.updateTransform();
         }
