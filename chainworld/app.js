@@ -3744,6 +3744,10 @@ const playCelebrationSound = () => {
             this.targetArrow.position.set(0, 0.05, 0);
             this.targetArrow.visible = false;
             scene.add(this.targetArrow);
+            this.targetArrowUp = new THREE.Vector3();
+            this.targetArrowDir = new THREE.Vector3();
+            this.targetArrowRight = new THREE.Vector3();
+            this.targetArrowMatrix = new THREE.Matrix4();
             this.targetNameLabel = document.getElementById('current-target-name');
             this.targetPreviewImage = document.getElementById('current-target-preview');
             this.updateTargetHUD('None', '');
@@ -3864,12 +3868,24 @@ const playCelebrationSound = () => {
             const targetPos = new THREE.Vector3();
             target.playerGroup.getWorldPosition(targetPos);
             const arrowPos = playerPos.clone();
-            arrowPos.y += 0.25;
+            this.targetArrowUp.copy(this.controls.up).normalize();
+            arrowPos.addScaledVector(this.targetArrowUp, 0.25);
             this.targetArrow.position.copy(arrowPos);
-            const dx = targetPos.x - playerPos.x;
-            const dz = targetPos.z - playerPos.z;
-            const angle = Math.atan2(dx, dz);
-            this.targetArrow.rotation.set(-Math.PI / 2, angle, 0);
+            this.targetArrowDir.copy(targetPos).sub(playerPos);
+            const alongUp = this.targetArrowDir.dot(this.targetArrowUp);
+            this.targetArrowDir.addScaledVector(this.targetArrowUp, -alongUp);
+            if (this.targetArrowDir.lengthSq() < 0.0001) {
+                this.targetArrow.visible = false;
+                return;
+            }
+            this.targetArrowDir.normalize();
+            this.targetArrowRight.crossVectors(this.targetArrowUp, this.targetArrowDir).normalize();
+            if (this.targetArrowRight.lengthSq() < 0.0001) {
+                this.targetArrow.visible = false;
+                return;
+            }
+            this.targetArrowMatrix.makeBasis(this.targetArrowRight, this.targetArrowUp, this.targetArrowDir);
+            this.targetArrow.quaternion.setFromRotationMatrix(this.targetArrowMatrix);
             this.targetArrow.visible = true;
         }
 
