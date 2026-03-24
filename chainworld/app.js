@@ -39,6 +39,27 @@ const showKillOverlay = () => {
     window.setTimeout(() => killOverlay.classList.add('hidden'), 2200);
 };
 
+const attackAudioCtx = overlayAudioCtx || (typeof window !== 'undefined' && (window.AudioContext || window.webkitAudioContext)
+    ? new (window.AudioContext || window.webkitAudioContext)()
+    : null);
+
+const playPunchSound = () => {
+    if (!attackAudioCtx) return;
+    attackAudioCtx.resume().catch(() => {});
+    const ctx = attackAudioCtx;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.value = 180;
+    gain.gain.setValueAtTime(0.25, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.24);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    const now = ctx.currentTime;
+    osc.start(now);
+    osc.stop(now + 0.24);
+};
+
 (() => {
     const clampDPR = (dpr) => Math.min(dpr, 2);
     const DEFAULT_HOME_URL = 'https://agent1c-ai.github.io';
@@ -62,6 +83,16 @@ const showKillOverlay = () => {
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 0.48;
+    const maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
+
+    const configureWebTexture = (texture) => {
+        setTextureEncoding(texture);
+        texture.generateMipmaps = true;
+        texture.minFilter = THREE.LinearMipmapLinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        if (maxAnisotropy) texture.anisotropy = Math.min(maxAnisotropy, 8);
+        return texture;
+    };
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x02030a);
@@ -98,8 +129,7 @@ const showKillOverlay = () => {
         textureLoader.load(
             url,
             (texture) => {
-                setTextureEncoding(texture);
-                texture.anisotropy = 8;
+                configureWebTexture(texture);
                 resolve(texture);
             },
             undefined,
@@ -425,11 +455,10 @@ const showKillOverlay = () => {
             const loader = new THREE.TextureLoader();
             loader.setCrossOrigin('anonymous');
             const tex = loader.load(url);
-            setTextureEncoding(tex);
+            configureWebTexture(tex);
             tex.wrapS = THREE.RepeatWrapping;
             tex.wrapT = THREE.RepeatWrapping;
             tex.repeat.set(repeatX, repeatY);
-            tex.anisotropy = 8;
             this.cache.set(key, tex);
             return tex;
         },
@@ -456,7 +485,7 @@ const showKillOverlay = () => {
             const loader = new THREE.TextureLoader();
             loader.setCrossOrigin('anonymous');
             const tex = loader.load(url);
-            setTextureEncoding(tex);
+            configureWebTexture(tex);
             return tex;
         },
 
@@ -2402,6 +2431,7 @@ const showKillOverlay = () => {
             this.attackAction.reset();
             this.attackAction.fadeIn(0.05).play();
             this.currentAction = this.attackAction;
+            playPunchSound();
             return true;
         }
 
@@ -2807,17 +2837,21 @@ const showKillOverlay = () => {
             );
             const isRunning = this.moveState.run && !this.isCrouching;
             const travelSpeed = isRunning ? this.runSpeed : this.walkSpeed;
+            const canTranslate = !this.isAttacking();
             this.moveVector.set(0, 0, 0);
             this.forward.set(-Math.sin(this.yaw), 0, -Math.cos(this.yaw)).normalize();
             this.right.set(-this.forward.z, 0, this.forward.x).normalize();
 
-            if (inputZ > 0.001) this.moveVector.add(this.forward);
-            if (inputZ < -0.001) this.moveVector.sub(this.forward);
-            if (inputX < -0.001) this.moveVector.sub(this.right);
-            if (inputX > 0.001) this.moveVector.add(this.right);
+            let moving = false;
+            if (canTranslate) {
+                if (inputZ > 0.001) this.moveVector.add(this.forward);
+                if (inputZ < -0.001) this.moveVector.sub(this.forward);
+                if (inputX < -0.001) this.moveVector.sub(this.right);
+                if (inputX > 0.001) this.moveVector.add(this.right);
+                moving = this.moveVector.lengthSq() > 0;
+            }
 
-            const moving = this.moveVector.lengthSq() > 0;
-            if (moving) {
+            if (canTranslate && moving) {
                 this.moveVector.normalize();
                 this.facingYaw = Math.atan2(this.moveVector.x, this.moveVector.z);
                 const next = this.world.moveOnSurface(
@@ -2829,7 +2863,7 @@ const showKillOverlay = () => {
                 );
                 this.surfaceX = next.x;
                 this.surfaceArc = next.arc;
-            } else {
+            } else if (canTranslate) {
                 this.facingYaw = this.yaw + Math.PI;
             }
 
@@ -3644,6 +3678,7 @@ const showKillOverlay = () => {
             const attackDir = this.controls.getAttackSurfaceDirection();
             const attackRange = 2;
 
+            const knockDelayMs = 120;
             this.getAttackableNpcs().forEach((npc) => {
                 const dx = npc.surfaceX - this.controls.surfaceX;
                 const dz = this.world.shortestArcDelta(this.controls.surfaceArc, npc.surfaceArc);
@@ -3653,7 +3688,12 @@ const showKillOverlay = () => {
                 const align = ((dx / distance) * attackDir.x) + ((dz / distance) * attackDir.y);
                 if (align < 0) return;
 
-                npc.knockDown(dx, dz);
+                const knockDx = dx;
+                const knockDz = dz;
+                window.setTimeout(() => {
+                    if (!npc || npc.isDestroyed || npc.isFallen) return;
+                    npc.knockDown(knockDx, knockDz);
+                }, knockDelayMs);
             });
         }
 
