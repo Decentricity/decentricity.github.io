@@ -2964,10 +2964,12 @@ const playCelebrationSound = () => {
                 modelUrl: DEFAULT_NPC_MODEL_URL,
                 idleClipNames: ['idle'],
                 walkClipNames: ['walk'],
+                runClipNames: ['run'],
                 attachCrtHead: true,
                 spawnXOffset: 1.2,
                 spawnArcOffset: -3.2,
                 walkSpeed: 1.25,
+                runSpeed: 2.45,
                 wanderRadius: 4.5,
                 logicInterval: 0,
                 pauseDurationMin: 0.8,
@@ -2984,6 +2986,7 @@ const playCelebrationSound = () => {
             this.coreRadius = 0.5;
             this.wanderRadius = this.options.wanderRadius;
             this.walkSpeed = this.options.walkSpeed;
+            this.runSpeed = this.options.runSpeed;
             this.logicInterval = this.options.logicInterval;
             this.logicAccumulator = Math.random() * this.logicInterval;
             this.pauseTimer = this.randomPauseDuration();
@@ -3013,6 +3016,7 @@ const playCelebrationSound = () => {
             this.mixer = null;
             this.idleAction = null;
             this.walkAction = null;
+            this.runAction = null;
             this.currentAction = null;
             this.isDestroyed = false;
             this.isFallen = false;
@@ -3020,6 +3024,12 @@ const playCelebrationSound = () => {
             this.fallDuration = 0.34;
             this.fallAxis = new THREE.Vector3(1, 0, 0);
             this.fallTargetAngle = Math.PI * 0.5;
+            this.jumpOffset = 0;
+            this.jumpVelocity = 0;
+            this.jumpSpeed = 3.8;
+            this.jumpGravity = 11.5;
+            this.panicTimer = 0;
+            this.panicJumpCooldown = 0;
             this.readyPromise = new Promise((resolve) => {
                 this.resolveReady = resolve;
             });
@@ -3102,12 +3112,83 @@ const playCelebrationSound = () => {
         }
 
         chooseDestination() {
+            if (this.isPanicking()) {
+                this.choosePanicDestination();
+                return;
+            }
             const angle = Math.random() * TAU;
             const radius = Math.random() * this.wanderRadius;
             this.destinationX = THREE.MathUtils.clamp(this.spawnX + Math.cos(angle) * radius, -this.maxX, this.maxX);
             this.destinationArc = this.spawnArc + Math.sin(angle) * radius;
             this.hasDestination = true;
             this.resetStuckTracker();
+        }
+
+        choosePanicDestination() {
+            if (!this.playerControls) {
+                const angle = Math.random() * TAU;
+                const radius = 10 + Math.random() * 10;
+                this.destinationX = THREE.MathUtils.clamp(this.surfaceX + Math.cos(angle) * radius, -this.maxX, this.maxX);
+                this.destinationArc = this.surfaceArc + Math.sin(angle) * radius;
+                this.hasDestination = true;
+                this.resetStuckTracker();
+                return;
+            }
+
+            const playerX = this.playerControls.surfaceX;
+            const playerArc = this.playerControls.surfaceArc;
+            for (let attempt = 0; attempt < 24; attempt++) {
+                const angle = Math.random() * TAU;
+                const radius = 10 + Math.random() * 10;
+                const candidateX = THREE.MathUtils.clamp(playerX + Math.cos(angle) * radius, -this.maxX, this.maxX);
+                const candidateArc = playerArc + Math.sin(angle) * radius;
+                const dist = Math.hypot(
+                    candidateX - playerX,
+                    this.shortestArcDelta(playerArc, candidateArc)
+                );
+                if (dist >= 10) {
+                    this.destinationX = candidateX;
+                    this.destinationArc = candidateArc;
+                    this.hasDestination = true;
+                    this.resetStuckTracker();
+                    return;
+                }
+            }
+
+            const awayX = this.surfaceX - playerX;
+            const awayArc = this.shortestArcDelta(playerArc, this.surfaceArc);
+            const length = Math.hypot(awayX, awayArc) || 1;
+            this.destinationX = THREE.MathUtils.clamp(playerX + (awayX / length) * 12, -this.maxX, this.maxX);
+            this.destinationArc = playerArc + (awayArc / length) * 12;
+            this.hasDestination = true;
+            this.resetStuckTracker();
+        }
+
+        isJumping() {
+            return this.jumpOffset > 0.0001 || this.jumpVelocity > 0.0001;
+        }
+
+        beginJump() {
+            if (this.isJumping() || this.isFallen) return;
+            this.jumpVelocity = this.jumpSpeed;
+        }
+
+        endJump() {
+            this.jumpOffset = 0;
+            this.jumpVelocity = 0;
+        }
+
+        isPanicking() {
+            return this.panicTimer > 0;
+        }
+
+        enterPanicMode() {
+            if (this.isDestroyed || this.isFallen) return;
+            this.panicTimer = 10;
+            this.panicJumpCooldown = Math.min(this.panicJumpCooldown || Infinity, 0.12 + Math.random() * 0.5);
+            this.pauseTimer = 0;
+            this.hasDestination = false;
+            this.choosePanicDestination();
         }
 
         applyNpcAvatarMaterial(mesh) {
@@ -3178,8 +3259,10 @@ const playCelebrationSound = () => {
                     this.mixer = new THREE.AnimationMixer(this.model);
                     const idleClip = findFirstClipByNames(gltf.animations, this.options.idleClipNames);
                     const walkClip = findFirstClipByNames(gltf.animations, this.options.walkClipNames);
+                    const runClip = findFirstClipByNames(gltf.animations, this.options.runClipNames);
                     if (idleClip) this.idleAction = this.mixer.clipAction(idleClip);
                     if (walkClip) this.walkAction = this.mixer.clipAction(walkClip);
+                    if (runClip) this.runAction = this.mixer.clipAction(runClip);
                     this.setAction(this.idleAction || this.walkAction);
 
                     if (this.options.attachCrtHead) {
@@ -3410,7 +3493,7 @@ const playCelebrationSound = () => {
 
             const basisQuat = new THREE.Quaternion().setFromRotationMatrix(this.basisMatrix);
             const localQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), this.facingYaw);
-            this.playerGroup.position.copy(this.playerPosition).addScaledVector(this.up, 0.01);
+            this.playerGroup.position.copy(this.playerPosition).addScaledVector(this.up, 0.01 + this.jumpOffset);
             this.playerGroup.quaternion.copy(basisQuat).multiply(localQuat);
             if (this.visualRoot) {
                 if (this.isFallen) {
@@ -3444,6 +3527,25 @@ const playCelebrationSound = () => {
                 this.updateTransform();
                 return;
             }
+            if (this.isPanicking()) {
+                this.panicTimer = Math.max(0, this.panicTimer - delta);
+                this.panicJumpCooldown = Math.max(0, this.panicJumpCooldown - delta);
+                if (this.panicTimer === 0) {
+                    this.hasDestination = false;
+                    this.pauseTimer = this.randomPauseDuration();
+                }
+            }
+            if (this.isPanicking() && this.panicJumpCooldown <= 0 && !this.isJumping()) {
+                this.beginJump();
+                this.panicJumpCooldown = 0.6 + Math.random() * 1.1;
+            }
+            if (this.isJumping()) {
+                this.jumpVelocity -= this.jumpGravity * delta;
+                this.jumpOffset = Math.max(0, this.jumpOffset + this.jumpVelocity * delta);
+                if (this.jumpOffset === 0 && this.jumpVelocity < 0) {
+                    this.endJump();
+                }
+            }
             if (this.mixer) {
                 this.mixer.update(delta);
             }
@@ -3461,7 +3563,7 @@ const playCelebrationSound = () => {
                 this.logicAccumulator = 0;
             }
 
-            if (this.pauseTimer > 0) {
+            if (this.pauseTimer > 0 && !this.isPanicking()) {
                 this.pauseTimer = Math.max(0, this.pauseTimer - stepDelta);
                 if (this.pauseTimer === 0) {
                     this.chooseDestination();
@@ -3481,14 +3583,20 @@ const playCelebrationSound = () => {
 
             if (distance < 0.16) {
                 this.hasDestination = false;
-                this.pauseTimer = this.randomPauseDuration();
-                this.setAction(this.idleAction || this.walkAction);
+                if (this.isPanicking()) {
+                    this.chooseDestination();
+                    this.setAction(this.runAction || this.walkAction || this.idleAction);
+                } else {
+                    this.pauseTimer = this.randomPauseDuration();
+                    this.setAction(this.idleAction || this.walkAction);
+                }
                 this.resetStuckTracker();
                 this.updateTransform();
                 return;
             }
 
-            const step = Math.min(distance, this.walkSpeed * stepDelta);
+            const stepSpeed = this.isPanicking() ? this.runSpeed : this.walkSpeed;
+            const step = Math.min(distance, stepSpeed * stepDelta);
             const moveX = dx / distance;
             const moveZ = dz / distance;
             this.facingYaw = Math.atan2(moveX, moveZ);
@@ -3504,7 +3612,11 @@ const playCelebrationSound = () => {
             this.clampX();
             this.wrapArc();
             this.updateStuckWatcher(stepDelta);
-            this.setAction(this.walkAction || this.idleAction);
+            this.setAction(
+                this.isPanicking()
+                    ? (this.runAction || this.walkAction || this.idleAction)
+                    : (this.walkAction || this.idleAction)
+            );
             this.updateTransform();
         }
     }
@@ -3835,6 +3947,7 @@ const playCelebrationSound = () => {
             if (this.interaction.isOverScreen) return;
             if (!this.controls.isLocked) return;
             if (!this.controls.triggerAttack()) return;
+            this.triggerPanicForNearbyWalletNpcs();
             this.attackNpcsInFrontOfPlayer();
             event.preventDefault();
         }
@@ -3863,6 +3976,17 @@ const playCelebrationSound = () => {
                     if (!npc || npc.isDestroyed || npc.isFallen) return;
                     npc.knockDown(knockDx, knockDz);
                 }, knockDelayMs);
+            });
+        }
+
+        triggerPanicForNearbyWalletNpcs() {
+            const panicRadius = 3;
+            this.walletNpcs.forEach((npc) => {
+                if (!npc || npc.isDestroyed || npc.isFallen) return;
+                const dx = npc.surfaceX - this.controls.surfaceX;
+                const dz = this.world.shortestArcDelta(this.controls.surfaceArc, npc.surfaceArc);
+                if (Math.hypot(dx, dz) > panicRadius) return;
+                npc.enterPanicMode();
             });
         }
 
