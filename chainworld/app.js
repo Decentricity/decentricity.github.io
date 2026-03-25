@@ -3127,7 +3127,7 @@ const playCelebrationSound = () => {
         choosePanicDestination() {
             if (!this.playerControls) {
                 const angle = Math.random() * TAU;
-                const radius = 10 + Math.random() * 10;
+                const radius = 20 + Math.random() * 8;
                 this.destinationX = THREE.MathUtils.clamp(this.surfaceX + Math.cos(angle) * radius, -this.maxX, this.maxX);
                 this.destinationArc = this.surfaceArc + Math.sin(angle) * radius;
                 this.hasDestination = true;
@@ -3139,14 +3139,14 @@ const playCelebrationSound = () => {
             const playerArc = this.playerControls.surfaceArc;
             for (let attempt = 0; attempt < 24; attempt++) {
                 const angle = Math.random() * TAU;
-                const radius = 10 + Math.random() * 10;
+                const radius = 20 + Math.random() * 8;
                 const candidateX = THREE.MathUtils.clamp(playerX + Math.cos(angle) * radius, -this.maxX, this.maxX);
                 const candidateArc = playerArc + Math.sin(angle) * radius;
                 const dist = Math.hypot(
                     candidateX - playerX,
                     this.shortestArcDelta(playerArc, candidateArc)
                 );
-                if (dist >= 10) {
+                if (dist >= 20) {
                     this.destinationX = candidateX;
                     this.destinationArc = candidateArc;
                     this.hasDestination = true;
@@ -3158,8 +3158,8 @@ const playCelebrationSound = () => {
             const awayX = this.surfaceX - playerX;
             const awayArc = this.shortestArcDelta(playerArc, this.surfaceArc);
             const length = Math.hypot(awayX, awayArc) || 1;
-            this.destinationX = THREE.MathUtils.clamp(playerX + (awayX / length) * 12, -this.maxX, this.maxX);
-            this.destinationArc = playerArc + (awayArc / length) * 12;
+            this.destinationX = THREE.MathUtils.clamp(playerX + (awayX / length) * 20, -this.maxX, this.maxX);
+            this.destinationArc = playerArc + (awayArc / length) * 20;
             this.hasDestination = true;
             this.resetStuckTracker();
         }
@@ -3982,7 +3982,7 @@ const playCelebrationSound = () => {
         }
 
         triggerPanicForNearbyWalletNpcs() {
-            const panicRadius = 3;
+            const panicRadius = 7;
             this.walletNpcs.forEach((npc) => {
                 if (!npc || npc.isDestroyed || npc.isFallen) return;
                 const dx = npc.surfaceX - this.controls.surfaceX;
