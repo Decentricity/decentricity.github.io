@@ -1,0 +1,23 @@
+Chainworld audio sources
+
+Files used by the game runtime:
+
+- crowd-ambience.ogg
+  Derived from "1 minute at the alexa mall in berlin.ogg"
+  Source: https://commons.wikimedia.org/wiki/File:1_minute_at_the_alexa_mall_in_berlin.ogg
+  License: Public domain
+
+- punch.ogg
+  Derived from "Hitting wooden pole.ogg"
+  Source: https://commons.wikimedia.org/wiki/File:Hitting_wooden_pole.ogg
+  License: Public domain
+
+- running-loop.ogg
+  Derived from "Church people walking steps with reverb.ogg"
+  Source: https://commons.wikimedia.org/wiki/File:Church_people_walking_steps_with_reverb.ogg
+  License: Public domain
+
+- panic.ogg
+  Derived from "Wilhelm Scream.ogg"
+  Source: https://commons.wikimedia.org/wiki/File:Wilhelm_Scream.ogg
+  License: CC0

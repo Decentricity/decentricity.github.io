@@ -26,10 +26,10 @@ const makeAudioElement = (fileName, { loop = false, volume = 1 } = {}) => {
 };
 
 const soundscape = (() => {
-    const crowdLoop = makeAudioElement('crowd-ambience.wav', { loop: true, volume: 0.13 });
-    const runningLoop = makeAudioElement('running-loop.wav', { loop: true, volume: 0 });
-    const punchShot = makeAudioElement('punch.wav', { volume: 0.8 });
-    const panicShot = makeAudioElement('panic.wav', { volume: 0.45 });
+    const crowdLoop = makeAudioElement('crowd-ambience.ogg', { loop: true, volume: 0.13 });
+    const runningLoop = makeAudioElement('running-loop.ogg', { loop: true, volume: 0 });
+    const punchShot = makeAudioElement('punch.ogg', { volume: 0.8 });
+    const panicShot = makeAudioElement('panic.ogg', { volume: 0.45 });
     let unlocked = false;
     let runningVolume = 0;
     let lastPanicAt = 0;
