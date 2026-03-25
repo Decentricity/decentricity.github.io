@@ -311,6 +311,17 @@ const playCelebrationSound = () => {
         return clipped;
     };
 
+    const NPC_PANIC_PHRASES = [
+        "No! Don't kill me!",
+        "I used to be your friend!",
+        "You used to love me!",
+        "I thought you were in it for the art!",
+        "I have been in your wallet for many blocks!",
+        "Wait! I can still moon!",
+        "Please don't burn me!",
+        "Go burn that other NFT!"
+    ];
+
     const createMonitorTextTexture = (text) => createCRTTextTexture(
         wrapTextLines(text, 12, 3).join('\n'),
         {
@@ -561,6 +572,72 @@ const playCelebrationSound = () => {
         ctx.textBaseline = 'middle';
         const lineHeight = fontSize * 1.08;
         const startY = height * 0.5 - ((lines.length - 1) * lineHeight * 0.5);
+        lines.forEach((line, index) => {
+            ctx.fillText(line, width * 0.5, startY + index * lineHeight);
+        });
+
+        const texture = new THREE.CanvasTexture(canvas);
+        setTextureEncoding(texture);
+        texture.anisotropy = 4;
+        return texture;
+    };
+
+    const createNpcSpeechBubbleTexture = (text) => {
+        const lines = wrapTextLines(text, 18, 4);
+        const width = 640;
+        const height = 400;
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+
+        const radius = 34;
+        const bubbleX = 26;
+        const bubbleY = 22;
+        const bubbleWidth = width - 52;
+        const bubbleHeight = 286;
+        const bubbleBottom = bubbleY + bubbleHeight;
+        const tailBaseX = width * 0.48;
+        const tailWidth = 66;
+        const tailTipX = tailBaseX - 12;
+        const tailTipY = height - 18;
+
+        ctx.clearRect(0, 0, width, height);
+        ctx.fillStyle = 'rgba(8, 14, 24, 0.92)';
+        ctx.strokeStyle = 'rgba(255, 235, 235, 0.95)';
+        ctx.lineWidth = 10;
+
+        ctx.beginPath();
+        ctx.moveTo(bubbleX + radius, bubbleY);
+        ctx.lineTo(bubbleX + bubbleWidth - radius, bubbleY);
+        ctx.quadraticCurveTo(bubbleX + bubbleWidth, bubbleY, bubbleX + bubbleWidth, bubbleY + radius);
+        ctx.lineTo(bubbleX + bubbleWidth, bubbleBottom - radius);
+        ctx.quadraticCurveTo(bubbleX + bubbleWidth, bubbleBottom, bubbleX + bubbleWidth - radius, bubbleBottom);
+        ctx.lineTo(tailBaseX + tailWidth * 0.5, bubbleBottom);
+        ctx.lineTo(tailTipX, tailTipY);
+        ctx.lineTo(tailBaseX - tailWidth * 0.5, bubbleBottom);
+        ctx.lineTo(bubbleX + radius, bubbleBottom);
+        ctx.quadraticCurveTo(bubbleX, bubbleBottom, bubbleX, bubbleBottom - radius);
+        ctx.lineTo(bubbleX, bubbleY + radius);
+        ctx.quadraticCurveTo(bubbleX, bubbleY, bubbleX + radius, bubbleY);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffe7e7';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        let fontSize = 42;
+        const maxTextWidth = bubbleWidth - 72;
+        while (fontSize > 24) {
+            ctx.font = `bold ${fontSize}px monospace`;
+            const widest = Math.max(...lines.map((line) => ctx.measureText(line).width));
+            if (widest <= maxTextWidth) break;
+            fontSize -= 2;
+        }
+        ctx.font = `bold ${fontSize}px monospace`;
+        const lineHeight = fontSize * 1.16;
+        const startY = bubbleY + bubbleHeight * 0.5 - ((lines.length - 1) * lineHeight * 0.5);
         lines.forEach((line, index) => {
             ctx.fillText(line, width * 0.5, startY + index * lineHeight);
         });
@@ -2334,6 +2411,8 @@ const playCelebrationSound = () => {
             this.avatarHeadAnchor = null;
             this.avatarScreenMesh = null;
             this.avatarLabelSprite = null;
+            this.panicBubbleSprite = null;
+            this.panicBubbleTimer = 0;
             this.pendingWalletNfts = null;
             this.monitorLight = null;
             this.mixer = null;
@@ -3269,6 +3348,10 @@ const playCelebrationSound = () => {
             this.hasDestination = false;
             this.choosePanicDestination();
             this.setAction(this.runAction || this.walkAction || this.idleAction);
+            if (this.nftData) {
+                const phrase = NPC_PANIC_PHRASES[Math.floor(Math.random() * NPC_PANIC_PHRASES.length)];
+                this.showPanicBubble(phrase);
+            }
             this.updateTransform();
         }
 
@@ -3460,6 +3543,21 @@ const playCelebrationSound = () => {
             crtAnchor.add(labelSprite);
             this.avatarLabelSprite = labelSprite;
 
+            const panicBubbleSprite = new THREE.Sprite(
+                new THREE.SpriteMaterial({
+                    map: createNpcSpeechBubbleTexture("No! Don't kill me!"),
+                    transparent: true,
+                    depthWrite: false
+                })
+            );
+            panicBubbleSprite.name = 'npcPanicBubble';
+            panicBubbleSprite.raycast = () => {};
+            panicBubbleSprite.visible = false;
+            panicBubbleSprite.scale.set(2.2, 1.4, 1);
+            panicBubbleSprite.position.set(0, 1.03, 0.04);
+            crtAnchor.add(panicBubbleSprite);
+            this.panicBubbleSprite = panicBubbleSprite;
+
             crtGroup.traverse((object) => {
                 if (!object.isMesh) return;
                 object.castShadow = true;
@@ -3490,6 +3588,14 @@ const playCelebrationSound = () => {
             this.avatarLabelSprite.material.map = createNpcMonitorLabelTexture(text);
             this.avatarLabelSprite.material.needsUpdate = true;
             this.avatarLabelSprite.visible = true;
+        }
+
+        showPanicBubble(text) {
+            if (!this.panicBubbleSprite?.material) return;
+            this.panicBubbleSprite.material.map = createNpcSpeechBubbleTexture(text);
+            this.panicBubbleSprite.material.needsUpdate = true;
+            this.panicBubbleSprite.visible = true;
+            this.panicBubbleTimer = 2.4;
         }
 
         async showRandomWalletNft(nfts) {
@@ -3603,6 +3709,12 @@ const playCelebrationSound = () => {
 
         update(delta) {
             if (this.isDestroyed) return;
+            if (this.panicBubbleTimer > 0) {
+                this.panicBubbleTimer = Math.max(0, this.panicBubbleTimer - delta);
+                if (this.panicBubbleTimer === 0 && this.panicBubbleSprite) {
+                    this.panicBubbleSprite.visible = false;
+                }
+            }
             if (this.isFallen) {
                 this.fallProgress = Math.min(1, this.fallProgress + (delta / this.fallDuration));
                 this.updateTransform();
