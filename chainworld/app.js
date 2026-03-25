@@ -2969,7 +2969,7 @@ const playCelebrationSound = () => {
                 spawnXOffset: 1.2,
                 spawnArcOffset: -3.2,
                 walkSpeed: 1.25,
-                runSpeed: 2.45,
+                runSpeed: 4.2,
                 wanderRadius: 4.5,
                 logicInterval: 0,
                 pauseDurationMin: 0.8,
@@ -3185,10 +3185,12 @@ const playCelebrationSound = () => {
         enterPanicMode() {
             if (this.isDestroyed || this.isFallen) return;
             this.panicTimer = 10;
-            this.panicJumpCooldown = Math.min(this.panicJumpCooldown || Infinity, 0.12 + Math.random() * 0.5);
+            this.panicJumpCooldown = 0;
             this.pauseTimer = 0;
             this.hasDestination = false;
             this.choosePanicDestination();
+            this.setAction(this.runAction || this.walkAction || this.idleAction);
+            this.updateTransform();
         }
 
         applyNpcAvatarMaterial(mesh) {
