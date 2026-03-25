@@ -11,7 +11,7 @@ import { loadWalletData } from '../walletloader/app.js';
 
 const loadingOverlay = typeof document !== 'undefined' ? document.getElementById('loading-overlay') : null;
 const killOverlay = typeof document !== 'undefined' ? document.getElementById('kill-overlay') : null;
-const SOUND_ASSET_VERSION = '20260325audio1';
+const SOUND_ASSET_VERSION = '20260325audio4';
 const overlayAudioCtx = typeof window !== 'undefined' && (window.AudioContext || window.webkitAudioContext)
     ? new (window.AudioContext || window.webkitAudioContext)()
     : null;
@@ -29,7 +29,14 @@ const soundscape = (() => {
     const crowdLoop = makeAudioElement('crowd-ambience.ogg', { loop: true, volume: 0.13 });
     const runningLoop = makeAudioElement('running-loop.ogg', { loop: true, volume: 0 });
     const punchShot = makeAudioElement('punch.ogg', { volume: 0.8 });
-    const panicShot = makeAudioElement('panic.ogg', { volume: 0.45 });
+    const panicShots = [
+        makeAudioElement('panic.ogg', { volume: 0.45 }),
+        makeAudioElement('panic-2.ogg', { volume: 0.45 }),
+        makeAudioElement('panic-3.ogg', { volume: 0.45 }),
+        makeAudioElement('panic-4.ogg', { volume: 0.45 }),
+        makeAudioElement('panic-5.ogg', { volume: 0.45 }),
+        makeAudioElement('panic-6.ogg', { volume: 0.45 })
+    ].filter(Boolean);
     let unlocked = false;
     let runningVolume = 0;
     let lastPanicAt = 0;
@@ -69,6 +76,9 @@ const soundscape = (() => {
             const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
             if ((now - lastPanicAt) < 220) return;
             lastPanicAt = now;
+            const panicShot = panicShots.length
+                ? panicShots[Math.floor(Math.random() * panicShots.length)]
+                : null;
             playOneShot(panicShot, { volume: 0.38 + (Math.random() * 0.12), playbackRate: 0.94 + (Math.random() * 0.18) });
         },
 

@@ -21,3 +21,28 @@ Files used by the game runtime:
   Derived from "Wilhelm Scream.ogg"
   Source: https://commons.wikimedia.org/wiki/File:Wilhelm_Scream.ogg
   License: CC0
+
+- panic-2.ogg
+  Derived from "Nick121087 - Demonic Woman Scream (cc0) (freesound).mp3"
+  Source: https://commons.wikimedia.org/wiki/File:Nick121087_-_Demonic_Woman_Scream_(cc0)_(freesound).mp3
+  License: CC0
+
+- panic-3.ogg
+  Derived from "Nick121087 - Demonic Woman Scream (cc0) (freesound).mp3"
+  Source: https://commons.wikimedia.org/wiki/File:Nick121087_-_Demonic_Woman_Scream_(cc0)_(freesound).mp3
+  License: CC0
+
+- panic-4.ogg
+  Derived from "LL-Q1860 (eng)-Grendelkhan-frightened.wav"
+  Source: https://commons.wikimedia.org/wiki/File:LL-Q1860_(eng)-Grendelkhan-frightened.wav
+  License: CC0
+
+- panic-5.ogg
+  Derived from "LL-Q1860 (eng)-Grendelkhan-yell.wav"
+  Source: https://commons.wikimedia.org/wiki/File:LL-Q1860_(eng)-Grendelkhan-yell.wav
+  License: CC0
+
+- panic-6.ogg
+  Derived from "LL-Q1860 (eng)-Grendelkhan-yelling.wav"
+  Source: https://commons.wikimedia.org/wiki/File:LL-Q1860_(eng)-Grendelkhan-yelling.wav
+  License: CC0
