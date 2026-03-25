@@ -11,9 +11,95 @@ import { loadWalletData } from '../walletloader/app.js';
 
 const loadingOverlay = typeof document !== 'undefined' ? document.getElementById('loading-overlay') : null;
 const killOverlay = typeof document !== 'undefined' ? document.getElementById('kill-overlay') : null;
+const SOUND_ASSET_VERSION = '20260325audio1';
 const overlayAudioCtx = typeof window !== 'undefined' && (window.AudioContext || window.webkitAudioContext)
     ? new (window.AudioContext || window.webkitAudioContext)()
     : null;
+
+const makeAudioElement = (fileName, { loop = false, volume = 1 } = {}) => {
+    if (typeof Audio === 'undefined') return null;
+    const audio = new Audio(`./assets/audio/${fileName}?v=${SOUND_ASSET_VERSION}`);
+    audio.preload = 'auto';
+    audio.loop = loop;
+    audio.volume = volume;
+    return audio;
+};
+
+const soundscape = (() => {
+    const crowdLoop = makeAudioElement('crowd-ambience.wav', { loop: true, volume: 0.13 });
+    const runningLoop = makeAudioElement('running-loop.wav', { loop: true, volume: 0 });
+    const punchShot = makeAudioElement('punch.wav', { volume: 0.8 });
+    const panicShot = makeAudioElement('panic.wav', { volume: 0.45 });
+    let unlocked = false;
+    let runningVolume = 0;
+    let lastPanicAt = 0;
+    let runningPauseTimer = 0;
+
+    const unlockLoop = (audio) => {
+        if (!audio) return;
+        audio.play().catch(() => {});
+    };
+
+    const playOneShot = (audio, { volume = audio?.volume ?? 1, playbackRate = 1 } = {}) => {
+        if (!audio) return;
+        const shot = audio.cloneNode();
+        shot.volume = volume;
+        shot.playbackRate = playbackRate;
+        shot.play().catch(() => {});
+    };
+
+    return {
+        unlock() {
+            if (unlocked) return;
+            unlocked = true;
+            unlockLoop(crowdLoop);
+            unlockLoop(runningLoop);
+            if (runningLoop) {
+                runningLoop.volume = 0;
+            }
+        },
+
+        playPunch() {
+            this.unlock();
+            playOneShot(punchShot, { volume: 0.78, playbackRate: 0.96 + (Math.random() * 0.1) });
+        },
+
+        playPanic() {
+            this.unlock();
+            const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+            if ((now - lastPanicAt) < 220) return;
+            lastPanicAt = now;
+            playOneShot(panicShot, { volume: 0.38 + (Math.random() * 0.12), playbackRate: 0.94 + (Math.random() * 0.18) });
+        },
+
+        update(delta, { hasPanickingNpcs = false } = {}) {
+            if (!unlocked) return;
+            if (crowdLoop?.paused) {
+                crowdLoop.play().catch(() => {});
+            }
+            if (crowdLoop) {
+                crowdLoop.volume = 0.13;
+            }
+            if (!runningLoop) return;
+            const targetVolume = hasPanickingNpcs ? 0.18 : 0;
+            const fadeSpeed = hasPanickingNpcs ? 1.8 : 1.1;
+            runningVolume += (targetVolume - runningVolume) * Math.min(1, delta * fadeSpeed);
+            runningLoop.volume = Math.max(0, runningVolume);
+            if (hasPanickingNpcs) {
+                runningPauseTimer = 0;
+                if (runningLoop.paused) {
+                    runningLoop.play().catch(() => {});
+                }
+                return;
+            }
+            runningPauseTimer += delta;
+            if (runningPauseTimer > 0.8 && runningLoop.volume < 0.01 && !runningLoop.paused) {
+                runningLoop.pause();
+                runningLoop.currentTime = 0;
+            }
+        }
+    };
+})();
 
 const playKillSound = () => {
     if (!overlayAudioCtx) return;
@@ -47,25 +133,8 @@ const showKillOverlay = (message = 'Kill All NFTs', duration = 2400) => {
     killOverlayTimerId = window.setTimeout(() => killOverlay.classList.add('hidden'), duration);
 };
 
-const attackAudioCtx = overlayAudioCtx || (typeof window !== 'undefined' && (window.AudioContext || window.webkitAudioContext)
-    ? new (window.AudioContext || window.webkitAudioContext)()
-    : null);
-
 const playPunchSound = () => {
-    if (!attackAudioCtx) return;
-    attackAudioCtx.resume().catch(() => {});
-    const ctx = attackAudioCtx;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.value = 180;
-    gain.gain.setValueAtTime(0.25, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.24);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    const now = ctx.currentTime;
-    osc.start(now);
-    osc.stop(now + 0.24);
+    soundscape.playPunch();
 };
 
 const playCelebrationSound = () => {
@@ -3877,6 +3946,8 @@ const playCelebrationSound = () => {
             this.updateTargetHUD('None', '');
             this.sceneReady = false;
             this.avatarReady = false;
+            this.audioStateCheckAccumulator = 0;
+            this.hasPanickingWalletNpcs = false;
             this.checkLoadingOverlay = () => {
                 if (this.sceneReady && this.avatarReady) {
                     loadingOverlay?.classList.add('hidden');
@@ -3923,6 +3994,7 @@ const playCelebrationSound = () => {
         }
 
         handleWorldClick(event) {
+            soundscape.unlock();
             if (this.interaction.isOverScreen) return;
             if (this.controls.isLocked) return;
             if (event.target === document.getElementById('url-input')) return;
@@ -3946,6 +4018,7 @@ const playCelebrationSound = () => {
         }
 
         handleAttackClick(event) {
+            soundscape.unlock();
             if (this.interaction.isOverScreen) return;
             if (!this.controls.isLocked) return;
             if (!this.controls.triggerAttack()) return;
@@ -3983,13 +4056,18 @@ const playCelebrationSound = () => {
 
         triggerPanicForNearbyWalletNpcs() {
             const panicRadius = 7;
+            let panickedCount = 0;
             this.walletNpcs.forEach((npc) => {
                 if (!npc || npc.isDestroyed || npc.isFallen) return;
                 const dx = npc.surfaceX - this.controls.surfaceX;
                 const dz = this.world.shortestArcDelta(this.controls.surfaceArc, npc.surfaceArc);
                 if (Math.hypot(dx, dz) > panicRadius) return;
                 npc.enterPanicMode();
+                panickedCount += 1;
             });
+            if (panickedCount > 0) {
+                soundscape.playPanic();
+            }
         }
 
         updateTargetArrow() {
@@ -4145,6 +4223,7 @@ const playCelebrationSound = () => {
 
         handleWalletSubmit(event) {
             event.preventDefault();
+            soundscape.unlock();
             this.loadWalletNfts(this.walletAddressInput?.value || '');
         }
 
@@ -4311,6 +4390,14 @@ const playCelebrationSound = () => {
             this.controls.update(delta);
             this.npc?.update(delta);
             this.walletNpcs.forEach((npc) => npc.update(delta));
+            this.audioStateCheckAccumulator += delta;
+            if (this.audioStateCheckAccumulator >= 0.2) {
+                this.audioStateCheckAccumulator = 0;
+                this.hasPanickingWalletNpcs = this.walletNpcs.some((npc) => (
+                    npc && !npc.isDestroyed && !npc.isFallen && npc.isPanicking()
+                ));
+            }
+            soundscape.update(delta, { hasPanickingNpcs: this.hasPanickingWalletNpcs });
             renderer.render(scene, camera);
             this.css3dScreen.update();
             this.updateTargetArrow();
