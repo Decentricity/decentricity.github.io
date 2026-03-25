@@ -28,21 +28,21 @@ Files used by the game runtime:
   License: CC0
 
 - panic-3.ogg
-  Derived from "Nick121087 - Demonic Woman Scream (cc0) (freesound).mp3"
-  Source: https://commons.wikimedia.org/wiki/File:Nick121087_-_Demonic_Woman_Scream_(cc0)_(freesound).mp3
-  License: CC0
+  Derived from "UVB 76 'A WOMANS SCREAM'.ogg"
+  Source: https://commons.wikimedia.org/wiki/File:UVB_76_%27A_WOMANS_SCREAM%27.ogg
+  License: Public domain
 
 - panic-4.ogg
-  Derived from "LL-Q1860 (eng)-Grendelkhan-frightened.wav"
-  Source: https://commons.wikimedia.org/wiki/File:LL-Q1860_(eng)-Grendelkhan-frightened.wav
+  Derived from "VOXScrm Man eaten by alligator; screams (Wilhelm CS USC).wav"
+  Source: https://commons.wikimedia.org/wiki/File:VOXScrm_Man_eaten_by_alligator%3B_screams_(Wilhelm_CS_USC).wav
   License: CC0
 
 - panic-5.ogg
-  Derived from "LL-Q1860 (eng)-Grendelkhan-yell.wav"
-  Source: https://commons.wikimedia.org/wiki/File:LL-Q1860_(eng)-Grendelkhan-yell.wav
-  License: CC0
+  Derived from "Scream-c.wav"
+  Source: https://commons.wikimedia.org/wiki/File:Scream-c.wav
+  License: CC BY-SA 4.0
 
 - panic-6.ogg
-  Derived from "LL-Q1860 (eng)-Grendelkhan-yelling.wav"
-  Source: https://commons.wikimedia.org/wiki/File:LL-Q1860_(eng)-Grendelkhan-yelling.wav
-  License: CC0
+  Derived from "Scream-d.wav"
+  Source: https://commons.wikimedia.org/wiki/File:Scream-d.wav
+  License: CC BY-SA 4.0
