@@ -213,7 +213,25 @@ const playCelebrationSound = () => {
 };
 
 (() => {
-    const clampDPR = (dpr) => Math.min(dpr, 2);
+    const MOBILE_PERFORMANCE_MODE = window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
+    const MOBILE_PERF = Object.freeze({
+        maxDpr: 1,
+        fogNear: 55,
+        fogFar: 150,
+        cameraFar: 420,
+        textureMaxSize: 384,
+        maxAnisotropy: 2,
+        activeStreetLampCount: 4,
+        ambientBubbleCheckInterval: 1.2,
+        fullNpcRadiusSq: 20 * 20,
+        labelRadiusSq: 14 * 14,
+        bubbleRadiusSq: 10 * 10,
+        placeholderNpcRadiusSq: 52 * 52,
+        maxFullWalletNpcs: 18,
+        placeholderUpdateBuckets: 3,
+        hiddenUpdateBuckets: 7
+    });
+    const clampDPR = (dpr) => Math.min(dpr, MOBILE_PERFORMANCE_MODE ? MOBILE_PERF.maxDpr : 2);
     const DEFAULT_HOME_URL = 'https://agent1c-ai.github.io';
     const PLAYER_MODEL_URL = './assets/base-female.glb';
     const DEFAULT_NPC_MODEL_URL = 'https://threejs.org/examples/models/gltf/Xbot.glb';
@@ -243,17 +261,21 @@ const playCelebrationSound = () => {
         texture.generateMipmaps = true;
         texture.minFilter = THREE.LinearMipmapLinearFilter;
         texture.magFilter = THREE.LinearFilter;
-        if (maxAnisotropy) texture.anisotropy = Math.min(maxAnisotropy, 8);
+        if (maxAnisotropy) texture.anisotropy = Math.min(maxAnisotropy, MOBILE_PERFORMANCE_MODE ? MOBILE_PERF.maxAnisotropy : 8);
         return texture;
     };
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x02030a);
-    scene.fog = new THREE.Fog(0x121923, 6500, 18000);
+    scene.fog = new THREE.Fog(
+        0x121923,
+        MOBILE_PERFORMANCE_MODE ? MOBILE_PERF.fogNear : 6500,
+        MOBILE_PERFORMANCE_MODE ? MOBILE_PERF.fogFar : 18000
+    );
     const hemisphereLight = new THREE.HemisphereLight(0xf0f6ff, 0x101820, 0.55);
     scene.add(hemisphereLight);
 
-    const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 7000);
+    const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, MOBILE_PERFORMANCE_MODE ? MOBILE_PERF.cameraFar : 7000);
 
     const setTextureEncoding = (texture) => {
         texture.colorSpace = THREE.SRGBColorSpace;
@@ -342,7 +364,7 @@ const playCelebrationSound = () => {
         image.src = url;
     });
 
-    const optimizeImageCanvas = (image, maxSize = 1024) => {
+    const optimizeImageCanvas = (image, maxSize = MOBILE_PERFORMANCE_MODE ? MOBILE_PERF.textureMaxSize : 1024) => {
         const maxDim = Math.max(image.width, image.height);
         const scale = maxDim > maxSize ? maxSize / maxDim : 1;
         const width = Math.max(1, Math.floor(image.width * scale));
@@ -355,10 +377,10 @@ const playCelebrationSound = () => {
         return canvas;
     };
 
-    const loadTexture = (url) => new Promise((resolve, reject) => {
+    const loadTexture = (url, maxSize = MOBILE_PERFORMANCE_MODE ? MOBILE_PERF.textureMaxSize : 1024) => new Promise((resolve, reject) => {
         loadImageElement(url).then(
             (image) => {
-                const canvas = optimizeImageCanvas(image);
+                const canvas = optimizeImageCanvas(image, maxSize);
                 const texture = new THREE.CanvasTexture(canvas);
                 configureWebTexture(texture);
                 resolve(texture);
@@ -3624,14 +3646,25 @@ const playCelebrationSound = () => {
             this.visualRoot = new THREE.Group();
             this.visualRoot.name = 'npcVisualRoot';
             this.playerGroup.add(this.visualRoot);
+            this.placeholderRoot = new THREE.Group();
+            this.placeholderRoot.name = 'npcPlaceholderRoot';
+            this.placeholderRoot.visible = false;
+            this.playerGroup.add(this.placeholderRoot);
             this.playerControls = this.options.playerControls || null;
             this.onKnockedDown = this.options.onKnockedDown || null;
+            this.mobilePerformanceMode = !!this.options.mobilePerformanceMode;
+            this.mobileLodMode = 'full';
+            this.mobileUpdateBucketOffset = Math.floor(Math.random() * MOBILE_PERF.hiddenUpdateBuckets);
+            this.mobileDistanceSq = 0;
             this.model = null;
             this.avatarHeadBone = null;
             this.avatarHeadAnchor = null;
             this.avatarScreenMesh = null;
             this.avatarLabelSprite = null;
+            this.placeholderScreenMesh = null;
             this.pendingWalletNfts = null;
+            this.currentMonitorLabelText = '';
+            this.currentBodyTexture = null;
             this.mixer = null;
             this.idleAction = null;
             this.walkAction = null;
@@ -3659,6 +3692,7 @@ const playCelebrationSound = () => {
                 this.resolveReady = resolve;
             });
 
+            this.createPlaceholderVisual();
             this.loadAvatar();
             this.syncBasis();
             this.updateTransform();
@@ -3671,6 +3705,36 @@ const playCelebrationSound = () => {
             const min = this.options.pauseDurationMin;
             const max = this.options.pauseDurationMax;
             return min + Math.random() * Math.max(0, max - min);
+        }
+
+        createPlaceholderVisual() {
+            const bodyMat = new THREE.MeshBasicMaterial({ color: 0x8f232a, toneMapped: false });
+            const screenMat = new THREE.MeshBasicMaterial({
+                map: createCRTTextTexture('NFT'),
+                side: THREE.DoubleSide,
+                toneMapped: false
+            });
+            const placeholder = new THREE.Group();
+            placeholder.name = 'npcMobilePlaceholder';
+
+            const torso = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.78, 0.18), bodyMat);
+            torso.position.set(0, 0.72, 0);
+            placeholder.add(torso);
+
+            const legs = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.52, 0.14), bodyMat);
+            legs.position.set(0, 0.17, 0);
+            placeholder.add(legs);
+
+            const head = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.26, 0.24), new THREE.MeshBasicMaterial({ color: 0x335ab8, toneMapped: false }));
+            head.position.set(0, 1.3, -0.02);
+            placeholder.add(head);
+
+            const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.22, 0.16), screenMat);
+            screen.position.set(0, 1.3, 0.105);
+            placeholder.add(screen);
+
+            this.placeholderRoot.add(placeholder);
+            this.placeholderScreenMesh = screen;
         }
 
         shortestArcDelta(fromArc, toArc) {
@@ -4033,10 +4097,15 @@ const playCelebrationSound = () => {
         }
 
         setMonitorTexture(texture) {
-            if (!this.avatarScreenMesh?.material) return;
-            this.avatarScreenMesh.material.color?.setHex(0xffffff);
-            this.avatarScreenMesh.material.map = texture;
-            this.avatarScreenMesh.material.needsUpdate = true;
+            if (this.avatarScreenMesh?.material) {
+                this.avatarScreenMesh.material.color?.setHex(0xffffff);
+                this.avatarScreenMesh.material.map = texture;
+                this.avatarScreenMesh.material.needsUpdate = true;
+            }
+            if (this.placeholderScreenMesh?.material) {
+                this.placeholderScreenMesh.material.map = texture;
+                this.placeholderScreenMesh.material.needsUpdate = true;
+            }
         }
 
         setMonitorText(text) {
@@ -4044,17 +4113,18 @@ const playCelebrationSound = () => {
         }
 
         setMonitorLabel(text) {
+            this.currentMonitorLabelText = text;
             if (!this.avatarLabelSprite?.material) return;
             this.avatarLabelSprite.material.map = createNpcMonitorLabelTexture(text);
             this.avatarLabelSprite.material.needsUpdate = true;
-            this.avatarLabelSprite.visible = true;
+            this.avatarLabelSprite.visible = !this.mobilePerformanceMode || this.mobileLodMode === 'full';
         }
 
         showPanicBubble(text) {
             if (!this.panicBubbleSprite?.material) return;
             this.panicBubbleSprite.material.map = createNpcSpeechBubbleTexture(text);
             this.panicBubbleSprite.material.needsUpdate = true;
-            this.panicBubbleSprite.visible = true;
+            this.panicBubbleSprite.visible = !this.mobilePerformanceMode || this.mobileLodMode === 'full';
             this.panicBubbleTimer = 2.4;
         }
 
@@ -4062,7 +4132,7 @@ const playCelebrationSound = () => {
             if (!this.panicBubbleSprite?.material) return;
             this.panicBubbleSprite.material.map = createNpcSpeechBubbleTexture(text);
             this.panicBubbleSprite.material.needsUpdate = true;
-            this.panicBubbleSprite.visible = true;
+            this.panicBubbleSprite.visible = !this.mobilePerformanceMode || this.mobileLodMode === 'full';
             this.panicBubbleTimer = duration;
             this.ambientBubbleCooldown = 4.5 + (Math.random() * 2.5);
         }
@@ -4075,12 +4145,38 @@ const playCelebrationSound = () => {
             return !this.isDestroyed && !this.isFallen && !this.isPanicking() && this.ambientBubbleCooldown <= 0;
         }
 
+        setMobileLodMode(mode, options = {}) {
+            const modeChanged = this.mobileLodMode !== mode;
+            this.mobileLodMode = mode;
+            const showLabel = options.showLabel !== false;
+            const showBubble = options.showBubble !== false;
+            this.visualRoot.visible = mode === 'full';
+            this.placeholderRoot.visible = this.mobilePerformanceMode && mode === 'placeholder';
+            this.playerGroup.visible = mode !== 'hidden';
+            if (this.avatarLabelSprite) {
+                this.avatarLabelSprite.visible = mode === 'full' && showLabel && !!this.currentMonitorLabelText;
+            }
+            if (this.panicBubbleSprite) {
+                this.panicBubbleSprite.visible = mode === 'full' && showBubble && this.panicBubbleTimer > 0;
+            }
+            if (modeChanged) {
+                if (mode === 'full') {
+                    if (this.currentBodyTexture) {
+                        this.wrapBodyTexture(this.currentBodyTexture);
+                    }
+                } else {
+                    this.clearBodyTexture();
+                }
+            }
+        }
+
         async showRandomWalletNft(nfts) {
             if (!this.avatarScreenMesh?.material) {
                 this.pendingWalletNfts = [...nfts];
                 return false;
             }
             this.clearBodyTexture();
+            this.currentBodyTexture = null;
             if (!nfts.length) {
                 this.setMonitorText('NO NFT');
                 this.setMonitorLabel('NO NFT');
@@ -4096,7 +4192,12 @@ const playCelebrationSound = () => {
                 try {
                     const texture = await loadTexture(candidate);
                     this.setMonitorTexture(texture);
-                    this.wrapBodyTexture(texture);
+                    this.currentBodyTexture = texture;
+                    if (!this.mobilePerformanceMode || this.mobileLodMode === 'full') {
+                        this.wrapBodyTexture(texture);
+                    } else {
+                        this.clearBodyTexture();
+                    }
                     return true;
                 } catch (error) {
                     console.warn('[chainworld] npc monitor nft texture failed', candidate, error);
@@ -4104,6 +4205,7 @@ const playCelebrationSound = () => {
             }
 
             this.setMonitorText(nftTitle);
+            this.currentBodyTexture = null;
             this.clearBodyTexture();
             return false;
         }
@@ -4549,6 +4651,7 @@ const playCelebrationSound = () => {
             this.controls = new ThirdPersonCylinderControls(camera, renderer.domElement, this.world);
             this.npc = new WanderingNPC(scene, this.world, { playerControls: this.controls });
             this.walletNpcs = [];
+            this.mobilePerformanceMode = MOBILE_PERFORMANCE_MODE;
             this.css3dScreen = new CSS3DScreen(scene, camera, this.world.starterScreenMesh);
             this.interaction = new InteractionSystem(camera, this.controls, this.world.starterScreenMesh, this.css3dScreen);
             this.controls.onAvatarScreenReady = (screenMesh) => {
@@ -4591,9 +4694,9 @@ const playCelebrationSound = () => {
             this.audioStateCheckAccumulator = 0;
             this.streetLampLightCheckAccumulator = 0;
             this.streetLampLightCheckInterval = 0.35;
-            this.activeStreetLampCount = 6;
+            this.activeStreetLampCount = this.mobilePerformanceMode ? MOBILE_PERF.activeStreetLampCount : 6;
             this.ambientBubbleCheckAccumulator = 0;
-            this.ambientBubbleCheckInterval = 0.65;
+            this.ambientBubbleCheckInterval = this.mobilePerformanceMode ? MOBILE_PERF.ambientBubbleCheckInterval : 0.65;
             this.hasPanickingWalletNpcs = false;
             this.checkLoadingOverlay = () => {
                 if (!this.startupWarmupStarted && this.sceneReady && this.avatarReady) {
@@ -4610,6 +4713,9 @@ const playCelebrationSound = () => {
             };
             this.urlBar = new URLBar(this.css3dScreen);
             this.clock = new THREE.Clock();
+            this.mobileWalletNpcBudgetAccumulator = 0;
+            this.mobileWalletNpcBudgetInterval = this.mobilePerformanceMode ? 0.35 : 0;
+            this.mobileNpcUpdateFrame = 0;
             this.world.updateStreetLampLights(this.controls.surfaceX, this.controls.surfaceArc, this.activeStreetLampCount);
 
             window.requestAnimationFrame(() => {
@@ -4635,6 +4741,64 @@ const playCelebrationSound = () => {
                 this.controls.surfaceArc,
                 this.activeStreetLampCount
             );
+        }
+
+        refreshMobileWalletNpcLod(delta = 0, force = false) {
+            if (!this.mobilePerformanceMode) return;
+            if (!force) {
+                this.mobileWalletNpcBudgetAccumulator += delta;
+                if (this.mobileWalletNpcBudgetAccumulator < this.mobileWalletNpcBudgetInterval) return;
+            }
+            this.mobileWalletNpcBudgetAccumulator = 0;
+            const ranked = this.walletNpcs
+                .filter((npc) => npc && !npc.isDestroyed)
+                .map((npc) => {
+                    const dx = npc.surfaceX - this.controls.surfaceX;
+                    const dz = this.world.shortestArcDelta(this.controls.surfaceArc, npc.surfaceArc);
+                    return { npc, distanceSq: (dx * dx) + (dz * dz) };
+                })
+                .sort((a, b) => a.distanceSq - b.distanceSq);
+
+            let fullCount = 0;
+            ranked.forEach(({ npc, distanceSq }) => {
+                npc.mobileDistanceSq = distanceSq;
+                const needsFull =
+                    npc === this.currentTargetNpc ||
+                    npc.isPanicking?.() ||
+                    npc.isStaggering?.() ||
+                    npc.isFallen ||
+                    (npc.hasActiveSpeechBubble?.() && distanceSq <= MOBILE_PERF.bubbleRadiusSq);
+                let mode = 'hidden';
+                if (needsFull || (distanceSq <= MOBILE_PERF.fullNpcRadiusSq && fullCount < MOBILE_PERF.maxFullWalletNpcs)) {
+                    mode = 'full';
+                    fullCount += 1;
+                } else if (distanceSq <= MOBILE_PERF.placeholderNpcRadiusSq) {
+                    mode = 'placeholder';
+                }
+                npc.setMobileLodMode(mode, {
+                    showLabel: distanceSq <= MOBILE_PERF.labelRadiusSq,
+                    showBubble: distanceSq <= MOBILE_PERF.bubbleRadiusSq
+                });
+            });
+        }
+
+        updateWalletNpcSimulation(delta) {
+            if (!this.mobilePerformanceMode) {
+                this.walletNpcs.forEach((npc) => npc.update(delta));
+                return;
+            }
+            this.mobileNpcUpdateFrame = (this.mobileNpcUpdateFrame + 1) % MOBILE_PERF.hiddenUpdateBuckets;
+            this.walletNpcs.forEach((npc) => {
+                if (!npc || npc.isDestroyed) return;
+                const mode = npc.mobileLodMode || 'full';
+                if (mode === 'full') {
+                    npc.update(delta);
+                    return;
+                }
+                const bucketCount = mode === 'placeholder' ? MOBILE_PERF.placeholderUpdateBuckets : MOBILE_PERF.hiddenUpdateBuckets;
+                if (((this.mobileNpcUpdateFrame + npc.mobileUpdateBucketOffset) % bucketCount) !== 0) return;
+                npc.update(delta * bucketCount);
+            });
         }
 
         async runStartupWarmup() {
@@ -4774,6 +4938,7 @@ const playCelebrationSound = () => {
 
             const playerNearby = this.walletNpcs.filter((npc) => {
                 if (!npc || !npc.canShowAmbientBubble?.() || npc.isStaggering?.()) return false;
+                if (this.mobilePerformanceMode && npc.mobileLodMode !== 'full') return false;
                 const dx = npc.surfaceX - this.controls.surfaceX;
                 const dz = this.world.shortestArcDelta(this.controls.surfaceArc, npc.surfaceArc);
                 return ((dx * dx) + (dz * dz)) <= 100;
@@ -4823,10 +4988,12 @@ const playCelebrationSound = () => {
             this.controls.playerGroup.getWorldPosition(playerPos);
             const targetPos = new THREE.Vector3();
             target.playerGroup.getWorldPosition(targetPos);
-            if (this.targetDebugLine) {
+            if (this.targetDebugLine && !this.mobilePerformanceMode) {
                 this.targetDebugLineGeometry.setFromPoints([playerPos, targetPos]);
                 this.targetDebugLineGeometry.attributes.position.needsUpdate = true;
                 this.targetDebugLine.visible = true;
+            } else if (this.targetDebugLine) {
+                this.targetDebugLine.visible = false;
             }
             const arrowPos = playerPos.clone();
             this.targetArrowUp.copy(this.controls.up).normalize();
@@ -4871,6 +5038,7 @@ const playCelebrationSound = () => {
             this.updateTargetArrow();
             const preview = this.currentTargetNpc.nftData?.previewUrl || this.currentTargetNpc.nftData?.imageUrl || '';
             this.updateTargetHUD(name, preview);
+            this.refreshMobileWalletNpcLod(0, true);
         }
 
         updateTargetHUD(name, previewUrl) {
@@ -4904,6 +5072,7 @@ const playCelebrationSound = () => {
                 killOverlay.classList.add('hidden');
             }
             this.updateTargetHUD('None', '');
+            this.refreshMobileWalletNpcLod(0, true);
         }
 
         handleNpcKilled(npc) {
@@ -4994,6 +5163,7 @@ const playCelebrationSound = () => {
             this.walletNpcs.forEach((npc) => npc.destroy());
             this.walletNpcs = [];
             this.ambientBubbleCheckAccumulator = 0;
+            this.mobileWalletNpcBudgetAccumulator = 0;
             this.stopTargetCycle();
         }
 
@@ -5012,7 +5182,8 @@ const playCelebrationSound = () => {
                     pauseDurationMin: 0.45,
                     pauseDurationMax: 1.9,
                     logLabel: `wallet NPC ${index + 1}`,
-                    playerControls: this.controls
+                    playerControls: this.controls,
+                    mobilePerformanceMode: this.mobilePerformanceMode
                 });
                 npc.nftData = nft;
                 npc.onKnockedDown = (instance) => this.handleNpcKilled(instance);
@@ -5034,6 +5205,7 @@ const playCelebrationSound = () => {
             if (nfts.length) {
                 this.startTargetCycle();
             }
+            this.refreshMobileWalletNpcLod(0, true);
             return imageCount;
         }
 
@@ -5131,7 +5303,8 @@ const playCelebrationSound = () => {
             const delta = Math.min(this.clock.getDelta(), 0.05);
             this.controls.update(delta);
             this.npc?.update(delta);
-            this.walletNpcs.forEach((npc) => npc.update(delta));
+            this.refreshMobileWalletNpcLod(delta);
+            this.updateWalletNpcSimulation(delta);
             this.world.updateDayNight(delta);
             this.updateStreetLampLights(delta);
             this.updateAmbientWalletNpcDialog(delta);
