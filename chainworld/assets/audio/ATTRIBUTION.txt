@@ -7,6 +7,21 @@ Files used by the game runtime:
   Source: https://commons.wikimedia.org/wiki/File:1_minute_at_the_alexa_mall_in_berlin.ogg
   License: Public domain
 
+- crowd-2.ogg
+  Derived from "Shopping mall less crowded.ogg"
+  Source: https://commons.wikimedia.org/wiki/File:Shopping_mall_less_crowded.ogg
+  License: Public domain
+
+- crowd-3.ogg
+  Derived from "High school cafeteria.ogg"
+  Source: https://commons.wikimedia.org/wiki/File:High_school_cafeteria.ogg
+  License: Public domain
+
+- crowd-4.ogg
+  Derived from "Street parade carnival people yelling kamelle kamelle.ogg"
+  Source: https://commons.wikimedia.org/wiki/File:Street_parade_carnival_people_yelling_kamelle_kamelle.ogg
+  License: Public domain
+
 - punch.ogg
   Derived from "Hitting wooden pole.ogg"
   Source: https://commons.wikimedia.org/wiki/File:Hitting_wooden_pole.ogg

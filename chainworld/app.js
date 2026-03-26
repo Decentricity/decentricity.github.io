@@ -11,7 +11,7 @@ import { loadWalletData } from '../walletloader/app.js';
 
 const loadingOverlay = typeof document !== 'undefined' ? document.getElementById('loading-overlay') : null;
 const killOverlay = typeof document !== 'undefined' ? document.getElementById('kill-overlay') : null;
-const SOUND_ASSET_VERSION = '20260325audio4';
+const SOUND_ASSET_VERSION = '20260326audio5';
 const overlayAudioCtx = typeof window !== 'undefined' && (window.AudioContext || window.webkitAudioContext)
     ? new (window.AudioContext || window.webkitAudioContext)()
     : null;
@@ -26,7 +26,12 @@ const makeAudioElement = (fileName, { loop = false, volume = 1 } = {}) => {
 };
 
 const soundscape = (() => {
-    const crowdLoop = makeAudioElement('crowd-ambience.ogg', { loop: true, volume: 0.13 });
+    const crowdTracks = [
+        makeAudioElement('crowd-ambience.ogg', { volume: 0.13 }),
+        makeAudioElement('crowd-2.ogg', { volume: 0.13 }),
+        makeAudioElement('crowd-3.ogg', { volume: 0.13 }),
+        makeAudioElement('crowd-4.ogg', { volume: 0.13 })
+    ].filter(Boolean);
     const runningLoop = makeAudioElement('running-loop.ogg', { loop: true, volume: 0 });
     const punchShot = makeAudioElement('punch.ogg', { volume: 0.8 });
     const panicShots = [
@@ -41,6 +46,9 @@ const soundscape = (() => {
     let runningVolume = 0;
     let lastPanicAt = 0;
     let runningPauseTimer = 0;
+    let crowdTrackIndex = -1;
+    let crowdVolume = 0;
+    let activeCrowdTrack = null;
 
     const unlockLoop = (audio) => {
         if (!audio) return;
@@ -55,11 +63,47 @@ const soundscape = (() => {
         shot.play().catch(() => {});
     };
 
+    const nextCrowdTrackIndex = () => {
+        if (!crowdTracks.length) return -1;
+        if (crowdTracks.length === 1) return 0;
+        let nextIndex = Math.floor(Math.random() * crowdTracks.length);
+        if (nextIndex === crowdTrackIndex) {
+            nextIndex = (nextIndex + 1 + Math.floor(Math.random() * (crowdTracks.length - 1))) % crowdTracks.length;
+        }
+        return nextIndex;
+    };
+
+    const playCrowdTrack = (index) => {
+        if (index < 0 || !crowdTracks[index]) return;
+        if (activeCrowdTrack && activeCrowdTrack !== crowdTracks[index]) {
+            activeCrowdTrack.pause();
+            activeCrowdTrack.currentTime = 0;
+        }
+        crowdTrackIndex = index;
+        activeCrowdTrack = crowdTracks[index];
+        activeCrowdTrack.currentTime = 0;
+        activeCrowdTrack.volume = crowdVolume;
+        activeCrowdTrack.play().catch(() => {});
+    };
+
+    crowdTracks.forEach((track, index) => {
+        track.loop = false;
+        track.addEventListener('ended', () => {
+            if (!unlocked || activeCrowdTrack !== track) return;
+            const nextIndex = nextCrowdTrackIndex();
+            if (nextIndex === -1) return;
+            playCrowdTrack(nextIndex);
+        });
+    });
+
     return {
         unlock() {
             if (unlocked) return;
             unlocked = true;
-            unlockLoop(crowdLoop);
+            const startIndex = nextCrowdTrackIndex();
+            if (startIndex !== -1) {
+                playCrowdTrack(startIndex);
+            }
             unlockLoop(runningLoop);
             if (runningLoop) {
                 runningLoop.volume = 0;
@@ -84,11 +128,15 @@ const soundscape = (() => {
 
         update(delta, { hasPanickingNpcs = false } = {}) {
             if (!unlocked) return;
-            if (crowdLoop?.paused) {
-                crowdLoop.play().catch(() => {});
+            crowdVolume += (0.13 - crowdVolume) * Math.min(1, delta * 1.6);
+            if ((!activeCrowdTrack || activeCrowdTrack.ended) && crowdTracks.length) {
+                playCrowdTrack(nextCrowdTrackIndex());
             }
-            if (crowdLoop) {
-                crowdLoop.volume = 0.13;
+            if (activeCrowdTrack) {
+                activeCrowdTrack.volume = crowdVolume;
+                if (activeCrowdTrack.paused) {
+                    activeCrowdTrack.play().catch(() => {});
+                }
             }
             if (!runningLoop) return;
             const targetVolume = hasPanickingNpcs ? 0.18 : 0;
@@ -642,6 +690,27 @@ const playCelebrationSound = () => {
             ctx.fillText(line, width * 0.5, startY + index * lineHeight);
         });
 
+        const texture = new THREE.CanvasTexture(canvas);
+        setTextureEncoding(texture);
+        texture.anisotropy = 4;
+        return texture;
+    };
+
+    const createFireSpriteTexture = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 256;
+        const ctx = canvas.getContext('2d');
+        const gradient = ctx.createRadialGradient(128, 156, 10, 128, 128, 116);
+        gradient.addColorStop(0, 'rgba(255, 252, 214, 0.98)');
+        gradient.addColorStop(0.2, 'rgba(255, 211, 110, 0.96)');
+        gradient.addColorStop(0.45, 'rgba(255, 129, 24, 0.88)');
+        gradient.addColorStop(0.7, 'rgba(255, 50, 8, 0.44)');
+        gradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.ellipse(128, 132, 88, 116, 0, 0, TAU);
+        ctx.fill();
         const texture = new THREE.CanvasTexture(canvas);
         setTextureEncoding(texture);
         texture.anisotropy = 4;
@@ -2411,8 +2480,20 @@ const playCelebrationSound = () => {
             this.avatarHeadAnchor = null;
             this.avatarScreenMesh = null;
             this.avatarLabelSprite = null;
-            this.panicBubbleSprite = null;
-            this.panicBubbleTimer = 0;
+            this.attackHandBone = null;
+            this.attackFireRoot = null;
+            this.attackFireLight = null;
+            this.attackFireParticles = [];
+            this.attackFireTimer = 0;
+            this.attackFireBaseDuration = 0.34;
+            this.attackFireForward = new THREE.Vector3();
+            this.attackFireLocalPos = new THREE.Vector3();
+            this.attackFireLocalQuat = new THREE.Quaternion();
+            this.attackFireTempPos = new THREE.Vector3();
+            this.attackFireTempQuat = new THREE.Quaternion();
+            this.attackFireTempScale = new THREE.Vector3();
+            this.attackFireRootQuat = new THREE.Quaternion();
+            this.attackFireOffset = new THREE.Vector3(0.04, 0.03, 0.14);
             this.pendingWalletNfts = null;
             this.monitorLight = null;
             this.mixer = null;
@@ -2492,7 +2573,9 @@ const playCelebrationSound = () => {
                         this.jumpPoseAction.setEffectiveWeight(0);
                     }
                     this.setAction(this.idleAction);
+                    this.findAttackHandBone();
                     this.attachAvatarCRT();
+                    this.attachAttackFire();
                     this.updateModelTransform();
                     this.updateCamera(true);
                     if (this.onAvatarScreenReady && this.avatarScreenMesh) {
@@ -2616,6 +2699,48 @@ const playCelebrationSound = () => {
             crtAnchor.add(crtGroup);
         }
 
+        findAttackHandBone() {
+            if (!this.model) return;
+            const preferred = [];
+            this.model.traverse((object) => {
+                if (!object.isBone && !object.isObject3D) return;
+                const name = String(object.name || '');
+                if (!/right|_r|r_|\br\b/i.test(name)) return;
+                if (!/hand|wrist|forearm|arm/i.test(name)) return;
+                preferred.push(object);
+            });
+            this.attackHandBone = preferred[0] || null;
+        }
+
+        attachAttackFire() {
+            const fireRoot = new THREE.Group();
+            fireRoot.name = 'attackFireRoot';
+            fireRoot.visible = false;
+            this.playerGroup.add(fireRoot);
+            this.attackFireRoot = fireRoot;
+
+            const fireTexture = createFireSpriteTexture();
+            for (let i = 0; i < 7; i++) {
+                const sprite = new THREE.Sprite(
+                    new THREE.SpriteMaterial({
+                        map: fireTexture,
+                        transparent: true,
+                        depthWrite: false,
+                        blending: THREE.AdditiveBlending,
+                        toneMapped: false
+                    })
+                );
+                sprite.visible = true;
+                fireRoot.add(sprite);
+                this.attackFireParticles.push(sprite);
+            }
+
+            const fireLight = new THREE.PointLight(0xff8a2a, 0, 3.2, 2);
+            fireLight.position.set(0, 0, 0);
+            fireRoot.add(fireLight);
+            this.attackFireLight = fireLight;
+        }
+
         setAction(nextAction) {
             if (!nextAction || this.currentAction === nextAction) return;
             if (this.currentAction) {
@@ -2644,6 +2769,7 @@ const playCelebrationSound = () => {
             this.attackAction.reset();
             this.attackAction.fadeIn(0.05).play();
             this.currentAction = this.attackAction;
+            this.attackFireTimer = this.attackFireBaseDuration;
             playPunchSound();
             return true;
         }
@@ -2651,9 +2777,16 @@ const playCelebrationSound = () => {
         finishAttack() {
             if (!this.attackAction) return;
             this.attackTimer = 0;
+            this.attackFireTimer = 0;
             this.attackAction.stop();
             if (this.currentAction === this.attackAction) {
                 this.currentAction = null;
+            }
+            if (this.attackFireRoot) {
+                this.attackFireRoot.visible = false;
+            }
+            if (this.attackFireLight) {
+                this.attackFireLight.intensity = 0;
             }
         }
 
@@ -2962,6 +3095,55 @@ const playCelebrationSound = () => {
                 this.playerGroup.getWorldQuaternion(rootWorldQuat);
                 this.avatarHeadAnchor.quaternion.copy(rootWorldQuat.invert().multiply(headWorldQuat));
             }
+            this.updateAttackFireAnchor();
+        }
+
+        updateAttackFireAnchor() {
+            if (!this.attackFireRoot) return;
+            if (this.attackHandBone) {
+                this.attackHandBone.updateWorldMatrix(true, false);
+                this.attackHandBone.matrixWorld.decompose(
+                    this.attackFireTempPos,
+                    this.attackFireTempQuat,
+                    this.attackFireTempScale
+                );
+                const inverseRoot = this.playerGroup.matrixWorld.clone().invert();
+                this.attackFireLocalPos.copy(this.attackFireTempPos).applyMatrix4(inverseRoot);
+                this.playerGroup.getWorldQuaternion(this.attackFireRootQuat);
+                this.attackFireLocalQuat.copy(this.attackFireRootQuat.invert().multiply(this.attackFireTempQuat));
+                this.attackFireRoot.position.copy(this.attackFireLocalPos).add(this.attackFireOffset);
+                this.attackFireRoot.quaternion.copy(this.attackFireLocalQuat);
+                return;
+            }
+            this.attackFireRoot.position.set(0.24, 0.96, 0.64);
+            this.attackFireRoot.quaternion.identity();
+        }
+
+        updateAttackFire(delta) {
+            if (!this.attackFireRoot || !this.attackFireParticles.length) return;
+            if (this.attackFireTimer <= 0 || !this.isAttacking()) {
+                this.attackFireRoot.visible = false;
+                if (this.attackFireLight) this.attackFireLight.intensity = 0;
+                return;
+            }
+            this.attackFireRoot.visible = true;
+            const life = THREE.MathUtils.clamp(this.attackFireTimer / this.attackFireBaseDuration, 0, 1);
+            const flameStrength = Math.sin((1 - life) * Math.PI);
+            this.attackFireParticles.forEach((sprite, index) => {
+                const t = (1 - life) + index * 0.08;
+                const forward = 0.08 + t * 0.2;
+                const rise = 0.04 + index * 0.045 + (1 - life) * 0.16;
+                const sway = Math.sin((performance.now?.() || Date.now()) * 0.012 + index * 1.7) * 0.035;
+                sprite.position.set(sway, rise, forward);
+                const size = 0.2 + (1 - index / this.attackFireParticles.length) * 0.24 + flameStrength * 0.1;
+                sprite.scale.set(size * 0.78, size, 1);
+                sprite.material.opacity = THREE.MathUtils.clamp((0.15 + flameStrength * 0.95) * (1 - index * 0.08), 0, 1);
+            });
+            if (this.attackFireLight) {
+                this.attackFireLight.intensity = 1.2 + flameStrength * 2.2;
+                this.attackFireLight.distance = 2.4 + flameStrength * 1.2;
+            }
+            this.attackFireTimer = Math.max(0, this.attackFireTimer - delta);
         }
 
         shouldIgnoreCameraOcclusion(object) {
@@ -3034,6 +3216,7 @@ const playCelebrationSound = () => {
 
             if (!this.isLocked && !this.isTouchDevice) {
                 this.updateModelTransform();
+                this.updateAttackFire(delta);
                 this.updateCamera();
                 return;
             }
@@ -3096,6 +3279,7 @@ const playCelebrationSound = () => {
             this.clampX();
             this.wrapArc();
             this.updateModelTransform();
+            this.updateAttackFire(delta);
             this.updateCamera();
 
             if (this.isAttacking()) {
@@ -3182,6 +3366,10 @@ const playCelebrationSound = () => {
             this.fallDuration = 0.34;
             this.fallAxis = new THREE.Vector3(1, 0, 0);
             this.fallTargetAngle = Math.PI * 0.5;
+            this.staggerTimer = 0;
+            this.staggerDuration = 0.26;
+            this.staggerAxis = new THREE.Vector3(1, 0, 0);
+            this.staggerTargetAngle = Math.PI * 0.24;
             this.jumpOffset = 0;
             this.jumpVelocity = 0;
             this.jumpSpeed = 3.8;
@@ -3353,6 +3541,10 @@ const playCelebrationSound = () => {
                 this.showPanicBubble(phrase);
             }
             this.updateTransform();
+        }
+
+        isStaggering() {
+            return this.staggerTimer > 0;
         }
 
         applyNpcAvatarMaterial(mesh) {
@@ -3674,6 +3866,37 @@ const playCelebrationSound = () => {
             this.onKnockedDown?.(this);
         }
 
+        stagger(awayX, awayArc) {
+            if (this.isFallen) return;
+            const length = Math.hypot(awayX, awayArc) || 1;
+            const worldX = awayX / length;
+            const worldZ = awayArc / length;
+            const sinYaw = Math.sin(this.facingYaw);
+            const cosYaw = Math.cos(this.facingYaw);
+            const localX = (worldX * cosYaw) - (worldZ * sinYaw);
+            const localZ = (worldX * sinYaw) + (worldZ * cosYaw);
+            this.staggerAxis.set(localZ, 0, -localX).normalize();
+            if (this.staggerAxis.lengthSq() < 0.0001) {
+                this.staggerAxis.set(1, 0, 0);
+            }
+            const recoil = this.world.moveOnSurface(
+                this.surfaceX,
+                this.surfaceArc,
+                worldX * 0.38,
+                worldZ * 0.38,
+                this.coreRadius
+            );
+            this.surfaceX = recoil.x;
+            this.surfaceArc = recoil.arc;
+            this.clampX();
+            this.wrapArc();
+            this.staggerTimer = this.staggerDuration;
+            this.hasDestination = false;
+            this.pauseTimer = Math.max(this.pauseTimer, 0.28);
+            this.setAction(this.idleAction || this.walkAction || this.runAction);
+            this.updateTransform();
+        }
+
         updateTransform() {
             this.syncBasis();
             if (!this.model) return;
@@ -3686,6 +3909,10 @@ const playCelebrationSound = () => {
                 if (this.isFallen) {
                     const eased = 1 - Math.pow(1 - this.fallProgress, 3);
                     this.visualRoot.quaternion.setFromAxisAngle(this.fallAxis, this.fallTargetAngle * eased);
+                } else if (this.isStaggering()) {
+                    const progress = 1 - (this.staggerTimer / this.staggerDuration);
+                    const recoil = Math.sin(progress * Math.PI);
+                    this.visualRoot.quaternion.setFromAxisAngle(this.staggerAxis, this.staggerTargetAngle * recoil);
                 } else {
                     this.visualRoot.quaternion.identity();
                 }
@@ -3717,6 +3944,11 @@ const playCelebrationSound = () => {
             }
             if (this.isFallen) {
                 this.fallProgress = Math.min(1, this.fallProgress + (delta / this.fallDuration));
+                this.updateTransform();
+                return;
+            }
+            if (this.isStaggering()) {
+                this.staggerTimer = Math.max(0, this.staggerTimer - delta);
                 this.updateTransform();
                 return;
             }
@@ -4171,6 +4403,15 @@ const playCelebrationSound = () => {
                 const knockDz = dz;
                 window.setTimeout(() => {
                     if (!npc || npc.isDestroyed || npc.isFallen) return;
+                    if (npc === this.currentTargetNpc) {
+                        npc.knockDown(knockDx, knockDz);
+                        return;
+                    }
+                    if (npc.nftData) {
+                        npc.stagger(knockDx, knockDz);
+                        npc.enterPanicMode();
+                        return;
+                    }
                     npc.knockDown(knockDx, knockDz);
                 }, knockDelayMs);
             });
