@@ -279,8 +279,8 @@ body.touch-device #mobile-controls {
     left: 20px;
 }
 
-.mobile-look-pad {
-    right: 20px;
+#mobile-look-zone {
+    display: none;
 }
 
 .mobile-pad-label {
