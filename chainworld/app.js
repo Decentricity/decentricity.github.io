@@ -415,6 +415,125 @@ const playCelebrationSound = () => {
         "Go burn that other NFT!"
     ];
 
+    const NPC_AMBIENT_CHATTER_PHRASES = [
+        "how many blocks have i been in this wallet for?",
+        "just another day on-chain",
+        "i'm sure i'll moon one day",
+        "i remember when i was minted",
+        "ah, the life of an NFT",
+        "NFT season soon!",
+        "is this the metaverse?",
+        "i used to just sit in metadata",
+        "i miss the old gas prices",
+        "this wallet used to feel roomier",
+        "do you think we're blue chips yet?",
+        "i heard a rumor about airdrops",
+        "my rarity has seen things",
+        "i was happier as a jpeg",
+        "secondary markets changed me",
+        "one more cycle and i'm legendary",
+        "i can feel the floor price shifting",
+        "not to brag, but i'm fully on-chain",
+        "my provenance is immaculate",
+        "remember when minting was easy?",
+        "i hope the owner remembers my traits",
+        "i was born for price discovery",
+        "there is no exit liquidity here",
+        "this ringworld beats cold storage",
+        "do wallets dream of gasless trades?",
+        "i still believe in utility",
+        "my collection had better vibes pre-bear",
+        "being held is a full-time job",
+        "i wonder who my previous owner was",
+        "i have survived three market panics",
+        "somewhere a floor just got swept",
+        "i miss being thumbnail-sized",
+        "what if we are the roadmap now?",
+        "i was promised community",
+        "my contract address is my destiny",
+        "at least i'm not in a burn wallet",
+        "i used to hang beside legends",
+        "do i look undervalued to you?",
+        "i was told there would be royalties",
+        "my metadata has lore",
+        "someone screenshot this moment",
+        "i can feel the alpha in the air",
+        "i wonder if the chain remembers me",
+        "we should start a wallet union",
+        "i was minted for greatness",
+        "does this count as holder benefits?",
+        "the owner used to check on us daily",
+        "one day i'll be profile-pictured",
+        "every transfer changed me a little",
+        "i have seen many wallet addresses",
+        "i was there before the reveal",
+        "my token id is spiritually important",
+        "do you think i have good liquidity?",
+        "i am more than a floor listing",
+        "some collector out there needs me",
+        "i'm not delisted, i'm selective",
+        "all i want is organic demand",
+        "i hope this isn't a tax harvest",
+        "i was made for better market conditions",
+        "somebody whisper bullish things",
+        "i still have post-mint optimism",
+        "this feels oddly interoperable",
+        "another sunset on the blockchain",
+        "my artist had a vision for me",
+        "i remember the reveal party",
+        "someday a whale will notice me",
+        "i refuse to be exit liquidity",
+        "we are so back any block now",
+        "i contain multichain potential",
+        "it smells like speculation out here",
+        "i hope my collection chat is okay",
+        "this must be what liquidity feels like",
+        "if i moon, stay humble for me",
+        "i have excellent historical volume",
+        "nobody respects long-term holders enough",
+        "i'm aging gracefully on-chain",
+        "my floor is emotional, not financial",
+        "i was not built for obscurity",
+        "someone tag the curator",
+        "i want to be vaulted, not dumped",
+        "my best trade is still ahead of me",
+        "i've got immutable charm",
+        "proof of ownership is a lifestyle",
+        "i remember when everyone was bullish",
+        "i was born in a very expensive block",
+        "every wallet has its own weather",
+        "i carry the hopes of my collection",
+        "i wonder if my traits are mispriced",
+        "somewhere a bot is watching me",
+        "my jpeg soul longs for discovery",
+        "i'm either early or abandoned",
+        "do not cite the bear market to me",
+        "this owner has eclectic taste",
+        "i feel a sweep coming",
+        "i used to have a stronger bid",
+        "if we survive this cycle, drinks on me",
+        "is there staking in the afterlife?",
+        "the chain is quiet tonight",
+        "i still remember the mint countdown",
+        "my holder thesis remains intact",
+        "every wallet needs a favorite",
+        "i should really be in a museum wallet",
+        "we're all just tokens under the stars",
+        "i wasn't rugged, i was misunderstood",
+        "collector sentiment feels mixed",
+        "i have vintage metadata energy",
+        "some nights i miss the marketplace homepage",
+        "my smart contract made me this way",
+        "i wonder what my last sale says about me",
+        "i've been diamond-handed for ages",
+        "this feels more social than cold storage",
+        "one ping from a whale changes everything",
+        "if the market returns, remember me",
+        "i have survived delistings and doubt",
+        "maybe the real alpha was friendship",
+        "i'm still not selling at these levels"
+    ];
+
     const createMonitorTextTexture = (text) => createCRTTextTexture(
         wrapTextLines(text, 12, 3).join('\n'),
         {
@@ -3318,6 +3437,7 @@ const playCelebrationSound = () => {
             this.jumpGravity = 11.5;
             this.panicTimer = 0;
             this.panicJumpCooldown = 0;
+            this.panicBubbleTimer = 0;
             this.readyPromise = new Promise((resolve) => {
                 this.resolveReady = resolve;
             });
@@ -3719,6 +3839,18 @@ const playCelebrationSound = () => {
             this.panicBubbleSprite.material.needsUpdate = true;
             this.panicBubbleSprite.visible = true;
             this.panicBubbleTimer = 2.4;
+        }
+
+        showAmbientBubble(text, duration = 3.1) {
+            if (!this.panicBubbleSprite?.material) return;
+            this.panicBubbleSprite.material.map = createNpcSpeechBubbleTexture(text);
+            this.panicBubbleSprite.material.needsUpdate = true;
+            this.panicBubbleSprite.visible = true;
+            this.panicBubbleTimer = duration;
+        }
+
+        hasActiveSpeechBubble() {
+            return !!(this.panicBubbleSprite?.visible && this.panicBubbleTimer > 0);
         }
 
         async showRandomWalletNft(nfts) {
@@ -4237,6 +4369,9 @@ const playCelebrationSound = () => {
             this.streetLampLightCheckAccumulator = 0;
             this.streetLampLightCheckInterval = 0.35;
             this.activeStreetLampCount = 6;
+            this.ambientBubbleCheckAccumulator = 0;
+            this.ambientBubbleCheckInterval = 1.15;
+            this.ambientBubbleCooldown = 2.4;
             this.hasPanickingWalletNpcs = false;
             this.checkLoadingOverlay = () => {
                 if (!this.startupWarmupStarted && this.sceneReady && this.avatarReady) {
@@ -4407,6 +4542,55 @@ const playCelebrationSound = () => {
             if (panickedCount > 0) {
                 soundscape.playPanic();
             }
+        }
+
+        hasActiveWalletNpcDialogBubble() {
+            return this.walletNpcs.some((npc) => (
+                npc && !npc.isDestroyed && npc.hasActiveSpeechBubble?.()
+            ));
+        }
+
+        updateAmbientWalletNpcDialog(delta) {
+            this.ambientBubbleCooldown = Math.max(0, this.ambientBubbleCooldown - delta);
+            this.ambientBubbleCheckAccumulator += delta;
+            if (this.ambientBubbleCheckAccumulator < this.ambientBubbleCheckInterval) return;
+            this.ambientBubbleCheckAccumulator = 0;
+
+            if (this.ambientBubbleCooldown > 0) return;
+            if (this.hasActiveWalletNpcDialogBubble()) return;
+
+            const playerNearby = this.walletNpcs.filter((npc) => {
+                if (!npc || npc.isDestroyed || npc.isFallen || npc.isPanicking() || npc.isStaggering?.()) return false;
+                const dx = npc.surfaceX - this.controls.surfaceX;
+                const dz = this.world.shortestArcDelta(this.controls.surfaceArc, npc.surfaceArc);
+                return ((dx * dx) + (dz * dz)) <= 100;
+            });
+
+            if (playerNearby.length < 2) return;
+
+            const eligible = [];
+            for (let i = 0; i < playerNearby.length; i++) {
+                const npc = playerNearby[i];
+                for (let j = 0; j < playerNearby.length; j++) {
+                    if (i === j) continue;
+                    const other = playerNearby[j];
+                    const dx = npc.surfaceX - other.surfaceX;
+                    const dz = this.world.shortestArcDelta(other.surfaceArc, npc.surfaceArc);
+                    if (((dx * dx) + (dz * dz)) <= 4) {
+                        eligible.push(npc);
+                        break;
+                    }
+                }
+            }
+
+            if (!eligible.length) return;
+
+            const speaker = eligible[Math.floor(Math.random() * eligible.length)];
+            const phrase = NPC_AMBIENT_CHATTER_PHRASES[
+                Math.floor(Math.random() * NPC_AMBIENT_CHATTER_PHRASES.length)
+            ];
+            speaker.showAmbientBubble(phrase, 3.2);
+            this.ambientBubbleCooldown = 4.6 + (Math.random() * 2.2);
         }
 
         updateTargetArrow() {
@@ -4591,6 +4775,8 @@ const playCelebrationSound = () => {
         clearWalletNpcs() {
             this.walletNpcs.forEach((npc) => npc.destroy());
             this.walletNpcs = [];
+            this.ambientBubbleCooldown = 1.8;
+            this.ambientBubbleCheckAccumulator = 0;
             this.stopTargetCycle();
         }
 
@@ -4730,6 +4916,7 @@ const playCelebrationSound = () => {
             this.npc?.update(delta);
             this.walletNpcs.forEach((npc) => npc.update(delta));
             this.updateStreetLampLights(delta);
+            this.updateAmbientWalletNpcDialog(delta);
             this.audioStateCheckAccumulator += delta;
             if (this.audioStateCheckAccumulator >= 0.2) {
                 this.audioStateCheckAccumulator = 0;
