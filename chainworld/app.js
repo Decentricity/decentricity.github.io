@@ -287,6 +287,41 @@ const playCelebrationSound = () => {
         toneMapped: false
     });
 
+    let radialGlowTexture = null;
+    const getRadialGlowTexture = () => {
+        if (radialGlowTexture) return radialGlowTexture;
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 256;
+        const ctx = canvas.getContext('2d');
+        const gradient = ctx.createRadialGradient(128, 128, 18, 128, 128, 128);
+        gradient.addColorStop(0, 'rgba(255,255,255,1)');
+        gradient.addColorStop(0.28, 'rgba(255,255,255,0.82)');
+        gradient.addColorStop(0.62, 'rgba(255,255,255,0.22)');
+        gradient.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        radialGlowTexture = new THREE.CanvasTexture(canvas);
+        radialGlowTexture.colorSpace = THREE.SRGBColorSpace;
+        radialGlowTexture.wrapS = THREE.ClampToEdgeWrapping;
+        radialGlowTexture.wrapT = THREE.ClampToEdgeWrapping;
+        radialGlowTexture.generateMipmaps = false;
+        radialGlowTexture.minFilter = THREE.LinearFilter;
+        radialGlowTexture.magFilter = THREE.LinearFilter;
+        return radialGlowTexture;
+    };
+
+    const createGroundGlowMaterial = (color, opacity = 0.4) => new THREE.MeshBasicMaterial({
+        map: getRadialGlowTexture(),
+        color,
+        transparent: true,
+        opacity,
+        depthWrite: false,
+        toneMapped: false,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending
+    });
+
     const loadImageElement = (url) => new Promise((resolve, reject) => {
         const image = new Image();
         image.crossOrigin = 'anonymous';
@@ -1379,6 +1414,22 @@ const playCelebrationSound = () => {
             return mesh;
         }
 
+        addLocalGroundGlow(group, name, w, d, x, y, z, color, opacity = 0.4) {
+            const mesh = new THREE.Mesh(
+                new THREE.PlaneGeometry(w, d),
+                createGroundGlowMaterial(color, opacity)
+            );
+            mesh.name = name;
+            mesh.position.set(x, y, z);
+            mesh.rotation.x = -Math.PI * 0.5;
+            mesh.renderOrder = 1;
+            mesh.userData.ignoreCameraOcclusion = true;
+            mesh.userData.ignoreScreenOcclusion = true;
+            mesh.raycast = () => {};
+            group.add(mesh);
+            return mesh;
+        }
+
         addLocalFloorPanel(group, name, floorY, thickness, w, d, x, z, color) {
             return this.addLocalBox(group, name, w, thickness, d, x, floorY - thickness * 0.5, z, makeMaterial(color, 0.96, 0.01));
         }
@@ -1460,9 +1511,10 @@ const playCelebrationSound = () => {
         addWindow(group, x, y, z, w, h, rotY = 0, lit = true) {
             const frameMat = makeMaterial(0xf3f1ea, 0.55, 0.04);
             const glassMat = new THREE.MeshBasicMaterial({
-                color: lit ? 0xfff4d6 : 0x9cc6e6,
+                color: lit ? 0xffefb5 : 0xa8cce8,
                 transparent: true,
-                opacity: lit ? 0.82 : 0.55
+                opacity: lit ? 0.92 : 0.58,
+                toneMapped: false
             });
             if (Math.abs(rotY) < 0.001 || Math.abs(rotY - Math.PI) < 0.001) {
                 this.addLocalBox(group, 'windowFrame', w + 0.1, h + 0.1, 0.07, x, y, z, frameMat);
@@ -1520,11 +1572,12 @@ const playCelebrationSound = () => {
             this.addLocalBox(lamp, 'streetLampArm', 0.54, 0.08, 0.08, 0.18, 3.05, 0, makeMaterial(0x5f6472, 0.74, 0.08));
             const globe = new THREE.Mesh(
                 new THREE.SphereGeometry(0.14, 14, 12),
-                new THREE.MeshBasicMaterial({ color: 0xfff6d9 })
+                new THREE.MeshBasicMaterial({ color: 0xfff7cf, toneMapped: false })
             );
             globe.position.set(0.42, 3.04, 0);
             lamp.add(globe);
-            const pointLight = new THREE.PointLight(0xfff0cf, 0.16, 14);
+            this.addLocalGroundGlow(lamp, 'streetLampGlow', 3.9, 3.9, 0.42, 0.035, 0, 0xffd98a, 0.38);
+            const pointLight = new THREE.PointLight(0xfff0cf, 0.24, 16);
             pointLight.position.copy(globe.position);
             pointLight.visible = false;
             pointLight.intensity = 0;
@@ -1533,7 +1586,7 @@ const playCelebrationSound = () => {
                 light: pointLight,
                 x,
                 arc: theta * this.radius,
-                baseIntensity: 0.16
+                baseIntensity: 0.24
             });
             this.scene.add(lamp);
             this.registerCollisionDisc(x, theta, 0.34);
@@ -1914,6 +1967,7 @@ const playCelebrationSound = () => {
             addBox('mainHouseFrontGreen', 26, 0.04, 6.8, 0, floorY - 0.04, 12.3, makeMaterial(0x88b971, 0.99, 0.0));
             addBox('mainHouseFrontWalkway', 1.25, 0.05, 4.1, 0.22, floorY - 0.005, 6.7, makeMaterial(0xd8d4ce, 0.96, 0.01));
             addBox('mainHouseFrontPorch', 1.9, 0.08, 1.25, 0.22, floorY + 0.01, 4.92, makeMaterial(0xd9cfbf, 0.93, 0.01));
+            this.addLocalGroundGlow(house, 'starterHouseFrontGlow', 4.8, 5.6, 0.22, floorY + 0.065, 6.65, 0xffd2a1, 0.28);
             this.addNumberPlaque(house, cfg.number, 0.22, floorY + 2.42, 4.42);
             this.addWindow(house, -1.25, floorY + 1.5, 4.38, 0.92, 0.74, 0, true);
             this.addWindow(house, 1.9, floorY + 1.5, 4.38, 0.92, 0.74, 0, true);
@@ -2092,6 +2146,17 @@ const playCelebrationSound = () => {
 
             this.addLocalBox(house, 'housePorch', Math.max(1.45, doorWidth + 0.5), 0.08, porchDepth, doorOffset, 0.04, frontZ + porchDepth * 0.5 + 0.02, makeMaterial(0xe2d6c5, 0.92, 0.01, { map: this.textures.tile }));
             this.addLocalBox(house, 'houseWalkway', 1.18, 0.05, 3.2, doorOffset, 0.025, frontZ + porchDepth + 1.58, makeMaterial(0xe5dfd8, 0.96, 0.01, { map: this.textures.tile }));
+            this.addLocalGroundGlow(
+                house,
+                'houseFrontGlow',
+                Math.max(3.8, doorWidth + 2.4),
+                Math.max(4.6, porchDepth + 3.6),
+                doorOffset,
+                0.095,
+                frontZ + porchDepth + 1.22,
+                0xffd3a0,
+                0.24
+            );
             this.addNumberPlaque(house, cfg.number, doorOffset, 2.4, frontZ + 0.08);
             this.addLocalBox(house, 'housePorchPostA', 0.12, 1.7, 0.12, doorOffset - 0.58, 0.85, frontZ + porchDepth * 0.9, trimMat);
             this.addLocalBox(house, 'housePorchPostB', 0.12, 1.7, 0.12, doorOffset + 0.58, 0.85, frontZ + porchDepth * 0.9, trimMat);
