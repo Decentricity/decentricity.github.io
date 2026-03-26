@@ -1911,7 +1911,7 @@ const playCelebrationSound = () => {
                 this.dayNightSunDisc.position.set(this.dayNightSunOpeningX + 12, sunY, sunZ);
                 this.dayNightSunDiscMaterial.color.copy(this.dayNightScratchD.lerpColors(this.dayNightSunrise, this.dayNightNoon, daylightEase));
                 this.dayNightSunDiscMaterial.opacity = THREE.MathUtils.lerp(0, 1, daylightEase);
-            });
+            }
 
             this.streetLampLightScale = THREE.MathUtils.lerp(1, 0.04, daylightEase);
             this.streetLampBulbMaterials.forEach((material) => {
