@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chainworld</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="url-overlay">
+        <input type="text" id="url-input" placeholder="Enter URL to browse..." value="https://agent1c-ai.github.io">
+    </div>
+
+    <canvas id="webgl"></canvas>
+    <div id="css3d-root"></div>
+
+    <div id="hud">
+        <div id="title">Chainworld</div>
+        <div id="hint">Click to walk, move the mouse to look, WASD to move, ESC to free the cursor. Press Space to jump and left click to punch.</div>
+        <form id="wallet-form" class="wallet-form-overlay">
+            <input id="wallet-address-input" type="text" placeholder="0x... spawn NFT NPCs" autocomplete="off" spellcheck="false">
+            <button type="submit">Load NFTs</button>
+        </form>
+        <div id="wallet-status" class="wallet-status">Enter an Ethereum address to spawn NFT NPCs near the starting area.</div>
+        <div id="target-label">Current target: <span id="current-target-name">None</span><img id="current-target-preview" src="" alt="target preview"></div>
+    </div>
+    <div id="toast-container"></div>
+    <div id="mobile-controls" aria-hidden="true">
+        <div id="mobile-move-zone" class="mobile-pad">
+            <div class="mobile-pad-label">MOVE</div>
+            <div id="mobile-move-knob" class="mobile-pad-knob"></div>
+        </div>
+        <div id="mobile-look-zone" class="mobile-look-pad">
+            <div class="mobile-pad-label">LOOK</div>
+        </div>
+    </div>
+    <div id="loading-overlay" class="overlay">
+        <div class="overlay-card">
+            <p>Loading Chainworld</p>
+        </div>
+    </div>
+    <div id="kill-overlay" class="overlay hidden">
+        <div class="overlay-card kill">
+            <p id="kill-overlay-label">Kill All NFTs</p>
+        </div>
+    </div>
+    <input type="file" id="world-object-input" accept=".glb,.gltf,.obj,.fbx,.stl,.ply,.vox" hidden>
+
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.5/dist/ethers.umd.min.js"></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.183.2/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.183.2/examples/jsm/"
+            }
+        }
+    </script>
+    <script type="module" src="app.js?v=20260326daynightdev1"></script>
+</body>
+</html>

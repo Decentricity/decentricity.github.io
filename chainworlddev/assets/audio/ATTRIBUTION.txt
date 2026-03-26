@@ -1,0 +1,63 @@
+Chainworld audio sources
+
+Files used by the game runtime:
+
+- crowd-ambience.ogg
+  Derived from "1 minute at the alexa mall in berlin.ogg"
+  Source: https://commons.wikimedia.org/wiki/File:1_minute_at_the_alexa_mall_in_berlin.ogg
+  License: Public domain
+
+- crowd-2.ogg
+  Derived from "Shopping mall less crowded.ogg"
+  Source: https://commons.wikimedia.org/wiki/File:Shopping_mall_less_crowded.ogg
+  License: Public domain
+
+- crowd-3.ogg
+  Derived from "High school cafeteria.ogg"
+  Source: https://commons.wikimedia.org/wiki/File:High_school_cafeteria.ogg
+  License: Public domain
+
+- crowd-4.ogg
+  Derived from "Street parade carnival people yelling kamelle kamelle.ogg"
+  Source: https://commons.wikimedia.org/wiki/File:Street_parade_carnival_people_yelling_kamelle_kamelle.ogg
+  License: Public domain
+
+- punch.ogg
+  Derived from "Hitting wooden pole.ogg"
+  Source: https://commons.wikimedia.org/wiki/File:Hitting_wooden_pole.ogg
+  License: Public domain
+
+- running-loop.ogg
+  Derived from "Church people walking steps with reverb.ogg"
+  Source: https://commons.wikimedia.org/wiki/File:Church_people_walking_steps_with_reverb.ogg
+  License: Public domain
+
+- panic.ogg
+  Derived from "Wilhelm Scream.ogg"
+  Source: https://commons.wikimedia.org/wiki/File:Wilhelm_Scream.ogg
+  License: CC0
+
+- panic-2.ogg
+  Derived from "Nick121087 - Demonic Woman Scream (cc0) (freesound).mp3"
+  Source: https://commons.wikimedia.org/wiki/File:Nick121087_-_Demonic_Woman_Scream_(cc0)_(freesound).mp3
+  License: CC0
+
+- panic-3.ogg
+  Derived from "UVB 76 'A WOMANS SCREAM'.ogg"
+  Source: https://commons.wikimedia.org/wiki/File:UVB_76_%27A_WOMANS_SCREAM%27.ogg
+  License: Public domain
+
+- panic-4.ogg
+  Derived from "VOXScrm Man eaten by alligator; screams (Wilhelm CS USC).wav"
+  Source: https://commons.wikimedia.org/wiki/File:VOXScrm_Man_eaten_by_alligator%3B_screams_(Wilhelm_CS_USC).wav
+  License: CC0
+
+- panic-5.ogg
+  Derived from "Scream-c.wav"
+  Source: https://commons.wikimedia.org/wiki/File:Scream-c.wav
+  License: CC BY-SA 4.0
+
+- panic-6.ogg
+  Derived from "Scream-d.wav"
+  Source: https://commons.wikimedia.org/wiki/File:Scream-d.wav
+  License: CC BY-SA 4.0
