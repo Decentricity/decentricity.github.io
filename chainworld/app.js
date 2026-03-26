@@ -696,27 +696,6 @@ const playCelebrationSound = () => {
         return texture;
     };
 
-    const createFireSpriteTexture = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = 256;
-        canvas.height = 256;
-        const ctx = canvas.getContext('2d');
-        const gradient = ctx.createRadialGradient(128, 156, 10, 128, 128, 116);
-        gradient.addColorStop(0, 'rgba(255, 252, 214, 0.98)');
-        gradient.addColorStop(0.2, 'rgba(255, 211, 110, 0.96)');
-        gradient.addColorStop(0.45, 'rgba(255, 129, 24, 0.88)');
-        gradient.addColorStop(0.7, 'rgba(255, 50, 8, 0.44)');
-        gradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
-        ctx.fillStyle = gradient;
-        ctx.beginPath();
-        ctx.ellipse(128, 132, 88, 116, 0, 0, TAU);
-        ctx.fill();
-        const texture = new THREE.CanvasTexture(canvas);
-        setTextureEncoding(texture);
-        texture.anisotropy = 4;
-        return texture;
-    };
-
     const TextureLibrary = {
         cache: new Map(),
 
@@ -2480,20 +2459,6 @@ const playCelebrationSound = () => {
             this.avatarHeadAnchor = null;
             this.avatarScreenMesh = null;
             this.avatarLabelSprite = null;
-            this.attackHandBone = null;
-            this.attackFireRoot = null;
-            this.attackFireLight = null;
-            this.attackFireParticles = [];
-            this.attackFireTimer = 0;
-            this.attackFireBaseDuration = 0.34;
-            this.attackFireForward = new THREE.Vector3();
-            this.attackFireLocalPos = new THREE.Vector3();
-            this.attackFireLocalQuat = new THREE.Quaternion();
-            this.attackFireTempPos = new THREE.Vector3();
-            this.attackFireTempQuat = new THREE.Quaternion();
-            this.attackFireTempScale = new THREE.Vector3();
-            this.attackFireRootQuat = new THREE.Quaternion();
-            this.attackFireOffset = new THREE.Vector3(0.04, 0.03, 0.14);
             this.pendingWalletNfts = null;
             this.monitorLight = null;
             this.mixer = null;
@@ -2573,9 +2538,7 @@ const playCelebrationSound = () => {
                         this.jumpPoseAction.setEffectiveWeight(0);
                     }
                     this.setAction(this.idleAction);
-                    this.findAttackHandBone();
                     this.attachAvatarCRT();
-                    this.attachAttackFire();
                     this.updateModelTransform();
                     this.updateCamera(true);
                     if (this.onAvatarScreenReady && this.avatarScreenMesh) {
@@ -2699,48 +2662,6 @@ const playCelebrationSound = () => {
             crtAnchor.add(crtGroup);
         }
 
-        findAttackHandBone() {
-            if (!this.model) return;
-            const preferred = [];
-            this.model.traverse((object) => {
-                if (!object.isBone && !object.isObject3D) return;
-                const name = String(object.name || '');
-                if (!/right|_r|r_|\br\b/i.test(name)) return;
-                if (!/hand|wrist|forearm|arm/i.test(name)) return;
-                preferred.push(object);
-            });
-            this.attackHandBone = preferred[0] || null;
-        }
-
-        attachAttackFire() {
-            const fireRoot = new THREE.Group();
-            fireRoot.name = 'attackFireRoot';
-            fireRoot.visible = false;
-            this.playerGroup.add(fireRoot);
-            this.attackFireRoot = fireRoot;
-
-            const fireTexture = createFireSpriteTexture();
-            for (let i = 0; i < 7; i++) {
-                const sprite = new THREE.Sprite(
-                    new THREE.SpriteMaterial({
-                        map: fireTexture,
-                        transparent: true,
-                        depthWrite: false,
-                        blending: THREE.AdditiveBlending,
-                        toneMapped: false
-                    })
-                );
-                sprite.visible = true;
-                fireRoot.add(sprite);
-                this.attackFireParticles.push(sprite);
-            }
-
-            const fireLight = new THREE.PointLight(0xff8a2a, 0, 3.2, 2);
-            fireLight.position.set(0, 0, 0);
-            fireRoot.add(fireLight);
-            this.attackFireLight = fireLight;
-        }
-
         setAction(nextAction) {
             if (!nextAction || this.currentAction === nextAction) return;
             if (this.currentAction) {
@@ -2769,7 +2690,6 @@ const playCelebrationSound = () => {
             this.attackAction.reset();
             this.attackAction.fadeIn(0.05).play();
             this.currentAction = this.attackAction;
-            this.attackFireTimer = this.attackFireBaseDuration;
             playPunchSound();
             return true;
         }
@@ -2777,16 +2697,9 @@ const playCelebrationSound = () => {
         finishAttack() {
             if (!this.attackAction) return;
             this.attackTimer = 0;
-            this.attackFireTimer = 0;
             this.attackAction.stop();
             if (this.currentAction === this.attackAction) {
                 this.currentAction = null;
-            }
-            if (this.attackFireRoot) {
-                this.attackFireRoot.visible = false;
-            }
-            if (this.attackFireLight) {
-                this.attackFireLight.intensity = 0;
             }
         }
 
@@ -3095,55 +3008,6 @@ const playCelebrationSound = () => {
                 this.playerGroup.getWorldQuaternion(rootWorldQuat);
                 this.avatarHeadAnchor.quaternion.copy(rootWorldQuat.invert().multiply(headWorldQuat));
             }
-            this.updateAttackFireAnchor();
-        }
-
-        updateAttackFireAnchor() {
-            if (!this.attackFireRoot) return;
-            if (this.attackHandBone) {
-                this.attackHandBone.updateWorldMatrix(true, false);
-                this.attackHandBone.matrixWorld.decompose(
-                    this.attackFireTempPos,
-                    this.attackFireTempQuat,
-                    this.attackFireTempScale
-                );
-                const inverseRoot = this.playerGroup.matrixWorld.clone().invert();
-                this.attackFireLocalPos.copy(this.attackFireTempPos).applyMatrix4(inverseRoot);
-                this.playerGroup.getWorldQuaternion(this.attackFireRootQuat);
-                this.attackFireLocalQuat.copy(this.attackFireRootQuat.invert().multiply(this.attackFireTempQuat));
-                this.attackFireRoot.position.copy(this.attackFireLocalPos).add(this.attackFireOffset);
-                this.attackFireRoot.quaternion.copy(this.attackFireLocalQuat);
-                return;
-            }
-            this.attackFireRoot.position.set(0.24, 0.96, 0.64);
-            this.attackFireRoot.quaternion.identity();
-        }
-
-        updateAttackFire(delta) {
-            if (!this.attackFireRoot || !this.attackFireParticles.length) return;
-            if (this.attackFireTimer <= 0 || !this.isAttacking()) {
-                this.attackFireRoot.visible = false;
-                if (this.attackFireLight) this.attackFireLight.intensity = 0;
-                return;
-            }
-            this.attackFireRoot.visible = true;
-            const life = THREE.MathUtils.clamp(this.attackFireTimer / this.attackFireBaseDuration, 0, 1);
-            const flameStrength = Math.sin((1 - life) * Math.PI);
-            this.attackFireParticles.forEach((sprite, index) => {
-                const t = (1 - life) + index * 0.08;
-                const forward = 0.08 + t * 0.2;
-                const rise = 0.04 + index * 0.045 + (1 - life) * 0.16;
-                const sway = Math.sin((performance.now?.() || Date.now()) * 0.012 + index * 1.7) * 0.035;
-                sprite.position.set(sway, rise, forward);
-                const size = 0.2 + (1 - index / this.attackFireParticles.length) * 0.24 + flameStrength * 0.1;
-                sprite.scale.set(size * 0.78, size, 1);
-                sprite.material.opacity = THREE.MathUtils.clamp((0.15 + flameStrength * 0.95) * (1 - index * 0.08), 0, 1);
-            });
-            if (this.attackFireLight) {
-                this.attackFireLight.intensity = 1.2 + flameStrength * 2.2;
-                this.attackFireLight.distance = 2.4 + flameStrength * 1.2;
-            }
-            this.attackFireTimer = Math.max(0, this.attackFireTimer - delta);
         }
 
         shouldIgnoreCameraOcclusion(object) {
@@ -3216,7 +3080,6 @@ const playCelebrationSound = () => {
 
             if (!this.isLocked && !this.isTouchDevice) {
                 this.updateModelTransform();
-                this.updateAttackFire(delta);
                 this.updateCamera();
                 return;
             }
@@ -3279,7 +3142,6 @@ const playCelebrationSound = () => {
             this.clampX();
             this.wrapArc();
             this.updateModelTransform();
-            this.updateAttackFire(delta);
             this.updateCamera();
 
             if (this.isAttacking()) {
