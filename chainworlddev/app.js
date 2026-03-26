@@ -1231,22 +1231,27 @@ const playCelebrationSound = () => {
             this.dayNightScratchD = new THREE.Color();
             this.dayNightScratchE = new THREE.Color();
             this.dayNightNightSky = new THREE.Color(0x02030a);
-            this.dayNightDaySky = new THREE.Color(0x87b7e6);
+            this.dayNightDaySky = new THREE.Color(0x04070d);
             this.dayNightNightFog = new THREE.Color(0x121923);
-            this.dayNightDayFog = new THREE.Color(0xb8d2ea);
+            this.dayNightDayFog = new THREE.Color(0x2e352b);
             this.dayNightHemiSkyNight = new THREE.Color(0xf0f6ff);
-            this.dayNightHemiSkyDay = new THREE.Color(0xfffbef);
+            this.dayNightHemiSkyDay = new THREE.Color(0xfff4d6);
             this.dayNightHemiGroundNight = new THREE.Color(0x101820);
-            this.dayNightHemiGroundDay = new THREE.Color(0x5f7457);
+            this.dayNightHemiGroundDay = new THREE.Color(0x617154);
             this.dayNightTerrainNight = new THREE.Color(0xb8d9ab);
-            this.dayNightTerrainDay = new THREE.Color(0xd7efb8);
+            this.dayNightTerrainDay = new THREE.Color(0xd0e3a7);
             this.dayNightSunrise = new THREE.Color(0xffd6a1);
-            this.dayNightNoon = new THREE.Color(0xfff6df);
+            this.dayNightNoon = new THREE.Color(0xfffff2);
             this.dayNightLampBulbNight = new THREE.Color(0xfff7cf);
             this.dayNightLampBulbDay = new THREE.Color(0xf8f0df);
             this.dayNightSunLight = null;
             this.dayNightSunTarget = null;
             this.dayNightApertureLayers = [];
+            this.dayNightSunDisc = null;
+            this.dayNightSunBloom = null;
+            this.dayNightSunDiscMaterial = null;
+            this.dayNightSunBloomMaterial = null;
+            this.dayNightSunOpeningX = this.length * 0.5 + 68;
             this.dayNightStarMaterial = null;
             this.dayNightTerrainMaterial = null;
             this.nftDisplayRoot = new THREE.Group();
@@ -1786,11 +1791,11 @@ const playCelebrationSound = () => {
         }
 
         setupDayNightSystem() {
-            const openingX = this.length * 0.5 - 6;
+            const openingX = this.length * 0.5 + 8;
             const layerSpecs = [
-                { width: this.radius * 2.15, height: this.radius * 2.15, offsetX: 0, opacity: 0.32 },
-                { width: this.radius * 1.82, height: this.radius * 1.54, offsetX: -20, opacity: 0.17 },
-                { width: this.radius * 1.35, height: this.radius * 1.08, offsetX: -58, opacity: 0.09 }
+                { width: this.radius * 1.55, height: this.radius * 1.55, offsetX: 0, opacity: 0.18 },
+                { width: this.radius * 0.98, height: this.radius * 0.98, offsetX: -28, opacity: 0.14 },
+                { width: this.radius * 0.54, height: this.radius * 0.54, offsetX: -64, opacity: 0.2 }
             ];
 
             layerSpecs.forEach((spec, index) => {
@@ -1804,13 +1809,48 @@ const playCelebrationSound = () => {
                 plane.userData.ignoreScreenOcclusion = true;
                 plane.raycast = () => {};
                 this.scene.add(plane);
-                this.dayNightApertureLayers.push({ material, baseOpacity: spec.opacity });
+                this.dayNightApertureLayers.push({ plane, material, baseOpacity: spec.opacity, offsetX: spec.offsetX });
             });
 
+            const sunBloomMaterial = createApertureGlowMaterial(0xfff7cf, 0.72);
+            const sunBloom = new THREE.Mesh(new THREE.PlaneGeometry(this.radius * 0.64, this.radius * 0.64), sunBloomMaterial);
+            sunBloom.name = 'dayNightSunBloom';
+            sunBloom.position.set(this.dayNightSunOpeningX, 0, 0);
+            sunBloom.rotation.y = Math.PI * 0.5;
+            sunBloom.renderOrder = -1;
+            sunBloom.userData.ignoreCameraOcclusion = true;
+            sunBloom.userData.ignoreScreenOcclusion = true;
+            sunBloom.raycast = () => {};
+            this.scene.add(sunBloom);
+            this.dayNightSunBloom = sunBloom;
+            this.dayNightSunBloomMaterial = sunBloomMaterial;
+
+            const sunDiscMaterial = new THREE.MeshBasicMaterial({
+                map: getRadialGlowTexture(),
+                color: 0xfffff6,
+                transparent: true,
+                opacity: 1,
+                depthWrite: false,
+                toneMapped: false,
+                side: THREE.DoubleSide,
+                blending: THREE.AdditiveBlending
+            });
+            const sunDisc = new THREE.Mesh(new THREE.PlaneGeometry(this.radius * 0.16, this.radius * 0.16), sunDiscMaterial);
+            sunDisc.name = 'dayNightSunDisc';
+            sunDisc.position.set(this.dayNightSunOpeningX + 2, 0, 0);
+            sunDisc.rotation.y = Math.PI * 0.5;
+            sunDisc.renderOrder = -1;
+            sunDisc.userData.ignoreCameraOcclusion = true;
+            sunDisc.userData.ignoreScreenOcclusion = true;
+            sunDisc.raycast = () => {};
+            this.scene.add(sunDisc);
+            this.dayNightSunDisc = sunDisc;
+            this.dayNightSunDiscMaterial = sunDiscMaterial;
+
             const sunLight = new THREE.DirectionalLight(0xfff4dd, 0);
-            sunLight.position.set(this.length * 0.72, 120, 0);
+            sunLight.position.set(this.dayNightSunOpeningX, 0, 0);
             const sunTarget = new THREE.Object3D();
-            sunTarget.position.set(-24, -12, 0);
+            sunTarget.position.set(0, 0, 0);
             this.scene.add(sunTarget);
             sunLight.target = sunTarget;
             this.scene.add(sunLight);
@@ -1824,56 +1864,71 @@ const playCelebrationSound = () => {
             }
 
             const cycleT = this.dayNightElapsed / this.dayNightCycleDuration;
-            const sunCurve = (Math.sin((cycleT * TAU) - (Math.PI * 0.5)) + 1) * 0.5;
-            const daylight = THREE.MathUtils.smoothstep(sunCurve, 0.1, 0.9);
-            const night = 1 - daylight;
-            const twilight = 1 - Math.min(1, Math.abs((sunCurve * 2) - 1));
-            const apertureDrift = Math.sin(cycleT * TAU) * 74;
+            const solarArc = cycleT * TAU;
+            const rawDay = Math.sin(solarArc);
+            const daylight = THREE.MathUtils.clamp(rawDay, 0, 1);
+            const daylightEase = THREE.MathUtils.smoothstep(daylight, 0, 1);
+            const twilight = Math.max(0, 1 - Math.abs(rawDay) * 2.4);
+            const dayProgress = rawDay > 0 ? THREE.MathUtils.clamp(solarArc / Math.PI, 0, 1) : 0;
+            const sunY = this.radius * 0.82 - (dayProgress * this.radius * 1.64);
+            const sunZ = Math.sin(dayProgress * Math.PI) * this.radius * 0.08;
 
-            scene.background.copy(this.dayNightScratchA.lerpColors(this.dayNightNightSky, this.dayNightDaySky, daylight));
-            scene.fog.color.copy(this.dayNightScratchB.lerpColors(this.dayNightNightFog, this.dayNightDayFog, daylight * 0.92));
-            hemisphereLight.intensity = THREE.MathUtils.lerp(0.55, 1.28, daylight);
-            hemisphereLight.color.copy(this.dayNightScratchC.lerpColors(this.dayNightHemiSkyNight, this.dayNightHemiSkyDay, daylight));
-            hemisphereLight.groundColor.copy(this.dayNightScratchD.lerpColors(this.dayNightHemiGroundNight, this.dayNightHemiGroundDay, daylight));
-            renderer.toneMappingExposure = THREE.MathUtils.lerp(0.45, 0.7, daylight);
+            scene.background.copy(this.dayNightScratchA.lerpColors(this.dayNightNightSky, this.dayNightDaySky, daylightEase));
+            scene.fog.color.copy(this.dayNightScratchB.lerpColors(this.dayNightNightFog, this.dayNightDayFog, daylightEase * 0.72 + twilight * 0.08));
+            hemisphereLight.intensity = THREE.MathUtils.lerp(0.52, 1.02, daylightEase);
+            hemisphereLight.color.copy(this.dayNightScratchC.lerpColors(this.dayNightHemiSkyNight, this.dayNightHemiSkyDay, daylightEase));
+            hemisphereLight.groundColor.copy(this.dayNightScratchD.lerpColors(this.dayNightHemiGroundNight, this.dayNightHemiGroundDay, daylightEase));
+            renderer.toneMappingExposure = THREE.MathUtils.lerp(0.45, 0.63, daylightEase);
 
             if (this.dayNightStarMaterial) {
-                this.dayNightStarMaterial.opacity = THREE.MathUtils.lerp(0.92, 0.08, daylight);
+                this.dayNightStarMaterial.opacity = THREE.MathUtils.lerp(0.92, 0.74, daylightEase);
             }
             if (this.dayNightTerrainMaterial) {
                 this.dayNightTerrainMaterial.color.copy(
-                    this.dayNightScratchE.lerpColors(this.dayNightTerrainNight, this.dayNightTerrainDay, 0.18 + (daylight * 0.82))
+                    this.dayNightScratchE.lerpColors(this.dayNightTerrainNight, this.dayNightTerrainDay, 0.16 + (daylightEase * 0.84))
                 );
             }
             if (this.dayNightSunLight && this.dayNightSunTarget) {
-                this.dayNightSunLight.color.copy(this.dayNightScratchA.lerpColors(this.dayNightSunrise, this.dayNightNoon, daylight));
-                this.dayNightSunLight.intensity = THREE.MathUtils.lerp(0, 1.3, daylight);
-                this.dayNightSunLight.position.set(this.length * 0.74, 84 + (daylight * 82), apertureDrift);
-                this.dayNightSunTarget.position.set(-22, -18 + (daylight * 10), apertureDrift * 0.22);
+                this.dayNightSunLight.color.copy(this.dayNightScratchA.lerpColors(this.dayNightSunrise, this.dayNightNoon, daylightEase));
+                this.dayNightSunLight.intensity = THREE.MathUtils.lerp(0, 1.18, daylightEase);
+                this.dayNightSunLight.position.set(this.dayNightSunOpeningX + 32, sunY, sunZ);
+                this.dayNightSunTarget.position.set(-18, sunY * 0.08, sunZ * 0.12);
             }
 
             this.dayNightApertureLayers.forEach((entry, index) => {
-                const depthScale = index === 0 ? 1 : (index === 1 ? 0.72 : 0.46);
-                entry.material.opacity = entry.baseOpacity * daylight * (0.72 + (twilight * 0.4)) * depthScale;
-                entry.material.color.copy(this.dayNightScratchB.lerpColors(this.dayNightSunrise, this.dayNightNoon, daylight));
+                const depthScale = index === 0 ? 1 : (index === 1 ? 0.76 : 0.58);
+                entry.material.opacity = entry.baseOpacity * daylightEase * (0.84 + (twilight * 0.36)) * depthScale;
+                entry.material.color.copy(this.dayNightScratchB.lerpColors(this.dayNightSunrise, this.dayNightNoon, daylightEase));
+                entry.plane.position.set(this.dayNightSunOpeningX + entry.offsetX, sunY, sunZ);
             });
 
-            this.streetLampLightScale = THREE.MathUtils.lerp(1, 0.04, daylight);
+            if (this.dayNightSunBloom && this.dayNightSunBloomMaterial) {
+                this.dayNightSunBloom.position.set(this.dayNightSunOpeningX + 6, sunY, sunZ);
+                this.dayNightSunBloomMaterial.color.copy(this.dayNightScratchC.lerpColors(this.dayNightSunrise, this.dayNightNoon, daylightEase));
+                this.dayNightSunBloomMaterial.opacity = THREE.MathUtils.lerp(0, 0.74, daylightEase) * (0.9 + twilight * 0.15);
+            }
+            if (this.dayNightSunDisc && this.dayNightSunDiscMaterial) {
+                this.dayNightSunDisc.position.set(this.dayNightSunOpeningX + 12, sunY, sunZ);
+                this.dayNightSunDiscMaterial.color.copy(this.dayNightScratchD.lerpColors(this.dayNightSunrise, this.dayNightNoon, daylightEase));
+                this.dayNightSunDiscMaterial.opacity = THREE.MathUtils.lerp(0, 1, daylightEase);
+            });
+
+            this.streetLampLightScale = THREE.MathUtils.lerp(1, 0.04, daylightEase);
             this.streetLampBulbMaterials.forEach((material) => {
-                material.color.copy(this.dayNightScratchC.lerpColors(this.dayNightLampBulbNight, this.dayNightLampBulbDay, daylight * 0.8));
+                material.color.copy(this.dayNightScratchC.lerpColors(this.dayNightLampBulbNight, this.dayNightLampBulbDay, daylightEase * 0.82));
             });
             this.streetLampGlowMaterials.forEach((entry) => {
-                entry.material.opacity = entry.baseOpacity * THREE.MathUtils.lerp(1, 0.08, daylight);
+                entry.material.opacity = entry.baseOpacity * THREE.MathUtils.lerp(1, 0.08, daylightEase);
             });
             this.houseFrontGlowMaterials.forEach((entry) => {
-                entry.material.opacity = entry.baseOpacity * THREE.MathUtils.lerp(1, 0.12, daylight);
+                entry.material.opacity = entry.baseOpacity * THREE.MathUtils.lerp(1, 0.12, daylightEase);
             });
             this.windowLightMaterials.forEach((material) => {
-                material.color.copy(this.dayNightScratchD.lerpColors(material.userData.nightColor, material.userData.dayColor, daylight));
-                material.opacity = THREE.MathUtils.lerp(material.userData.nightOpacity, material.userData.dayOpacity, daylight);
+                material.color.copy(this.dayNightScratchD.lerpColors(material.userData.nightColor, material.userData.dayColor, daylightEase));
+                material.opacity = THREE.MathUtils.lerp(material.userData.nightOpacity, material.userData.dayOpacity, daylightEase);
             });
             this.houseLightEntries.forEach((entry) => {
-                entry.light.intensity = entry.baseIntensity * THREE.MathUtils.lerp(1, 0.14, daylight);
+                entry.light.intensity = entry.baseIntensity * THREE.MathUtils.lerp(1, 0.14, daylightEase);
             });
         }
 
