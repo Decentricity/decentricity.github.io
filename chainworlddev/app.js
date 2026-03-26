@@ -216,18 +216,18 @@ const playCelebrationSound = () => {
     const MOBILE_PERFORMANCE_MODE = window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
     const MOBILE_PERF = Object.freeze({
         maxDpr: 1,
-        fogNear: 55,
-        fogFar: 150,
+        fogNear: 70,
+        fogFar: 190,
         cameraFar: 420,
         textureMaxSize: 384,
         maxAnisotropy: 2,
         activeStreetLampCount: 4,
         ambientBubbleCheckInterval: 1.2,
-        fullNpcRadiusSq: 20 * 20,
-        labelRadiusSq: 14 * 14,
+        fullNpcRadiusSq: 28 * 28,
+        labelRadiusSq: 18 * 18,
         bubbleRadiusSq: 10 * 10,
-        placeholderNpcRadiusSq: 52 * 52,
-        maxFullWalletNpcs: 18,
+        placeholderNpcRadiusSq: 96 * 96,
+        maxFullWalletNpcs: 24,
         placeholderUpdateBuckets: 3,
         hiddenUpdateBuckets: 7
     });
@@ -283,6 +283,21 @@ const playCelebrationSound = () => {
 
     const textureLoader = new THREE.TextureLoader();
     textureLoader.setCrossOrigin('anonymous');
+
+    const configureSpriteTexture = (texture) => {
+        setTextureEncoding(texture);
+        texture.generateMipmaps = false;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.anisotropy = 1;
+        return texture;
+    };
+
+    const MOBILE_SILHOUETTE_TEXTURES = [
+        './assets/mobile/npc-silhouette-idle.png',
+        './assets/mobile/npc-silhouette-step-a.png',
+        './assets/mobile/npc-silhouette-step-b.png'
+    ].map((url) => configureSpriteTexture(textureLoader.load(url)));
 
     const makeMaterial = (color, roughness = 0.9, metalness = 0.02, extra = {}) => (
         new THREE.MeshStandardMaterial({ color, roughness, metalness, ...extra })
@@ -2866,6 +2881,8 @@ const playCelebrationSound = () => {
                 movePointerId: null,
                 lookPointerId: null,
                 moveVector: new THREE.Vector2(),
+                moveOriginX: 0,
+                moveOriginY: 0,
                 lookLastX: 0,
                 lookLastY: 0,
                 pinchDistance: 0
@@ -3202,8 +3219,8 @@ const playCelebrationSound = () => {
         }
 
         setupTouchControls() {
-            const { moveZone, lookZone } = this.mobileUi;
-            if (!moveZone || !lookZone) return;
+            const { moveZone } = this.mobileUi;
+            if (!moveZone) return;
 
             const releaseCapture = (target, pointerId) => {
                 try {
@@ -3216,6 +3233,8 @@ const playCelebrationSound = () => {
             moveZone.addEventListener('pointerdown', (event) => {
                 if (event.pointerType === 'mouse' || !this.enabled) return;
                 this.touchState.movePointerId = event.pointerId;
+                this.touchState.moveOriginX = event.clientX;
+                this.touchState.moveOriginY = event.clientY;
                 try { moveZone.setPointerCapture(event.pointerId); } catch (e) {}
                 this.updateMovePad(event);
                 event.preventDefault();
@@ -3234,15 +3253,18 @@ const playCelebrationSound = () => {
                 });
             });
 
-            lookZone.addEventListener('pointerdown', (event) => {
+            const shouldIgnoreLookStart = (target) => target?.closest?.('#hud, #url-overlay, #toast-container, #mobile-move-zone');
+
+            this.domElement.addEventListener('pointerdown', (event) => {
                 if (event.pointerType === 'mouse' || !this.enabled) return;
+                if (event.pointerId === this.touchState.movePointerId) return;
+                if (shouldIgnoreLookStart(event.target)) return;
                 this.touchState.lookPointerId = event.pointerId;
                 this.touchState.lookLastX = event.clientX;
                 this.touchState.lookLastY = event.clientY;
-                try { lookZone.setPointerCapture(event.pointerId); } catch (e) {}
                 event.preventDefault();
             });
-            lookZone.addEventListener('pointermove', (event) => {
+            window.addEventListener('pointermove', (event) => {
                 if (event.pointerId !== this.touchState.lookPointerId || !this.enabled) return;
                 const dx = event.clientX - this.touchState.lookLastX;
                 const dy = event.clientY - this.touchState.lookLastY;
@@ -3252,9 +3274,8 @@ const playCelebrationSound = () => {
                 event.preventDefault();
             });
             ['pointerup', 'pointercancel', 'lostpointercapture'].forEach((type) => {
-                lookZone.addEventListener(type, (event) => {
+                window.addEventListener(type, (event) => {
                     if (event.pointerId !== this.touchState.lookPointerId) return;
-                    releaseCapture(lookZone, event.pointerId);
                     this.touchState.lookPointerId = null;
                 });
             });
@@ -3292,8 +3313,8 @@ const playCelebrationSound = () => {
             const { moveZone, moveKnob } = this.mobileUi;
             if (!moveZone || !moveKnob) return;
             const rect = moveZone.getBoundingClientRect();
-            const centerX = rect.left + rect.width * 0.5;
-            const centerY = rect.top + rect.height * 0.5;
+            const centerX = this.touchState.moveOriginX || (rect.left + rect.width * 0.5);
+            const centerY = this.touchState.moveOriginY || (rect.top + rect.height * 0.5);
             const radius = rect.width * 0.34;
             let dx = event.clientX - centerX;
             let dy = event.clientY - centerY;
@@ -3303,12 +3324,29 @@ const playCelebrationSound = () => {
                 dx *= scale;
                 dy *= scale;
             }
-            this.touchState.moveVector.set(dx / radius, -dy / radius);
+            let normX = dx / radius;
+            let normY = -dy / radius;
+            const magnitude = Math.hypot(normX, normY);
+            if (magnitude < 0.12) {
+                normX = 0;
+                normY = 0;
+            } else {
+                const scaled = THREE.MathUtils.clamp((magnitude - 0.12) / 0.88, 0, 1);
+                normX = (normX / magnitude) * scaled;
+                normY = (normY / magnitude) * scaled;
+            }
+            if (Math.abs(normX) < Math.abs(normY) * 0.35) normX = 0;
+            if (Math.abs(normY) < Math.abs(normX) * 0.35) normY = 0;
+            if (Math.abs(normX) < 0.18) normX = 0;
+            if (Math.abs(normY) < 0.18) normY = 0;
+            this.touchState.moveVector.set(normX, normY);
             moveKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
         }
 
         resetMovePad() {
             this.touchState.moveVector.set(0, 0);
+            this.touchState.moveOriginX = 0;
+            this.touchState.moveOriginY = 0;
             if (this.mobileUi.moveKnob) {
                 this.mobileUi.moveKnob.style.transform = 'translate(-50%, -50%)';
             }
@@ -3661,7 +3699,9 @@ const playCelebrationSound = () => {
             this.avatarHeadAnchor = null;
             this.avatarScreenMesh = null;
             this.avatarLabelSprite = null;
-            this.placeholderScreenMesh = null;
+            this.placeholderSprite = null;
+            this.placeholderSpriteMaterial = null;
+            this.placeholderFrameTimer = Math.random() * 0.24;
             this.pendingWalletNfts = null;
             this.currentMonitorLabelText = '';
             this.currentBodyTexture = null;
@@ -3708,33 +3748,22 @@ const playCelebrationSound = () => {
         }
 
         createPlaceholderVisual() {
-            const bodyMat = new THREE.MeshBasicMaterial({ color: 0x8f232a, toneMapped: false });
-            const screenMat = new THREE.MeshBasicMaterial({
-                map: createCRTTextTexture('NFT'),
-                side: THREE.DoubleSide,
-                toneMapped: false
+            const material = new THREE.SpriteMaterial({
+                map: MOBILE_SILHOUETTE_TEXTURES[0],
+                transparent: true,
+                depthWrite: false,
+                toneMapped: false,
+                opacity: 0.58
             });
-            const placeholder = new THREE.Group();
-            placeholder.name = 'npcMobilePlaceholder';
-
-            const torso = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.78, 0.18), bodyMat);
-            torso.position.set(0, 0.72, 0);
-            placeholder.add(torso);
-
-            const legs = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.52, 0.14), bodyMat);
-            legs.position.set(0, 0.17, 0);
-            placeholder.add(legs);
-
-            const head = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.26, 0.24), new THREE.MeshBasicMaterial({ color: 0x335ab8, toneMapped: false }));
-            head.position.set(0, 1.3, -0.02);
-            placeholder.add(head);
-
-            const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.22, 0.16), screenMat);
-            screen.position.set(0, 1.3, 0.105);
-            placeholder.add(screen);
-
-            this.placeholderRoot.add(placeholder);
-            this.placeholderScreenMesh = screen;
+            const sprite = new THREE.Sprite(material);
+            sprite.name = 'npcMobilePlaceholder';
+            sprite.center.set(0.5, 0);
+            sprite.scale.set(1.1, 1.95, 1);
+            sprite.position.set(0, 0.01, 0);
+            sprite.raycast = () => {};
+            this.placeholderRoot.add(sprite);
+            this.placeholderSprite = sprite;
+            this.placeholderSpriteMaterial = material;
         }
 
         shortestArcDelta(fromArc, toArc) {
@@ -4102,10 +4131,6 @@ const playCelebrationSound = () => {
                 this.avatarScreenMesh.material.map = texture;
                 this.avatarScreenMesh.material.needsUpdate = true;
             }
-            if (this.placeholderScreenMesh?.material) {
-                this.placeholderScreenMesh.material.map = texture;
-                this.placeholderScreenMesh.material.needsUpdate = true;
-            }
         }
 
         setMonitorText(text) {
@@ -4145,6 +4170,30 @@ const playCelebrationSound = () => {
             return !this.isDestroyed && !this.isFallen && !this.isPanicking() && this.ambientBubbleCooldown <= 0;
         }
 
+        updatePlaceholderVisual(delta) {
+            if (!this.placeholderSpriteMaterial || !this.placeholderSprite) return;
+            const isMoving = this.hasDestination && !this.isFallen && !this.isStaggering() && (this.pauseTimer <= 0 || this.isPanicking());
+            if (!isMoving) {
+                const nextMap = MOBILE_SILHOUETTE_TEXTURES[0];
+                const nextOpacity = this.mobileDistanceSq > MOBILE_PERF.fullNpcRadiusSq ? 0.46 : 0.58;
+                if (this.placeholderSpriteMaterial.map !== nextMap) {
+                    this.placeholderSpriteMaterial.map = nextMap;
+                    this.placeholderSpriteMaterial.needsUpdate = true;
+                }
+                this.placeholderSpriteMaterial.opacity = nextOpacity;
+                return;
+            }
+            this.placeholderFrameTimer += delta;
+            const frame = Math.floor(this.placeholderFrameTimer / 0.14) % 2;
+            const nextMap = MOBILE_SILHOUETTE_TEXTURES[1 + frame];
+            const nextOpacity = this.mobileDistanceSq > MOBILE_PERF.fullNpcRadiusSq ? 0.42 : 0.54;
+            if (this.placeholderSpriteMaterial.map !== nextMap) {
+                this.placeholderSpriteMaterial.map = nextMap;
+                this.placeholderSpriteMaterial.needsUpdate = true;
+            }
+            this.placeholderSpriteMaterial.opacity = nextOpacity;
+        }
+
         setMobileLodMode(mode, options = {}) {
             const modeChanged = this.mobileLodMode !== mode;
             this.mobileLodMode = mode;
@@ -4166,6 +4215,7 @@ const playCelebrationSound = () => {
                     }
                 } else {
                     this.clearBodyTexture();
+                    this.updatePlaceholderVisual(0);
                 }
             }
         }
@@ -4333,11 +4383,13 @@ const playCelebrationSound = () => {
             if (this.isFallen) {
                 this.fallProgress = Math.min(1, this.fallProgress + (delta / this.fallDuration));
                 this.updateTransform();
+                this.updatePlaceholderVisual(delta);
                 return;
             }
             if (this.isStaggering()) {
                 this.staggerTimer = Math.max(0, this.staggerTimer - delta);
                 this.updateTransform();
+                this.updatePlaceholderVisual(delta);
                 return;
             }
             if (this.isPanicking()) {
@@ -4370,6 +4422,7 @@ const playCelebrationSound = () => {
                 this.logicAccumulator += delta;
                 if (this.logicAccumulator < this.logicInterval) {
                     this.updateTransform();
+                    this.updatePlaceholderVisual(delta);
                     return;
                 }
                 stepDelta = this.logicAccumulator;
@@ -4383,6 +4436,7 @@ const playCelebrationSound = () => {
                 }
                 this.setAction(this.idleAction || this.walkAction);
                 this.updateTransform();
+                this.updatePlaceholderVisual(stepDelta);
                 return;
             }
 
@@ -4405,6 +4459,7 @@ const playCelebrationSound = () => {
                 }
                 this.resetStuckTracker();
                 this.updateTransform();
+                this.updatePlaceholderVisual(stepDelta);
                 return;
             }
 
@@ -4431,6 +4486,7 @@ const playCelebrationSound = () => {
                     : (this.walkAction || this.idleAction)
             );
             this.updateTransform();
+            this.updatePlaceholderVisual(stepDelta);
         }
     }
 
