@@ -3438,6 +3438,7 @@ const playCelebrationSound = () => {
             this.panicTimer = 0;
             this.panicJumpCooldown = 0;
             this.panicBubbleTimer = 0;
+            this.ambientBubbleCooldown = Math.random() * 1.4;
             this.readyPromise = new Promise((resolve) => {
                 this.resolveReady = resolve;
             });
@@ -3847,10 +3848,15 @@ const playCelebrationSound = () => {
             this.panicBubbleSprite.material.needsUpdate = true;
             this.panicBubbleSprite.visible = true;
             this.panicBubbleTimer = duration;
+            this.ambientBubbleCooldown = 4.5 + (Math.random() * 2.5);
         }
 
         hasActiveSpeechBubble() {
             return !!(this.panicBubbleSprite?.visible && this.panicBubbleTimer > 0);
+        }
+
+        canShowAmbientBubble() {
+            return !this.isDestroyed && !this.isFallen && !this.isPanicking() && this.ambientBubbleCooldown <= 0;
         }
 
         async showRandomWalletNft(nfts) {
@@ -3999,6 +4005,7 @@ const playCelebrationSound = () => {
 
         update(delta) {
             if (this.isDestroyed) return;
+            this.ambientBubbleCooldown = Math.max(0, this.ambientBubbleCooldown - delta);
             if (this.panicBubbleTimer > 0) {
                 this.panicBubbleTimer = Math.max(0, this.panicBubbleTimer - delta);
                 if (this.panicBubbleTimer === 0 && this.panicBubbleSprite) {
@@ -4370,8 +4377,7 @@ const playCelebrationSound = () => {
             this.streetLampLightCheckInterval = 0.35;
             this.activeStreetLampCount = 6;
             this.ambientBubbleCheckAccumulator = 0;
-            this.ambientBubbleCheckInterval = 1.15;
-            this.ambientBubbleCooldown = 2.4;
+            this.ambientBubbleCheckInterval = 0.65;
             this.hasPanickingWalletNpcs = false;
             this.checkLoadingOverlay = () => {
                 if (!this.startupWarmupStarted && this.sceneReady && this.avatarReady) {
@@ -4544,33 +4550,29 @@ const playCelebrationSound = () => {
             }
         }
 
-        hasActiveWalletNpcDialogBubble() {
-            return this.walletNpcs.some((npc) => (
-                npc && !npc.isDestroyed && npc.hasActiveSpeechBubble?.()
-            ));
-        }
-
         updateAmbientWalletNpcDialog(delta) {
-            this.ambientBubbleCooldown = Math.max(0, this.ambientBubbleCooldown - delta);
             this.ambientBubbleCheckAccumulator += delta;
             if (this.ambientBubbleCheckAccumulator < this.ambientBubbleCheckInterval) return;
             this.ambientBubbleCheckAccumulator = 0;
 
-            if (this.ambientBubbleCooldown > 0) return;
-            if (this.hasActiveWalletNpcDialogBubble()) return;
-
             const playerNearby = this.walletNpcs.filter((npc) => {
-                if (!npc || npc.isDestroyed || npc.isFallen || npc.isPanicking() || npc.isStaggering?.()) return false;
+                if (!npc || !npc.canShowAmbientBubble?.() || npc.isStaggering?.()) return false;
                 const dx = npc.surfaceX - this.controls.surfaceX;
                 const dz = this.world.shortestArcDelta(this.controls.surfaceArc, npc.surfaceArc);
                 return ((dx * dx) + (dz * dz)) <= 100;
             });
 
-            if (playerNearby.length < 2) return;
+            if (!playerNearby.length) return;
 
             const eligible = [];
             for (let i = 0; i < playerNearby.length; i++) {
                 const npc = playerNearby[i];
+                const playerDx = npc.surfaceX - this.controls.surfaceX;
+                const playerDz = this.world.shortestArcDelta(this.controls.surfaceArc, npc.surfaceArc);
+                if (((playerDx * playerDx) + (playerDz * playerDz)) <= 9) {
+                    eligible.push(npc);
+                    continue;
+                }
                 for (let j = 0; j < playerNearby.length; j++) {
                     if (i === j) continue;
                     const other = playerNearby[j];
@@ -4590,7 +4592,6 @@ const playCelebrationSound = () => {
                 Math.floor(Math.random() * NPC_AMBIENT_CHATTER_PHRASES.length)
             ];
             speaker.showAmbientBubble(phrase, 3.2);
-            this.ambientBubbleCooldown = 4.6 + (Math.random() * 2.2);
         }
 
         updateTargetArrow() {
@@ -4775,7 +4776,6 @@ const playCelebrationSound = () => {
         clearWalletNpcs() {
             this.walletNpcs.forEach((npc) => npc.destroy());
             this.walletNpcs = [];
-            this.ambientBubbleCooldown = 1.8;
             this.ambientBubbleCheckAccumulator = 0;
             this.stopTargetCycle();
         }
