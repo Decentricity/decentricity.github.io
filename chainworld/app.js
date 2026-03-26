@@ -235,6 +235,7 @@ const playCelebrationSound = () => {
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 0.48;
+    renderer.debug.checkShaderErrors = false;
     const maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
 
     const configureWebTexture = (texture) => {
@@ -275,6 +276,15 @@ const playCelebrationSound = () => {
         map: texture,
         roughness: 0.78,
         metalness: 0.04
+    });
+
+    const createCRTGlassMaterial = (opacity = 0.12) => new THREE.MeshBasicMaterial({
+        color: 0xdbe9ff,
+        transparent: true,
+        opacity,
+        side: THREE.DoubleSide,
+        depthWrite: false,
+        toneMapped: false
     });
 
     const loadImageElement = (url) => new Promise((resolve, reject) => {
@@ -1040,6 +1050,7 @@ const playCelebrationSound = () => {
             this.starterScreenMesh = null;
             this.groundPickTargets = [];
             this.collisionDiscs = [];
+            this.streetLampLights = [];
             this.nftDisplayRoot = new THREE.Group();
             this.nftDisplayRoot.name = 'nftDisplayRoot';
             this.nftCollisionEntries = [];
@@ -1515,9 +1526,35 @@ const playCelebrationSound = () => {
             lamp.add(globe);
             const pointLight = new THREE.PointLight(0xfff0cf, 0.16, 14);
             pointLight.position.copy(globe.position);
+            pointLight.visible = false;
+            pointLight.intensity = 0;
             lamp.add(pointLight);
+            this.streetLampLights.push({
+                light: pointLight,
+                x,
+                arc: theta * this.radius,
+                baseIntensity: 0.16
+            });
             this.scene.add(lamp);
             this.registerCollisionDisc(x, theta, 0.34);
+        }
+
+        updateStreetLampLights(surfaceX, surfaceArc, activeCount = 6) {
+            if (!this.streetLampLights.length) return;
+            const ranked = this.streetLampLights
+                .map((entry) => {
+                    const dx = entry.x - surfaceX;
+                    const dz = this.shortestArcDelta(surfaceArc, entry.arc);
+                    return { entry, distanceSq: (dx * dx) + (dz * dz) };
+                })
+                .sort((a, b) => a.distanceSq - b.distanceSq);
+
+            const active = new Set(ranked.slice(0, activeCount).map(({ entry }) => entry));
+            this.streetLampLights.forEach((entry) => {
+                const enabled = active.has(entry);
+                entry.light.visible = enabled;
+                entry.light.intensity = enabled ? entry.baseIntensity : 0;
+            });
         }
 
         addCylinderStrip(name, radius, length, thetaCenter, thetaLength, material) {
@@ -1960,18 +1997,7 @@ const playCelebrationSound = () => {
 
             const glass = new THREE.Mesh(
                 new THREE.PlaneGeometry(0.36, 0.27),
-                new THREE.MeshPhysicalMaterial({
-                    color: 0xffffff,
-                    metalness: 0.1,
-                    roughness: 0.2,
-                    transmission: 0.03,
-                    ior: 1.5,
-                    clearcoat: 0.3,
-                    clearcoatRoughness: 0.1,
-                    transparent: true,
-                    opacity: 0.95,
-                    side: THREE.DoubleSide
-                })
+                createCRTGlassMaterial(0.12)
             );
             glass.name = 'crtGlass';
             glass.userData.ignoreScreenOcclusion = true;
@@ -2622,18 +2648,7 @@ const playCelebrationSound = () => {
 
             const glass = new THREE.Mesh(
                 new THREE.PlaneGeometry(0.36, 0.27),
-                new THREE.MeshPhysicalMaterial({
-                    color: 0xffffff,
-                    metalness: 0.1,
-                    roughness: 0.22,
-                    transmission: 0.03,
-                    ior: 1.5,
-                    clearcoat: 0.28,
-                    clearcoatRoughness: 0.1,
-                    transparent: true,
-                    opacity: 0.95,
-                    side: THREE.DoubleSide
-                })
+                createCRTGlassMaterial(0.12)
             );
             glass.position.z = 0.094;
             glass.userData.ignoreScreenOcclusion = true;
@@ -3559,18 +3574,7 @@ const playCelebrationSound = () => {
 
             const glass = new THREE.Mesh(
                 new THREE.PlaneGeometry(0.36, 0.27),
-                new THREE.MeshPhysicalMaterial({
-                    color: 0xffffff,
-                    metalness: 0.04,
-                    roughness: 0.18,
-                    transmission: 0,
-                    ior: 1.45,
-                    clearcoat: 0.18,
-                    clearcoatRoughness: 0.1,
-                    transparent: true,
-                    opacity: 0.12,
-                    side: THREE.DoubleSide
-                })
+                createCRTGlassMaterial(0.1)
             );
             glass.position.z = 0.094;
             crtGroup.add(glass);
@@ -4162,10 +4166,19 @@ const playCelebrationSound = () => {
             this.updateTargetHUD('None', '');
             this.sceneReady = false;
             this.avatarReady = false;
+            this.startupWarmupStarted = false;
+            this.startupWarmupReady = false;
             this.audioStateCheckAccumulator = 0;
+            this.streetLampLightCheckAccumulator = 0;
+            this.streetLampLightCheckInterval = 0.35;
+            this.activeStreetLampCount = 6;
             this.hasPanickingWalletNpcs = false;
             this.checkLoadingOverlay = () => {
-                if (this.sceneReady && this.avatarReady) {
+                if (!this.startupWarmupStarted && this.sceneReady && this.avatarReady) {
+                    void this.runStartupWarmup();
+                    return;
+                }
+                if (this.sceneReady && this.avatarReady && this.startupWarmupReady) {
                     loadingOverlay?.classList.add('hidden');
                 }
             };
@@ -4175,6 +4188,7 @@ const playCelebrationSound = () => {
             };
             this.urlBar = new URLBar(this.css3dScreen);
             this.clock = new THREE.Clock();
+            this.world.updateStreetLampLights(this.controls.surfaceX, this.controls.surfaceArc, this.activeStreetLampCount);
 
             window.requestAnimationFrame(() => {
                 this.sceneReady = true;
@@ -4186,6 +4200,41 @@ const playCelebrationSound = () => {
             this.restoreWalletFromQuery();
             this.onResize();
             this.animate();
+        }
+
+        updateStreetLampLights(delta, force = false) {
+            if (!force) {
+                this.streetLampLightCheckAccumulator += delta;
+                if (this.streetLampLightCheckAccumulator < this.streetLampLightCheckInterval) return;
+            }
+            this.streetLampLightCheckAccumulator = 0;
+            this.world.updateStreetLampLights(
+                this.controls.surfaceX,
+                this.controls.surfaceArc,
+                this.activeStreetLampCount
+            );
+        }
+
+        async runStartupWarmup() {
+            if (this.startupWarmupStarted) return;
+            this.startupWarmupStarted = true;
+            this.updateStreetLampLights(0, true);
+            this.controls.update(0);
+            this.npc?.update(0);
+            try {
+                if (typeof renderer.compileAsync === 'function') {
+                    await renderer.compileAsync(scene, camera);
+                } else if (typeof renderer.compile === 'function') {
+                    renderer.compile(scene, camera);
+                }
+            } catch (error) {
+                console.warn('[chainworld] startup shader warmup failed', error);
+            }
+            renderer.render(scene, camera);
+            this.css3dScreen.update();
+            await new Promise((resolve) => window.requestAnimationFrame(resolve));
+            this.startupWarmupReady = true;
+            this.checkLoadingOverlay();
         }
 
         bindEvents() {
@@ -4615,6 +4664,7 @@ const playCelebrationSound = () => {
             this.controls.update(delta);
             this.npc?.update(delta);
             this.walletNpcs.forEach((npc) => npc.update(delta));
+            this.updateStreetLampLights(delta);
             this.audioStateCheckAccumulator += delta;
             if (this.audioStateCheckAccumulator >= 0.2) {
                 this.audioStateCheckAccumulator = 0;
