@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bicameral | Semantic Blocks Prototype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Bicameral semantic blocks</p>
+        <h1>Bicameral</h1>
+      </div>
+      <div class="topbar-meta">
+        <span class="meta-pill">Human + model co-editing</span>
+        <span class="meta-pill">HTML + JS only</span>
+        <span class="meta-pill accent">Code remains source of truth</span>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="panel story-panel">
+        <div class="panel-header">
+          <div>
+            <p class="panel-label">Intent</p>
+            <h2>Two minds, one code graph</h2>
+          </div>
+          <button class="ghost-button" id="cycleFocusButton" type="button">Cycle focus</button>
+        </div>
+
+        <div class="scenario-card">
+          <div class="scenario-copy">
+            <p class="scenario-kicker">Concept demo</p>
+            <h3>Habit streak tracker</h3>
+            <p>
+              Bicameral treats generated code as something both the human and the model
+              can inspect through semantic blocks: state, events, actions, effects,
+              and bindings. The screen designer is intentionally absent.
+            </p>
+          </div>
+          <div class="scenario-stats">
+            <div>
+              <span class="stat-value" id="nodeCount">0</span>
+              <span class="stat-label">blocks</span>
+            </div>
+            <div>
+              <span class="stat-value" id="edgeCount">0</span>
+              <span class="stat-label">links</span>
+            </div>
+            <div>
+              <span class="stat-value">v0.1</span>
+              <span class="stat-label">mvp</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="legend">
+          <span class="legend-chip state">State</span>
+          <span class="legend-chip event">Event</span>
+          <span class="legend-chip action">Action</span>
+          <span class="legend-chip effect">Effect</span>
+          <span class="legend-chip binding">Binding</span>
+        </div>
+      </section>
+
+      <section class="panel graph-panel">
+        <div class="panel-header">
+          <div>
+            <p class="panel-label">Blocks tab</p>
+            <h2>Semantic flow graph</h2>
+          </div>
+          <div class="graph-actions">
+            <button class="ghost-button" id="fitViewButton" type="button">Fit view</button>
+            <button class="ghost-button active" id="managedOnlyButton" type="button">Managed only</button>
+          </div>
+        </div>
+
+        <div class="graph-canvas" id="graphCanvas" aria-label="Semantic graph"></div>
+      </section>
+
+      <aside class="panel inspector-panel">
+        <div class="panel-header">
+          <div>
+            <p class="panel-label">Inspector</p>
+            <h2 id="inspectorTitle">Select a block</h2>
+          </div>
+        </div>
+
+        <div class="inspector-card" id="inspectorCard">
+          <p class="empty-state">
+            Choose a semantic block to inspect how Bicameral maps behavior back to code,
+            what the block reads or writes, and which transforms are safe to generate.
+          </p>
+        </div>
+
+        <div class="inspector-trace">
+          <h3>Round-trip status</h3>
+          <ul id="traceList"></ul>
+        </div>
+      </aside>
+
+      <section class="panel code-panel">
+        <div class="panel-header">
+          <div>
+            <p class="panel-label">Code projection</p>
+            <h2>`app.js` managed region</h2>
+          </div>
+          <button class="ghost-button" id="previewPatchButton" type="button">Preview patch</button>
+        </div>
+
+        <div class="code-toolbar">
+          <span class="toolbar-pill">AST-safe transforms</span>
+          <span class="toolbar-pill">Selective regeneration</span>
+          <span class="toolbar-pill" id="codeFocusLabel">Nothing selected</span>
+        </div>
+
+        <pre class="code-view" id="codeView" aria-label="Code preview"></pre>
+      </section>
+
+      <section class="panel patch-panel">
+        <div class="panel-header">
+          <div>
+            <p class="panel-label">Generated patch</p>
+            <h2>Visual edit preview</h2>
+          </div>
+        </div>
+
+        <div class="patch-copy">
+          <p id="patchSummary">
+            Visual edits compile into targeted patches. Select a block to see the kind
+            of constrained source update Bicameral would generate.
+          </p>
+        </div>
+
+        <pre class="patch-view" id="patchView"></pre>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
