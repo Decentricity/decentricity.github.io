@@ -11,10 +11,11 @@
   --good: #5fd0a5;
   --warn: #ffca62;
   --danger: #ff7d6b;
-  --state: #5fd0a5;
+  --value: #5fd0a5;
   --view: #94b7ff;
+  --style: #7fd7ff;
   --event: #ffca62;
-  --action: #ff7d6b;
+  --function: #ff7d6b;
   --effect: #79a8ff;
   --binding: #cf9bff;
   --shadow: 0 18px 60px rgba(0, 0, 0, 0.34);
@@ -198,10 +199,11 @@ h1 {
   color: var(--danger);
 }
 
-.kind-button.state { color: var(--state); }
+.kind-button.value { color: var(--value); }
+.kind-button.style { color: var(--style); }
 .kind-button.view { color: var(--view); }
 .kind-button.event { color: var(--event); }
-.kind-button.action { color: var(--action); }
+.kind-button.function { color: var(--function); }
 .kind-button.effect { color: var(--effect); }
 .kind-button.binding { color: var(--binding); }
 
@@ -439,10 +441,11 @@ h1 {
   background: rgba(255, 255, 255, 0.06);
 }
 
-.graph-node.state .graph-node-kind { color: var(--state); }
+.graph-node.value .graph-node-kind { color: var(--value); }
 .graph-node.view .graph-node-kind { color: var(--view); }
+.graph-node.style .graph-node-kind { color: var(--style); }
 .graph-node.event .graph-node-kind { color: var(--event); }
-.graph-node.action .graph-node-kind { color: var(--action); }
+.graph-node.function .graph-node-kind { color: var(--function); }
 .graph-node.effect .graph-node-kind { color: var(--effect); }
 .graph-node.binding .graph-node-kind { color: var(--binding); }
 

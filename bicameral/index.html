@@ -84,10 +84,9 @@
             <h2>Parsed from code</h2>
           </div>
           <div class="graph-toolbar">
-            <button class="kind-button action" data-add-kind="action" type="button">+ Action</button>
-            <button class="kind-button effect" data-add-kind="effect" type="button">+ Effect</button>
-            <button class="kind-button binding" data-add-kind="binding" type="button">+ Binding</button>
-            <button class="kind-button state" data-add-kind="state" type="button">+ State</button>
+            <button class="kind-button value" data-add-kind="value" type="button">+ Value</button>
+            <button class="kind-button function" data-add-kind="function" type="button">+ Function</button>
+            <button class="kind-button style" data-add-kind="style" type="button">+ Style</button>
             <button class="kind-button event" data-add-kind="event" type="button">+ Listener</button>
             <button class="action-button subtle" id="linkModeButton" type="button">Link selected</button>
             <button class="action-button subtle" id="autoLayoutButton" type="button">Auto layout</button>
@@ -111,16 +110,17 @@
         </div>
 
         <div class="example-strip">
-          <button class="example-chip" data-prompt='add state filter = "all"' type="button">add state filter = "all"</button>
-          <button class="example-chip" data-prompt='add action clearCompleted' type="button">add action clearCompleted</button>
-          <button class="example-chip" data-prompt='add event click on #task-list -> actions.toggleTask' type="button">add event click on #task-list</button>
-          <button class="example-chip" data-prompt='set code of addTask to\nconst label = refs.taskInput.value.trim();\nif (!label) return;\nstate.tasks = [{ id: makeId(), label, done: false }, ...state.tasks];\nrefs.taskInput.value = \"\";\nbindings.renderTasks();\neffects.saveCache();' type="button">set code of addTask</button>
+          <button class="example-chip" data-prompt='add value selectedTask = null' type="button">add value selectedTask = null</button>
+          <button class="example-chip" data-prompt='add function clearCompleted' type="button">add function clearCompleted</button>
+          <button class="example-chip" data-prompt='add style .task-list li.done { opacity: 0.5; }' type="button">add style .task-list li.done</button>
+          <button class="example-chip" data-prompt='add event click on #task-list -> toggleTask' type="button">add event click on #task-list</button>
+          <button class="example-chip" data-prompt='set code of addTask to\nconst label = refs.taskInput.value.trim();\nif (!label) return;\ntasks = [{ id: makeId(), label, done: false }, ...tasks];\nrefs.taskInput.value = \"\";\nrenderTasks();\nsaveCache();' type="button">set code of addTask</button>
         </div>
 
         <div class="prompt-log" id="promptLog" aria-live="polite"></div>
 
         <label class="input-label" for="promptInput">Prompt</label>
-        <textarea id="promptInput" spellcheck="false" placeholder="Try: add state selectedTask = null"></textarea>
+        <textarea id="promptInput" spellcheck="false" placeholder="Try: add value selectedTask = null"></textarea>
 
         <div class="panel-actions stretch">
           <button class="action-button" id="runPromptButton" type="button">Run prompt</button>

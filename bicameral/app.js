@@ -1,16 +1,51 @@
-const FILES_STORAGE_KEY = "bicameral.ide.files.v4";
-const LAYOUT_STORAGE_KEY = "bicameral.ide.layout.v4";
-const PROMPT_LOG_KEY = "bicameral.ide.prompt.v3";
+const FILES_STORAGE_KEY = "bicameral.ide.files.v5";
+const LAYOUT_STORAGE_KEY = "bicameral.ide.layout.v5";
+const PROMPT_LOG_KEY = "bicameral.ide.prompt.v4";
 const FILE_ORDER = ["index.html", "styles.css", "app.js"];
-const GRAPH_ORDER = ["view", "state", "event", "action", "effect", "binding"];
+const GRAPH_ORDER = ["view", "style", "value", "event", "function", "binding", "effect"];
 const KIND_COLORS = {
   view: "#94b7ff",
-  state: "#5fd0a5",
+  style: "#7fd7ff",
+  value: "#5fd0a5",
   event: "#ffca62",
-  action: "#ff7d6b",
+  function: "#ff7d6b",
   effect: "#79a8ff",
   binding: "#cf9bff"
 };
+const DOM_MUTATION_METHODS = new Set([
+  "append",
+  "appendChild",
+  "before",
+  "after",
+  "prepend",
+  "remove",
+  "removeChild",
+  "replaceChildren",
+  "replaceWith",
+  "insertAdjacentHTML",
+  "setAttribute",
+  "removeAttribute"
+]);
+const CLASSLIST_METHODS = new Set(["add", "remove", "toggle", "replace"]);
+const EFFECT_PREFIXES = [
+  "fetch",
+  "localStorage.",
+  "sessionStorage.",
+  "history.",
+  "console.",
+  "navigator.clipboard.",
+  "window.open",
+  "location.",
+  "setTimeout",
+  "setInterval",
+  "clearTimeout",
+  "clearInterval",
+  "requestAnimationFrame",
+  "cancelAnimationFrame",
+  "alert",
+  "confirm",
+  "prompt"
+];
 
 const DEFAULT_FILES = {
   "index.html": `<!DOCTYPE html>
@@ -139,74 +174,65 @@ body {
   color: var(--good);
   cursor: pointer;
 }`,
-  "app.js": `const refs = {
-  taskForm: document.querySelector("#task-form"),
-  taskInput: document.querySelector("#task-input"),
-  taskList: document.querySelector("#task-list"),
-  taskStatus: document.querySelector("#task-status")
-};
-
-const state = {
-  tasks: [],
-  filter: "all"
-};
-
-const bindings = {
-  renderTasks() {
-    const visibleTasks = state.tasks.filter((task) => state.filter === "all" || !task.done);
-    refs.taskList.innerHTML = visibleTasks.map((task) => \`
-      <li class="task-row \${task.done ? "done" : ""}" data-task-id="\${task.id}">
-        <button class="task-toggle" type="button">\${task.done ? "Undo" : "Done"}</button>
-        <span>\${task.label}</span>
-      </li>
-    \`).join("");
-    refs.taskStatus.textContent = \`\${state.tasks.length} tasks in memory\`;
-  }
-};
-
-const effects = {
-  saveCache() {
-    localStorage.setItem("bicameral.tasks", JSON.stringify(state.tasks));
-  },
-  loadCache() {
-    state.tasks = JSON.parse(localStorage.getItem("bicameral.tasks") || "[]");
-  }
-};
-
-const actions = {
-  bootstrap() {
-    effects.loadCache();
-    bindings.renderTasks();
-  },
-  addTask(event) {
-    event.preventDefault();
-    const label = refs.taskInput.value.trim();
-    if (!label) return;
-    state.tasks = [{ id: makeId(), label, done: false }, ...state.tasks];
-    refs.taskInput.value = "";
-    bindings.renderTasks();
-    effects.saveCache();
-  },
-  toggleTask(taskId) {
-    state.tasks = state.tasks.map((task) =>
-      task.id === taskId ? { ...task, done: !task.done } : task
-    );
-    bindings.renderTasks();
-    effects.saveCache();
-  }
-};
-
-function makeId() {
-  return crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
-}
-
-document.addEventListener("DOMContentLoaded", actions.bootstrap);
-refs.taskForm.addEventListener("submit", actions.addTask);
-refs.taskList.addEventListener("click", (event) => {
-  const row = event.target.closest("[data-task-id]");
-  if (!row) return;
-  actions.toggleTask(row.dataset.taskId);
-});`
+  "app.js": [
+    'const refs = {',
+    '  taskForm: document.querySelector("#task-form"),',
+    '  taskInput: document.querySelector("#task-input"),',
+    '  taskList: document.querySelector("#task-list"),',
+    '  taskStatus: document.querySelector("#task-status")',
+    '};',
+    '',
+    'let tasks = [];',
+    'let filter = "all";',
+    '',
+    'function renderTasks() {',
+    '  const visibleTasks = tasks.filter((task) => filter === "all" || !task.done);',
+    '  refs.taskList.innerHTML = visibleTasks.map((task) =>',
+    '    `<li class="task-row ${task.done ? "done" : ""}" data-task-id="${task.id}">\\n      <button class="task-toggle" type="button">${task.done ? "Undo" : "Done"}</button>\\n      <span>${task.label}</span>\\n    </li>`',
+    '  ).join("");',
+    '  refs.taskStatus.textContent = `${tasks.length} tasks in memory`;',
+    '}',
+    '',
+    'function saveCache() {',
+    '  localStorage.setItem("bicameral.tasks", JSON.stringify(tasks));',
+    '}',
+    '',
+    'function loadCache() {',
+    '  tasks = JSON.parse(localStorage.getItem("bicameral.tasks") || "[]");',
+    '}',
+    '',
+    'function addTask(event) {',
+    '  event.preventDefault();',
+    '  const label = refs.taskInput.value.trim();',
+    '  if (!label) return;',
+    '  tasks = [{ id: makeId(), label, done: false }, ...tasks];',
+    '  refs.taskInput.value = "";',
+    '  renderTasks();',
+    '  saveCache();',
+    '}',
+    '',
+    'function toggleTask(taskId) {',
+    '  tasks = tasks.map((task) => task.id === taskId ? { ...task, done: !task.done } : task);',
+    '  renderTasks();',
+    '  saveCache();',
+    '}',
+    '',
+    'function makeId() {',
+    '  return crypto.randomUUID ? crypto.randomUUID() : String(Date.now());',
+    '}',
+    '',
+    'document.addEventListener("DOMContentLoaded", () => {',
+    '  loadCache();',
+    '  renderTasks();',
+    '});',
+    '',
+    'refs.taskForm.addEventListener("submit", addTask);',
+    'refs.taskList.addEventListener("click", (event) => {',
+    '  const row = event.target.closest("[data-task-id]");',
+    '  if (!row) return;',
+    '  toggleTask(row.dataset.taskId);',
+    '});'
+  ].join("\n")
 };
 
 const elements = {
@@ -273,12 +299,20 @@ function boot() {
     return;
   }
 
-  const initial = parseSources(files);
+  let initial;
+  try {
+    initial = parseSources(files);
+  } catch (error) {
+    console.error(error);
+    elements.sourceStatusText.textContent = `Boot parse error: ${error.message}`;
+    setStatus(`Boot parse error: ${error.message}`, "error");
+    return;
+  }
   lastSuccessfulParse = initial;
   selectedNodeId = initial.nodes[0] ? initial.nodes[0].id : null;
   renderPromptLog();
   syncSourceEditor();
-  renderAll("Booted Bicameral in code-first mode.");
+  renderAll("Booted Bicameral in universal code-first mode.");
   bindEvents();
 }
 
@@ -362,13 +396,13 @@ function loadPromptLog() {
       return saved;
     }
   } catch (error) {
-    // Ignore invalid prompt log state.
+    // Ignore invalid prompt history.
   }
 
   return [
     {
       role: "assistant",
-      text: "Code is now the source of truth. Edit the HTML, CSS, or JS on the left, or patch the parsed graph on the right."
+      text: "Code is the source of truth. Bicameral parses real HTML, CSS, and JS into a semantic graph, and supported graph edits patch the source back."
     }
   ];
 }
@@ -439,13 +473,19 @@ function updateLineNumbers(textarea, gutter) {
   gutter.textContent = Array.from({ length: count }, (_, index) => index + 1).join("\n");
 }
 
-function applyCurrentSource(statusMessage) {
+function applyCurrentSource(statusMessage, selectionMatcher) {
   renderPreview();
 
   try {
     const parsed = parseSources(files);
     lastSuccessfulParse = parsed;
     parseError = "";
+    if (typeof selectionMatcher === "function") {
+      const matchedNode = parsed.nodes.find(selectionMatcher);
+      if (matchedNode) {
+        selectedNodeId = matchedNode.id;
+      }
+    }
     if (!parsed.nodes.find((node) => node.id === selectedNodeId)) {
       selectedNodeId = parsed.nodes[0] ? parsed.nodes[0].id : null;
     }
@@ -523,13 +563,15 @@ function buildPreviewDocument(sourceFiles) {
 
 function parseSources(sourceFiles) {
   const html = parseHtmlSource(sourceFiles["index.html"]);
+  const css = parseCssSource(sourceFiles["styles.css"], html);
   const js = parseJavaScriptSource(sourceFiles["app.js"], html);
-  const nodes = applyLayout([...html.nodes, ...js.nodes]);
+  const nodes = applyLayout([...html.nodes, ...css.nodes, ...js.nodes]);
   const nodeIds = new Set(nodes.map((node) => node.id));
-  const edges = dedupeEdges([...js.edges].filter((edge) => nodeIds.has(edge.from) && nodeIds.has(edge.to)));
+  const edges = dedupeEdges([...css.edges, ...js.edges].filter((edge) => nodeIds.has(edge.from) && nodeIds.has(edge.to)));
 
   return {
     html,
+    css,
     js,
     nodes,
     edges
@@ -541,11 +583,10 @@ function parseHtmlSource(source) {
   const nodes = [];
   const selectorToId = new Map();
 
-  [...doc.querySelectorAll("[id]")].forEach((element, index) => {
+  [...doc.querySelectorAll("[id]")].forEach((element) => {
     const selector = `#${element.id}`;
-    const id = uniqueNodeId(`view.${slugify(element.id)}`, nodes);
     const snippet = extractHtmlSnippet(source, element.id);
-    const line = snippet.line;
+    const id = uniqueNodeId(`view.${slugify(element.id)}`, nodes);
     nodes.push({
       id,
       kind: "view",
@@ -554,14 +595,311 @@ function parseHtmlSource(source) {
       selector,
       tagName: element.tagName.toLowerCase(),
       file: "index.html",
-      line,
+      line: snippet.line,
       snippet: snippet.text,
-      readOnly: true
+      readOnly: true,
+      summary: `${element.tagName.toLowerCase()} in index.html`
     });
     selectorToId.set(selector, id);
   });
 
-  return { source, nodes, selectorToId };
+  return {
+    source,
+    doc,
+    nodes,
+    selectorToId
+  };
+}
+
+function parseCssSource(source, htmlInfo) {
+  const nodes = [];
+  const edges = [];
+  const rules = [];
+
+  walkCssRules(source, 0, source.length, "", rules);
+
+  rules.forEach((rule, index) => {
+    const node = {
+      id: `style.${slugify(rule.scope ? `${rule.scope}-${rule.selector}` : rule.selector)}-${index + 1}`,
+      kind: "style",
+      label: rule.selector,
+      name: rule.selector,
+      selector: rule.selector,
+      scopeLabel: rule.scope || "global",
+      file: "styles.css",
+      line: rule.line,
+      sourceRange: [rule.start, rule.end],
+      selectorRange: [rule.selectorStart, rule.selectorEnd],
+      bodyRange: [rule.bodyStart, rule.bodyEnd],
+      bodyText: source.slice(rule.bodyStart, rule.bodyEnd).trim(),
+      snippet: source.slice(rule.start, rule.end),
+      readOnly: false,
+      renameable: false,
+      summary: rule.scope ? `${rule.scope}` : "global stylesheet rule"
+    };
+    nodes.push(node);
+
+    splitCssSelectors(rule.selector).forEach((selector) => {
+      try {
+        [...htmlInfo.doc.querySelectorAll(selector)].forEach((element) => {
+          if (!element.id) {
+            return;
+          }
+          const viewId = htmlInfo.selectorToId.get(`#${element.id}`);
+          if (viewId) {
+            edges.push({ from: node.id, to: viewId, label: "styles" });
+          }
+        });
+      } catch (error) {
+        // Ignore unsupported selector fragments.
+      }
+    });
+  });
+
+  return {
+    source,
+    rules,
+    nodes,
+    edges
+  };
+}
+
+function walkCssRules(source, start, end, scope, rules) {
+  let cursor = start;
+  while (cursor < end) {
+    cursor = skipCssTrivia(source, cursor, end);
+    if (cursor >= end) {
+      break;
+    }
+
+    const headerStart = cursor;
+    const headerEnd = findCssHeaderEnd(source, cursor, end);
+    if (headerEnd === -1) {
+      break;
+    }
+
+    const header = source.slice(headerStart, headerEnd).trim();
+    if (!header) {
+      cursor = headerEnd + 1;
+      continue;
+    }
+
+    if (source[headerEnd] === ";") {
+      cursor = headerEnd + 1;
+      continue;
+    }
+
+    const blockEnd = findMatchingBrace(source, headerEnd, end);
+    if (blockEnd === -1) {
+      break;
+    }
+
+    if (header.startsWith("@")) {
+      if (/^@(media|supports|layer|container|scope)\b/i.test(header)) {
+        walkCssRules(source, headerEnd + 1, blockEnd, header, rules);
+      }
+      cursor = blockEnd + 1;
+      continue;
+    }
+
+    rules.push({
+      scope,
+      selector: header,
+      start: headerStart,
+      end: blockEnd + 1,
+      selectorStart: headerStart,
+      selectorEnd: headerEnd,
+      bodyStart: headerEnd + 1,
+      bodyEnd: blockEnd,
+      line: lineNumberFromIndex(source, headerStart)
+    });
+
+    cursor = blockEnd + 1;
+  }
+}
+
+function skipCssTrivia(source, index, end) {
+  let cursor = index;
+  while (cursor < end) {
+    if (/\s/.test(source[cursor])) {
+      cursor += 1;
+      continue;
+    }
+    if (source[cursor] === "/" && source[cursor + 1] === "*") {
+      const close = source.indexOf("*/", cursor + 2);
+      cursor = close === -1 ? end : close + 2;
+      continue;
+    }
+    break;
+  }
+  return cursor;
+}
+
+function findCssHeaderEnd(source, start, end) {
+  let cursor = start;
+  let quote = "";
+  let parenDepth = 0;
+  while (cursor < end) {
+    const char = source[cursor];
+    const next = source[cursor + 1];
+
+    if (quote) {
+      if (char === "\\") {
+        cursor += 2;
+        continue;
+      }
+      if (char === quote) {
+        quote = "";
+      }
+      cursor += 1;
+      continue;
+    }
+
+    if (char === "/" && next === "*") {
+      const close = source.indexOf("*/", cursor + 2);
+      cursor = close === -1 ? end : close + 2;
+      continue;
+    }
+
+    if (char === "\"" || char === "'") {
+      quote = char;
+      cursor += 1;
+      continue;
+    }
+
+    if (char === "(") {
+      parenDepth += 1;
+      cursor += 1;
+      continue;
+    }
+
+    if (char === ")" && parenDepth > 0) {
+      parenDepth -= 1;
+      cursor += 1;
+      continue;
+    }
+
+    if (parenDepth === 0 && (char === "{" || char === ";")) {
+      return cursor;
+    }
+
+    cursor += 1;
+  }
+  return -1;
+}
+
+function findMatchingBrace(source, openIndex, end) {
+  let cursor = openIndex;
+  let depth = 0;
+  let quote = "";
+  while (cursor < end) {
+    const char = source[cursor];
+    const next = source[cursor + 1];
+
+    if (quote) {
+      if (char === "\\") {
+        cursor += 2;
+        continue;
+      }
+      if (char === quote) {
+        quote = "";
+      }
+      cursor += 1;
+      continue;
+    }
+
+    if (char === "/" && next === "*") {
+      const close = source.indexOf("*/", cursor + 2);
+      cursor = close === -1 ? end : close + 2;
+      continue;
+    }
+
+    if (char === "\"" || char === "'") {
+      quote = char;
+      cursor += 1;
+      continue;
+    }
+
+    if (char === "{") {
+      depth += 1;
+    } else if (char === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        return cursor;
+      }
+    }
+
+    cursor += 1;
+  }
+  return -1;
+}
+
+function splitCssSelectors(selectorText) {
+  const selectors = [];
+  let current = "";
+  let parenDepth = 0;
+  let bracketDepth = 0;
+  let quote = "";
+
+  for (let index = 0; index < selectorText.length; index += 1) {
+    const char = selectorText[index];
+
+    if (quote) {
+      current += char;
+      if (char === "\\") {
+        current += selectorText[index + 1] || "";
+        index += 1;
+        continue;
+      }
+      if (char === quote) {
+        quote = "";
+      }
+      continue;
+    }
+
+    if (char === "\"" || char === "'") {
+      quote = char;
+      current += char;
+      continue;
+    }
+
+    if (char === "(") {
+      parenDepth += 1;
+      current += char;
+      continue;
+    }
+    if (char === ")") {
+      parenDepth = Math.max(0, parenDepth - 1);
+      current += char;
+      continue;
+    }
+    if (char === "[") {
+      bracketDepth += 1;
+      current += char;
+      continue;
+    }
+    if (char === "]") {
+      bracketDepth = Math.max(0, bracketDepth - 1);
+      current += char;
+      continue;
+    }
+
+    if (char === "," && parenDepth === 0 && bracketDepth === 0) {
+      if (current.trim()) {
+        selectors.push(current.trim());
+      }
+      current = "";
+      continue;
+    }
+
+    current += char;
+  }
+
+  if (current.trim()) {
+    selectors.push(current.trim());
+  }
+
+  return selectors;
 }
 
 function parseJavaScriptSource(source, htmlInfo) {
@@ -571,272 +909,815 @@ function parseJavaScriptSource(source, htmlInfo) {
     locations: true
   });
 
-  const refsMap = new Map();
-  const containers = {};
-  const nodes = [];
-  const edges = [];
-  const semanticMaps = {
-    state: new Map(),
-    action: new Map(),
-    effect: new Map(),
-    binding: new Map()
+  const context = {
+    source,
+    htmlInfo,
+    domAliases: new Map(),
+    nodes: [],
+    edges: [],
+    valueNodes: new Map(),
+    functionNodes: new Map(),
+    rawNodesById: new Map(),
+    overlayNodes: [],
+    overlayEdges: []
   };
 
-  for (const statement of ast.body) {
-    if (statement.type !== "VariableDeclaration") {
-      continue;
+  collectProgramDeclarations(ast, context);
+  collectEventNodes(ast, context);
+  collectSemanticOverlays(context);
+
+  return {
+    source,
+    ast,
+    domAliases: context.domAliases,
+    nodes: [...context.nodes, ...context.overlayNodes],
+    edges: [...context.edges, ...context.overlayEdges],
+    valueNodes: context.valueNodes,
+    functionNodes: context.functionNodes
+  };
+}
+
+function collectProgramDeclarations(ast, context) {
+  ast.body.forEach((statement) => {
+    if (statement.type === "VariableDeclaration") {
+      collectVariableDeclaration(statement, context, null, null);
+      return;
     }
 
-    for (const declaration of statement.declarations) {
-      if (declaration.id.type !== "Identifier" || !declaration.init || declaration.init.type !== "ObjectExpression") {
-        continue;
-      }
-
-      const containerName = declaration.id.name;
-      if (containerName === "refs") {
-        declaration.init.properties.forEach((prop) => {
-          const key = objectPropertyName(prop);
-          const selector = extractSelectorFromExpression(prop.value, source, refsMap);
-          if (key && selector) {
-            refsMap.set(key, selector);
-          }
-        });
-      }
-
-      if (!["state", "actions", "effects", "bindings"].includes(containerName)) {
-        continue;
-      }
-
-      containers[containerName] = {
-        declaration,
-        object: declaration.init,
-        properties: declaration.init.properties.slice()
-      };
-
-      if (containerName === "state") {
-        declaration.init.properties.forEach((prop) => {
-          const name = objectPropertyName(prop);
-          if (!name) {
-            return;
-          }
-          const id = `state.${name}`;
-          const node = {
-            id,
-            kind: "state",
-            label: name,
-            name,
-            file: "app.js",
-            line: prop.loc.start.line,
-            container: "state",
-            sourceRange: [prop.start, prop.end],
-            nameRange: [prop.key.start, prop.key.end],
-            valueRange: [prop.value.start, prop.value.end],
-            bodyText: source.slice(prop.value.start, prop.value.end),
-            snippet: source.slice(prop.start, prop.end)
-          };
-          nodes.push(node);
-          semanticMaps.state.set(name, id);
-        });
-      } else {
-        const kind = containerName === "actions" ? "action" : containerName === "effects" ? "effect" : "binding";
-        declaration.init.properties.forEach((prop) => {
-          const name = objectPropertyName(prop);
-          const fn = propertyFunctionValue(prop);
-          if (!name || !fn) {
-            return;
-          }
-
-          const bodyRange = functionBodyRange(fn);
-          const id = `${kind}.${name}`;
-          const node = {
-            id,
-            kind,
-            label: name,
-            name,
-            file: "app.js",
-            line: prop.loc.start.line,
-            container: containerName,
-            sourceRange: [prop.start, prop.end],
-            nameRange: [prop.key.start, prop.key.end],
-            bodyRange,
-            bodyText: source.slice(bodyRange[0], bodyRange[1]).replace(/^\n+|\n+$/g, ""),
-            snippet: source.slice(prop.start, prop.end),
-            functionNode: fn
-          };
-          nodes.push(node);
-          semanticMaps[kind].set(name, id);
-        });
-      }
+    if (statement.type === "FunctionDeclaration") {
+      const node = createFunctionNodeFromDeclaration(statement, context, {
+        path: statement.id ? statement.id.name : `anonymous-${statement.start}`,
+        scopeLabel: "top level",
+        collection: null,
+        callPath: statement.id ? statement.id.name : null,
+        declarationType: "functionDeclaration",
+        renameStrategy: statement.id ? { type: "identifier", name: statement.id.name } : null
+      });
+      registerFunctionNode(context, node);
+      return;
     }
+
+    if (statement.type === "ClassDeclaration") {
+      const className = statement.id ? statement.id.name : `Class${statement.start}`;
+      const classNode = createFunctionNodeFromClass(statement, context, {
+        path: className,
+        scopeLabel: "top level",
+        collection: null,
+        renameStrategy: statement.id ? { type: "identifier", name: className } : null
+      });
+      registerFunctionNode(context, classNode);
+      collectClassMembers(statement.body, className, classNode.id, context);
+    }
+  });
+}
+
+function collectVariableDeclaration(statement, context, parentPath, parentId) {
+  const declaratorRanges = statement.declarations.map((declaration) => [declaration.start, declaration.end]);
+
+  statement.declarations.forEach((declaration, index) => {
+    if (declaration.id.type !== "Identifier") {
+      return;
+    }
+
+    const name = declaration.id.name;
+    const path = parentPath ? `${parentPath}.${name}` : name;
+    const collection = {
+      type: "variable-declarators",
+      index,
+      ranges: declaratorRanges,
+      statementRange: [statement.start, statement.end]
+    };
+
+    registerDomAlias(context.domAliases, path, declaration.init, context.source);
+
+    if (isFunctionLikeExpression(declaration.init)) {
+      const node = createFunctionNodeFromFunctionLike(declaration, declaration.init, context, {
+        path,
+        scopeLabel: parentPath || "top level",
+        collection,
+        callPath: path,
+        declarationType: "variableFunction",
+        renameStrategy: { type: "identifier", name }
+      });
+      registerFunctionNode(context, node);
+      if (parentId) {
+        context.edges.push({ from: parentId, to: node.id, label: "contains" });
+      }
+      return;
+    }
+
+    if (declaration.init && declaration.init.type === "ClassExpression") {
+      const classNode = createFunctionNodeFromClassExpression(declaration, declaration.init, context, {
+        path,
+        scopeLabel: parentPath || "top level",
+        collection,
+        renameStrategy: { type: "identifier", name }
+      });
+      registerFunctionNode(context, classNode);
+      if (parentId) {
+        context.edges.push({ from: parentId, to: classNode.id, label: "contains" });
+      }
+      collectClassMembers(declaration.init.body, path, classNode.id, context);
+      return;
+    }
+
+    const valueNode = createValueNodeFromDeclarator(declaration, context, {
+      path,
+      scopeLabel: parentPath || "top level",
+      collection,
+      renameStrategy: { type: "identifier", name }
+    });
+    registerValueNode(context, valueNode);
+    if (parentId) {
+      context.edges.push({ from: parentId, to: valueNode.id, label: "contains" });
+    }
+
+    if (declaration.init && declaration.init.type === "ObjectExpression") {
+      collectObjectMembers(declaration.init, path, valueNode.id, context);
+    }
+  });
+}
+
+function collectObjectMembers(objectExpression, parentPath, parentId, context) {
+  const propertyRanges = objectExpression.properties
+    .filter((property) => property.type === "Property")
+    .map((property) => [property.start, property.end]);
+
+  objectExpression.properties.forEach((property) => {
+    if (property.type !== "Property") {
+      return;
+    }
+
+    const propertyName = objectPropertyName(property);
+    if (!propertyName) {
+      return;
+    }
+
+    const index = propertyRanges.findIndex((range) => range[0] === property.start && range[1] === property.end);
+    const path = `${parentPath}.${propertyName}`;
+    const renameStrategy = property.key.type === "Identifier"
+      ? { type: "path", path }
+      : null;
+    const collection = {
+      type: "object-properties",
+      index,
+      ranges: propertyRanges,
+      statementRange: [property.start, property.end]
+    };
+
+    registerDomAlias(context.domAliases, path, property.value, context.source);
+
+    if (isFunctionProperty(property)) {
+      const node = createFunctionNodeFromProperty(property, context, {
+        path,
+        scopeLabel: parentPath,
+        collection,
+        callPath: path,
+        declarationType: "objectMethod",
+        renameStrategy
+      });
+      registerFunctionNode(context, node);
+      context.edges.push({ from: parentId, to: node.id, label: "contains" });
+      return;
+    }
+
+    const valueNode = createValueNodeFromProperty(property, context, {
+      path,
+      scopeLabel: parentPath,
+      collection,
+      renameStrategy
+    });
+    registerValueNode(context, valueNode);
+    context.edges.push({ from: parentId, to: valueNode.id, label: "contains" });
+
+    if (property.value && property.value.type === "ObjectExpression") {
+      collectObjectMembers(property.value, path, valueNode.id, context);
+    }
+  });
+}
+
+function collectClassMembers(classBody, classPath, parentId, context) {
+  const methods = classBody.body.filter((entry) => entry.type === "MethodDefinition" || entry.type === "PropertyDefinition");
+  const methodRanges = methods.map((entry) => [entry.start, entry.end]);
+
+  methods.forEach((entry) => {
+    if (entry.type !== "MethodDefinition") {
+      return;
+    }
+
+    const methodName = objectPropertyName(entry);
+    if (!methodName || !entry.value) {
+      return;
+    }
+
+    const path = `${classPath}.${methodName}`;
+    const collection = {
+      type: "class-methods",
+      index: methodRanges.findIndex((range) => range[0] === entry.start && range[1] === entry.end),
+      ranges: methodRanges,
+      statementRange: [entry.start, entry.end]
+    };
+    const renameStrategy = entry.static && entry.key.type === "Identifier"
+      ? { type: "path", path }
+      : null;
+
+    const node = createFunctionNodeFromClassMethod(entry, context, {
+      path,
+      scopeLabel: classPath,
+      collection,
+      callPath: entry.static ? path : null,
+      declarationType: "classMethod",
+      renameStrategy
+    });
+    registerFunctionNode(context, node);
+    context.edges.push({ from: parentId, to: node.id, label: "contains" });
+  });
+}
+
+function registerDomAlias(domAliases, path, expression, source) {
+  const selector = extractSelectorFromExpression(expression, source, domAliases);
+  if (selector) {
+    domAliases.set(path, selector);
   }
+}
 
+function registerValueNode(context, node) {
+  context.nodes.push(node);
+  context.rawNodesById.set(node.id, node);
+  context.valueNodes.set(node.qualifiedName, node);
+}
+
+function registerFunctionNode(context, node) {
+  context.nodes.push(node);
+  context.rawNodesById.set(node.id, node);
+  context.functionNodes.set(node.qualifiedName, node);
+}
+
+function createValueNodeFromDeclarator(declaration, context, options) {
+  const source = context.source;
+  const init = declaration.init;
+  const hasInitializer = Boolean(init);
+  const valueRange = hasInitializer ? [init.start, init.end] : [declaration.id.end, declaration.id.end];
+  const bodyText = hasInitializer ? source.slice(init.start, init.end) : "undefined";
+  return {
+    id: `value.${options.path}`,
+    kind: "value",
+    label: options.path,
+    name: leafName(options.path),
+    qualifiedName: options.path,
+    file: "app.js",
+    line: declaration.loc.start.line,
+    sourceRange: [declaration.start, declaration.end],
+    nameRange: [declaration.id.start, declaration.id.end],
+    valueRange,
+    valueInsertMode: !hasInitializer,
+    bodyText,
+    snippet: source.slice(declaration.start, declaration.end),
+    scopeLabel: options.scopeLabel,
+    collection: options.collection,
+    renameStrategy: options.renameStrategy,
+    renameable: Boolean(options.renameStrategy),
+    summary: options.scopeLabel === "top level" ? "top-level value" : `member of ${options.scopeLabel}`
+  };
+}
+
+function createValueNodeFromProperty(property, context, options) {
+  const source = context.source;
+  return {
+    id: `value.${options.path}`,
+    kind: "value",
+    label: options.path,
+    name: leafName(options.path),
+    qualifiedName: options.path,
+    file: "app.js",
+    line: property.loc.start.line,
+    sourceRange: [property.start, property.end],
+    nameRange: [property.key.start, property.key.end],
+    valueRange: [property.value.start, property.value.end],
+    valueInsertMode: false,
+    bodyText: source.slice(property.value.start, property.value.end),
+    snippet: source.slice(property.start, property.end),
+    scopeLabel: options.scopeLabel,
+    collection: options.collection,
+    renameStrategy: options.renameStrategy,
+    renameable: Boolean(options.renameStrategy),
+    summary: `member of ${options.scopeLabel}`
+  };
+}
+
+function createFunctionNodeFromDeclaration(statement, context, options) {
+  const source = context.source;
+  const bodyRange = functionBodyRange(statement);
+  return {
+    id: `function.${options.path}`,
+    kind: "function",
+    label: options.path,
+    name: leafName(options.path),
+    qualifiedName: options.path,
+    callPath: options.callPath,
+    file: "app.js",
+    line: statement.loc.start.line,
+    sourceRange: [statement.start, statement.end],
+    nameRange: statement.id ? [statement.id.start, statement.id.end] : null,
+    bodyRange,
+    bodyStyle: statement.body && statement.body.type === "BlockStatement" ? "block" : "expression",
+    bodyText: source.slice(bodyRange[0], bodyRange[1]).replace(/^\n+|\n+$/g, ""),
+    snippet: source.slice(statement.start, statement.end),
+    scopeLabel: options.scopeLabel,
+    collection: options.collection,
+    renameStrategy: options.renameStrategy,
+    renameable: Boolean(options.renameStrategy),
+    declarationType: options.declarationType,
+    astNode: statement,
+    summary: "top-level function"
+  };
+}
+
+function createFunctionNodeFromFunctionLike(declaration, fn, context, options) {
+  const source = context.source;
+  const bodyRange = functionBodyRange(fn);
+  return {
+    id: `function.${options.path}`,
+    kind: "function",
+    label: options.path,
+    name: leafName(options.path),
+    qualifiedName: options.path,
+    callPath: options.callPath,
+    file: "app.js",
+    line: declaration.loc.start.line,
+    sourceRange: [declaration.start, declaration.end],
+    nameRange: [declaration.id.start, declaration.id.end],
+    bodyRange,
+    bodyStyle: fn.body && fn.body.type === "BlockStatement" ? "block" : "expression",
+    bodyText: source.slice(bodyRange[0], bodyRange[1]).replace(/^\n+|\n+$/g, ""),
+    snippet: source.slice(declaration.start, declaration.end),
+    scopeLabel: options.scopeLabel,
+    collection: options.collection,
+    renameStrategy: options.renameStrategy,
+    renameable: Boolean(options.renameStrategy),
+    declarationType: options.declarationType,
+    astNode: fn,
+    summary: options.scopeLabel === "top level" ? "top-level function value" : `callable member of ${options.scopeLabel}`
+  };
+}
+
+function createFunctionNodeFromProperty(property, context, options) {
+  const source = context.source;
+  const fn = property.value;
+  const bodyRange = functionBodyRange(fn);
+  return {
+    id: `function.${options.path}`,
+    kind: "function",
+    label: options.path,
+    name: leafName(options.path),
+    qualifiedName: options.path,
+    callPath: options.callPath,
+    file: "app.js",
+    line: property.loc.start.line,
+    sourceRange: [property.start, property.end],
+    nameRange: property.key.type === "Identifier" ? [property.key.start, property.key.end] : null,
+    bodyRange,
+    bodyStyle: fn.body && fn.body.type === "BlockStatement" ? "block" : "expression",
+    bodyText: source.slice(bodyRange[0], bodyRange[1]).replace(/^\n+|\n+$/g, ""),
+    snippet: source.slice(property.start, property.end),
+    scopeLabel: options.scopeLabel,
+    collection: options.collection,
+    renameStrategy: options.renameStrategy,
+    renameable: Boolean(options.renameStrategy),
+    declarationType: options.declarationType,
+    astNode: fn,
+    summary: `callable member of ${options.scopeLabel}`
+  };
+}
+
+function createFunctionNodeFromClass(statement, context, options) {
+  const source = context.source;
+  const bodyRange = [statement.body.start + 1, statement.body.end - 1];
+  return {
+    id: `function.${options.path}`,
+    kind: "function",
+    label: `class ${options.path}`,
+    name: options.path,
+    qualifiedName: options.path,
+    callPath: null,
+    file: "app.js",
+    line: statement.loc.start.line,
+    sourceRange: [statement.start, statement.end],
+    nameRange: statement.id ? [statement.id.start, statement.id.end] : null,
+    bodyRange,
+    bodyStyle: "block",
+    bodyText: source.slice(bodyRange[0], bodyRange[1]).replace(/^\n+|\n+$/g, ""),
+    snippet: source.slice(statement.start, statement.end),
+    scopeLabel: options.scopeLabel,
+    collection: options.collection,
+    renameStrategy: options.renameStrategy,
+    renameable: Boolean(options.renameStrategy),
+    declarationType: "classDeclaration",
+    astNode: statement,
+    summary: "top-level class"
+  };
+}
+
+function createFunctionNodeFromClassExpression(declaration, classExpression, context, options) {
+  const source = context.source;
+  const bodyRange = [classExpression.body.start + 1, classExpression.body.end - 1];
+  return {
+    id: `function.${options.path}`,
+    kind: "function",
+    label: `class ${options.path}`,
+    name: options.path,
+    qualifiedName: options.path,
+    callPath: null,
+    file: "app.js",
+    line: declaration.loc.start.line,
+    sourceRange: [declaration.start, declaration.end],
+    nameRange: [declaration.id.start, declaration.id.end],
+    bodyRange,
+    bodyStyle: "block",
+    bodyText: source.slice(bodyRange[0], bodyRange[1]).replace(/^\n+|\n+$/g, ""),
+    snippet: source.slice(declaration.start, declaration.end),
+    scopeLabel: options.scopeLabel,
+    collection: options.collection,
+    renameStrategy: options.renameStrategy,
+    renameable: Boolean(options.renameStrategy),
+    declarationType: "classDeclaration",
+    astNode: classExpression,
+    summary: options.scopeLabel === "top level" ? "top-level class value" : `class member of ${options.scopeLabel}`
+  };
+}
+
+function createFunctionNodeFromClassMethod(method, context, options) {
+  const source = context.source;
+  const bodyRange = functionBodyRange(method.value);
+  return {
+    id: `function.${options.path}`,
+    kind: "function",
+    label: options.path,
+    name: leafName(options.path),
+    qualifiedName: options.path,
+    callPath: options.callPath,
+    file: "app.js",
+    line: method.loc.start.line,
+    sourceRange: [method.start, method.end],
+    nameRange: method.key.type === "Identifier" ? [method.key.start, method.key.end] : null,
+    bodyRange,
+    bodyStyle: method.value.body && method.value.body.type === "BlockStatement" ? "block" : "expression",
+    bodyText: source.slice(bodyRange[0], bodyRange[1]).replace(/^\n+|\n+$/g, ""),
+    snippet: source.slice(method.start, method.end),
+    scopeLabel: options.scopeLabel,
+    collection: options.collection,
+    renameStrategy: options.renameStrategy,
+    renameable: Boolean(options.renameStrategy),
+    declarationType: options.declarationType,
+    astNode: method.value,
+    summary: method.static ? `static method on ${options.scopeLabel}` : `instance method on ${options.scopeLabel}`
+  };
+}
+
+function collectEventNodes(ast, context) {
   const eventCounts = new Map();
+
   acorn.walk.ancestor(ast, {
     CallExpression(node, ancestors) {
       if (!isEventListenerCall(node)) {
         return;
       }
 
-      const statement = [...ancestors].reverse().find((entry) => entry.type === "ExpressionStatement");
-      if (!statement) {
-        return;
-      }
-
-      const selector = extractSelectorFromExpression(node.callee.object, source, refsMap) || source.slice(node.callee.object.start, node.callee.object.end);
-      const eventType = literalOrSource(node.arguments[0], source);
-      const handlerSource = literalOrSource(node.arguments[1], source);
+      const statement = nearestStatement(ancestors);
+      const selector = extractSelectorFromExpression(node.callee.object, context.source, context.domAliases)
+        || context.source.slice(node.callee.object.start, node.callee.object.end);
+      const eventType = literalOrSource(node.arguments[0], context.source);
+      const handlerSource = literalOrSource(node.arguments[1], context.source);
       const baseId = `event.${slugify(selector)}.${slugify(eventType)}.${slugify(handlerSource)}`;
       const count = eventCounts.get(baseId) || 0;
       eventCounts.set(baseId, count + 1);
-      const eventId = count ? `${baseId}-${count + 1}` : baseId;
-      const resolvedTarget = resolveHandlerTarget(node.arguments[1], source, semanticMaps);
+      const id = count ? `${baseId}-${count + 1}` : baseId;
+      const resolved = resolveHandlerTarget(node.arguments[1], context);
 
-      nodes.push({
-        id: eventId,
+      context.nodes.push({
+        id,
         kind: "event",
         label: `${eventType} @ ${selector}`,
         name: `${eventType} @ ${selector}`,
         selector,
         eventType,
         handlerSource,
-        handlerTargetId: resolvedTarget.targetId,
+        handlerTargetId: resolved ? resolved.id : null,
         file: "app.js",
-        line: statement.loc.start.line,
-        sourceRange: [statement.start, statement.end],
-        snippet: source.slice(statement.start, statement.end)
+        line: statement ? statement.loc.start.line : node.loc.start.line,
+        sourceRange: statement ? [statement.start, statement.end] : [node.start, node.end],
+        snippet: context.source.slice(statement ? statement.start : node.start, statement ? statement.end : node.end),
+        readOnly: false,
+        renameable: false,
+        summary: `listens on ${selector}`
       });
 
-      const viewNodeId = htmlInfo.selectorToId.get(selector);
-      if (viewNodeId) {
-        edges.push({ from: viewNodeId, to: eventId, label: "dispatches" });
+      const viewId = context.htmlInfo.selectorToId.get(selector);
+      if (viewId) {
+        context.edges.push({ from: viewId, to: id, label: "dispatches" });
       }
-      if (resolvedTarget.targetId) {
-        edges.push({ from: eventId, to: resolvedTarget.targetId, label: "triggers" });
+      if (resolved) {
+        context.edges.push({ from: id, to: resolved.id, label: "triggers" });
       }
     }
   });
-
-  nodes
-    .filter((node) => ["action", "effect", "binding"].includes(node.kind))
-    .forEach((node) => {
-      const analysis = analyzeFunctionNode(node.functionNode, source, refsMap, semanticMaps, htmlInfo);
-      analysis.stateReads.forEach((name) => {
-        const stateId = semanticMaps.state.get(name);
-        if (stateId) {
-          edges.push({ from: stateId, to: node.id, label: node.kind === "binding" ? "renders" : "reads" });
-        }
-      });
-      analysis.stateWrites.forEach((name) => {
-        const stateId = semanticMaps.state.get(name);
-        if (stateId) {
-          edges.push({ from: node.id, to: stateId, label: "writes" });
-        }
-      });
-      analysis.calls.effects.forEach((name) => {
-        const effectId = semanticMaps.effect.get(name);
-        if (effectId) {
-          edges.push({ from: node.id, to: effectId, label: "calls" });
-        }
-      });
-      analysis.calls.bindings.forEach((name) => {
-        const bindingId = semanticMaps.binding.get(name);
-        if (bindingId) {
-          edges.push({ from: node.id, to: bindingId, label: "calls" });
-        }
-      });
-      analysis.viewWrites.forEach((selector) => {
-        const viewNodeId = htmlInfo.selectorToId.get(selector);
-        if (viewNodeId) {
-          edges.push({ from: node.id, to: viewNodeId, label: "updates" });
-        }
-      });
-    });
-
-  return {
-    source,
-    ast,
-    refsMap,
-    containers,
-    nodes,
-    edges,
-    semanticMaps
-  };
 }
 
-function analyzeFunctionNode(fn, source, refsMap, semanticMaps, htmlInfo) {
-  const analysis = {
-    stateReads: new Set(),
-    stateWrites: new Set(),
-    calls: {
-      effects: new Set(),
-      bindings: new Set()
+function collectSemanticOverlays(context) {
+  context.functionNodes.forEach((functionNode) => {
+    if (!functionNode.astNode || functionNode.declarationType === "classDeclaration") {
+      return;
+    }
+
+    const analysis = analyzeFunctionNode(functionNode, context);
+    analysis.valueReads.forEach((path) => {
+      const valueNode = context.valueNodes.get(path);
+      if (valueNode) {
+        context.overlayEdges.push({ from: valueNode.id, to: functionNode.id, label: "feeds" });
+      }
+    });
+    analysis.valueWrites.forEach((path) => {
+      const valueNode = context.valueNodes.get(path);
+      if (valueNode) {
+        context.overlayEdges.push({ from: functionNode.id, to: valueNode.id, label: "writes" });
+      }
+    });
+    analysis.functionCalls.forEach((path) => {
+      const targetNode = context.functionNodes.get(path);
+      if (targetNode && targetNode.id !== functionNode.id) {
+        context.overlayEdges.push({ from: functionNode.id, to: targetNode.id, label: "calls" });
+      }
+    });
+    analysis.overlayNodes.forEach((node) => context.overlayNodes.push(node));
+    analysis.overlayEdges.forEach((edge) => context.overlayEdges.push(edge));
+  });
+}
+
+function analyzeFunctionNode(functionNode, context) {
+  const valueReads = new Set();
+  const valueWrites = new Set();
+  const functionCalls = new Set();
+  const overlayNodes = [];
+  const overlayEdges = [];
+  const overlayKeys = new Set();
+  const bodyNode = functionNode.astNode.body;
+  const walkRoot = bodyNode && bodyNode.type === "BlockStatement" ? bodyNode : functionNode.astNode;
+  const locals = collectLocalBindings(functionNode.astNode);
+
+  acorn.walk.ancestor(walkRoot, {
+    Identifier(node, ancestors) {
+      const parent = ancestors[ancestors.length - 2];
+      if (!isReferenceIdentifier(node, parent)) {
+        return;
+      }
+      if (locals.has(node.name)) {
+        return;
+      }
+      if (context.valueNodes.has(node.name)) {
+        if (isWriteIdentifier(node, parent)) {
+          valueWrites.add(node.name);
+        } else {
+          valueReads.add(node.name);
+        }
+      }
+      if (context.functionNodes.has(node.name) && isCallCallee(node, parent)) {
+        functionCalls.add(node.name);
+      }
     },
-    viewWrites: new Set()
-  };
-
-  if (!fn || !fn.body || fn.body.type !== "BlockStatement") {
-    return analysis;
-  }
-
-  acorn.walk.ancestor(fn.body, {
     MemberExpression(node, ancestors) {
       const parent = ancestors[ancestors.length - 2];
-      if (!node.computed && node.object.type === "Identifier" && node.object.name === "state" && node.property.type === "Identifier") {
-        if (parent && parent.type === "AssignmentExpression" && parent.left === node) {
-          analysis.stateWrites.add(node.property.name);
-        } else if (parent && parent.type === "UpdateExpression" && parent.argument === node) {
-          analysis.stateWrites.add(node.property.name);
+      const path = expressionPath(node);
+      if (!path) {
+        return;
+      }
+      const root = rootIdentifier(path);
+      if (locals.has(root)) {
+        return;
+      }
+      const valuePath = longestMatchingPath(path, context.valueNodes);
+      if (valuePath) {
+        if (isWriteMemberExpression(node, parent)) {
+          valueWrites.add(valuePath);
         } else {
-          analysis.stateReads.add(node.property.name);
+          valueReads.add(valuePath);
         }
       }
-
-      const refWrite = extractRefWrite(node, parent);
-      if (refWrite && refsMap.has(refWrite)) {
-        const selector = refsMap.get(refWrite);
-        if (htmlInfo.selectorToId.has(selector)) {
-          analysis.viewWrites.add(selector);
-        }
+      if (context.functionNodes.has(path) && isCallCallee(node, parent)) {
+        functionCalls.add(path);
       }
     },
-    CallExpression(node) {
-      const callee = node.callee;
-      if (
-        callee.type === "MemberExpression" &&
-        !callee.computed &&
-        callee.object.type === "Identifier" &&
-        callee.property.type === "Identifier"
-      ) {
-        if (callee.object.name === "effects") {
-          analysis.calls.effects.add(callee.property.name);
-        }
-        if (callee.object.name === "bindings") {
-          analysis.calls.bindings.add(callee.property.name);
-        }
+    AssignmentExpression(node, ancestors) {
+      const statement = nearestStatement(ancestors);
+      const target = resolveDomWriteTarget(node.left, context.source, context.domAliases);
+      if (statement && target) {
+        registerBindingOverlay(functionNode, statement, target, overlayNodes, overlayEdges, overlayKeys, context, locals);
+      }
+    },
+    UpdateExpression(node, ancestors) {
+      const statement = nearestStatement(ancestors);
+      const target = resolveDomWriteTarget(node.argument, context.source, context.domAliases);
+      if (statement && target) {
+        registerBindingOverlay(functionNode, statement, target, overlayNodes, overlayEdges, overlayKeys, context, locals);
+      }
+    },
+    CallExpression(node, ancestors) {
+      if (isEventListenerCall(node)) {
+        return;
+      }
+      const statement = nearestStatement(ancestors);
+      if (!statement) {
+        return;
+      }
+      const domTarget = resolveDomMutationTarget(node, context.source, context.domAliases);
+      if (domTarget) {
+        registerBindingOverlay(functionNode, statement, domTarget, overlayNodes, overlayEdges, overlayKeys, context, locals);
+        return;
+      }
+      const effectLabel = effectLabelForCall(node, context);
+      if (effectLabel) {
+        registerEffectOverlay(functionNode, statement, effectLabel, overlayNodes, overlayEdges, overlayKeys, context, locals);
       }
     }
   });
 
-  return analysis;
+  return {
+    valueReads,
+    valueWrites,
+    functionCalls,
+    overlayNodes,
+    overlayEdges
+  };
 }
 
-function extractRefWrite(memberNode, parent) {
-  if (!parent || parent.type !== "AssignmentExpression" || parent.left !== memberNode) {
-    return null;
+function registerBindingOverlay(ownerNode, statement, target, overlayNodes, overlayEdges, overlayKeys, context, locals) {
+  const key = `binding:${ownerNode.id}:${statement.start}:${target.selector}:${target.label}`;
+  if (overlayKeys.has(key)) {
+    return;
+  }
+  overlayKeys.add(key);
+
+  const id = `binding.${slugify(ownerNode.qualifiedName)}.${statement.loc.start.line}.${slugify(target.selector)}.${slugify(target.label)}`;
+  const snippet = context.source.slice(statement.start, statement.end);
+  const node = {
+    id,
+    kind: "binding",
+    label: `${target.selector}.${target.label}`,
+    name: `${target.selector}.${target.label}`,
+    ownerPath: ownerNode.qualifiedName,
+    targetSelector: target.selector,
+    targetLabel: target.label,
+    file: "app.js",
+    line: statement.loc.start.line,
+    sourceRange: [statement.start, statement.end],
+    bodyRange: [statement.start, statement.end],
+    bodyText: snippet,
+    snippet,
+    renameable: false,
+    summary: `DOM write in ${ownerNode.qualifiedName}`
+  };
+  overlayNodes.push(node);
+  overlayEdges.push({ from: ownerNode.id, to: node.id, label: "emits" });
+
+  const viewId = context.htmlInfo.selectorToId.get(target.selector);
+  if (viewId) {
+    overlayEdges.push({ from: node.id, to: viewId, label: "targets" });
   }
 
-  if (
-    memberNode.object &&
-    memberNode.object.type === "MemberExpression" &&
-    !memberNode.object.computed &&
-    memberNode.object.object.type === "Identifier" &&
-    memberNode.object.object.name === "refs" &&
-    memberNode.object.property.type === "Identifier"
-  ) {
-    return memberNode.object.property.name;
-  }
+  collectReferencedValuePaths(statement, context, locals).forEach((path) => {
+    const valueNode = context.valueNodes.get(path);
+    if (valueNode) {
+      overlayEdges.push({ from: valueNode.id, to: node.id, label: "feeds" });
+    }
+  });
+}
 
-  return null;
+function registerEffectOverlay(ownerNode, statement, effectLabel, overlayNodes, overlayEdges, overlayKeys, context, locals) {
+  const key = `effect:${ownerNode.id}:${statement.start}:${effectLabel}`;
+  if (overlayKeys.has(key)) {
+    return;
+  }
+  overlayKeys.add(key);
+
+  const id = `effect.${slugify(ownerNode.qualifiedName)}.${statement.loc.start.line}.${slugify(effectLabel)}`;
+  const snippet = context.source.slice(statement.start, statement.end);
+  const node = {
+    id,
+    kind: "effect",
+    label: effectLabel,
+    name: effectLabel,
+    ownerPath: ownerNode.qualifiedName,
+    effectLabel,
+    file: "app.js",
+    line: statement.loc.start.line,
+    sourceRange: [statement.start, statement.end],
+    bodyRange: [statement.start, statement.end],
+    bodyText: snippet,
+    snippet,
+    renameable: false,
+    summary: `side effect in ${ownerNode.qualifiedName}`
+  };
+  overlayNodes.push(node);
+  overlayEdges.push({ from: ownerNode.id, to: node.id, label: "emits" });
+
+  collectReferencedValuePaths(statement, context, locals).forEach((path) => {
+    const valueNode = context.valueNodes.get(path);
+    if (valueNode) {
+      overlayEdges.push({ from: valueNode.id, to: node.id, label: "feeds" });
+    }
+  });
+}
+
+function collectReferencedValuePaths(node, context, locals) {
+  const paths = new Set();
+  acorn.walk.ancestor(node, {
+    Identifier(identifier, ancestors) {
+      const parent = ancestors[ancestors.length - 2];
+      if (!isReferenceIdentifier(identifier, parent) || locals.has(identifier.name)) {
+        return;
+      }
+      if (context.valueNodes.has(identifier.name)) {
+        paths.add(identifier.name);
+      }
+    },
+    MemberExpression(memberExpression) {
+      const path = expressionPath(memberExpression);
+      if (!path) {
+        return;
+      }
+      const root = rootIdentifier(path);
+      if (locals.has(root)) {
+        return;
+      }
+      const match = longestMatchingPath(path, context.valueNodes);
+      if (match) {
+        paths.add(match);
+      }
+    }
+  });
+  return paths;
+}
+
+function collectLocalBindings(fnNode) {
+  const locals = new Set();
+  if (fnNode.id && fnNode.id.name) {
+    locals.add(fnNode.id.name);
+  }
+  (fnNode.params || []).forEach((param) => declarePatternNames(param, locals));
+
+  const root = fnNode.body && fnNode.body.type === "BlockStatement" ? fnNode.body : fnNode;
+  acorn.walk.simple(root, {
+    VariableDeclaration(node) {
+      node.declarations.forEach((declaration) => declarePatternNames(declaration.id, locals));
+    },
+    FunctionDeclaration(node) {
+      if (node.id && node.id.name) {
+        locals.add(node.id.name);
+      }
+    },
+    ClassDeclaration(node) {
+      if (node.id && node.id.name) {
+        locals.add(node.id.name);
+      }
+    },
+    CatchClause(node) {
+      if (node.param) {
+        declarePatternNames(node.param, locals);
+      }
+    }
+  });
+
+  return locals;
+}
+
+function declarePatternNames(pattern, names) {
+  if (!pattern) {
+    return;
+  }
+  if (pattern.type === "Identifier") {
+    names.add(pattern.name);
+    return;
+  }
+  if (pattern.type === "ArrayPattern") {
+    pattern.elements.forEach((element) => declarePatternNames(element, names));
+    return;
+  }
+  if (pattern.type === "ObjectPattern") {
+    pattern.properties.forEach((property) => {
+      if (property.type === "Property") {
+        declarePatternNames(property.value, names);
+      } else if (property.type === "RestElement") {
+        declarePatternNames(property.argument, names);
+      }
+    });
+    return;
+  }
+  if (pattern.type === "RestElement") {
+    declarePatternNames(pattern.argument, names);
+    return;
+  }
+  if (pattern.type === "AssignmentPattern") {
+    declarePatternNames(pattern.left, names);
+  }
 }
 
 function objectPropertyName(prop) {
@@ -852,70 +1733,25 @@ function objectPropertyName(prop) {
   return null;
 }
 
-function propertyFunctionValue(prop) {
-  if (!prop || !prop.value) {
-    return null;
-  }
-  if (prop.value.type === "FunctionExpression" || prop.value.type === "ArrowFunctionExpression") {
-    return prop.value;
-  }
-  return null;
+function isFunctionProperty(property) {
+  return property && property.type === "Property" && isFunctionLikeExpression(property.value);
+}
+
+function isFunctionLikeExpression(node) {
+  return Boolean(node) && (
+    node.type === "FunctionExpression" ||
+    node.type === "ArrowFunctionExpression"
+  );
 }
 
 function functionBodyRange(fn) {
-  if (!fn.body) {
+  if (!fn || !fn.body) {
     return [fn.start, fn.end];
   }
   if (fn.body.type === "BlockStatement") {
     return [fn.body.start + 1, fn.body.end - 1];
   }
   return [fn.body.start, fn.body.end];
-}
-
-function isEventListenerCall(node) {
-  return (
-    node &&
-    node.callee &&
-    node.callee.type === "MemberExpression" &&
-    !node.callee.computed &&
-    node.callee.property.type === "Identifier" &&
-    node.callee.property.name === "addEventListener" &&
-    node.arguments.length >= 2
-  );
-}
-
-function extractSelectorFromExpression(expression, source, refsMap) {
-  if (!expression) {
-    return null;
-  }
-
-  if (
-    expression.type === "CallExpression" &&
-    expression.callee.type === "MemberExpression" &&
-    expression.callee.object.type === "Identifier" &&
-    expression.callee.object.name === "document" &&
-    expression.arguments[0]
-  ) {
-    if (expression.callee.property.name === "querySelector" && expression.arguments[0].type === "Literal") {
-      return String(expression.arguments[0].value);
-    }
-    if (expression.callee.property.name === "getElementById" && expression.arguments[0].type === "Literal") {
-      return `#${expression.arguments[0].value}`;
-    }
-  }
-
-  if (
-    expression.type === "MemberExpression" &&
-    !expression.computed &&
-    expression.object.type === "Identifier" &&
-    expression.object.name === "refs" &&
-    expression.property.type === "Identifier" &&
-    refsMap.has(expression.property.name)
-  ) {
-    return refsMap.get(expression.property.name);
-  }
-
-  return null;
 }
 
 function literalOrSource(node, source) {
@@ -931,53 +1767,276 @@ function literalOrSource(node, source) {
   return source.slice(node.start, node.end);
 }
 
-function resolveHandlerTarget(expression, source, semanticMaps) {
+function expressionPath(node) {
+  if (!node) {
+    return null;
+  }
+  if (node.type === "Identifier") {
+    return node.name;
+  }
+  if (node.type === "ThisExpression") {
+    return "this";
+  }
+  if (node.type === "Super") {
+    return "super";
+  }
+  if (node.type === "MemberExpression") {
+    const objectPath = expressionPath(node.object);
+    if (!objectPath) {
+      return null;
+    }
+    if (!node.computed && node.property.type === "Identifier") {
+      return `${objectPath}.${node.property.name}`;
+    }
+    if (node.computed && node.property.type === "Literal" && (typeof node.property.value === "string" || typeof node.property.value === "number")) {
+      return `${objectPath}.${String(node.property.value)}`;
+    }
+  }
+  return null;
+}
+
+function rootIdentifier(path) {
+  return path.split(".")[0];
+}
+
+function leafName(path) {
+  const parts = String(path).split(".");
+  return parts[parts.length - 1];
+}
+
+function longestMatchingPath(path, nodeMap) {
+  let candidate = path;
+  while (candidate) {
+    if (nodeMap.has(candidate)) {
+      return candidate;
+    }
+    const dot = candidate.lastIndexOf(".");
+    if (dot === -1) {
+      return null;
+    }
+    candidate = candidate.slice(0, dot);
+  }
+  return null;
+}
+
+function extractSelectorFromExpression(expression, source, domAliases) {
   if (!expression) {
-    return { targetId: null, source: "" };
+    return null;
   }
 
   if (
-    expression.type === "MemberExpression" &&
-    !expression.computed &&
-    expression.object.type === "Identifier" &&
-    expression.property.type === "Identifier"
+    expression.type === "CallExpression" &&
+    expression.callee.type === "MemberExpression" &&
+    expression.callee.object.type === "Identifier" &&
+    expression.callee.object.name === "document" &&
+    expression.arguments[0]
   ) {
-    if (expression.object.name === "actions" && semanticMaps.action.has(expression.property.name)) {
-      return { targetId: semanticMaps.action.get(expression.property.name), source: source.slice(expression.start, expression.end) };
+    if (["querySelector", "querySelectorAll"].includes(expression.callee.property.name)) {
+      const firstArg = expression.arguments[0];
+      if (firstArg.type === "Literal") {
+        return String(firstArg.value);
+      }
+      if (firstArg.type === "TemplateLiteral" && firstArg.expressions.length === 0) {
+        return firstArg.quasis[0].value.cooked;
+      }
     }
-    if (expression.object.name === "effects" && semanticMaps.effect.has(expression.property.name)) {
-      return { targetId: semanticMaps.effect.get(expression.property.name), source: source.slice(expression.start, expression.end) };
+    if (expression.callee.property.name === "getElementById" && expression.arguments[0].type === "Literal") {
+      return `#${expression.arguments[0].value}`;
     }
-    if (expression.object.name === "bindings" && semanticMaps.binding.has(expression.property.name)) {
-      return { targetId: semanticMaps.binding.get(expression.property.name), source: source.slice(expression.start, expression.end) };
-    }
+  }
+
+  const path = expressionPath(expression);
+  if (path && domAliases.has(path)) {
+    return domAliases.get(path);
+  }
+
+  return null;
+}
+
+function resolveHandlerTarget(expression, context) {
+  if (!expression) {
+    return null;
+  }
+
+  const path = expressionPath(expression);
+  if (path && context.functionNodes.has(path)) {
+    return context.functionNodes.get(path);
   }
 
   if (expression.type === "ArrowFunctionExpression" || expression.type === "FunctionExpression") {
-    const inlineCalls = {
-      targetId: null
-    };
+    let resolved = null;
     acorn.walk.simple(expression.body, {
       CallExpression(node) {
-        if (inlineCalls.targetId) {
+        if (resolved) {
           return;
         }
-        if (
-          node.callee.type === "MemberExpression" &&
-          !node.callee.computed &&
-          node.callee.object.type === "Identifier" &&
-          node.callee.property.type === "Identifier" &&
-          node.callee.object.name === "actions" &&
-          semanticMaps.action.has(node.callee.property.name)
-        ) {
-          inlineCalls.targetId = semanticMaps.action.get(node.callee.property.name);
+        const callPath = expressionPath(node.callee);
+        if (callPath && context.functionNodes.has(callPath)) {
+          resolved = context.functionNodes.get(callPath);
         }
       }
     });
-    return { targetId: inlineCalls.targetId, source: source.slice(expression.start, expression.end) };
+    return resolved;
   }
 
-  return { targetId: null, source: source.slice(expression.start, expression.end) };
+  return null;
+}
+
+function resolveDomWriteTarget(target, source, domAliases) {
+  if (!target || target.type !== "MemberExpression") {
+    return null;
+  }
+
+  let current = target;
+  const labels = [];
+  while (current && current.type === "MemberExpression") {
+    if (!current.computed && current.property.type === "Identifier") {
+      labels.unshift(current.property.name);
+    } else if (current.computed && current.property.type === "Literal") {
+      labels.unshift(String(current.property.value));
+    } else {
+      return null;
+    }
+    current = current.object;
+    const selector = extractSelectorFromExpression(current, source, domAliases);
+    if (selector) {
+      return {
+        selector,
+        label: labels.join(".") || "node"
+      };
+    }
+  }
+
+  return null;
+}
+
+function resolveDomMutationTarget(call, source, domAliases) {
+  if (!call || call.callee.type !== "MemberExpression") {
+    return null;
+  }
+
+  const methodName = memberPropertyName(call.callee.property, call.callee.computed);
+  if (!methodName) {
+    return null;
+  }
+
+  if (DOM_MUTATION_METHODS.has(methodName)) {
+    const selector = extractSelectorFromExpression(call.callee.object, source, domAliases);
+    if (selector) {
+      return { selector, label: methodName };
+    }
+  }
+
+  if (
+    call.callee.object.type === "MemberExpression" &&
+    !call.callee.object.computed &&
+    call.callee.object.property.type === "Identifier" &&
+    call.callee.object.property.name === "classList" &&
+    CLASSLIST_METHODS.has(methodName)
+  ) {
+    const selector = extractSelectorFromExpression(call.callee.object.object, source, domAliases);
+    if (selector) {
+      return { selector, label: `classList.${methodName}` };
+    }
+  }
+
+  return null;
+}
+
+function memberPropertyName(property, computed) {
+  if (!computed && property.type === "Identifier") {
+    return property.name;
+  }
+  if (computed && property.type === "Literal") {
+    return String(property.value);
+  }
+  return null;
+}
+
+function effectLabelForCall(call, context) {
+  const path = expressionPath(call.callee);
+  if (!path) {
+    return null;
+  }
+  if (context.functionNodes.has(path)) {
+    return null;
+  }
+  if (path.endsWith(".addEventListener")) {
+    return null;
+  }
+  if (EFFECT_PREFIXES.some((prefix) => path === prefix || path.startsWith(prefix))) {
+    return path;
+  }
+  return null;
+}
+
+function isEventListenerCall(node) {
+  return Boolean(
+    node &&
+    node.callee &&
+    node.callee.type === "MemberExpression" &&
+    !node.callee.computed &&
+    node.callee.property.type === "Identifier" &&
+    node.callee.property.name === "addEventListener" &&
+    node.arguments.length >= 2
+  );
+}
+
+function nearestStatement(ancestors) {
+  for (let index = ancestors.length - 1; index >= 0; index -= 1) {
+    const candidate = ancestors[index];
+    if (candidate && /Statement$/.test(candidate.type)) {
+      return candidate;
+    }
+  }
+  return null;
+}
+
+function isReferenceIdentifier(node, parent) {
+  if (!parent) {
+    return true;
+  }
+  if ((parent.type === "VariableDeclarator" || parent.type === "FunctionDeclaration" || parent.type === "FunctionExpression" || parent.type === "ClassDeclaration" || parent.type === "ClassExpression") && parent.id === node) {
+    return false;
+  }
+  if ((parent.type === "Property" || parent.type === "MethodDefinition") && parent.key === node && !parent.computed) {
+    return false;
+  }
+  if (parent.type === "MemberExpression" && parent.property === node && !parent.computed) {
+    return false;
+  }
+  if (parent.type === "LabeledStatement" || parent.type === "BreakStatement" || parent.type === "ContinueStatement") {
+    return false;
+  }
+  if (parent.type === "CatchClause" && parent.param === node) {
+    return false;
+  }
+  if ((parent.type === "RestElement" || parent.type === "AssignmentPattern") && parent.left === node) {
+    return false;
+  }
+  return true;
+}
+
+function isWriteIdentifier(node, parent) {
+  return Boolean(
+    parent && (
+      (parent.type === "AssignmentExpression" && parent.left === node) ||
+      (parent.type === "UpdateExpression" && parent.argument === node)
+    )
+  );
+}
+
+function isWriteMemberExpression(node, parent) {
+  return Boolean(
+    parent && (
+      (parent.type === "AssignmentExpression" && parent.left === node) ||
+      (parent.type === "UpdateExpression" && parent.argument === node)
+    )
+  );
+}
+
+function isCallCallee(node, parent) {
+  return Boolean(parent && parent.type === "CallExpression" && parent.callee === node);
 }
 
 function applyLayout(nodes) {
@@ -1044,9 +2103,9 @@ function renderGraph() {
     card.style.top = `${node.y}px`;
     card.dataset.nodeId = node.id;
     card.innerHTML = `
-      <span class="graph-node-kind">${node.kind}</span>
+      <span class="graph-node-kind">${escapeHtml(node.kind)}</span>
       <h3>${escapeHtml(node.label)}</h3>
-      <p>${escapeHtml(node.kind === "event" ? `${node.eventType} on ${node.selector}` : node.file)}</p>
+      <p>${escapeHtml(node.summary || node.file)}</p>
     `;
     card.addEventListener("click", () => onGraphNodeClick(node.id));
     card.addEventListener("pointerdown", (event) => startDraggingNode(event, node.id));
@@ -1176,39 +2235,59 @@ function renderInspector() {
 }
 
 function inspectorConfig(node) {
-  if (node.kind === "state") {
+  if (node.kind === "value") {
     return {
-      nameLabel: "State name",
+      nameLabel: "Symbol",
       nameValue: node.name,
-      nameDisabled: false,
-      primaryLabel: "Container",
-      primaryValue: "state",
+      nameDisabled: !node.renameable,
+      primaryLabel: "Scope",
+      primaryValue: node.scopeLabel,
       primaryDisabled: true,
       secondaryLabel: "File",
       secondaryValue: node.file,
       secondaryDisabled: true,
-      bodyLabel: "Value expression",
+      bodyLabel: "Initializer / expression",
       bodyValue: node.bodyText,
       bodyDisabled: false,
-      hint: "Editing this field patches the actual property inside the state object."
+      hint: "Editing this field patches the actual value expression in app.js."
     };
   }
 
-  if (["action", "effect", "binding"].includes(node.kind)) {
+  if (node.kind === "function") {
     return {
-      nameLabel: `${capitalize(node.kind)} name`,
+      nameLabel: "Function name",
       nameValue: node.name,
-      nameDisabled: false,
-      primaryLabel: "Container",
-      primaryValue: node.container,
+      nameDisabled: !node.renameable,
+      primaryLabel: "Scope",
+      primaryValue: node.scopeLabel,
       primaryDisabled: true,
       secondaryLabel: "File",
       secondaryValue: node.file,
       secondaryDisabled: true,
-      bodyLabel: "Function body",
+      bodyLabel: node.bodyStyle === "block" ? "Function body" : "Function expression",
       bodyValue: node.bodyText,
       bodyDisabled: false,
-      hint: "This body editor patches the real JS source in app.js."
+      hint: node.bodyStyle === "block"
+        ? "This editor patches the real function body in app.js."
+        : "This editor patches the expression body of the function value."
+    };
+  }
+
+  if (node.kind === "style") {
+    return {
+      nameLabel: "Rule",
+      nameValue: node.label,
+      nameDisabled: true,
+      primaryLabel: "Selector",
+      primaryValue: node.selector,
+      primaryDisabled: false,
+      secondaryLabel: "Scope",
+      secondaryValue: node.scopeLabel,
+      secondaryDisabled: true,
+      bodyLabel: "Declarations",
+      bodyValue: node.bodyText,
+      bodyDisabled: false,
+      hint: "Editing this rule patches the real CSS selector and declaration block."
     };
   }
 
@@ -1220,19 +2299,55 @@ function inspectorConfig(node) {
       primaryLabel: "Selector",
       primaryValue: node.selector,
       primaryDisabled: false,
-      secondaryLabel: "Event type",
+      secondaryLabel: "Event",
       secondaryValue: node.eventType,
       secondaryDisabled: false,
       bodyLabel: "Handler expression",
       bodyValue: node.handlerSource,
       bodyDisabled: false,
-      hint: "Editing selector, event type, or handler rewrites the actual addEventListener statement."
+      hint: "This updates the actual addEventListener statement in app.js."
+    };
+  }
+
+  if (node.kind === "binding") {
+    return {
+      nameLabel: "Binding",
+      nameValue: node.label,
+      nameDisabled: true,
+      primaryLabel: "Owner",
+      primaryValue: node.ownerPath,
+      primaryDisabled: true,
+      secondaryLabel: "Target",
+      secondaryValue: node.targetSelector,
+      secondaryDisabled: true,
+      bodyLabel: "Statement",
+      bodyValue: node.bodyText,
+      bodyDisabled: false,
+      hint: "This patches the DOM write statement that generated the semantic binding."
+    };
+  }
+
+  if (node.kind === "effect") {
+    return {
+      nameLabel: "Effect",
+      nameValue: node.label,
+      nameDisabled: true,
+      primaryLabel: "Owner",
+      primaryValue: node.ownerPath,
+      primaryDisabled: true,
+      secondaryLabel: "Kind",
+      secondaryValue: node.effectLabel,
+      secondaryDisabled: true,
+      bodyLabel: "Statement",
+      bodyValue: node.bodyText,
+      bodyDisabled: false,
+      hint: "This patches the side-effecting statement in app.js."
     };
   }
 
   return {
-    nameLabel: "Selector",
-    nameValue: node.selector,
+    nameLabel: "View",
+    nameValue: node.label,
     nameDisabled: true,
     primaryLabel: "Tag",
     primaryValue: node.tagName,
@@ -1251,7 +2366,7 @@ function renderSelectionDetails() {
   const node = getSelectedNode();
   if (!node) {
     elements.selectionView.textContent = "Select a node to see its source slice.";
-    elements.secondaryMetaText.textContent = "Live preview and selected source slice.";
+    elements.secondaryMetaText.textContent = activeLowerTab === "preview" ? "Live preview and selected source slice." : "Live preview and selected source slice.";
     return;
   }
 
@@ -1279,6 +2394,14 @@ function applyInspectorChanges() {
     return;
   }
 
+  if (node.kind === "style") {
+    updateStyleNode(node, {
+      selector: elements.nodePrimaryField.value.trim(),
+      body: elements.nodeBodyField.value
+    });
+    return;
+  }
+
   if (node.kind === "event") {
     updateEventNode(node, {
       selector: elements.nodePrimaryField.value.trim(),
@@ -1288,61 +2411,79 @@ function applyInspectorChanges() {
     return;
   }
 
-  if (elements.nodeNameField.value.trim() && elements.nodeNameField.value.trim() !== node.name) {
+  if (node.kind === "binding" || node.kind === "effect") {
+    updateStatementNode(node, elements.nodeBodyField.value);
+    return;
+  }
+
+  if (node.renameable && elements.nodeNameField.value.trim() && elements.nodeNameField.value.trim() !== node.name) {
     renameSemanticNode(node, elements.nodeNameField.value.trim());
     return;
   }
 
-  if (node.kind === "state") {
-    updateStateValue(node, elements.nodeBodyField.value);
+  if (node.kind === "value") {
+    updateValueNode(node, elements.nodeBodyField.value);
     return;
   }
 
-  updateFunctionBody(node, elements.nodeBodyField.value);
+  if (node.kind === "function") {
+    updateFunctionBody(node, elements.nodeBodyField.value);
+  }
 }
 
 function renameSemanticNode(node, requestedName) {
+  if (!node.renameable || !node.renameStrategy) {
+    setStatus("This node cannot be renamed safely from the graph yet.", "warning");
+    return;
+  }
+
   const nextName = sanitizeIdentifier(requestedName);
   if (!nextName) {
     setStatus("Names must be valid JavaScript identifiers.", "warning");
     return;
   }
-  if (lastSuccessfulParse.nodes.find((entry) => entry.id !== node.id && entry.kind === node.kind && entry.name === nextName)) {
-    setStatus(`A ${node.kind} named ${nextName} already exists.`, "warning");
-    return;
+
+  if (node.kind === "value" || node.kind === "function") {
+    const collision = lastSuccessfulParse.nodes.find((entry) => entry.id !== node.id && entry.kind === node.kind && entry.qualifiedName === replaceLeafName(node.qualifiedName, nextName));
+    if (collision) {
+      setStatus(`A ${node.kind} named ${nextName} already exists in that scope.`, "warning");
+      return;
+    }
   }
 
-  const js = lastSuccessfulParse.js;
-  const objectName = node.kind === "state" ? "state" : `${node.container}`;
-  const replacementRanges = [
-    { start: node.nameRange[0], end: node.nameRange[1], text: nextName }
-  ];
-
-  if (node.kind === "state") {
-    collectMemberReferenceRanges(js.ast, "state", node.name).forEach((range) => replacementRanges.push({ ...range, text: nextName }));
-  } else if (["action", "effect", "binding"].includes(node.kind)) {
-    const objectRef = node.kind === "action" ? "actions" : node.kind === "effect" ? "effects" : "bindings";
-    collectMemberReferenceRanges(js.ast, objectRef, node.name).forEach((range) => replacementRanges.push({ ...range, text: nextName }));
+  const replacements = [];
+  const declarationText = node.nameRange ? formatDeclarationName(node, nextName) : null;
+  if (node.nameRange && declarationText) {
+    replacements.push({ start: node.nameRange[0], end: node.nameRange[1], text: declarationText });
   }
 
-  const nextSource = applyReplacements(files["app.js"], replacementRanges);
-  files["app.js"] = nextSource;
+  if (node.renameStrategy.type === "path") {
+    collectPathReferenceRanges(lastSuccessfulParse.js.ast, node.renameStrategy.path).forEach((range) => {
+      replacements.push({ ...range, text: nextName });
+    });
+  } else if (node.renameStrategy.type === "identifier") {
+    collectIdentifierReferenceRanges(lastSuccessfulParse.js.ast, node.renameStrategy.name).forEach((range) => {
+      replacements.push({ ...range, text: nextName });
+    });
+  }
+
+  files["app.js"] = applyReplacements(files["app.js"], replacements);
   saveFiles();
   if (activeFile === "app.js") {
     syncSourceEditor();
   }
-  selectedNodeId = `${node.kind}.${nextName}`;
-  applyCurrentSource(`Renamed ${node.id} to ${nextName}.`);
+  const nextPath = replaceLeafName(node.qualifiedName, nextName);
+  applyCurrentSource(`Renamed ${node.id} to ${nextName}.`, (candidate) => candidate.kind === node.kind && candidate.qualifiedName === nextPath);
 }
 
-function updateStateValue(node, nextValue) {
-  files["app.js"] = replaceRange(files["app.js"], node.valueRange[0], node.valueRange[1], nextValue);
+function updateValueNode(node, nextValue) {
+  const replacement = node.valueInsertMode ? ` = ${nextValue}` : nextValue;
+  files["app.js"] = replaceRange(files["app.js"], node.valueRange[0], node.valueRange[1], replacement);
   saveFiles();
   if (activeFile === "app.js") {
     syncSourceEditor();
   }
-  applyCurrentSource(`Updated ${node.id}.`);
-  selectedNodeId = node.id;
+  applyCurrentSource(`Updated ${node.id}.`, (candidate) => candidate.id === node.id || candidate.qualifiedName === node.qualifiedName);
 }
 
 function updateFunctionBody(node, nextBody) {
@@ -1352,14 +2493,37 @@ function updateFunctionBody(node, nextBody) {
   if (activeFile === "app.js") {
     syncSourceEditor();
   }
-  applyCurrentSource(`Updated ${node.id}.`);
-  selectedNodeId = node.id;
+  applyCurrentSource(`Updated ${node.id}.`, (candidate) => candidate.kind === "function" && candidate.qualifiedName === node.qualifiedName);
+}
+
+function updateStyleNode(node, patch) {
+  const selector = patch.selector || node.selector;
+  if (!selector) {
+    setStatus("CSS selectors cannot be empty.", "warning");
+    return;
+  }
+
+  const bodyReplacement = formatCssBody(files["styles.css"], node, patch.body);
+  const nextSource = applyReplacements(files["styles.css"], [
+    { start: node.selectorRange[0], end: node.selectorRange[1], text: selector },
+    { start: node.bodyRange[0], end: node.bodyRange[1], text: bodyReplacement }
+  ]);
+  files["styles.css"] = nextSource;
+  saveFiles();
+  if (activeFile === "styles.css") {
+    syncSourceEditor();
+  }
+  applyCurrentSource(`Updated ${node.id}.`, (candidate) => candidate.kind === "style" && candidate.selector === selector && candidate.line === node.line);
 }
 
 function updateEventNode(node, patch) {
   const selector = patch.selector || node.selector;
   const eventType = patch.eventType || node.eventType;
   const handlerSource = patch.handlerSource || node.handlerSource;
+  if (!selector || !eventType || !handlerSource) {
+    setStatus("Event nodes need a selector, an event type, and a handler.", "warning");
+    return;
+  }
   const indent = lineIndentAt(files["app.js"], node.sourceRange[0]);
   const statement = `${indent}${buildListenerStatement(selector, eventType, handlerSource)}`;
   files["app.js"] = replaceRange(files["app.js"], node.sourceRange[0], node.sourceRange[1], statement);
@@ -1367,34 +2531,64 @@ function updateEventNode(node, patch) {
   if (activeFile === "app.js") {
     syncSourceEditor();
   }
-  selectedNodeId = buildEventSelectionId(selector, eventType, handlerSource);
-  applyCurrentSource("Updated event listener.");
+  applyCurrentSource("Updated event listener.", (candidate) => candidate.kind === "event" && candidate.selector === selector && candidate.eventType === eventType && candidate.handlerSource === handlerSource);
+}
+
+function updateStatementNode(node, nextStatement) {
+  const formatted = formatStatementReplacement(files["app.js"], node, nextStatement);
+  files["app.js"] = replaceRange(files["app.js"], node.sourceRange[0], node.sourceRange[1], formatted);
+  saveFiles();
+  if (activeFile === "app.js") {
+    syncSourceEditor();
+  }
+  applyCurrentSource(`Updated ${node.id}.`, (candidate) => candidate.kind === node.kind && candidate.line === node.line && candidate.ownerPath === node.ownerPath);
 }
 
 function buildListenerStatement(selector, eventType, handlerSource) {
   return `document.querySelector(${JSON.stringify(selector)}).addEventListener(${JSON.stringify(eventType)}, ${handlerSource});`;
 }
 
-function buildEventSelectionId(selector, eventType, handlerSource) {
-  return `event.${slugify(selector)}.${slugify(eventType)}.${slugify(handlerSource)}`;
-}
-
-function collectMemberReferenceRanges(ast, objectName, propertyName) {
+function collectPathReferenceRanges(ast, targetPath) {
   const ranges = [];
-  acorn.walk.ancestor(ast, {
+  acorn.walk.simple(ast, {
     MemberExpression(node) {
-      if (
-        !node.computed &&
-        node.object.type === "Identifier" &&
-        node.object.name === objectName &&
-        node.property.type === "Identifier" &&
-        node.property.name === propertyName
-      ) {
+      if (expressionPath(node) !== targetPath) {
+        return;
+      }
+      if (!node.computed && node.property.type === "Identifier") {
         ranges.push({ start: node.property.start, end: node.property.end });
       }
     }
   });
   return dedupeReplacementRanges(ranges);
+}
+
+function collectIdentifierReferenceRanges(ast, name) {
+  const ranges = [];
+  acorn.walk.ancestor(ast, {
+    Identifier(node, ancestors) {
+      if (node.name !== name) {
+        return;
+      }
+      const parent = ancestors[ancestors.length - 2];
+      if (!isReferenceIdentifier(node, parent)) {
+        return;
+      }
+      ranges.push({ start: node.start, end: node.end });
+    }
+  });
+  return dedupeReplacementRanges(ranges);
+}
+
+function formatDeclarationName(node, nextName) {
+  if (!node.nameRange) {
+    return null;
+  }
+  const currentSource = files["app.js"].slice(node.nameRange[0], node.nameRange[1]);
+  if (/^['"]/.test(currentSource)) {
+    return JSON.stringify(nextName);
+  }
+  return nextName;
 }
 
 function addNodeFromGraph(kind) {
@@ -1407,101 +2601,66 @@ function addNodeFromGraph(kind) {
     addEventListenerNode();
     return;
   }
-  if (kind === "state") {
-    addStateNode();
+  if (kind === "value") {
+    addValueNode();
     return;
   }
-  if (["action", "effect", "binding"].includes(kind)) {
-    addFunctionNode(kind);
+  if (kind === "function") {
+    addFunctionNode();
+    return;
+  }
+  if (kind === "style") {
+    addStyleNode();
   }
 }
 
-function addStateNode() {
-  const baseName = nextAvailableName("state", "stateValue");
-  let workingSource = files["app.js"];
-  let parseInfo = lastSuccessfulParse.js;
-  ({ source: workingSource, parseInfo } = ensureContainer(workingSource, parseInfo, "state"));
-  const container = parseInfo.containers.state;
-  const propertySource = `${baseName}: null`;
-  files["app.js"] = insertObjectEntry(workingSource, container, propertySource);
+function addValueNode() {
+  const name = nextAvailableName("value", "valueNode");
+  const snippet = `const ${name} = null;`;
+  files["app.js"] = appendToFile(files["app.js"], snippet);
   saveFiles();
   if (activeFile === "app.js") {
     syncSourceEditor();
   }
-  selectedNodeId = `state.${baseName}`;
-  applyCurrentSource(`Added state.${baseName}.`);
+  applyCurrentSource(`Added value ${name}.`, (candidate) => candidate.kind === "value" && candidate.qualifiedName === name);
 }
 
-function addFunctionNode(kind) {
-  const containerName = kind === "action" ? "actions" : kind === "effect" ? "effects" : "bindings";
-  const baseName = nextAvailableName(kind, `${kind}Node`);
-  let workingSource = files["app.js"];
-  let parseInfo = lastSuccessfulParse.js;
-  ({ source: workingSource, parseInfo } = ensureContainer(workingSource, parseInfo, containerName));
-  const container = parseInfo.containers[containerName];
-  const methodSource = buildMethodSource(baseName, defaultMethodBody(kind));
-  files["app.js"] = insertObjectEntry(workingSource, container, methodSource, true);
+function addFunctionNode() {
+  const name = nextAvailableName("function", "newFunction");
+  const snippet = `function ${name}() {\n  // TODO: implement\n}`;
+  files["app.js"] = appendToFile(files["app.js"], snippet);
   saveFiles();
   if (activeFile === "app.js") {
     syncSourceEditor();
   }
-  selectedNodeId = `${kind}.${baseName}`;
-  applyCurrentSource(`Added ${kind}.${baseName}.`);
+  applyCurrentSource(`Added function ${name}.`, (candidate) => candidate.kind === "function" && candidate.qualifiedName === name);
+}
+
+function addStyleNode() {
+  const selector = `.block-${Date.now().toString(36)}`;
+  const snippet = `${selector} {\n  color: #ffffff;\n}`;
+  files["styles.css"] = appendToFile(files["styles.css"], snippet);
+  saveFiles();
+  if (activeFile === "styles.css") {
+    syncSourceEditor();
+  }
+  applyCurrentSource(`Added style rule ${selector}.`, (candidate) => candidate.kind === "style" && candidate.selector === selector);
 }
 
 function addEventListenerNode() {
-  const selector = firstHtmlSelector() || "#task-form";
-  const handler = firstActionHandler() || "actions.bootstrap";
-  const statement = `\n${buildListenerStatement(selector, "click", handler)}\n`;
-  files["app.js"] = files["app.js"].trimEnd() + statement;
+  const selector = firstHtmlSelector() || "#app";
+  const handler = firstCallableFunction() || "() => {}";
+  files["app.js"] = appendToFile(files["app.js"], buildListenerStatement(selector, "click", handler));
   saveFiles();
   if (activeFile === "app.js") {
     syncSourceEditor();
   }
-  selectedNodeId = buildEventSelectionId(selector, "click", handler);
-  applyCurrentSource(`Added click listener on ${selector}.`);
+  applyCurrentSource(`Added click listener on ${selector}.`, (candidate) => candidate.kind === "event" && candidate.selector === selector && candidate.eventType === "click" && candidate.handlerSource === handler);
 }
 
-function ensureContainer(source, parseInfo, containerName) {
-  if (parseInfo.containers[containerName]) {
-    return { source, parseInfo };
-  }
-
-  const skeleton = containerName === "state"
-    ? `\nconst state = {\n};\n`
-    : `\nconst ${containerName} = {\n};\n`;
-  const nextSource = `${source.trimEnd()}\n\n${skeleton}`;
-  return {
-    source: nextSource,
-    parseInfo: parseJavaScriptSource(nextSource, parseHtmlSource(files["index.html"]))
-  };
-}
-
-function insertObjectEntry(source, container, entrySource, isMethod) {
-  const insertPos = container.object.end - 1;
-  const closingIndent = lineIndentAt(source, container.object.end - 1);
-  const propertyIndent = `${closingIndent}  `;
-  const hasEntries = container.properties.length > 0;
-  const prefix = hasEntries ? ",\n" : "\n";
-  const text = isMethod
-    ? `${prefix}${indentMultiline(entrySource, propertyIndent)}\n${closingIndent}`
-    : `${prefix}${propertyIndent}${entrySource}\n${closingIndent}`;
-  return source.slice(0, insertPos) + text + source.slice(insertPos);
-}
-
-function buildMethodSource(name, body) {
-  const lines = body.trim().split("\n");
-  return `${sanitizeIdentifier(name)}() {\n${lines.map((line) => `  ${line}`).join("\n")}\n}`;
-}
-
-function defaultMethodBody(kind) {
-  if (kind === "binding") {
-    return `refs.output.textContent = String(state.example);`;
-  }
-  if (kind === "effect") {
-    return `console.log("effect: replace me");`;
-  }
-  return `// TODO: implement ${kind}\n`;
+function appendToFile(source, snippet) {
+  const trimmed = source.trimEnd();
+  return trimmed ? `${trimmed}\n\n${snippet}\n` : `${snippet}\n`;
 }
 
 function connectNodes(sourceId, targetId) {
@@ -1511,23 +2670,32 @@ function connectNodes(sourceId, targetId) {
     return;
   }
 
-  if (sourceNode.kind === "event" && ["action", "effect", "binding"].includes(targetNode.kind)) {
+  if (sourceNode.kind === "event" && targetNode.kind === "function") {
+    const handlerSource = targetNode.callPath || targetNode.qualifiedName;
+    if (!handlerSource) {
+      setStatus("That function does not expose a direct call path yet.", "warning");
+      return;
+    }
     updateEventNode(sourceNode, {
       selector: sourceNode.selector,
       eventType: sourceNode.eventType,
-      handlerSource: `${targetNode.kind === "action" ? "actions" : targetNode.kind === "effect" ? "effects" : "bindings"}.${targetNode.name}`
+      handlerSource
     });
     return;
   }
 
-  if (sourceNode.kind === "action" && ["effect", "binding"].includes(targetNode.kind)) {
-    const objectRef = targetNode.kind === "effect" ? "effects" : "bindings";
-    const callLine = `${objectRef}.${targetNode.name}();`;
-    if (sourceNode.bodyText.includes(callLine)) {
-      setStatus("That call already exists in the selected action.", "warning");
+  if (sourceNode.kind === "function" && targetNode.kind === "function") {
+    const callExpression = targetNode.callPath || targetNode.qualifiedName;
+    if (!callExpression) {
+      setStatus("That target function cannot be called directly from a generic link yet.", "warning");
       return;
     }
-    const nextBody = `${sourceNode.bodyText.trimEnd()}\n${callLine}`;
+    const callLine = `${callExpression}();`;
+    if (sourceNode.bodyText.includes(callLine)) {
+      setStatus("That call already exists in the selected function.", "warning");
+      return;
+    }
+    const nextBody = sourceNode.bodyText.trimEnd() ? `${sourceNode.bodyText.trimEnd()}\n${callLine}` : callLine;
     updateFunctionBody(sourceNode, nextBody);
     return;
   }
@@ -1562,8 +2730,19 @@ function deleteSelectedNode() {
     return;
   }
 
-  if (node.kind === "event") {
-    files["app.js"] = removeRangeWithWhitespace(files["app.js"], node.sourceRange[0], node.sourceRange[1]);
+  if (["style"].includes(node.kind)) {
+    files["styles.css"] = removeNodeDefinition(files["styles.css"], node);
+    saveFiles();
+    if (activeFile === "styles.css") {
+      syncSourceEditor();
+    }
+    selectedNodeId = null;
+    applyCurrentSource(`Removed ${node.id}.`);
+    return;
+  }
+
+  if (["event", "binding", "effect"].includes(node.kind)) {
+    files["app.js"] = removeNodeDefinition(files["app.js"], node);
     saveFiles();
     if (activeFile === "app.js") {
       syncSourceEditor();
@@ -1578,7 +2757,7 @@ function deleteSelectedNode() {
     return;
   }
 
-  files["app.js"] = removeNodeDefinition(files["app.js"], lastSuccessfulParse.js, node);
+  files["app.js"] = removeNodeDefinition(files["app.js"], node);
   saveFiles();
   if (activeFile === "app.js") {
     syncSourceEditor();
@@ -1589,12 +2768,11 @@ function deleteSelectedNode() {
 
 function hasExternalReferences(node) {
   const js = lastSuccessfulParse.js;
-  if (node.kind === "state") {
-    return collectMemberReferenceRanges(js.ast, "state", node.name).length > 0;
+  if (node.renameStrategy && node.renameStrategy.type === "path") {
+    return collectPathReferenceRanges(js.ast, node.renameStrategy.path).length > 0;
   }
-  if (["action", "effect", "binding"].includes(node.kind)) {
-    const objectRef = node.kind === "action" ? "actions" : node.kind === "effect" ? "effects" : "bindings";
-    return collectMemberReferenceRanges(js.ast, objectRef, node.name).length > 0;
+  if (node.renameStrategy && node.renameStrategy.type === "identifier") {
+    return collectIdentifierReferenceRanges(js.ast, node.renameStrategy.name).length > 0;
   }
   return false;
 }
@@ -1650,16 +2828,22 @@ function runPrompt() {
 function executePrompt(prompt) {
   let match;
 
-  match = prompt.match(/^add\s+state\s+([A-Za-z_$][A-Za-z0-9_$]*)(?:\s*=\s*([\s\S]+))?$/i);
+  match = prompt.match(/^add\s+(?:value|state)\s+([A-Za-z_$][A-Za-z0-9_$]*)(?:\s*=\s*([\s\S]+))?$/i);
   if (match) {
-    addStateNodeFromPrompt(match[1], (match[2] || "null").trim());
-    return `Added state \`${match[1]}\` to app.js.`;
+    addValueNodeFromPrompt(match[1], (match[2] || "null").trim());
+    return `Added value \`${match[1]}\` to app.js.`;
   }
 
-  match = prompt.match(/^add\s+(action|effect|binding)\s+([A-Za-z_$][A-Za-z0-9_$]*)$/i);
+  match = prompt.match(/^add\s+(?:function|action)\s+([A-Za-z_$][A-Za-z0-9_$]*)$/i);
   if (match) {
-    addFunctionNodeFromPrompt(match[1].toLowerCase(), match[2]);
-    return `Added ${match[1].toLowerCase()} \`${match[2]}\` to app.js.`;
+    addFunctionNodeFromPrompt(match[1]);
+    return `Added function \`${match[1]}\` to app.js.`;
+  }
+
+  match = prompt.match(/^add\s+style\s+([\s\S]+)$/i);
+  if (match) {
+    addStyleNodeFromPrompt(match[1].trim());
+    return "Added a style rule to styles.css.";
   }
 
   match = prompt.match(/^add\s+event\s+([A-Za-z-]+)\s+on\s+(.+?)\s*->\s*([\s\S]+)$/i);
@@ -1674,8 +2858,8 @@ function executePrompt(prompt) {
     if (!node) {
       throw new Error(`I could not find "${match[1]}".`);
     }
-    if (node.kind === "event" || node.kind === "view") {
-      throw new Error("Rename currently supports state, action, effect, and binding nodes.");
+    if (!node.renameable) {
+      throw new Error("That node cannot be renamed safely from the graph yet.");
     }
     renameSemanticNode(node, match[2]);
     return `Renamed \`${node.id}\` to \`${match[2]}\`.`;
@@ -1706,75 +2890,80 @@ function executePrompt(prompt) {
   match = prompt.match(/^set\s+code\s+of\s+(.+?)\s+to\s+([\s\S]+)$/i);
   if (match) {
     const node = resolveNode(match[1]);
-    if (!node || !["action", "effect", "binding"].includes(node.kind)) {
-      throw new Error("I could only find code-editable action, effect, or binding nodes for that command.");
+    if (!node || !["function", "binding", "effect"].includes(node.kind)) {
+      throw new Error("That command needs a function, binding, or effect node.");
     }
-    updateFunctionBody(node, match[2].trim());
-    return `Updated the code body of \`${node.id}\`.`;
+    if (node.kind === "function") {
+      updateFunctionBody(node, match[2].trim());
+    } else {
+      updateStatementNode(node, match[2].trim());
+    }
+    return `Updated the code for \`${node.id}\`.`;
   }
 
   match = prompt.match(/^set\s+value\s+of\s+(.+?)\s+to\s+([\s\S]+)$/i);
   if (match) {
     const node = resolveNode(match[1]);
-    if (!node || node.kind !== "state") {
-      throw new Error("That command only works for state nodes.");
+    if (!node || node.kind !== "value") {
+      throw new Error("That command only works for value nodes.");
     }
-    updateStateValue(node, match[2].trim());
+    updateValueNode(node, match[2].trim());
     return `Updated the value expression of \`${node.id}\`.`;
   }
 
-  return "Prompt mode understands: add state, add action/effect/binding, add event ... on ... -> ..., rename, delete, connect, set code of ..., and set value of ....";
+  return "Prompt mode understands: add value, add function, add style, add event ... on ... -> ..., rename, delete, connect, set code of ..., and set value of ....";
 }
 
-function addStateNodeFromPrompt(name, value) {
+function addValueNodeFromPrompt(name, value) {
   const validName = sanitizeIdentifier(name);
   if (!validName) {
-    throw new Error("State names must be valid JavaScript identifiers.");
+    throw new Error("Value names must be valid JavaScript identifiers.");
   }
-  if (lastSuccessfulParse.nodes.find((node) => node.kind === "state" && node.name === validName)) {
-    throw new Error(`State ${validName} already exists.`);
+  if (lastSuccessfulParse.nodes.find((node) => node.kind === "value" && node.qualifiedName === validName)) {
+    throw new Error(`Value ${validName} already exists.`);
   }
-  let workingSource = files["app.js"];
-  let parseInfo = lastSuccessfulParse.js;
-  ({ source: workingSource, parseInfo } = ensureContainer(workingSource, parseInfo, "state"));
-  files["app.js"] = insertObjectEntry(workingSource, parseInfo.containers.state, `${validName}: ${value}`);
+  files["app.js"] = appendToFile(files["app.js"], `const ${validName} = ${value};`);
   saveFiles();
   if (activeFile === "app.js") {
     syncSourceEditor();
   }
-  selectedNodeId = `state.${validName}`;
-  applyCurrentSource(`Added state.${validName}.`);
+  applyCurrentSource(`Added value ${validName}.`, (candidate) => candidate.kind === "value" && candidate.qualifiedName === validName);
 }
 
-function addFunctionNodeFromPrompt(kind, name) {
+function addFunctionNodeFromPrompt(name) {
   const validName = sanitizeIdentifier(name);
   if (!validName) {
-    throw new Error(`${capitalize(kind)} names must be valid JavaScript identifiers.`);
+    throw new Error("Function names must be valid JavaScript identifiers.");
   }
-  if (lastSuccessfulParse.nodes.find((node) => node.kind === kind && node.name === validName)) {
-    throw new Error(`${capitalize(kind)} ${validName} already exists.`);
+  if (lastSuccessfulParse.nodes.find((node) => node.kind === "function" && node.qualifiedName === validName)) {
+    throw new Error(`Function ${validName} already exists.`);
   }
-  const containerName = kind === "action" ? "actions" : kind === "effect" ? "effects" : "bindings";
-  let workingSource = files["app.js"];
-  let parseInfo = lastSuccessfulParse.js;
-  ({ source: workingSource, parseInfo } = ensureContainer(workingSource, parseInfo, containerName));
-  files["app.js"] = insertObjectEntry(workingSource, parseInfo.containers[containerName], buildMethodSource(validName, defaultMethodBody(kind)), true);
+  files["app.js"] = appendToFile(files["app.js"], `function ${validName}() {\n  // TODO: implement\n}`);
   saveFiles();
   if (activeFile === "app.js") {
     syncSourceEditor();
   }
-  selectedNodeId = `${kind}.${validName}`;
-  applyCurrentSource(`Added ${kind}.${validName}.`);
+  applyCurrentSource(`Added function ${validName}.`, (candidate) => candidate.kind === "function" && candidate.qualifiedName === validName);
+}
+
+function addStyleNodeFromPrompt(ruleText) {
+  const ruleSource = /\{/.test(ruleText) ? ruleText : `${ruleText} {\n  color: #ffffff;\n}`;
+  const selector = ruleSource.split("{")[0].trim();
+  files["styles.css"] = appendToFile(files["styles.css"], ruleSource);
+  saveFiles();
+  if (activeFile === "styles.css") {
+    syncSourceEditor();
+  }
+  applyCurrentSource(`Added style ${selector}.`, (candidate) => candidate.kind === "style" && candidate.selector === selector);
 }
 
 function addEventNodeFromPrompt(selector, eventType, handlerSource) {
-  files["app.js"] = `${files["app.js"].trimEnd()}\n${buildListenerStatement(selector, eventType, handlerSource)}\n`;
+  files["app.js"] = appendToFile(files["app.js"], buildListenerStatement(selector, eventType, handlerSource));
   saveFiles();
   if (activeFile === "app.js") {
     syncSourceEditor();
   }
-  selectedNodeId = buildEventSelectionId(selector, eventType, handlerSource);
-  applyCurrentSource(`Added ${eventType} listener on ${selector}.`);
+  applyCurrentSource(`Added ${eventType} listener on ${selector}.`, (candidate) => candidate.kind === "event" && candidate.selector === selector && candidate.eventType === eventType && candidate.handlerSource === handlerSource);
 }
 
 function resolveNode(reference) {
@@ -1783,27 +2972,45 @@ function resolveNode(reference) {
   }
 
   const needle = reference.trim().toLowerCase();
+  const exactMatches = lastSuccessfulParse.nodes.filter((node) => {
+    return [
+      node.id,
+      node.label,
+      node.name,
+      node.qualifiedName,
+      node.selector,
+      node.kind === "event" ? `${node.eventType} @ ${node.selector}` : ""
+    ].filter(Boolean).some((candidate) => candidate.toLowerCase() === needle);
+  });
+  if (exactMatches.length === 1) {
+    return exactMatches[0];
+  }
+  if (exactMatches.length > 1) {
+    return exactMatches[0];
+  }
+
   return lastSuccessfulParse.nodes.find((node) => {
-    return node.id.toLowerCase() === needle ||
-      node.label.toLowerCase() === needle ||
-      (node.name && node.name.toLowerCase() === needle) ||
-      (node.selector && node.selector.toLowerCase() === needle) ||
-      (node.kind === "event" && `${node.eventType} @ ${node.selector}`.toLowerCase() === needle);
+    return [
+      node.id,
+      node.label,
+      node.name,
+      node.qualifiedName,
+      node.selector
+    ].filter(Boolean).some((candidate) => candidate.toLowerCase().includes(needle));
   }) || null;
 }
 
 function showPromptHelp() {
   appendPrompt("assistant", [
     "Prompt examples:",
-    "add state selectedTask = null",
-    "add action clearCompleted",
-    "add effect saveTheme",
-    "add binding renderFooter",
-    "add event click on #task-list -> actions.toggleTask",
+    "add value selectedTask = null",
+    "add function clearCompleted",
+    "add style .task-list li.done { opacity: 0.5; }",
+    "add event click on #task-list -> toggleTask",
     "rename addTask to createTask",
     "delete saveCache",
     "connect click @ #task-list -> toggleTask",
-    "set code of addTask to ...",
+    "set code of renderTasks to ...",
     "set value of filter to \"done\""
   ].join("\n"));
   renderPromptLog();
@@ -1832,7 +3039,7 @@ function resetWorkspace() {
   promptLog = [
     {
       role: "assistant",
-      text: "Workspace reset. The left pane is back to the default HTML, CSS, and JS demo, and the graph has been re-derived from those files."
+      text: "Workspace reset. The left pane is back to the default HTML, CSS, and JS sample, and the graph has been re-derived from those files."
     }
   ];
   saveFiles();
@@ -1846,34 +3053,23 @@ function resetWorkspace() {
 }
 
 function nextAvailableName(kind, base) {
-  const parse = lastSuccessfulParse;
   let candidate = sanitizeIdentifier(base);
   let counter = 2;
-  while (parse.nodes.find((node) => node.kind === kind && node.name === candidate)) {
+  while (lastSuccessfulParse.nodes.find((node) => node.kind === kind && node.qualifiedName === candidate)) {
     candidate = `${sanitizeIdentifier(base)}${counter}`;
     counter += 1;
   }
   return candidate;
 }
 
-function firstActionHandler() {
-  const actionNode = lastSuccessfulParse.nodes.find((node) => node.kind === "action");
-  return actionNode ? `actions.${actionNode.name}` : null;
+function firstCallableFunction() {
+  const functionNode = lastSuccessfulParse.nodes.find((node) => node.kind === "function" && node.callPath);
+  return functionNode ? functionNode.callPath : null;
 }
 
 function firstHtmlSelector() {
   const viewNode = lastSuccessfulParse.nodes.find((node) => node.kind === "view");
   return viewNode ? viewNode.selector : null;
-}
-
-function uniqueNodeId(baseId, nodes) {
-  let candidate = baseId;
-  let counter = 2;
-  while (nodes.find((node) => node.id === candidate)) {
-    candidate = `${baseId}-${counter}`;
-    counter += 1;
-  }
-  return candidate;
 }
 
 function dedupeEdges(edges) {
@@ -1928,40 +3124,41 @@ function removeRangeWithWhitespace(source, start, end) {
   return source.slice(0, nextStart) + source.slice(nextEnd);
 }
 
-function removeNodeDefinition(source, jsInfo, node) {
-  if (!["state", "action", "effect", "binding"].includes(node.kind)) {
+function removeNodeDefinition(source, node) {
+  if (!node.collection) {
     return removeRangeWithWhitespace(source, node.sourceRange[0], node.sourceRange[1]);
   }
 
-  const containerName = node.kind === "state" ? "state" : node.kind === "action" ? "actions" : node.kind === "effect" ? "effects" : "bindings";
-  const container = jsInfo.containers[containerName];
-  if (!container) {
+  const { type, index, ranges, statementRange } = node.collection;
+  if (!Array.isArray(ranges) || index < 0) {
     return removeRangeWithWhitespace(source, node.sourceRange[0], node.sourceRange[1]);
   }
 
-  const index = container.properties.findIndex((prop) => prop.start === node.sourceRange[0] && prop.end === node.sourceRange[1]);
-  if (index === -1) {
-    return removeRangeWithWhitespace(source, node.sourceRange[0], node.sourceRange[1]);
+  if (type === "variable-declarators" && ranges.length === 1 && statementRange) {
+    return removeRangeWithWhitespace(source, statementRange[0], statementRange[1]);
   }
 
-  const properties = container.properties;
-  let start = node.sourceRange[0];
-  let end = node.sourceRange[1];
-
-  if (properties.length === 1) {
-    return source.slice(0, start) + source.slice(end);
+  if (ranges.length === 1) {
+    return source.slice(0, ranges[0][0]) + source.slice(ranges[0][1]);
   }
 
-  if (index < properties.length - 1) {
-    end = properties[index + 1].start;
+  let start = ranges[index][0];
+  let end = ranges[index][1];
+
+  if (index < ranges.length - 1) {
+    end = ranges[index + 1][0];
   } else {
-    start = properties[index - 1].end;
+    start = ranges[index - 1][1];
   }
 
   return source.slice(0, start) + source.slice(end);
 }
 
 function formatFunctionBody(source, node, nextBody) {
+  if (node.bodyStyle === "expression") {
+    return nextBody.trim() || "undefined";
+  }
+
   const closingIndent = lineIndentAt(source, node.bodyRange[1]);
   const innerIndent = `${closingIndent}  `;
   const trimmed = nextBody.replace(/^\n+|\n+$/g, "");
@@ -1971,14 +3168,27 @@ function formatFunctionBody(source, node, nextBody) {
   return `\n${trimmed.split("\n").map((line) => `${innerIndent}${line.trimEnd()}`).join("\n")}\n${closingIndent}`;
 }
 
+function formatCssBody(source, node, nextBody) {
+  const openBraceIndex = node.bodyRange[0] - 1;
+  const ruleIndent = lineIndentAt(source, openBraceIndex);
+  const innerIndent = `${ruleIndent}  `;
+  const trimmed = String(nextBody).replace(/^\n+|\n+$/g, "").trim();
+  if (!trimmed) {
+    return `\n${ruleIndent}`;
+  }
+  return `\n${trimmed.split("\n").map((line) => `${innerIndent}${line.trimEnd()}`).join("\n")}\n${ruleIndent}`;
+}
+
+function formatStatementReplacement(source, node, nextStatement) {
+  const indent = lineIndentAt(source, node.sourceRange[0]);
+  const trimmed = String(nextStatement).replace(/^\n+|\n+$/g, "");
+  return trimmed.split("\n").map((line, index) => index === 0 ? `${indent}${line.trimStart()}` : `${indent}${line.trimStart()}`).join("\n");
+}
+
 function lineIndentAt(source, index) {
   const lineStart = source.lastIndexOf("\n", Math.max(0, index - 1)) + 1;
   const match = source.slice(lineStart).match(/^\s*/);
   return match ? match[0] : "";
-}
-
-function indentMultiline(text, indent) {
-  return text.split("\n").map((line, index) => index === 0 ? `${indent}${line}` : `${indent}${line}`).join("\n");
 }
 
 function sanitizeIdentifier(value) {
@@ -1989,6 +3199,22 @@ function sanitizeIdentifier(value) {
   return cleaned.match(/^[A-Za-z_$]/) ? cleaned : `n${cleaned}`;
 }
 
+function replaceLeafName(path, nextLeaf) {
+  const parts = String(path).split(".");
+  parts[parts.length - 1] = nextLeaf;
+  return parts.join(".");
+}
+
+function uniqueNodeId(baseId, nodes) {
+  let candidate = baseId;
+  let counter = 2;
+  while (nodes.find((node) => node.id === candidate)) {
+    candidate = `${baseId}-${counter}`;
+    counter += 1;
+  }
+  return candidate;
+}
+
 function slugify(value) {
   return String(value)
     .toLowerCase()
@@ -1997,8 +3223,8 @@ function slugify(value) {
     .replace(/^-+|-+$/g, "") || "node";
 }
 
-function capitalize(value) {
-  return value.charAt(0).toUpperCase() + value.slice(1);
+function lineNumberFromIndex(source, index) {
+  return source.slice(0, index).split("\n").length;
 }
 
 function extractHtmlSnippet(source, id) {
