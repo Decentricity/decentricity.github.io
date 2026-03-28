@@ -17,14 +17,14 @@
         <div>
           <p class="eyebrow">Bicameral</p>
           <h1>Semantic IDE</h1>
-          <p class="brand-copy">A static-hosted workspace where code, graph edits, and prompt commands all mutate the same semantic model.</p>
+          <p class="brand-copy">A code-first workspace where real HTML, CSS, and JavaScript are the source of truth and the graph is a live projection of that code.</p>
         </div>
       </div>
 
       <div class="topbar-actions">
         <span class="topbar-pill" id="syncPill">Synced</span>
-        <button class="action-button subtle" id="copyRuntimeButton" type="button">Copy runtime</button>
-        <button class="action-button" id="resetWorkspaceButton" type="button">Reset workspace</button>
+        <button class="action-button subtle" id="applyCodeButton" type="button">Apply code</button>
+        <button class="action-button" id="resetWorkspaceButton" type="button">Reset sample</button>
       </div>
     </header>
 
@@ -33,45 +33,45 @@
         <div class="panel-header">
           <div>
             <p class="panel-label">Code</p>
-            <h2>Source and generated output</h2>
+            <h2>Actual source files</h2>
           </div>
           <div class="panel-actions">
-            <button class="action-button subtle" id="applyJsonButton" type="button">Apply JSON</button>
-            <button class="action-button subtle" id="formatJsonButton" type="button">Format JSON</button>
+            <span class="topbar-pill muted" id="sourceStatusText">Code is the source of truth</span>
           </div>
         </div>
 
         <div class="editor-stack">
           <article class="editor-card">
             <div class="editor-card-header">
-              <span class="editor-tab active">model.json</span>
-              <span class="editor-meta" id="jsonStatusText">Source of truth</span>
+              <div class="tab-row">
+                <button class="editor-tab active" data-file-tab="index.html" type="button">index.html</button>
+                <button class="editor-tab" data-file-tab="styles.css" type="button">styles.css</button>
+                <button class="editor-tab" data-file-tab="app.js" type="button">app.js</button>
+              </div>
+              <span class="editor-meta" id="fileMetaText">Live source editor</span>
             </div>
 
             <div class="editor-shell">
-              <pre class="line-gutter" id="modelLineNumbers" aria-hidden="true"></pre>
-              <textarea id="modelEditor" spellcheck="false" aria-label="Model JSON editor"></textarea>
+              <pre class="line-gutter" id="sourceLineNumbers" aria-hidden="true"></pre>
+              <textarea id="sourceEditor" spellcheck="false" aria-label="Source code editor"></textarea>
             </div>
           </article>
 
           <article class="editor-card secondary">
             <div class="editor-card-header">
               <div class="tab-row">
-                <button class="editor-tab active" data-lower-tab="block" type="button">selected block</button>
-                <button class="editor-tab" data-lower-tab="runtime" type="button">runtime.js</button>
+                <button class="editor-tab active" data-lower-tab="preview" type="button">preview</button>
+                <button class="editor-tab" data-lower-tab="selection" type="button">selection</button>
               </div>
-              <span class="editor-meta" id="blockMetaText">Select a node to edit its code.</span>
+              <span class="editor-meta" id="secondaryMetaText">Live preview and selected source slice.</span>
             </div>
 
-            <div class="lower-pane active" data-lower-pane="block">
-              <div class="editor-shell">
-                <pre class="line-gutter" id="blockLineNumbers" aria-hidden="true"></pre>
-                <textarea id="blockEditor" spellcheck="false" aria-label="Selected block editor"></textarea>
-              </div>
+            <div class="lower-pane active" data-lower-pane="preview">
+              <iframe id="previewFrame" class="preview-frame" title="App preview"></iframe>
             </div>
 
-            <div class="lower-pane" data-lower-pane="runtime">
-              <pre class="runtime-view" id="runtimeView" aria-label="Generated runtime source"></pre>
+            <div class="lower-pane" data-lower-pane="selection">
+              <pre class="selection-view" id="selectionView" aria-label="Selected source slice"></pre>
             </div>
           </article>
         </div>
@@ -81,14 +81,14 @@
         <div class="panel-header">
           <div>
             <p class="panel-label">Semantic Graph</p>
-            <h2>Editable flow surface</h2>
+            <h2>Parsed from code</h2>
           </div>
           <div class="graph-toolbar">
-            <button class="kind-button state" data-add-kind="state" type="button">+ State</button>
-            <button class="kind-button event" data-add-kind="event" type="button">+ Event</button>
             <button class="kind-button action" data-add-kind="action" type="button">+ Action</button>
             <button class="kind-button effect" data-add-kind="effect" type="button">+ Effect</button>
             <button class="kind-button binding" data-add-kind="binding" type="button">+ Binding</button>
+            <button class="kind-button state" data-add-kind="state" type="button">+ State</button>
+            <button class="kind-button event" data-add-kind="event" type="button">+ Listener</button>
             <button class="action-button subtle" id="linkModeButton" type="button">Link selected</button>
             <button class="action-button subtle" id="autoLayoutButton" type="button">Auto layout</button>
             <button class="action-button subtle danger" id="deleteNodeButton" type="button">Delete</button>
@@ -107,14 +107,14 @@
             <p class="panel-label">Prompt</p>
             <h2>Local copilot</h2>
           </div>
-          <span class="topbar-pill muted">Structured command mode</span>
+          <span class="topbar-pill muted">Code patch mode</span>
         </div>
 
         <div class="example-strip">
           <button class="example-chip" data-prompt='add state filter = "all"' type="button">add state filter = "all"</button>
           <button class="example-chip" data-prompt='add action clearCompleted' type="button">add action clearCompleted</button>
-          <button class="example-chip" data-prompt='connect submitTask -> addTask' type="button">connect submitTask -> addTask</button>
-          <button class="example-chip" data-prompt='set code of addTask to\nconst label = state.draftText.trim();\nif (!label) return;\nstate.tasks = [{ id: makeId(), label, done: false }, ...state.tasks];\nstate.draftText = "";' type="button">set code of addTask</button>
+          <button class="example-chip" data-prompt='add event click on #task-list -> actions.toggleTask' type="button">add event click on #task-list</button>
+          <button class="example-chip" data-prompt='set code of addTask to\nconst label = refs.taskInput.value.trim();\nif (!label) return;\nstate.tasks = [{ id: makeId(), label, done: false }, ...state.tasks];\nrefs.taskInput.value = \"\";\nbindings.renderTasks();\neffects.saveCache();' type="button">set code of addTask</button>
         </div>
 
         <div class="prompt-log" id="promptLog" aria-live="polite"></div>
@@ -145,29 +145,29 @@
           <label class="input-label" for="nodeIdField">Node ID</label>
           <input id="nodeIdField" type="text" readonly>
 
-          <label class="input-label" for="nodeTitleField">Title</label>
-          <input id="nodeTitleField" type="text">
+          <label class="input-label" for="nodeNameField" id="nodeNameLabel">Symbol</label>
+          <input id="nodeNameField" type="text">
 
-          <label class="input-label" for="nodeDescriptionField">Description</label>
-          <textarea id="nodeDescriptionField" rows="4"></textarea>
-
-          <div class="position-row">
+          <div class="position-row inspector-grid">
             <div>
-              <label class="input-label" for="nodeXField">X</label>
-              <input id="nodeXField" type="number">
+              <label class="input-label" for="nodePrimaryField" id="nodePrimaryLabel">Primary</label>
+              <input id="nodePrimaryField" type="text">
             </div>
             <div>
-              <label class="input-label" for="nodeYField">Y</label>
-              <input id="nodeYField" type="number">
+              <label class="input-label" for="nodeSecondaryField" id="nodeSecondaryLabel">Secondary</label>
+              <input id="nodeSecondaryField" type="text">
             </div>
           </div>
 
+          <label class="input-label" for="nodeBodyField" id="nodeBodyLabel">Body</label>
+          <textarea id="nodeBodyField" rows="8"></textarea>
+
           <div class="inspector-meta" id="nodeBodyHint"></div>
+          <div class="inspector-meta" id="nodeLocationField"></div>
 
           <div class="edge-section">
             <div class="edge-section-header">
               <h3>Edges</h3>
-              <button class="action-button subtle" id="clearEdgesButton" type="button">Remove all edges</button>
             </div>
             <ul id="edgeList" class="edge-list"></ul>
           </div>
@@ -182,6 +182,8 @@
     </footer>
   </div>
 
+  <script src="vendor/acorn.js"></script>
+  <script src="vendor/acorn-walk.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
