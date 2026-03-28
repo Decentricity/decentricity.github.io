@@ -3,143 +3,183 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bicameral | Semantic Blocks Prototype</title>
+  <title>Bicameral IDE</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div class="app-shell">
     <header class="topbar">
-      <div>
-        <p class="eyebrow">Bicameral semantic blocks</p>
-        <h1>Bicameral</h1>
+      <div class="brand">
+        <div class="brand-mark">Bi</div>
+        <div>
+          <p class="eyebrow">Bicameral</p>
+          <h1>Semantic IDE</h1>
+          <p class="brand-copy">A static-hosted workspace where code, graph edits, and prompt commands all mutate the same semantic model.</p>
+        </div>
       </div>
-      <div class="topbar-meta">
-        <span class="meta-pill">Human + model co-editing</span>
-        <span class="meta-pill">HTML + JS only</span>
-        <span class="meta-pill accent">Code remains source of truth</span>
+
+      <div class="topbar-actions">
+        <span class="topbar-pill" id="syncPill">Synced</span>
+        <button class="action-button subtle" id="copyRuntimeButton" type="button">Copy runtime</button>
+        <button class="action-button" id="resetWorkspaceButton" type="button">Reset workspace</button>
       </div>
     </header>
 
-    <main class="workspace">
-      <section class="panel story-panel">
+    <main class="workbench">
+      <section class="panel code-panel">
         <div class="panel-header">
           <div>
-            <p class="panel-label">Intent</p>
-            <h2>Two minds, one code graph</h2>
+            <p class="panel-label">Code</p>
+            <h2>Source and generated output</h2>
           </div>
-          <button class="ghost-button" id="cycleFocusButton" type="button">Cycle focus</button>
-        </div>
-
-        <div class="scenario-card">
-          <div class="scenario-copy">
-            <p class="scenario-kicker">Concept demo</p>
-            <h3>Habit streak tracker</h3>
-            <p>
-              Bicameral treats generated code as something both the human and the model
-              can inspect through semantic blocks: state, events, actions, effects,
-              and bindings. The screen designer is intentionally absent.
-            </p>
-          </div>
-          <div class="scenario-stats">
-            <div>
-              <span class="stat-value" id="nodeCount">0</span>
-              <span class="stat-label">blocks</span>
-            </div>
-            <div>
-              <span class="stat-value" id="edgeCount">0</span>
-              <span class="stat-label">links</span>
-            </div>
-            <div>
-              <span class="stat-value">v0.1</span>
-              <span class="stat-label">mvp</span>
-            </div>
+          <div class="panel-actions">
+            <button class="action-button subtle" id="applyJsonButton" type="button">Apply JSON</button>
+            <button class="action-button subtle" id="formatJsonButton" type="button">Format JSON</button>
           </div>
         </div>
 
-        <div class="legend">
-          <span class="legend-chip state">State</span>
-          <span class="legend-chip event">Event</span>
-          <span class="legend-chip action">Action</span>
-          <span class="legend-chip effect">Effect</span>
-          <span class="legend-chip binding">Binding</span>
+        <div class="editor-stack">
+          <article class="editor-card">
+            <div class="editor-card-header">
+              <span class="editor-tab active">model.json</span>
+              <span class="editor-meta" id="jsonStatusText">Source of truth</span>
+            </div>
+
+            <div class="editor-shell">
+              <pre class="line-gutter" id="modelLineNumbers" aria-hidden="true"></pre>
+              <textarea id="modelEditor" spellcheck="false" aria-label="Model JSON editor"></textarea>
+            </div>
+          </article>
+
+          <article class="editor-card secondary">
+            <div class="editor-card-header">
+              <div class="tab-row">
+                <button class="editor-tab active" data-lower-tab="block" type="button">selected block</button>
+                <button class="editor-tab" data-lower-tab="runtime" type="button">runtime.js</button>
+              </div>
+              <span class="editor-meta" id="blockMetaText">Select a node to edit its code.</span>
+            </div>
+
+            <div class="lower-pane active" data-lower-pane="block">
+              <div class="editor-shell">
+                <pre class="line-gutter" id="blockLineNumbers" aria-hidden="true"></pre>
+                <textarea id="blockEditor" spellcheck="false" aria-label="Selected block editor"></textarea>
+              </div>
+            </div>
+
+            <div class="lower-pane" data-lower-pane="runtime">
+              <pre class="runtime-view" id="runtimeView" aria-label="Generated runtime source"></pre>
+            </div>
+          </article>
         </div>
       </section>
 
       <section class="panel graph-panel">
         <div class="panel-header">
           <div>
-            <p class="panel-label">Blocks tab</p>
-            <h2>Semantic flow graph</h2>
+            <p class="panel-label">Semantic Graph</p>
+            <h2>Editable flow surface</h2>
           </div>
-          <div class="graph-actions">
-            <button class="ghost-button" id="fitViewButton" type="button">Fit view</button>
-            <button class="ghost-button active" id="managedOnlyButton" type="button">Managed only</button>
+          <div class="graph-toolbar">
+            <button class="kind-button state" data-add-kind="state" type="button">+ State</button>
+            <button class="kind-button event" data-add-kind="event" type="button">+ Event</button>
+            <button class="kind-button action" data-add-kind="action" type="button">+ Action</button>
+            <button class="kind-button effect" data-add-kind="effect" type="button">+ Effect</button>
+            <button class="kind-button binding" data-add-kind="binding" type="button">+ Binding</button>
+            <button class="action-button subtle" id="linkModeButton" type="button">Link selected</button>
+            <button class="action-button subtle" id="autoLayoutButton" type="button">Auto layout</button>
+            <button class="action-button subtle danger" id="deleteNodeButton" type="button">Delete</button>
           </div>
         </div>
 
-        <div class="graph-canvas" id="graphCanvas" aria-label="Semantic graph"></div>
+        <div class="graph-surface" id="graphSurface">
+          <svg id="graphSvg" class="graph-svg" aria-hidden="true"></svg>
+          <div id="graphCanvas" class="graph-canvas" aria-label="Semantic graph canvas"></div>
+        </div>
       </section>
 
-      <aside class="panel inspector-panel">
+      <section class="panel prompt-panel">
+        <div class="panel-header">
+          <div>
+            <p class="panel-label">Prompt</p>
+            <h2>Local copilot</h2>
+          </div>
+          <span class="topbar-pill muted">Structured command mode</span>
+        </div>
+
+        <div class="example-strip">
+          <button class="example-chip" data-prompt='add state filter = "all"' type="button">add state filter = "all"</button>
+          <button class="example-chip" data-prompt='add action clearCompleted' type="button">add action clearCompleted</button>
+          <button class="example-chip" data-prompt='connect submitTask -> addTask' type="button">connect submitTask -> addTask</button>
+          <button class="example-chip" data-prompt='set code of addTask to\nconst label = state.draftText.trim();\nif (!label) return;\nstate.tasks = [{ id: makeId(), label, done: false }, ...state.tasks];\nstate.draftText = "";' type="button">set code of addTask</button>
+        </div>
+
+        <div class="prompt-log" id="promptLog" aria-live="polite"></div>
+
+        <label class="input-label" for="promptInput">Prompt</label>
+        <textarea id="promptInput" spellcheck="false" placeholder="Try: add state selectedTask = null"></textarea>
+
+        <div class="panel-actions stretch">
+          <button class="action-button" id="runPromptButton" type="button">Run prompt</button>
+          <button class="action-button subtle" id="helpPromptButton" type="button">Prompt help</button>
+        </div>
+      </section>
+
+      <section class="panel inspector-panel">
         <div class="panel-header">
           <div>
             <p class="panel-label">Inspector</p>
-            <h2 id="inspectorTitle">Select a block</h2>
+            <h2 id="inspectorHeading">No node selected</h2>
+          </div>
+          <span class="topbar-pill muted" id="inspectorKindPill">Select a node</span>
+        </div>
+
+        <div id="inspectorEmpty" class="empty-state">
+          Pick a node in the graph to edit its identity, description, and the semantic edges attached to it.
+        </div>
+
+        <div id="inspectorContent" class="inspector-content hidden">
+          <label class="input-label" for="nodeIdField">Node ID</label>
+          <input id="nodeIdField" type="text" readonly>
+
+          <label class="input-label" for="nodeTitleField">Title</label>
+          <input id="nodeTitleField" type="text">
+
+          <label class="input-label" for="nodeDescriptionField">Description</label>
+          <textarea id="nodeDescriptionField" rows="4"></textarea>
+
+          <div class="position-row">
+            <div>
+              <label class="input-label" for="nodeXField">X</label>
+              <input id="nodeXField" type="number">
+            </div>
+            <div>
+              <label class="input-label" for="nodeYField">Y</label>
+              <input id="nodeYField" type="number">
+            </div>
+          </div>
+
+          <div class="inspector-meta" id="nodeBodyHint"></div>
+
+          <div class="edge-section">
+            <div class="edge-section-header">
+              <h3>Edges</h3>
+              <button class="action-button subtle" id="clearEdgesButton" type="button">Remove all edges</button>
+            </div>
+            <ul id="edgeList" class="edge-list"></ul>
           </div>
         </div>
-
-        <div class="inspector-card" id="inspectorCard">
-          <p class="empty-state">
-            Choose a semantic block to inspect how Bicameral maps behavior back to code,
-            what the block reads or writes, and which transforms are safe to generate.
-          </p>
-        </div>
-
-        <div class="inspector-trace">
-          <h3>Round-trip status</h3>
-          <ul id="traceList"></ul>
-        </div>
-      </aside>
-
-      <section class="panel code-panel">
-        <div class="panel-header">
-          <div>
-            <p class="panel-label">Code projection</p>
-            <h2>`app.js` managed region</h2>
-          </div>
-          <button class="ghost-button" id="previewPatchButton" type="button">Preview patch</button>
-        </div>
-
-        <div class="code-toolbar">
-          <span class="toolbar-pill">AST-safe transforms</span>
-          <span class="toolbar-pill">Selective regeneration</span>
-          <span class="toolbar-pill" id="codeFocusLabel">Nothing selected</span>
-        </div>
-
-        <pre class="code-view" id="codeView" aria-label="Code preview"></pre>
-      </section>
-
-      <section class="panel patch-panel">
-        <div class="panel-header">
-          <div>
-            <p class="panel-label">Generated patch</p>
-            <h2>Visual edit preview</h2>
-          </div>
-        </div>
-
-        <div class="patch-copy">
-          <p id="patchSummary">
-            Visual edits compile into targeted patches. Select a block to see the kind
-            of constrained source update Bicameral would generate.
-          </p>
-        </div>
-
-        <pre class="patch-view" id="patchView"></pre>
       </section>
     </main>
+
+    <footer class="statusbar">
+      <span id="statusText">Ready.</span>
+      <span id="selectionText">No node selected</span>
+      <span id="storageText">Autosaving locally</span>
+    </footer>
   </div>
 
   <script src="app.js"></script>
