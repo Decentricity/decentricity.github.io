@@ -1,0 +1,1307 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>JAMR | Meet Musicians</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;700;800&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #09111a;
+      --panel: rgba(9, 17, 26, 0.82);
+      --panel-strong: rgba(13, 24, 35, 0.96);
+      --line: rgba(173, 216, 255, 0.14);
+      --ink: #f5f7fb;
+      --muted: #9eb3c9;
+      --accent: #f06f42;
+      --accent-2: #28c7a7;
+      --accent-3: #ffd166;
+      --danger: #ff6b6b;
+      --shadow: rgba(0, 0, 0, 0.28);
+      --glow: rgba(240, 111, 66, 0.24);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Instrument Sans", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(40, 199, 167, 0.16), transparent 30%),
+        radial-gradient(circle at top right, rgba(240, 111, 66, 0.22), transparent 28%),
+        radial-gradient(circle at bottom center, rgba(255, 209, 102, 0.12), transparent 34%),
+        linear-gradient(180deg, #061018 0%, #0a1520 45%, #0d1218 100%);
+      padding: 24px;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+      background-size: 26px 26px;
+      mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.45), transparent 85%);
+      pointer-events: none;
+    }
+
+    .shell {
+      width: min(1240px, 100%);
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 20px;
+      align-items: stretch;
+      margin-bottom: 20px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      backdrop-filter: blur(18px);
+      border-radius: 28px;
+      box-shadow: 0 24px 60px var(--shadow);
+    }
+
+    .hero-copy {
+      padding: 28px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-copy::after {
+      content: "";
+      position: absolute;
+      width: 220px;
+      height: 220px;
+      right: -40px;
+      top: -40px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--glow), transparent 65%);
+      pointer-events: none;
+    }
+
+    .eyebrow,
+    .micro {
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      font-size: 11px;
+      color: var(--accent-3);
+    }
+
+    h1,
+    h2,
+    h3 {
+      font-family: "Syne", sans-serif;
+      margin: 0;
+    }
+
+    h1 {
+      font-size: clamp(2.6rem, 5vw, 4.8rem);
+      line-height: 0.92;
+      margin: 10px 0 14px;
+      max-width: 10ch;
+    }
+
+    .lead {
+      color: var(--muted);
+      max-width: 60ch;
+      line-height: 1.6;
+      font-size: 15px;
+      margin: 0 0 20px;
+    }
+
+    .hero-stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .stat {
+      padding: 12px 14px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      min-width: 130px;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 20px;
+      font-family: "Syne", sans-serif;
+      margin-bottom: 4px;
+    }
+
+    .stat span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .hero-side {
+      padding: 24px;
+      display: grid;
+      gap: 16px;
+      align-content: start;
+    }
+
+    .profile-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    label {
+      display: grid;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    input,
+    textarea,
+    select,
+    button {
+      font: inherit;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--ink);
+      border-radius: 14px;
+      padding: 13px 14px;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 92px;
+      resize: vertical;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      border-color: rgba(240, 111, 66, 0.55);
+      box-shadow: 0 0 0 4px rgba(240, 111, 66, 0.12);
+    }
+
+    .stack-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(310px, 0.8fr);
+      gap: 20px;
+    }
+
+    .swipe-panel {
+      padding: 22px;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .toolbar-left,
+    .toolbar-right {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .pill {
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .stage {
+      position: relative;
+      min-height: 620px;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      border-radius: 28px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01)),
+        linear-gradient(135deg, rgba(40, 199, 167, 0.08), transparent 40%);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .card {
+      position: absolute;
+      width: min(100%, 440px);
+      height: min(74vh, 560px);
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: 0 26px 70px rgba(0, 0, 0, 0.34);
+      touch-action: none;
+      cursor: grab;
+      user-select: none;
+      transition: transform 0.25s ease, opacity 0.25s ease;
+      background: #101b28;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .card.dragging {
+      transition: none;
+      cursor: grabbing;
+    }
+
+    .card-art {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      filter: saturate(1.1);
+      transform: scale(1.02);
+    }
+
+    .card-overlay {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(180deg, rgba(8, 14, 22, 0.04) 0%, rgba(8, 14, 22, 0.28) 36%, rgba(7, 13, 20, 0.96) 100%);
+    }
+
+    .tag {
+      position: absolute;
+      top: 24px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      font-size: 12px;
+      text-transform: uppercase;
+      opacity: 0;
+      z-index: 2;
+    }
+
+    .tag.like {
+      left: 20px;
+      color: var(--accent-2);
+      border: 2px solid rgba(40, 199, 167, 0.9);
+      background: rgba(4, 20, 17, 0.32);
+      transform: rotate(-8deg);
+    }
+
+    .tag.nope {
+      right: 20px;
+      color: var(--danger);
+      border: 2px solid rgba(255, 107, 107, 0.92);
+      background: rgba(39, 11, 11, 0.38);
+      transform: rotate(8deg);
+    }
+
+    .card-content {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 24px;
+      z-index: 1;
+    }
+
+    .topline {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: start;
+      margin-bottom: 8px;
+    }
+
+    .name {
+      font-family: "Syne", sans-serif;
+      font-size: clamp(1.8rem, 4vw, 2.5rem);
+      line-height: 0.96;
+      margin-bottom: 4px;
+    }
+
+    .meta {
+      color: rgba(245, 247, 251, 0.72);
+      font-size: 14px;
+    }
+
+    .compat {
+      text-align: right;
+      padding: 10px 12px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.08);
+      min-width: 96px;
+    }
+
+    .compat strong {
+      display: block;
+      font-size: 24px;
+      font-family: "Syne", sans-serif;
+      color: var(--accent-3);
+    }
+
+    .blurb {
+      margin: 14px 0 16px;
+      color: rgba(245, 247, 251, 0.86);
+      line-height: 1.55;
+      font-size: 15px;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .chip {
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 12px;
+      color: rgba(245, 247, 251, 0.9);
+    }
+
+    .footer-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      color: rgba(245, 247, 251, 0.72);
+      font-size: 13px;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      margin-top: 22px;
+      flex-wrap: wrap;
+    }
+
+    .icon-btn,
+    .primary-btn,
+    .ghost-btn {
+      border: 0;
+      cursor: pointer;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+    }
+
+    .icon-btn {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.07);
+      color: var(--ink);
+      box-shadow: 0 16px 34px rgba(0, 0, 0, 0.24);
+    }
+
+    .icon-btn.like {
+      background: linear-gradient(135deg, rgba(40, 199, 167, 0.95), rgba(23, 145, 121, 0.95));
+    }
+
+    .icon-btn.pass {
+      background: linear-gradient(135deg, rgba(255, 107, 107, 0.95), rgba(192, 68, 68, 0.95));
+    }
+
+    .icon-btn.spark {
+      background: linear-gradient(135deg, rgba(255, 209, 102, 0.96), rgba(240, 111, 66, 0.96));
+      color: #26170a;
+    }
+
+    .icon-btn:hover,
+    .primary-btn:hover,
+    .ghost-btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .primary-btn,
+    .ghost-btn {
+      padding: 13px 18px;
+      border-radius: 14px;
+      font-weight: 700;
+    }
+
+    .primary-btn {
+      background: linear-gradient(135deg, var(--accent), #db5a2c);
+      color: white;
+      box-shadow: 0 16px 28px rgba(240, 111, 66, 0.22);
+    }
+
+    .ghost-btn {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--ink);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .side-panel {
+      padding: 22px;
+      display: grid;
+      gap: 18px;
+      align-content: start;
+    }
+
+    .match-feed {
+      display: grid;
+      gap: 12px;
+      max-height: 420px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .match-card,
+    .tip-card {
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .match-card strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 16px;
+    }
+
+    .match-card p,
+    .tip-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: var(--muted);
+      padding: 28px 18px;
+      border: 1px dashed rgba(255, 255, 255, 0.12);
+      border-radius: 22px;
+    }
+
+    .match-modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      place-items: center;
+      background: rgba(4, 9, 14, 0.7);
+      backdrop-filter: blur(16px);
+      z-index: 9;
+      padding: 20px;
+    }
+
+    .match-modal.visible {
+      display: grid;
+    }
+
+    .match-modal-card {
+      width: min(520px, 100%);
+      padding: 26px;
+      border-radius: 28px;
+      background: linear-gradient(180deg, rgba(16, 28, 40, 0.98), rgba(11, 18, 27, 0.98));
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 26px 80px rgba(0, 0, 0, 0.4);
+      text-align: center;
+    }
+
+    .match-modal-card h2 {
+      font-size: clamp(2.2rem, 6vw, 3.6rem);
+      margin: 8px 0 12px;
+    }
+
+    .match-modal-card p {
+      color: var(--muted);
+      line-height: 1.6;
+      margin: 0 0 20px;
+    }
+
+    .duo {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+
+    .duo-badge {
+      padding: 14px 18px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.06);
+      min-width: 150px;
+    }
+
+    .duo-badge strong {
+      display: block;
+      font-family: "Syne", sans-serif;
+      font-size: 18px;
+      margin-bottom: 4px;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    @media (max-width: 980px) {
+      .hero,
+      .stack-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .stage {
+        min-height: 560px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 16px;
+      }
+
+      .hero-copy,
+      .hero-side,
+      .swipe-panel,
+      .side-panel {
+        padding: 18px;
+      }
+
+      .profile-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .card {
+        width: min(100%, 100%);
+        height: min(72vh, 520px);
+      }
+
+      .actions {
+        gap: 10px;
+      }
+
+      .icon-btn {
+        width: 58px;
+        height: 58px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <section class="hero">
+      <article class="panel hero-copy">
+        <div class="eyebrow">Musician Discovery</div>
+        <h1>Find your next jam partner.</h1>
+        <p class="lead">
+          JAMR is a swipe-based musician network for finding collaborators, session players, producers, vocalists,
+          and live-band chemistry without the weirdness of generic dating apps.
+        </p>
+        <div class="hero-stats">
+          <div class="stat">
+            <strong id="countProfiles">12</strong>
+            <span>curated local profiles</span>
+          </div>
+          <div class="stat">
+            <strong id="countMatches">0</strong>
+            <span>matches this session</span>
+          </div>
+          <div class="stat">
+            <strong id="countGoals">4</strong>
+            <span>collab modes</span>
+          </div>
+        </div>
+      </article>
+
+      <aside class="panel hero-side">
+        <div>
+          <div class="micro">Your musician profile</div>
+          <h3 style="margin-top:8px;">Tune the feed</h3>
+        </div>
+        <div class="profile-grid">
+          <label>
+            Name
+            <input id="myName" type="text" placeholder="Maya" />
+          </label>
+          <label>
+            Main role
+            <select id="myRole">
+              <option>Guitarist</option>
+              <option>Vocalist</option>
+              <option>Bassist</option>
+              <option>Drummer</option>
+              <option>Producer</option>
+              <option>Keyboardist</option>
+              <option>Songwriter</option>
+              <option>DJ</option>
+            </select>
+          </label>
+          <label>
+            City
+            <input id="myCity" type="text" placeholder="Jakarta" />
+          </label>
+          <label>
+            Looking for
+            <select id="goalFilter">
+              <option value="Any">Any vibe</option>
+              <option value="Start a band">Start a band</option>
+              <option value="Songwriting">Songwriting</option>
+              <option value="Session work">Session work</option>
+              <option value="Open mic">Open mic</option>
+            </select>
+          </label>
+        </div>
+        <label>
+          Genres you live in
+          <input id="myGenres" type="text" placeholder="Indie rock, neo soul, shoegaze" />
+        </label>
+        <label>
+          What you want from collaborators
+          <textarea id="myBio" placeholder="Looking for a producer and drummer to build moody live sets with tight vocal harmonies."></textarea>
+        </label>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="primary-btn" id="saveProfile">Save profile</button>
+          <button class="ghost-btn" id="resetDeck">Reset deck</button>
+        </div>
+      </aside>
+    </section>
+
+    <section class="stack-layout">
+      <article class="panel swipe-panel">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <span class="pill">Swipe right to jam</span>
+            <span class="pill" id="deckStatus">12 profiles left</span>
+          </div>
+          <div class="toolbar-right">
+            <label>
+              <span class="muted">Genre</span>
+              <select id="genreFilter">
+                <option value="Any">Any</option>
+              </select>
+            </label>
+            <label>
+              <span class="muted">Distance</span>
+              <select id="distanceFilter">
+                <option value="Any">Any</option>
+                <option value="5">Under 5 km</option>
+                <option value="15">Under 15 km</option>
+                <option value="30">Under 30 km</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <div class="stage" id="stage">
+          <div class="empty-state" id="emptyState" hidden>
+            No musicians left in this filter set. Reset the deck or widen your search radius.
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="icon-btn pass" id="passBtn" aria-label="Pass">✕</button>
+          <button class="icon-btn spark" id="superBtn" aria-label="Super vibe">★</button>
+          <button class="icon-btn like" id="likeBtn" aria-label="Like">♥</button>
+        </div>
+      </article>
+
+      <aside class="panel side-panel">
+        <div>
+          <div class="micro">Live queue</div>
+          <h3 style="margin-top:8px;">Potential matches</h3>
+        </div>
+        <div class="tip-card">
+          <p id="summaryText">Complete your profile, then swipe through musicians who match your genres, goals, and distance.</p>
+        </div>
+        <div>
+          <div class="micro" style="margin-bottom:10px;">Matches</div>
+          <div class="match-feed" id="matchFeed"></div>
+        </div>
+        <div class="tip-card">
+          <p>Use this as a front-end prototype for GitHub Pages. Add real auth, chat, and geo search later without changing the interaction model.</p>
+        </div>
+      </aside>
+    </section>
+  </div>
+
+  <div class="match-modal" id="matchModal" aria-hidden="true">
+    <div class="match-modal-card">
+      <div class="micro">Mutual vibe</div>
+      <h2>It's a match</h2>
+      <div class="duo" id="duo"></div>
+      <p id="matchReason"></p>
+      <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+        <button class="primary-btn" id="keepSwiping">Keep swiping</button>
+        <button class="ghost-btn" id="closeMatch">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const musicianPool = [
+      {
+        id: "naya",
+        name: "Naya",
+        age: 24,
+        role: "Vocalist",
+        city: "Jakarta",
+        distance: 4,
+        genres: ["Neo soul", "R&B", "Jazz pop"],
+        goals: ["Songwriting", "Open mic"],
+        bio: "Writing smoky toplines and looking for a patient producer who loves dynamic live arrangements.",
+        availability: "Weeknights",
+        gradient: "linear-gradient(160deg, #0f3443 0%, #34e89e 100%)"
+      },
+      {
+        id: "raka",
+        name: "Raka",
+        age: 27,
+        role: "Guitarist",
+        city: "Bandung",
+        distance: 12,
+        genres: ["Indie rock", "Shoegaze", "Dream pop"],
+        goals: ["Start a band", "Songwriting"],
+        bio: "Pedalboard obsessive chasing huge textures, clean hooks, and a singer with strong phrasing.",
+        availability: "Weekends",
+        gradient: "linear-gradient(160deg, #232526 0%, #414345 100%)"
+      },
+      {
+        id: "sora",
+        name: "Sora",
+        age: 29,
+        role: "Producer",
+        city: "Jakarta",
+        distance: 6,
+        genres: ["Alt pop", "Hyperpop", "Electronic"],
+        goals: ["Session work", "Songwriting"],
+        bio: "Builds vocal-forward tracks fast and wants artists who arrive with references and ambition.",
+        availability: "Flexible",
+        gradient: "linear-gradient(160deg, #4776e6 0%, #8e54e9 100%)"
+      },
+      {
+        id: "dio",
+        name: "Dio",
+        age: 26,
+        role: "Drummer",
+        city: "Depok",
+        distance: 9,
+        genres: ["Funk", "Hip-hop", "Fusion"],
+        goals: ["Session work", "Open mic"],
+        bio: "Pocket-first drummer with a portable hybrid kit and a weakness for tight rehearsal schedules.",
+        availability: "Fri-Sun",
+        gradient: "linear-gradient(160deg, #1d4350 0%, #a43931 100%)"
+      },
+      {
+        id: "kei",
+        name: "Kei",
+        age: 23,
+        role: "Keyboardist",
+        city: "Tangerang",
+        distance: 14,
+        genres: ["Gospel", "Neo soul", "Jazz"],
+        goals: ["Start a band", "Session work"],
+        bio: "Can reharmonize anything and wants collaborative people who can hold down grooves without ego.",
+        availability: "Weeknights",
+        gradient: "linear-gradient(160deg, #42275a 0%, #734b6d 100%)"
+      },
+      {
+        id: "maya",
+        name: "Maya",
+        age: 25,
+        role: "Bassist",
+        city: "Jakarta",
+        distance: 3,
+        genres: ["Post punk", "Indie rock", "Garage"],
+        goals: ["Start a band", "Open mic"],
+        bio: "Wants to play loud, tour small rooms, and build a setlist that actually moves people.",
+        availability: "Evenings",
+        gradient: "linear-gradient(160deg, #0f2027 0%, #203a43 50%, #2c5364 100%)"
+      },
+      {
+        id: "jax",
+        name: "Jax",
+        age: 30,
+        role: "DJ",
+        city: "Jakarta",
+        distance: 8,
+        genres: ["House", "Disco", "Afrobeat"],
+        goals: ["Open mic", "Session work"],
+        bio: "Looks for instrumentalists who can turn DJ sets into fully live dance-floor moments.",
+        availability: "Late nights",
+        gradient: "linear-gradient(160deg, #f857a6 0%, #ff5858 100%)"
+      },
+      {
+        id: "tala",
+        name: "Tala",
+        age: 28,
+        role: "Songwriter",
+        city: "Bekasi",
+        distance: 15,
+        genres: ["Folk", "Indie pop", "Acoustic"],
+        goals: ["Songwriting", "Open mic"],
+        bio: "Strong lyric instincts, minimal arrangements, and looking for someone who listens before they shred.",
+        availability: "Mornings",
+        gradient: "linear-gradient(160deg, #355c7d 0%, #6c5b7b 50%, #c06c84 100%)"
+      },
+      {
+        id: "ari",
+        name: "Ari",
+        age: 31,
+        role: "Producer",
+        city: "Bogor",
+        distance: 21,
+        genres: ["Metal", "Hardcore", "Industrial"],
+        goals: ["Start a band", "Session work"],
+        bio: "Chases precise, aggressive productions and works best with disciplined players who love revision rounds.",
+        availability: "Weekends",
+        gradient: "linear-gradient(160deg, #141e30 0%, #243b55 100%)"
+      },
+      {
+        id: "leon",
+        name: "Leon",
+        age: 22,
+        role: "Guitarist",
+        city: "Jakarta",
+        distance: 2,
+        genres: ["Math rock", "Emo", "Midwest emo"],
+        goals: ["Start a band", "Songwriting"],
+        bio: "Writes intricate parts but wants collaborators who can keep songs human instead of technical for its own sake.",
+        availability: "After class",
+        gradient: "linear-gradient(160deg, #134e5e 0%, #71b280 100%)"
+      },
+      {
+        id: "sena",
+        name: "Sena",
+        age: 27,
+        role: "Vocalist",
+        city: "South Jakarta",
+        distance: 5,
+        genres: ["Alt pop", "Dream pop", "Electronic"],
+        goals: ["Songwriting", "Session work"],
+        bio: "Looking for a producer who understands restraint, depth, and vocal stacks that feel expensive.",
+        availability: "Weeknights",
+        gradient: "linear-gradient(160deg, #3a1c71 0%, #d76d77 50%, #ffaf7b 100%)"
+      },
+      {
+        id: "bimo",
+        name: "Bimo",
+        age: 28,
+        role: "Drummer",
+        city: "Jakarta",
+        distance: 7,
+        genres: ["Pop punk", "Garage", "Alternative"],
+        goals: ["Start a band", "Open mic"],
+        bio: "Fast learner, hard hitter, and wants a singer plus guitarist ready to start playing out within a month.",
+        availability: "Evenings",
+        gradient: "linear-gradient(160deg, #2b5876 0%, #4e4376 100%)"
+      }
+    ];
+
+    const genreSet = Array.from(new Set(musicianPool.flatMap((person) => person.genres))).sort();
+    const state = {
+      profile: loadProfile(),
+      deck: loadDeck(),
+      matches: loadMatches(),
+      genreFilter: "Any",
+      distanceFilter: "Any",
+      modalMatch: null
+    };
+
+    const els = {
+      stage: document.getElementById("stage"),
+      emptyState: document.getElementById("emptyState"),
+      deckStatus: document.getElementById("deckStatus"),
+      summaryText: document.getElementById("summaryText"),
+      countProfiles: document.getElementById("countProfiles"),
+      countMatches: document.getElementById("countMatches"),
+      genreFilter: document.getElementById("genreFilter"),
+      distanceFilter: document.getElementById("distanceFilter"),
+      matchFeed: document.getElementById("matchFeed"),
+      matchModal: document.getElementById("matchModal"),
+      duo: document.getElementById("duo"),
+      matchReason: document.getElementById("matchReason"),
+      myName: document.getElementById("myName"),
+      myRole: document.getElementById("myRole"),
+      myCity: document.getElementById("myCity"),
+      myGenres: document.getElementById("myGenres"),
+      myBio: document.getElementById("myBio"),
+      goalFilter: document.getElementById("goalFilter")
+    };
+
+    hydrateInputs();
+    renderGenreOptions();
+    render();
+
+    document.getElementById("saveProfile").addEventListener("click", saveProfile);
+    document.getElementById("resetDeck").addEventListener("click", resetDeck);
+    document.getElementById("passBtn").addEventListener("click", () => triggerAction("pass"));
+    document.getElementById("likeBtn").addEventListener("click", () => triggerAction("like"));
+    document.getElementById("superBtn").addEventListener("click", () => triggerAction("super"));
+    document.getElementById("keepSwiping").addEventListener("click", closeModal);
+    document.getElementById("closeMatch").addEventListener("click", closeModal);
+    els.genreFilter.addEventListener("change", (event) => {
+      state.genreFilter = event.target.value;
+      render();
+    });
+    els.distanceFilter.addEventListener("change", (event) => {
+      state.distanceFilter = event.target.value;
+      render();
+    });
+
+    function renderGenreOptions() {
+      genreSet.forEach((genre) => {
+        const option = document.createElement("option");
+        option.value = genre;
+        option.textContent = genre;
+        els.genreFilter.append(option);
+      });
+    }
+
+    function hydrateInputs() {
+      els.myName.value = state.profile.name;
+      els.myRole.value = state.profile.role;
+      els.myCity.value = state.profile.city;
+      els.myGenres.value = state.profile.genres.join(", ");
+      els.myBio.value = state.profile.bio;
+      els.goalFilter.value = state.profile.goal;
+    }
+
+    function saveProfile() {
+      state.profile = {
+        name: els.myName.value.trim() || "You",
+        role: els.myRole.value,
+        city: els.myCity.value.trim() || "Your city",
+        genres: splitGenres(els.myGenres.value),
+        bio: els.myBio.value.trim(),
+        goal: els.goalFilter.value
+      };
+      localStorage.setItem("jamr-profile", JSON.stringify(state.profile));
+      render();
+    }
+
+    function resetDeck() {
+      state.deck = musicianPool.map((person) => person.id);
+      state.matches = [];
+      localStorage.removeItem("jamr-matches");
+      localStorage.setItem("jamr-deck", JSON.stringify(state.deck));
+      closeModal();
+      render();
+    }
+
+    function render() {
+      const visibleProfiles = getVisibleProfiles();
+      els.countProfiles.textContent = String(musicianPool.length);
+      els.countMatches.textContent = String(state.matches.length);
+      els.deckStatus.textContent = visibleProfiles.length
+        ? `${visibleProfiles.length} profiles left`
+        : "No profiles left";
+      els.summaryText.textContent = buildSummary(visibleProfiles);
+      renderDeck(visibleProfiles);
+      renderMatches();
+    }
+
+    function getVisibleProfiles() {
+      return state.deck
+        .map((id) => musicianPool.find((person) => person.id === id))
+        .filter(Boolean)
+        .filter((person) => state.genreFilter === "Any" || person.genres.includes(state.genreFilter))
+        .filter((person) => state.distanceFilter === "Any" || person.distance <= Number(state.distanceFilter));
+    }
+
+    function renderDeck(profiles) {
+      Array.from(els.stage.querySelectorAll(".card")).forEach((node) => node.remove());
+      els.emptyState.hidden = profiles.length !== 0;
+      profiles.slice(0, 3).forEach((person, index) => {
+        const card = buildCard(person, index, profiles.length);
+        els.stage.append(card);
+      });
+    }
+
+    function buildCard(person, index, total) {
+      const score = compatibility(person);
+      const card = document.createElement("article");
+      card.className = "card";
+      card.style.zIndex = String(30 - index);
+      card.style.transform = `scale(${1 - index * 0.03}) translateY(${index * 10}px)`;
+      card.innerHTML = `
+        <div class="card-art" style="background:${person.gradient};"></div>
+        <div class="card-overlay"></div>
+        <div class="tag like">Jam</div>
+        <div class="tag nope">Pass</div>
+        <div class="card-content">
+          <div class="topline">
+            <div>
+              <div class="name">${person.name}, ${person.age}</div>
+              <div class="meta">${person.role} · ${person.city} · ${person.distance} km away</div>
+            </div>
+            <div class="compat">
+              <strong>${score}%</strong>
+              fit
+            </div>
+          </div>
+          <p class="blurb">${person.bio}</p>
+          <div class="chips">
+            ${person.genres.map((genre) => `<span class="chip">${genre}</span>`).join("")}
+          </div>
+          <div class="chips">
+            ${person.goals.map((goal) => `<span class="chip">${goal}</span>`).join("")}
+          </div>
+          <div class="footer-row">
+            <span>${person.availability}</span>
+            <span>${score >= 75 ? "Strong overlap" : score >= 55 ? "Worth a jam test" : "Unexpected but possible"}</span>
+          </div>
+        </div>
+      `;
+
+      if (index === total - 1 && total > 1) {
+        card.style.opacity = "0.9";
+      }
+
+      attachSwipe(card, person);
+      return card;
+    }
+
+    function attachSwipe(card, person) {
+      let startX = 0;
+      let startY = 0;
+      let currentX = 0;
+      let currentY = 0;
+      let dragging = false;
+
+      const likeTag = card.querySelector(".tag.like");
+      const nopeTag = card.querySelector(".tag.nope");
+
+      const onPointerMove = (event) => {
+        if (!dragging) return;
+        currentX = event.clientX - startX;
+        currentY = event.clientY - startY;
+        const rotate = currentX * 0.06;
+        card.style.transform = `translate(${currentX}px, ${currentY}px) rotate(${rotate}deg)`;
+        likeTag.style.opacity = currentX > 0 ? Math.min(currentX / 100, 1) : 0;
+        nopeTag.style.opacity = currentX < 0 ? Math.min(Math.abs(currentX) / 100, 1) : 0;
+      };
+
+      const onPointerUp = () => {
+        if (!dragging) return;
+        dragging = false;
+        card.classList.remove("dragging");
+        const shouldLike = currentX > 110;
+        const shouldPass = currentX < -110;
+
+        if (shouldLike) {
+          animateAway(card, "like", person);
+        } else if (shouldPass) {
+          animateAway(card, "pass", person);
+        } else {
+          card.style.transition = "transform 0.25s ease";
+          card.style.transform = "";
+          likeTag.style.opacity = 0;
+          nopeTag.style.opacity = 0;
+        }
+
+        window.removeEventListener("pointermove", onPointerMove);
+        window.removeEventListener("pointerup", onPointerUp);
+      };
+
+      card.addEventListener("pointerdown", (event) => {
+        dragging = true;
+        startX = event.clientX;
+        startY = event.clientY;
+        currentX = 0;
+        currentY = 0;
+        card.classList.add("dragging");
+        card.style.transition = "none";
+        window.addEventListener("pointermove", onPointerMove);
+        window.addEventListener("pointerup", onPointerUp);
+      });
+    }
+
+    function triggerAction(type) {
+      const topCard = els.stage.querySelector(".card");
+      const visibleProfiles = getVisibleProfiles();
+      if (!topCard || !visibleProfiles.length) return;
+      animateAway(topCard, type === "pass" ? "pass" : "like", visibleProfiles[0], type === "super");
+    }
+
+    function animateAway(card, action, person, isSuper = false) {
+      const direction = action === "like" ? 1 : -1;
+      card.style.transition = "transform 0.35s ease, opacity 0.35s ease";
+      card.style.transform = `translate(${direction * 520}px, -40px) rotate(${direction * 24}deg)`;
+      card.style.opacity = "0";
+      window.setTimeout(() => {
+        resolveAction(action, person, isSuper);
+      }, 220);
+    }
+
+    function resolveAction(action, person, isSuper = false) {
+      state.deck = state.deck.filter((id) => id !== person.id);
+      localStorage.setItem("jamr-deck", JSON.stringify(state.deck));
+
+      if (action === "like") {
+        const result = compatibility(person, isSuper ? 8 : 0);
+        if (result >= 60) {
+          const match = {
+            id: person.id,
+            name: person.name,
+            role: person.role,
+            city: person.city,
+            reason: buildReason(person, result, isSuper),
+            score: result
+          };
+          state.matches = [match, ...state.matches.filter((entry) => entry.id !== match.id)];
+          localStorage.setItem("jamr-matches", JSON.stringify(state.matches));
+          openModal(match);
+        }
+      }
+
+      render();
+    }
+
+    function compatibility(person, bonus = 0) {
+      const myGenres = state.profile.genres.map((genre) => genre.toLowerCase());
+      const theirGenres = person.genres.map((genre) => genre.toLowerCase());
+      const sharedGenres = theirGenres.filter((genre) => myGenres.includes(genre)).length;
+      const genreScore = Math.min(sharedGenres * 20, 40);
+      const goalScore = state.profile.goal === "Any" || person.goals.includes(state.profile.goal) ? 22 : 6;
+      const distanceScore = Math.max(0, 22 - person.distance);
+      const roleScore = state.profile.role !== person.role ? 12 : 4;
+      const bioScore = state.profile.bio.length > 30 ? 8 : 3;
+      return Math.max(28, Math.min(98, genreScore + goalScore + distanceScore + roleScore + bioScore + bonus));
+    }
+
+    function buildReason(person, score, isSuper) {
+      const sharedGenres = person.genres.filter((genre) => state.profile.genres.map((item) => item.toLowerCase()).includes(genre.toLowerCase()));
+      const sharedLine = sharedGenres.length ? `Shared genres: ${sharedGenres.join(", ")}.` : `Close enough stylistically to explore.`;
+      const goalLine = person.goals.includes(state.profile.goal) || state.profile.goal === "Any"
+        ? `Both of you want ${state.profile.goal === "Any" ? "a flexible collaboration" : state.profile.goal.toLowerCase()}.`
+        : `Their goals still complement your setup.`;
+      const energyLine = isSuper ? `You used a super vibe, so this one is highlighted for immediate outreach.` : `Compatibility score came in at ${score}%.`;
+      return `${sharedLine} ${goalLine} ${energyLine}`;
+    }
+
+    function buildSummary(visibleProfiles) {
+      if (!visibleProfiles.length) {
+        return "No profiles match the current filter combination. Reset the deck or switch filters.";
+      }
+      const best = [...visibleProfiles].sort((a, b) => compatibility(b) - compatibility(a))[0];
+      return `${best.name} looks strongest right now: ${best.role.toLowerCase()} in ${best.city}, ${best.distance} km away, with ${compatibility(best)}% compatibility.`;
+    }
+
+    function renderMatches() {
+      els.matchFeed.innerHTML = "";
+      if (!state.matches.length) {
+        els.matchFeed.innerHTML = `<div class="empty-state">No matches yet. Right-swipe people whose goals and genres line up with yours.</div>`;
+        return;
+      }
+
+      state.matches.forEach((match) => {
+        const card = document.createElement("article");
+        card.className = "match-card";
+        card.innerHTML = `
+          <strong>${match.name} · ${match.role}</strong>
+          <p>${match.city} · ${match.score}% fit</p>
+          <p style="margin-top:8px;">${match.reason}</p>
+        `;
+        els.matchFeed.append(card);
+      });
+    }
+
+    function openModal(match) {
+      state.modalMatch = match;
+      els.duo.innerHTML = `
+        <div class="duo-badge">
+          <strong>${state.profile.name}</strong>
+          <span class="muted">${state.profile.role}</span>
+        </div>
+        <div class="duo-badge">
+          <strong>${match.name}</strong>
+          <span class="muted">${match.role}</span>
+        </div>
+      `;
+      els.matchReason.textContent = match.reason;
+      els.matchModal.classList.add("visible");
+      els.matchModal.setAttribute("aria-hidden", "false");
+    }
+
+    function closeModal() {
+      state.modalMatch = null;
+      els.matchModal.classList.remove("visible");
+      els.matchModal.setAttribute("aria-hidden", "true");
+    }
+
+    function splitGenres(value) {
+      const parsed = value
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+      return parsed.length ? parsed : ["Indie rock", "Alt pop"];
+    }
+
+    function loadProfile() {
+      try {
+        return {
+          name: "You",
+          role: "Guitarist",
+          city: "Jakarta",
+          genres: ["Indie rock", "Neo soul"],
+          bio: "Looking for musicians who can write, rehearse consistently, and build real chemistry.",
+          goal: "Any",
+          ...JSON.parse(localStorage.getItem("jamr-profile") || "{}")
+        };
+      } catch (error) {
+        return {
+          name: "You",
+          role: "Guitarist",
+          city: "Jakarta",
+          genres: ["Indie rock", "Neo soul"],
+          bio: "Looking for musicians who can write, rehearse consistently, and build real chemistry.",
+          goal: "Any"
+        };
+      }
+    }
+
+    function loadDeck() {
+      try {
+        const saved = JSON.parse(localStorage.getItem("jamr-deck") || "null");
+        if (Array.isArray(saved) && saved.length) {
+          return saved;
+        }
+      } catch (error) {
+        // ignore corrupted local state
+      }
+      return musicianPool.map((person) => person.id);
+    }
+
+    function loadMatches() {
+      try {
+        const saved = JSON.parse(localStorage.getItem("jamr-matches") || "[]");
+        return Array.isArray(saved) ? saved : [];
+      } catch (error) {
+        return [];
+      }
+    }
+  </script>
+</body>
+</html>
