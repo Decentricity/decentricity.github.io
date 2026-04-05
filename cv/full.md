@@ -12,7 +12,7 @@ psastrowardoyo@gmail.com
 
 ## Profile
 
-AI, blockchain, and enterprise IT infrastructure executive with 17+ years of experience across regulated industries, digital transformation, emerging technology strategy, and applied research. Advises on sovereign AI, hybrid cloud, tokenized systems, decentralized platforms, and enterprise adoption programs for financial institutions, public-sector organizations, and technology ventures. Served as an invited Senior Research Advisor for the MIT Digital Currency Initiative CBDC and Financial Inclusion Research Panel in 2022. Early AI work included expert-system development for environmental impact assessment reporting in 2007-2008.
+Hybrid technical and strategic leader with 17+ years of experience across regulated industries, digital transformation, applied research, systems engineering, venture building, and enterprise advisory work. Combines hands-on engineering depth with commercial, product, and policy fluency across sovereign AI, hybrid cloud, tokenized systems, decentralized platforms, Linux and Unix infrastructure, and enterprise adoption programs for financial institutions, public-sector organizations, and technology ventures. Served as an invited Senior Research Advisor for the MIT Digital Currency Initiative CBDC and Financial Inclusion Research Panel in 2022. Early AI work included expert-system development for environmental impact assessment reporting in 2007-2008. Across consulting, startup, enterprise, and independent work, has coded more than 200 applications spanning B2B systems, consumer products, prototypes, and hobby projects.
 
 ## Professional Experience
 
@@ -34,6 +34,7 @@ AI, blockchain, and enterprise IT infrastructure executive with 17+ years of exp
 ### Founder and CEO | DeBio Network | 2021 - 2024
 
 - Architected a blockchain- and AI-integrated platform for privacy-preserving medical diagnostics and bioinformatics workflows.
+- Served as technical founder while also leading company strategy, fundraising, and cross-functional execution.
 - Managed interdisciplinary teams across AI, blockchain, and healthcare domains.
 - Raised more than USD 2 million to support product development and growth.
 - Positioned the company at the intersection of decentralized science, medical data privacy, and diagnostics infrastructure.
@@ -42,6 +43,7 @@ AI, blockchain, and enterprise IT infrastructure executive with 17+ years of exp
 
 - Built a decentralized social media platform with AI-assisted moderation and governance models.
 - Led AI integration strategy, platform scalability planning, and product direction for global communities.
+- Served as technical founder while also shaping business direction, product strategy, and ecosystem positioning.
 - Raised more than USD 1.5 million.
 - Developed product and governance concepts centered on user data ownership, decentralization, and multi-chain interoperability.
 
@@ -57,12 +59,20 @@ AI, blockchain, and enterprise IT infrastructure executive with 17+ years of exp
 - Served as spokesperson and board member in media, partnership, and conference settings.
 - Helped shape early market education and business development around blockchain adoption in Indonesia.
 
-### Senior Technical Roles | IBM Systems and Technology Group | 2011 - 2017
+### IBM Systems and Technology Group | 2011 - 2017
 
-- Led pre-sales engineering and delivery support for AI-ready infrastructure across ASEAN, including storage, compute, and hybrid cloud solutions.
-- Managed regional teams delivering integrated infrastructure programs for financial services, telecom, and public sector clients.
-- Supported enterprise customers in designing and deploying infrastructure for high-performance, data-intensive, and regulated workloads.
-- Built a foundation in large-scale systems, enterprise architecture, and consultative technical leadership.
+- Held roles including Country Product Leader, Technical Sales Manager (Asia Pacific), Territory General Manager, and Lab Services Technical Manager.
+- Led pre-sales engineering, technical sales, and delivery support for AI-ready infrastructure across ASEAN and Asia Pacific, including storage, compute, and hybrid cloud solutions.
+- Managed regional teams and enterprise relationships across financial services, telecom, and public sector accounts.
+- Combined technical depth with commercial ownership, operational leadership, and consultative solution design for large-scale infrastructure programs.
+
+## Programming, Systems, and Security
+
+- Programming languages: Prolog, Pascal, C, C++, JavaScript, Python, shell scripting, and Bash-heavy Unix command-line workflows
+- Infrastructure and systems: Linux and Unix administration, virtual machines, Docker, systems software, hybrid cloud environments, HPC-oriented deployments, and AI infrastructure operations
+- Development profile: hands-on builder with experience across more than 200 applications spanning enterprise systems, retail products, internal tools, experiments, and hobby software
+- Data and technical tooling: Jupyter Notebook and other big-data and technical analysis tools used across AI, analytics, and platform-development workflows
+- Security: Certified Ethical Hacker (CEH), held since 2013
 
 ## Industry and Ecosystem Leadership
 
@@ -91,6 +101,7 @@ AI, blockchain, and enterprise IT infrastructure executive with 17+ years of exp
 
 ## Certifications and Professional Programs
 
+- Academic certification in Python through the University of Texas at Austin
 - Postgraduate Certificate, Machine Learning and AI: Building Data Science Solutions, MIT Professional Education, 2024
 - Bioinformatics and Genomic Technologies, Johns Hopkins University, 2016
 - Business Systems Analysis, University of Minnesota, 2020
@@ -98,9 +109,10 @@ AI, blockchain, and enterprise IT infrastructure executive with 17+ years of exp
 
 ## Technical Expertise
 
-- AI and machine learning model development and deployment, including self-hosted LLMs and applied bioinformatics
-- Enterprise AI infrastructure, including hybrid cloud, HPC clusters, GPU workloads, and sovereign AI environments
-- Blockchain and decentralized systems, including tokenized platforms, privacy-preserving computation, multi-chain applications, and enterprise architecture
+- AI and machine learning model development and deployment, including self-hosted LLMs, applied bioinformatics, and expert systems
+- Enterprise AI infrastructure, including hybrid cloud, HPC clusters, GPU workloads, sovereign AI environments, Linux and Unix systems, and virtualization
+- Blockchain and decentralized systems, including tokenized platforms, privacy-preserving computation, multi-chain applications, enterprise architecture, and decentralized governance design
+- Secure systems thinking, ethical hacking foundations, infrastructure hardening, and technical risk awareness in regulated environments
 - Digital asset strategy, tokenization, governance design, and enterprise adoption planning
 - Executive education, curriculum design, and technical communication for regulated and non-technical audiences
 
@@ -117,6 +129,7 @@ AI, blockchain, and enterprise IT infrastructure executive with 17+ years of exp
 - Invited speaker and participant, G20 4th Infrastructure Working Group / G20 Italy Multistakeholder Forum, 2021
 - Co-author, *Hosting AI di rumah: solusi open-source dan right-sizing LLM untuk kedaulatan digital*, 2025. ISBN 978-634-01-1608-3
 - Undergraduate final project and paper on an expert system for environmental impact analysis reporting, Institut Teknologi Bandung, 2008
+- GitHub portfolio: Decentricity projects and experiments spanning technical prototypes, applications, and infrastructure-oriented work
 - Selected essays and articles on AI infrastructure and autonomous AI marketplaces on LinkedIn, with additional contributions on expert systems and reinforcement learning for Techfor.id
 - Numerous talks, panels, and workshops on blockchain regulation, crypto-assets, AI, digital infrastructure, and decentralized governance
 
