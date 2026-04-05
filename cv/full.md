@@ -7,8 +7,9 @@ title: Full CV
 Jakarta, Indonesia  
 psastrowardoyo@gmail.com  
 1@decentri.city  
-[LinkedIn](https://linkedin.com/in/decentricity)  
-[IMDb](https://www.imdb.com/title/tt35927678/)
+[LinkedIn](https://linkedin.com/in/decentricity): linkedin.com/in/decentricity  
+[GitHub](https://github.com/Decentricity): github.com/Decentricity  
+[IMDb](https://www.imdb.com/title/tt35927678/): imdb.com/title/tt35927678/
 
 ## Profile
 
