@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JKT3D Beta</title>
+  <meta name="description" content="A static Jakarta transit map MVP built from official Transjakarta, JakartaSatu, MRT Jakarta, and LRT Jakarta sources.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+  <link rel="stylesheet" href="./app.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="panel panel-left">
+      <div class="brand-block">
+        <p class="eyebrow">Decentricity Labs</p>
+        <h1>JKT3D <span>Beta</span></h1>
+        <p class="subcopy">
+          A deployable static Jakarta transit prototype built from official public data where possible,
+          with OpenStreetMap geocoding used only to place MRT and LRT station points.
+        </p>
+      </div>
+
+      <div class="stats-grid" id="statsGrid"></div>
+
+      <section class="section-block">
+        <label class="field-label" for="searchInput">Search routes, stops, or stations</label>
+        <div class="search-shell">
+          <input id="searchInput" type="search" autocomplete="off" placeholder="Try 1B, Blok M, Bundaran HI">
+          <button id="clearSearchButton" type="button" aria-label="Clear search">Clear</button>
+        </div>
+        <div class="search-results" id="searchResults"></div>
+      </section>
+
+      <section class="section-block">
+        <div class="section-heading-row">
+          <h2>Layers</h2>
+          <button id="resetViewButton" type="button" class="ghost-button">Reset View</button>
+        </div>
+        <div class="toggle-grid">
+          <label class="toggle-pill"><input type="checkbox" data-layer-group="routes" checked>Transjakarta routes</label>
+          <label class="toggle-pill"><input type="checkbox" data-layer-group="stops" checked>Transjakarta stops</label>
+          <label class="toggle-pill"><input type="checkbox" data-layer-group="rail" checked>Jakarta rail geometry</label>
+          <label class="toggle-pill"><input type="checkbox" data-layer-group="mrt" checked>MRT Jakarta</label>
+          <label class="toggle-pill"><input type="checkbox" data-layer-group="lrt" checked>LRT Jakarta</label>
+        </div>
+      </section>
+
+      <section class="section-block">
+        <h2>Route Types</h2>
+        <div id="routeLegend" class="legend-list"></div>
+      </section>
+
+      <details class="section-block sources-block" open>
+        <summary>Sources</summary>
+        <div id="sourceList" class="source-list"></div>
+      </details>
+    </aside>
+
+    <main class="map-stage">
+      <div id="map"></div>
+      <div class="map-hud">
+        <div class="hud-card">
+          <p class="hud-eyebrow">Static snapshot</p>
+          <p id="generatedAt">Loading dataset...</p>
+        </div>
+        <div class="hud-card hud-warning">
+          <p class="hud-eyebrow">Known gap</p>
+          <p>Public realtime feeds for KRL and full Jakarta-wide rail operations were not exposed in stable machine-readable form.</p>
+        </div>
+      </div>
+      <div class="loading-screen" id="loadingScreen">
+        <div class="loading-card">
+          <p class="eyebrow">Building map state</p>
+          <h2>Loading JKT3D</h2>
+          <p>Fetching local route, stop, rail, and station layers.</p>
+        </div>
+      </div>
+    </main>
+
+    <aside class="panel panel-right" id="detailPanel">
+      <div class="detail-empty" id="detailEmpty">
+        <p class="eyebrow">Selection</p>
+        <h2>No feature selected</h2>
+        <p>Click a route, stop, or station to inspect metadata and route coverage.</p>
+      </div>
+      <div class="detail-content hidden" id="detailContent"></div>
+    </aside>
+  </div>
+
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <script src="./app.js" defer></script>
+</body>
+</html>
