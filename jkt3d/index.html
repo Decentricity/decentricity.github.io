@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>JKT3D Beta</title>
-  <meta name="description" content="A static Jakarta transit map MVP built from official Transjakarta, JakartaSatu, MRT Jakarta, and LRT Jakarta sources.">
+  <meta name="description" content="A map-first Jakarta transit atlas built from official Transjakarta, JakartaSatu, MRT Jakarta, and LRT Jakarta sources.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -12,20 +12,36 @@
   <link rel="stylesheet" href="./app.css">
 </head>
 <body>
-  <div class="app-shell">
-    <aside class="panel panel-left">
-      <div class="brand-block">
-        <p class="eyebrow">Decentricity Labs</p>
-        <h1>JKT3D <span>Beta</span></h1>
-        <p class="subcopy">
-          A deployable static Jakarta transit prototype built from official public data where possible,
-          with OpenStreetMap geocoding used only to place MRT and LRT station points.
-        </p>
-      </div>
+  <div class="map-app">
+    <main class="map-stage">
+      <div id="map"></div>
 
-      <div class="stats-grid" id="statsGrid"></div>
+      <header class="map-topbar">
+        <div class="brand-chip">
+          <p class="eyebrow">Decentricity Labs</p>
+          <div class="brand-row">
+            <h1>JKT3D</h1>
+            <span class="brand-pill">Beta</span>
+          </div>
+          <p class="subcopy">Map-first Jakarta transit atlas with animated MRT and LRT direction cues.</p>
+        </div>
 
-      <section class="section-block">
+        <div class="topbar-actions">
+          <button type="button" class="chrome-button" data-panel-target="searchDialog">Search</button>
+          <button type="button" class="chrome-button" data-panel-target="atlasDrawer">Atlas</button>
+          <button type="button" class="chrome-button" data-panel-target="layersDrawer">Layers</button>
+        </div>
+      </header>
+
+      <section class="overlay-panel search-dialog" id="searchDialog">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Search</p>
+            <h2>Find routes and stations</h2>
+          </div>
+          <button type="button" class="icon-button" data-close-target="searchDialog" aria-label="Close search">Close</button>
+        </div>
+
         <label class="field-label" for="searchInput">Search routes, stops, or stations</label>
         <div class="search-shell">
           <input id="searchInput" type="search" autocomplete="off" placeholder="Try 1B, Blok M, Bundaran HI">
@@ -34,60 +50,85 @@
         <div class="search-results" id="searchResults"></div>
       </section>
 
-      <section class="section-block">
-        <div class="section-heading-row">
-          <h2>Layers</h2>
-          <button id="resetViewButton" type="button" class="ghost-button">Reset View</button>
+      <aside class="overlay-panel drawer atlas-drawer" id="atlasDrawer">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Atlas</p>
+            <h2>Snapshot + sources</h2>
+          </div>
+          <button type="button" class="icon-button" data-close-target="atlasDrawer" aria-label="Close atlas">Close</button>
         </div>
-        <div class="toggle-grid">
-          <label class="toggle-pill"><input type="checkbox" data-layer-group="routes" checked>Transjakarta routes</label>
-          <label class="toggle-pill"><input type="checkbox" data-layer-group="stops" checked>Transjakarta stops</label>
-          <label class="toggle-pill"><input type="checkbox" data-layer-group="rail" checked>Jakarta rail geometry</label>
-          <label class="toggle-pill"><input type="checkbox" data-layer-group="mrt" checked>MRT Jakarta</label>
-          <label class="toggle-pill"><input type="checkbox" data-layer-group="lrt" checked>LRT Jakarta</label>
+
+        <div class="stats-grid" id="statsGrid"></div>
+
+        <section class="section-block">
+          <h3>Service groups</h3>
+          <div id="routeLegend" class="legend-list"></div>
+        </section>
+
+        <details class="section-block sources-block" open>
+          <summary>Sources</summary>
+          <div id="sourceList" class="source-list"></div>
+        </details>
+      </aside>
+
+      <aside class="overlay-panel drawer layers-drawer" id="layersDrawer">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Layers</p>
+            <h2>Map controls</h2>
+          </div>
+          <button type="button" class="icon-button" data-close-target="layersDrawer" aria-label="Close layers">Close</button>
         </div>
-      </section>
 
-      <section class="section-block">
-        <h2>Route Types</h2>
-        <div id="routeLegend" class="legend-list"></div>
-      </section>
+        <section class="section-block">
+          <p class="detail-copy">Use the map as the primary surface. Open this drawer only when you need filters.</p>
+          <button type="button" class="ghost-button" data-map-action="reset-view">Reset camera</button>
+        </section>
 
-      <details class="section-block sources-block" open>
-        <summary>Sources</summary>
-        <div id="sourceList" class="source-list"></div>
-      </details>
-    </aside>
+        <section class="section-block">
+          <h3>Visibility</h3>
+          <div class="toggle-grid">
+            <label class="toggle-pill"><input type="checkbox" data-layer-group="routes" checked>Transjakarta routes</label>
+            <label class="toggle-pill"><input type="checkbox" data-layer-group="stops" checked>Transjakarta stops</label>
+            <label class="toggle-pill"><input type="checkbox" data-layer-group="rail" checked>Jakarta rail geometry</label>
+            <label class="toggle-pill"><input type="checkbox" data-layer-group="mrt" checked>MRT Jakarta</label>
+            <label class="toggle-pill"><input type="checkbox" data-layer-group="lrt" checked>LRT Jakarta</label>
+          </div>
+        </section>
+      </aside>
 
-    <main class="map-stage">
-      <div id="map"></div>
       <div class="map-hud">
-        <div class="hud-card">
+        <div class="hud-card hud-card-compact">
           <p class="hud-eyebrow">Static snapshot</p>
           <p id="generatedAt">Loading dataset...</p>
         </div>
-        <div class="hud-card hud-warning">
-          <p class="hud-eyebrow">Known gap</p>
-          <p>Public realtime feeds for KRL and full Jakarta-wide rail operations were not exposed in stable machine-readable form.</p>
+
+        <div class="hud-card hud-card-flow">
+          <p class="hud-eyebrow">Animated rail flow</p>
+          <div id="lineFlowLegend" class="flow-chip-list"></div>
         </div>
       </div>
+
+      <section class="detail-sheet" id="detailSheet">
+        <div class="sheet-grabber"></div>
+        <button id="closeDetailButton" type="button" class="icon-button sheet-close hidden" aria-label="Close details">Close</button>
+        <div class="detail-empty" id="detailEmpty">
+          <p class="eyebrow">Selection</p>
+          <h2>Map-first by default</h2>
+          <p>Tap a route, stop, or station to pull details into this sheet without covering the whole map.</p>
+        </div>
+        <div class="detail-content hidden" id="detailContent"></div>
+      </section>
+
       <div class="loading-screen" id="loadingScreen">
         <div class="loading-card">
           <p class="eyebrow">Building map state</p>
           <h2>Loading JKT3D</h2>
-          <p>Fetching local route, stop, rail, and station layers.</p>
+          <p>Fetching local route, stop, station, and animation layers.</p>
         </div>
       </div>
     </main>
-
-    <aside class="panel panel-right" id="detailPanel">
-      <div class="detail-empty" id="detailEmpty">
-        <p class="eyebrow">Selection</p>
-        <h2>No feature selected</h2>
-        <p>Click a route, stop, or station to inspect metadata and route coverage.</p>
-      </div>
-      <div class="detail-content hidden" id="detailContent"></div>
-    </aside>
   </div>
 
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>

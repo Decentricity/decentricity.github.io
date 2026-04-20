@@ -10,14 +10,14 @@ const DATA_FILES = {
 };
 
 const ROUTE_SEQUENCE_URL = "./data/transjakarta-route-sequences.json";
-
+const PANEL_IDS = ["searchDialog", "atlasDrawer", "layersDrawer"];
 const EMPTY_FEATURE_COLLECTION = { type: "FeatureCollection", features: [] };
 
 const INITIAL_VIEW = {
   center: [106.8272, -6.1754],
-  zoom: 10.8,
-  pitch: 54,
-  bearing: -18,
+  zoom: 10.85,
+  pitch: 61,
+  bearing: -20,
 };
 
 const TYPE_PALETTE = [
@@ -32,11 +32,35 @@ const TYPE_PALETTE = [
 ];
 
 const LAYER_GROUPS = {
-  routes: ["tj-routes-line", "tj-routes-hit"],
+  routes: ["tj-routes-shadow", "tj-routes-line", "tj-routes-hit"],
   stops: ["tj-stop-clusters", "tj-stop-cluster-count", "tj-stops-unclustered"],
   rail: ["rail-lines"],
-  mrt: ["mrt-line", "mrt-stations", "mrt-station-labels"],
-  lrt: ["lrt-line", "lrt-stations", "lrt-station-labels"],
+  mrt: [
+    "mrt-line-shadow",
+    "mrt-line-glow",
+    "mrt-line",
+    "mrt-line-flow-forward",
+    "mrt-line-flow-reverse",
+    "mrt-stations-shadow",
+    "mrt-stations",
+    "mrt-station-labels",
+    "mrt-train-halo",
+    "mrt-train-core",
+    "mrt-train-labels",
+  ],
+  lrt: [
+    "lrt-line-shadow",
+    "lrt-line-glow",
+    "lrt-line",
+    "lrt-line-flow-forward",
+    "lrt-line-flow-reverse",
+    "lrt-stations-shadow",
+    "lrt-stations",
+    "lrt-station-labels",
+    "lrt-train-halo",
+    "lrt-train-core",
+    "lrt-train-labels",
+  ],
 };
 
 const state = {
@@ -49,6 +73,10 @@ const state = {
   routeLookup: new Map(),
   routeSequences: null,
   routeSequencesPromise: null,
+  openPanel: null,
+  motionSystems: {},
+  motionFrame: null,
+  lastMotionUpdate: 0,
 };
 
 const elements = {};
@@ -58,20 +86,24 @@ document.addEventListener("DOMContentLoaded", initializeApp);
 async function initializeApp() {
   cacheElements();
   bindStaticUi();
+  setOpenPanel(null);
   renderSearchResults([], "");
+  clearSelection();
 
   try {
     state.data = await loadData();
     decorateRouteFeatures(state.data.routes);
+    decorateStationFeatures(state.data.mrtStations);
+    decorateStationFeatures(state.data.lrtStations);
     state.routeTypeColors = buildRouteTypeColors(summarizeRouteGroups(state.data.routes.features));
-    state.routeLookup = new Map(
-      state.data.routes.features.map((feature) => [feature.properties.KODRUTE, feature]),
-    );
+    state.routeLookup = new Map(state.data.routes.features.map((feature) => [feature.properties.KODRUTE, feature]));
+    state.motionSystems = buildMotionSystems();
 
     renderStats();
     renderRouteLegend();
     renderSources();
     renderGeneratedAt();
+    renderFlowLegend();
     buildSearchIndex();
 
     state.map = createMap();
@@ -79,6 +111,7 @@ async function initializeApp() {
       addSources(state.map);
       addLayers(state.map);
       bindMapEvents(state.map);
+      startMotionAnimation();
       hideLoading();
     });
   } catch (error) {
@@ -95,20 +128,39 @@ function cacheElements() {
   elements.searchInput = document.getElementById("searchInput");
   elements.searchResults = document.getElementById("searchResults");
   elements.clearSearchButton = document.getElementById("clearSearchButton");
-  elements.resetViewButton = document.getElementById("resetViewButton");
   elements.loadingScreen = document.getElementById("loadingScreen");
   elements.detailEmpty = document.getElementById("detailEmpty");
   elements.detailContent = document.getElementById("detailContent");
+  elements.detailSheet = document.getElementById("detailSheet");
+  elements.closeDetailButton = document.getElementById("closeDetailButton");
+  elements.lineFlowLegend = document.getElementById("lineFlowLegend");
+  elements.panels = Object.fromEntries(PANEL_IDS.map((id) => [id, document.getElementById(id)]));
+  elements.panelButtons = Array.from(document.querySelectorAll("[data-panel-target]"));
+  elements.panelCloseButtons = Array.from(document.querySelectorAll("[data-close-target]"));
+  elements.layerInputs = Array.from(document.querySelectorAll("[data-layer-group]"));
+  elements.resetButtons = Array.from(document.querySelectorAll('[data-map-action="reset-view"]'));
 }
 
 function bindStaticUi() {
   elements.searchInput.addEventListener("input", handleSearchInput);
   elements.clearSearchButton.addEventListener("click", clearSearch);
-  elements.resetViewButton.addEventListener("click", resetView);
   elements.searchResults.addEventListener("click", handleSearchResultClick);
   elements.detailContent.addEventListener("click", handleDetailAction);
+  elements.closeDetailButton.addEventListener("click", clearSelection);
 
-  document.querySelectorAll("[data-layer-group]").forEach((input) => {
+  elements.panelButtons.forEach((button) => {
+    button.addEventListener("click", () => togglePanel(button.dataset.panelTarget));
+  });
+
+  elements.panelCloseButtons.forEach((button) => {
+    button.addEventListener("click", () => setOpenPanel(null));
+  });
+
+  elements.resetButtons.forEach((button) => {
+    button.addEventListener("click", resetView);
+  });
+
+  elements.layerInputs.forEach((input) => {
     input.addEventListener("change", (event) => {
       if (!state.map || !state.map.isStyleLoaded()) {
         return;
@@ -116,6 +168,50 @@ function bindStaticUi() {
       applyLayerGroupVisibility(event.target.dataset.layerGroup, event.target.checked);
     });
   });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") {
+      return;
+    }
+
+    if (state.openPanel) {
+      setOpenPanel(null);
+      return;
+    }
+
+    if (state.selection) {
+      clearSelection();
+    }
+  });
+}
+
+function togglePanel(panelId) {
+  setOpenPanel(state.openPanel === panelId ? null : panelId);
+}
+
+function setOpenPanel(panelId) {
+  state.openPanel = panelId;
+
+  PANEL_IDS.forEach((id) => {
+    const panel = elements.panels[id];
+    if (!panel) {
+      return;
+    }
+    panel.classList.toggle("is-open", id === panelId);
+  });
+
+  elements.panelButtons.forEach((button) => {
+    const isActive = button.dataset.panelTarget === panelId;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-expanded", isActive ? "true" : "false");
+  });
+
+  if (panelId === "searchDialog") {
+    window.setTimeout(() => {
+      elements.searchInput.focus();
+      elements.searchInput.select();
+    }, 60);
+  }
 }
 
 async function loadData() {
@@ -128,6 +224,7 @@ async function loadData() {
       return [key, await response.json()];
     }),
   );
+
   return Object.fromEntries(entries);
 }
 
@@ -151,7 +248,7 @@ function createMap() {
     zoom: INITIAL_VIEW.zoom,
     pitch: INITIAL_VIEW.pitch,
     bearing: INITIAL_VIEW.bearing,
-    maxPitch: 70,
+    maxPitch: 74,
     minZoom: 9,
   });
 
@@ -170,10 +267,12 @@ function addSources(map) {
     clusterMaxZoom: 13,
   });
   map.addSource("rail-lines", { type: "geojson", data: state.data.railLines });
-  map.addSource("mrt-line", { type: "geojson", data: state.data.mrtLine });
+  map.addSource("mrt-line", { type: "geojson", data: state.data.mrtLine, lineMetrics: true });
   map.addSource("mrt-stations", { type: "geojson", data: state.data.mrtStations });
-  map.addSource("lrt-line", { type: "geojson", data: state.data.lrtLine });
+  map.addSource("mrt-trains", { type: "geojson", data: EMPTY_FEATURE_COLLECTION });
+  map.addSource("lrt-line", { type: "geojson", data: state.data.lrtLine, lineMetrics: true });
   map.addSource("lrt-stations", { type: "geojson", data: state.data.lrtStations });
+  map.addSource("lrt-trains", { type: "geojson", data: EMPTY_FEATURE_COLLECTION });
   map.addSource("selected-route", { type: "geojson", data: EMPTY_FEATURE_COLLECTION });
   map.addSource("selected-point", { type: "geojson", data: EMPTY_FEATURE_COLLECTION });
 }
@@ -187,9 +286,21 @@ function addLayers(map) {
     source: "rail-lines",
     layout: { "line-join": "round", "line-cap": "round" },
     paint: {
-      "line-color": "rgba(244, 239, 228, 0.22)",
-      "line-width": ["interpolate", ["linear"], ["zoom"], 9, 0.8, 13, 2.4],
-      "line-opacity": 0.7,
+      "line-color": "rgba(244, 239, 228, 0.18)",
+      "line-width": ["interpolate", ["linear"], ["zoom"], 9, 1.1, 12, 2.4, 15, 3.2],
+      "line-opacity": 0.78,
+    },
+  });
+
+  map.addLayer({
+    id: "tj-routes-shadow",
+    type: "line",
+    source: "tj-routes",
+    layout: { "line-join": "round", "line-cap": "round" },
+    paint: {
+      "line-color": "rgba(4, 8, 9, 0.9)",
+      "line-width": ["interpolate", ["linear"], ["zoom"], 9, 2.4, 12, 5, 15, 10],
+      "line-opacity": ["case", ["get", "isActive"], 0.72, 0.1],
     },
   });
 
@@ -200,8 +311,8 @@ function addLayers(map) {
     layout: { "line-join": "round", "line-cap": "round" },
     paint: {
       "line-color": routeColorExpression,
-      "line-width": ["interpolate", ["linear"], ["zoom"], 9, 1.1, 12, 3, 15, 7],
-      "line-opacity": ["case", ["get", "isActive"], 0.74, 0.18],
+      "line-width": ["interpolate", ["linear"], ["zoom"], 9, 1.2, 12, 3, 15, 7.4],
+      "line-opacity": ["case", ["get", "isActive"], 0.8, 0.2],
     },
   });
 
@@ -216,28 +327,26 @@ function addLayers(map) {
     },
   });
 
-  map.addLayer({
-    id: "mrt-line",
-    type: "line",
-    source: "mrt-line",
-    layout: { "line-join": "round", "line-cap": "round" },
-    paint: {
-      "line-color": "#2fd1c3",
-      "line-width": ["interpolate", ["linear"], ["zoom"], 9, 2, 12, 5, 15, 9],
-      "line-opacity": 0.95,
-    },
+  addRailModeLayers(map, {
+    prefix: "mrt",
+    lineSource: "mrt-line",
+    stationSource: "mrt-stations",
+    trainSource: "mrt-trains",
+    color: "#2fd1c3",
+    shadowColor: "rgba(3, 17, 17, 0.92)",
+    haloColor: "rgba(47, 209, 195, 0.2)",
+    stationStroke: "#081d1d",
   });
 
-  map.addLayer({
-    id: "lrt-line",
-    type: "line",
-    source: "lrt-line",
-    layout: { "line-join": "round", "line-cap": "round" },
-    paint: {
-      "line-color": "#f3ca4d",
-      "line-width": ["interpolate", ["linear"], ["zoom"], 9, 1.8, 12, 4.6, 15, 8],
-      "line-opacity": 0.95,
-    },
+  addRailModeLayers(map, {
+    prefix: "lrt",
+    lineSource: "lrt-line",
+    stationSource: "lrt-stations",
+    trainSource: "lrt-trains",
+    color: "#f3ca4d",
+    shadowColor: "rgba(28, 22, 4, 0.94)",
+    haloColor: "rgba(243, 202, 77, 0.2)",
+    stationStroke: "#2b2407",
   });
 
   map.addLayer({
@@ -272,7 +381,7 @@ function addLayers(map) {
       "text-size": 12,
     },
     paint: {
-      "text-color": "#0b1112",
+      "text-color": "#071011",
     },
   });
 
@@ -282,73 +391,11 @@ function addLayers(map) {
     source: "tj-stops",
     filter: ["!", ["has", "point_count"]],
     paint: {
-      "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 2.8, 13, 5.5, 16, 8],
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 2.5, 13, 5.2, 16, 8.2],
       "circle-color": ["case", ["get", "isActive"], "#f4efe4", "rgba(255,255,255,0.25)"],
       "circle-stroke-width": 1.2,
       "circle-stroke-color": ["case", ["get", "isActive"], "#2fd1c3", "rgba(255,255,255,0.18)"],
-      "circle-opacity": ["case", ["get", "isActive"], 0.9, 0.32],
-    },
-  });
-
-  map.addLayer({
-    id: "mrt-stations",
-    type: "circle",
-    source: "mrt-stations",
-    paint: {
-      "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 4, 12, 6.5, 15, 8.5],
-      "circle-color": "#2fd1c3",
-      "circle-stroke-width": 1.8,
-      "circle-stroke-color": "#072221",
-    },
-  });
-
-  map.addLayer({
-    id: "lrt-stations",
-    type: "circle",
-    source: "lrt-stations",
-    paint: {
-      "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 4, 12, 6.5, 15, 8.5],
-      "circle-color": "#f3ca4d",
-      "circle-stroke-width": 1.8,
-      "circle-stroke-color": "#2a2308",
-    },
-  });
-
-  map.addLayer({
-    id: "mrt-station-labels",
-    type: "symbol",
-    source: "mrt-stations",
-    minzoom: 12,
-    layout: {
-      "text-field": ["get", "name"],
-      "text-size": 11,
-      "text-offset": [0, 1.15],
-      "text-anchor": "top",
-      "text-font": ["Open Sans Regular"],
-    },
-    paint: {
-      "text-color": "#f4efe4",
-      "text-halo-color": "rgba(11, 17, 18, 0.92)",
-      "text-halo-width": 1,
-    },
-  });
-
-  map.addLayer({
-    id: "lrt-station-labels",
-    type: "symbol",
-    source: "lrt-stations",
-    minzoom: 12,
-    layout: {
-      "text-field": ["get", "name"],
-      "text-size": 11,
-      "text-offset": [0, 1.15],
-      "text-anchor": "top",
-      "text-font": ["Open Sans Regular"],
-    },
-    paint: {
-      "text-color": "#f4efe4",
-      "text-halo-color": "rgba(11, 17, 18, 0.92)",
-      "text-halo-width": 1,
+      "circle-opacity": ["case", ["get", "isActive"], 0.92, 0.32],
     },
   });
 
@@ -358,8 +405,8 @@ function addLayers(map) {
     source: "selected-route",
     layout: { "line-join": "round", "line-cap": "round" },
     paint: {
-      "line-color": "rgba(255, 255, 255, 0.35)",
-      "line-width": ["interpolate", ["linear"], ["zoom"], 9, 6, 12, 10, 15, 16],
+      "line-color": "rgba(255, 255, 255, 0.32)",
+      "line-width": ["interpolate", ["linear"], ["zoom"], 9, 7, 12, 11, 15, 18],
       "line-opacity": 1,
     },
   });
@@ -371,7 +418,7 @@ function addLayers(map) {
     layout: { "line-join": "round", "line-cap": "round" },
     paint: {
       "line-color": "#ff7a21",
-      "line-width": ["interpolate", ["linear"], ["zoom"], 9, 2.6, 12, 5.8, 15, 10],
+      "line-width": ["interpolate", ["linear"], ["zoom"], 9, 2.8, 12, 6, 15, 10.5],
       "line-opacity": 1,
     },
   });
@@ -381,10 +428,10 @@ function addLayers(map) {
     type: "circle",
     source: "selected-point",
     paint: {
-      "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 12, 12, 16, 15, 22],
-      "circle-color": "rgba(255,255,255,0.16)",
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 13, 12, 18, 15, 24],
+      "circle-color": "rgba(255,255,255,0.14)",
       "circle-stroke-width": 1.4,
-      "circle-stroke-color": "rgba(255,255,255,0.35)",
+      "circle-stroke-color": "rgba(255,255,255,0.38)",
     },
   });
 
@@ -393,7 +440,7 @@ function addLayers(map) {
     type: "circle",
     source: "selected-point",
     paint: {
-      "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 5.5, 12, 8.5, 15, 11],
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 5.5, 12, 8.5, 15, 11.5],
       "circle-color": "#ff7a21",
       "circle-stroke-width": 2,
       "circle-stroke-color": "#fff4dd",
@@ -401,8 +448,180 @@ function addLayers(map) {
   });
 }
 
+function addRailModeLayers(map, config) {
+  const {
+    prefix,
+    lineSource,
+    stationSource,
+    trainSource,
+    color,
+    shadowColor,
+    haloColor,
+    stationStroke,
+  } = config;
+
+  map.addLayer({
+    id: `${prefix}-line-shadow`,
+    type: "line",
+    source: lineSource,
+    layout: { "line-join": "round", "line-cap": "round" },
+    paint: {
+      "line-color": shadowColor,
+      "line-width": ["interpolate", ["linear"], ["zoom"], 9, 4.8, 12, 8.2, 15, 12.5],
+      "line-opacity": 0.95,
+    },
+  });
+
+  map.addLayer({
+    id: `${prefix}-line-glow`,
+    type: "line",
+    source: lineSource,
+    layout: { "line-join": "round", "line-cap": "round" },
+    paint: {
+      "line-color": haloColor,
+      "line-width": ["interpolate", ["linear"], ["zoom"], 9, 6.2, 12, 10.8, 15, 16],
+      "line-opacity": 0.98,
+      "line-blur": 1.8,
+    },
+  });
+
+  map.addLayer({
+    id: `${prefix}-line`,
+    type: "line",
+    source: lineSource,
+    layout: { "line-join": "round", "line-cap": "round" },
+    paint: {
+      "line-color": color,
+      "line-width": ["interpolate", ["linear"], ["zoom"], 9, 2.2, 12, 5.2, 15, 8.6],
+      "line-opacity": 0.96,
+    },
+  });
+
+  map.addLayer({
+    id: `${prefix}-line-flow-forward`,
+    type: "line",
+    source: lineSource,
+    layout: { "line-join": "round", "line-cap": "round" },
+    paint: {
+      "line-width": ["interpolate", ["linear"], ["zoom"], 9, 3.4, 12, 6.5, 15, 10],
+      "line-opacity": 0.98,
+      "line-blur": 0.5,
+      "line-gradient": buildFlowGradient(color, 0.12, false),
+    },
+  });
+
+  map.addLayer({
+    id: `${prefix}-line-flow-reverse`,
+    type: "line",
+    source: lineSource,
+    layout: { "line-join": "round", "line-cap": "round" },
+    paint: {
+      "line-width": ["interpolate", ["linear"], ["zoom"], 9, 3, 12, 5.8, 15, 9.2],
+      "line-opacity": 0.86,
+      "line-blur": 0.4,
+      "line-gradient": buildFlowGradient(color, 0.66, true),
+    },
+  });
+
+  map.addLayer({
+    id: `${prefix}-stations-shadow`,
+    type: "circle",
+    source: stationSource,
+    paint: {
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 7, 12, 10.5, 15, 13.5],
+      "circle-color": shadowColor,
+      "circle-opacity": 0.9,
+    },
+  });
+
+  map.addLayer({
+    id: `${prefix}-stations`,
+    type: "circle",
+    source: stationSource,
+    paint: {
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 4.5, 12, 7, 15, 9.2],
+      "circle-color": color,
+      "circle-stroke-width": 2,
+      "circle-stroke-color": stationStroke,
+    },
+  });
+
+  map.addLayer({
+    id: `${prefix}-station-labels`,
+    type: "symbol",
+    source: stationSource,
+    minzoom: 9.2,
+    layout: {
+      "text-field": ["coalesce", ["get", "labelName"], ["get", "name"]],
+      "text-font": ["Open Sans Bold"],
+      "text-size": ["interpolate", ["linear"], ["zoom"], 9.2, 10, 12, 11.5, 15, 14],
+      "text-anchor": "bottom",
+      "text-offset": [0, -1.15],
+      "text-allow-overlap": true,
+      "text-ignore-placement": true,
+    },
+    paint: {
+      "text-color": "#f5f1e7",
+      "text-halo-color": "rgba(7, 12, 14, 0.96)",
+      "text-halo-width": 1.4,
+      "text-halo-blur": 0.4,
+    },
+  });
+
+  map.addLayer({
+    id: `${prefix}-train-halo`,
+    type: "circle",
+    source: trainSource,
+    paint: {
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 10, 12, 14, 15, 18],
+      "circle-color": ["get", "color"],
+      "circle-opacity": 0.16,
+      "circle-blur": 0.9,
+    },
+  });
+
+  map.addLayer({
+    id: `${prefix}-train-core`,
+    type: "circle",
+    source: trainSource,
+    paint: {
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 4, 12, 6, 15, 7.8],
+      "circle-color": ["get", "color"],
+      "circle-stroke-width": 1.8,
+      "circle-stroke-color": "#fff5de",
+    },
+  });
+
+  map.addLayer({
+    id: `${prefix}-train-labels`,
+    type: "symbol",
+    source: trainSource,
+    minzoom: 11.1,
+    layout: {
+      "text-field": ["get", "label"],
+      "text-font": ["Open Sans Regular"],
+      "text-size": ["interpolate", ["linear"], ["zoom"], 11.1, 10, 14, 11.5],
+      "text-anchor": "top",
+      "text-offset": [0, 1.15],
+      "text-allow-overlap": true,
+      "text-ignore-placement": true,
+    },
+    paint: {
+      "text-color": "#f4efe4",
+      "text-halo-color": "rgba(7, 12, 14, 0.94)",
+      "text-halo-width": 1.3,
+    },
+  });
+}
+
 function bindMapEvents(map) {
-  bindPointerCursor(map, ["tj-routes-hit", "tj-stop-clusters", "tj-stops-unclustered", "mrt-stations", "lrt-stations"]);
+  bindPointerCursor(map, [
+    "tj-routes-hit",
+    "tj-stop-clusters",
+    "tj-stops-unclustered",
+    "mrt-stations",
+    "lrt-stations",
+  ]);
 
   map.on("click", "tj-routes-hit", (event) => {
     const feature = event.features?.[0];
@@ -468,7 +687,7 @@ function renderStats() {
   const cards = [
     { label: "Active routes", value: formatNumber(stats.activeRouteCount) },
     { label: "Active stops", value: formatNumber(stats.activeStopCount) },
-    { label: "MRT + LRT stations", value: formatNumber(stats.mrtStationCount + stats.lrtStationCount) },
+    { label: "Rail stations", value: formatNumber(stats.mrtStationCount + stats.lrtStationCount) },
     { label: "Route previews", value: formatNumber(stats.routeSequenceCount) },
   ];
 
@@ -515,6 +734,9 @@ function renderSources() {
       if (source.metadata?.contentLength) {
         metadataBits.push(formatBytes(source.metadata.contentLength));
       }
+      if (source.metadata?.error) {
+        metadataBits.push("Metadata fetch degraded");
+      }
 
       return `
         <article class="source-item">
@@ -528,7 +750,25 @@ function renderSources() {
 }
 
 function renderGeneratedAt() {
-  elements.generatedAt.textContent = `Generated ${formatDate(state.data.manifest.generatedAt)}`;
+  const stats = state.data.manifest.stats;
+  elements.generatedAt.textContent = `${formatDate(state.data.manifest.generatedAt)} • ${formatNumber(stats.activeRouteCount)} active routes`;
+}
+
+function renderFlowLegend() {
+  const systems = Object.values(state.motionSystems);
+  elements.lineFlowLegend.innerHTML = systems
+    .map(
+      (system) => `
+        <article class="flow-chip">
+          <span class="flow-swatch" style="color:${escapeHtml(system.color)}; background:${escapeHtml(system.color)}"></span>
+          <div>
+            <strong>${escapeHtml(system.mode)}</strong>
+            <p>${escapeHtml(`${system.startLabel} ↔ ${system.endLabel}`)}</p>
+          </div>
+        </article>
+      `,
+    )
+    .join("");
 }
 
 function buildSearchIndex() {
@@ -579,9 +819,9 @@ function buildSearchIndex() {
     const props = feature.properties;
     items.push({
       kind: "station",
-      title: props.name,
+      title: props.labelName || props.name,
       subtitle: `${props.mode}${props.locationMethod === "manual" ? " • manual coordinate fallback" : ""}`,
-      searchText: normalizeText([props.name, props.mode, props.displayName, props.query].join(" ")),
+      searchText: normalizeText([props.name, props.labelName, props.mode, props.displayName, props.query].join(" ")),
       feature,
     });
   });
@@ -613,7 +853,7 @@ function handleSearchInput(event) {
 
 function renderSearchResults(results, rawQuery) {
   if (!rawQuery) {
-    elements.searchResults.innerHTML = '<p class="detail-copy">Search across 686 routes, 8k+ stops, and MRT/LRT stations.</p>';
+    elements.searchResults.innerHTML = '<p class="detail-copy">Search across routes, 8k+ bus stops, and MRT/LRT stations.</p>';
     return;
   }
 
@@ -645,6 +885,8 @@ function handleSearchResultClick(event) {
     return;
   }
 
+  setOpenPanel(null);
+
   if (result.kind === "route") {
     selectRoute(result.feature, true);
   } else if (result.kind === "stop") {
@@ -670,14 +912,18 @@ function resetView() {
     zoom: INITIAL_VIEW.zoom,
     pitch: INITIAL_VIEW.pitch,
     bearing: INITIAL_VIEW.bearing,
-    duration: 900,
+    duration: 950,
   });
 }
 
 function selectRoute(feature, focus) {
   state.selection = { kind: "route", feature };
   updateSelectionSources(feature, null);
-  renderRouteDetail(feature);
+  showRouteDetail(feature);
+
+  if (window.innerWidth <= 820) {
+    setOpenPanel(null);
+  }
 
   if (focus) {
     fitToGeometry(feature.geometry, feature.properties.bounds);
@@ -687,21 +933,39 @@ function selectRoute(feature, focus) {
 function selectStop(feature, focus) {
   state.selection = { kind: "stop", feature };
   updateSelectionSources(null, feature);
-  renderStopDetail(feature);
+  showStopDetail(feature);
+
+  if (window.innerWidth <= 820) {
+    setOpenPanel(null);
+  }
 
   if (focus) {
-    flyToPoint(feature.geometry.coordinates, 14.2);
+    flyToPoint(feature.geometry.coordinates, 14.3);
   }
 }
 
 function selectStation(feature, focus) {
   state.selection = { kind: "station", feature };
   updateSelectionSources(null, feature);
-  renderStationDetail(feature);
+  showStationDetail(feature);
+
+  if (window.innerWidth <= 820) {
+    setOpenPanel(null);
+  }
 
   if (focus) {
-    flyToPoint(feature.geometry.coordinates, 13.6);
+    flyToPoint(feature.geometry.coordinates, 13.8);
   }
+}
+
+function clearSelection() {
+  state.selection = null;
+  elements.detailSheet.classList.remove("is-open");
+  elements.detailContent.classList.add("hidden");
+  elements.detailContent.innerHTML = "";
+  elements.detailEmpty.classList.remove("hidden");
+  elements.closeDetailButton.classList.add("hidden");
+  updateSelectionSources(null, null);
 }
 
 function updateSelectionSources(routeFeature, pointFeature) {
@@ -709,27 +973,33 @@ function updateSelectionSources(routeFeature, pointFeature) {
     return;
   }
 
-  state.map
-    .getSource("selected-route")
-    .setData(routeFeature ? { type: "FeatureCollection", features: [cloneFeature(routeFeature)] } : EMPTY_FEATURE_COLLECTION);
-  state.map
-    .getSource("selected-point")
-    .setData(pointFeature ? { type: "FeatureCollection", features: [cloneFeature(pointFeature)] } : EMPTY_FEATURE_COLLECTION);
+  const routeSource = state.map.getSource("selected-route");
+  const pointSource = state.map.getSource("selected-point");
+
+  if (routeSource) {
+    routeSource.setData(routeFeature ? { type: "FeatureCollection", features: [cloneFeature(routeFeature)] } : EMPTY_FEATURE_COLLECTION);
+  }
+
+  if (pointSource) {
+    pointSource.setData(pointFeature ? { type: "FeatureCollection", features: [cloneFeature(pointFeature)] } : EMPTY_FEATURE_COLLECTION);
+  }
 }
 
-function renderRouteDetail(feature) {
+function showRouteDetail(feature) {
   const props = feature.properties;
   const sequence = state.routeSequences?.[props.KODRUTE] || null;
   const directions = (sequence?.directions || []).slice(0, 2);
+  const serviceTags = [props.routeGroup, props.TPBUS, props.isActive ? "Operational" : "Not operational"];
+
+  if (props.TPRUTE && props.TPRUTE !== props.routeGroup) {
+    serviceTags.push(props.TPRUTE);
+  }
+
   const sequenceMarkup = state.routeSequences
     ? directions.length
       ? `<div class="direction-columns">${directions.map(renderDirectionCard).join("")}</div>`
       : '<p class="detail-copy">This route is present in the geometry layer, but a stop sequence preview was not available in the exported sequence file.</p>'
     : '<p class="detail-copy">Loading stop sequence preview…</p>';
-  const serviceTags = [props.routeGroup, props.TPBUS, props.isActive ? "Operational" : "Not operational"];
-  if (props.TPRUTE && props.TPRUTE !== props.routeGroup) {
-    serviceTags.push(props.TPRUTE);
-  }
 
   const html = `
     <div class="detail-header">
@@ -759,14 +1029,15 @@ function renderRouteDetail(feature) {
   `;
 
   showDetail(html);
+
   ensureRouteSequences().then(() => {
     if (state.selection?.kind === "route" && state.selection.feature.properties.KODRUTE === props.KODRUTE) {
-      renderRouteDetail(state.selection.feature);
+      showRouteDetail(state.selection.feature);
     }
   });
 }
 
-function renderStopDetail(feature) {
+function showStopDetail(feature) {
   const props = feature.properties;
   const routes = props.routes || [];
   const routeMarkup = routes.length
@@ -810,7 +1081,7 @@ function renderStopDetail(feature) {
   showDetail(html);
 }
 
-function renderStationDetail(feature) {
+function showStationDetail(feature) {
   const props = feature.properties;
   const scheduleMarkup = props.schedule ? renderMrtSchedule(props.schedule) : "";
   const integrationMarkup = Array.isArray(props.integration) && props.integration.length
@@ -826,11 +1097,13 @@ function renderStationDetail(feature) {
       `<button type="button" class="detail-action" data-action="open-link" data-href="${escapeHtml(props.mapsUrl)}">Open official map</button>`,
     );
   }
+
   if (props.sourceUrl) {
     actionButtons.push(
       `<button type="button" class="detail-action" data-action="open-link" data-href="${escapeHtml(props.sourceUrl)}">Open source page</button>`,
     );
   }
+
   if (props.locationSourceUrl) {
     actionButtons.push(
       `<button type="button" class="detail-action" data-action="open-link" data-href="${escapeHtml(props.locationSourceUrl)}">Open coordinate source</button>`,
@@ -841,21 +1114,21 @@ function renderStationDetail(feature) {
     <div class="detail-header">
       <div>
         <p class="eyebrow">${escapeHtml(props.mode || "Station")}</p>
-        <h2>${escapeHtml(props.name || "Unnamed station")}</h2>
+        <h2>${escapeHtml(props.labelName || props.name || "Unnamed station")}</h2>
         <p class="detail-copy">${escapeHtml(props.description || props.displayName || "No additional station description was exposed.")}</p>
       </div>
     </div>
 
     <div class="detail-tag-row">
       ${renderTag(props.mode || "Station")}
-      ${renderTag(props.locationMethod === "manual" ? "Manual coordinate fallback" : "Geocoded station point")}
+      ${renderTag(props.locationMethod === "manual" ? "Manual coordinate fallback" : "Placed from geocoded source")}
     </div>
 
     <div class="detail-meta-grid">
       ${renderMetaCard("Coordinate source", escapeHtml(props.query || "Unknown"))}
       ${renderMetaCard("Lat, Lng", `${feature.geometry.coordinates[1].toFixed(5)}, ${feature.geometry.coordinates[0].toFixed(5)}`)}
       ${renderMetaCard("Integration", Array.isArray(props.integration) ? formatNumber(props.integration.length) : "Not exposed")}
-      ${renderMetaCard("Station mode", escapeHtml(props.mode || "Unknown"))}
+      ${renderMetaCard("Map label", escapeHtml(props.labelName || props.name || "Unknown"))}
     </div>
 
     <div class="pill-list">
@@ -897,7 +1170,7 @@ function renderMrtSchedule(schedule) {
     cards.push(
       renderMetaCard(
         "First / last to start",
-        [schedule.firstRatanggaStart, schedule.lastRatanggaStart].filter(Boolean).join(" - ") || "Not exposed",
+        escapeHtml([schedule.firstRatanggaStart, schedule.lastRatanggaStart].filter(Boolean).join(" - ") || "Not exposed"),
       ),
     );
   }
@@ -906,7 +1179,7 @@ function renderMrtSchedule(schedule) {
     cards.push(
       renderMetaCard(
         "First / last to end",
-        [schedule.firstRatanggaEnd, schedule.lastRatanggaEnd].filter(Boolean).join(" - ") || "Not exposed",
+        escapeHtml([schedule.firstRatanggaEnd, schedule.lastRatanggaEnd].filter(Boolean).join(" - ") || "Not exposed"),
       ),
     );
   }
@@ -915,17 +1188,15 @@ function renderMrtSchedule(schedule) {
     return "";
   }
 
-  return `
-    <div class="detail-meta-grid">
-      ${cards.join("")}
-    </div>
-  `;
+  return `<div class="detail-meta-grid">${cards.join("")}</div>`;
 }
 
 function showDetail(html) {
   elements.detailEmpty.classList.add("hidden");
   elements.detailContent.classList.remove("hidden");
   elements.detailContent.innerHTML = html;
+  elements.detailSheet.classList.add("is-open");
+  elements.closeDetailButton.classList.remove("hidden");
 }
 
 function handleDetailAction(event) {
@@ -940,7 +1211,7 @@ function handleDetailAction(event) {
     if (state.selection.kind === "route") {
       fitToGeometry(state.selection.feature.geometry, state.selection.feature.properties.bounds);
     } else {
-      flyToPoint(state.selection.feature.geometry.coordinates, state.selection.kind === "stop" ? 14.2 : 13.6);
+      flyToPoint(state.selection.feature.geometry.coordinates, state.selection.kind === "stop" ? 14.3 : 13.8);
     }
   }
 
@@ -970,9 +1241,9 @@ function fitToGeometry(geometry, precomputedBounds) {
 
   state.map.fitBounds(bounds, {
     padding: getFramePadding(),
-    duration: 900,
+    duration: 950,
     bearing: state.map.getBearing(),
-    pitch: Math.max(state.map.getPitch(), 38),
+    pitch: Math.max(state.map.getPitch(), 42),
   });
 }
 
@@ -984,8 +1255,8 @@ function flyToPoint(coordinates, zoom) {
   state.map.easeTo({
     center: coordinates,
     zoom,
-    duration: 800,
-    pitch: Math.max(state.map.getPitch(), 50),
+    duration: 820,
+    pitch: Math.max(state.map.getPitch(), 52),
   });
 }
 
@@ -994,10 +1265,10 @@ function geometryToBounds(geometry) {
     return null;
   }
 
-  const coords = [];
-  collectCoordinates(geometry, coords);
+  const coordinates = [];
+  collectCoordinates(geometry, coordinates);
 
-  if (!coords.length) {
+  if (!coordinates.length) {
     return null;
   }
 
@@ -1006,7 +1277,7 @@ function geometryToBounds(geometry) {
   let maxLng = -Infinity;
   let maxLat = -Infinity;
 
-  coords.forEach(([lng, lat]) => {
+  coordinates.forEach(([lng, lat]) => {
     minLng = Math.min(minLng, lng);
     minLat = Math.min(minLat, lat);
     maxLng = Math.max(maxLng, lng);
@@ -1038,42 +1309,270 @@ function collectCoordinates(geometry, target) {
 }
 
 function getFramePadding() {
-  if (window.innerWidth <= 1024) {
-    return 42;
+  const isMobile = window.innerWidth <= 820;
+  const searchOpen = state.openPanel === "searchDialog";
+  const atlasOpen = state.openPanel === "atlasDrawer";
+  const layersOpen = state.openPanel === "layersDrawer";
+  const detailOpen = Boolean(state.selection);
+
+  if (isMobile) {
+    return {
+      top: 160,
+      right: 24,
+      bottom: detailOpen ? Math.round(window.innerHeight * 0.42) : 136,
+      left: 24,
+    };
   }
 
   return {
-    top: 42,
-    bottom: 42,
-    left: 400,
-    right: 400,
+    top: 120,
+    right: layersOpen ? 380 : 56,
+    bottom: detailOpen ? 280 : 72,
+    left: searchOpen || atlasOpen ? 410 : 56,
   };
+}
+
+function buildMotionSystems() {
+  return {
+    mrt: createMotionSystem({
+      key: "mrt",
+      mode: "MRT Jakarta",
+      color: "#2fd1c3",
+      lineFeature: state.data.mrtLine.features[0],
+      stationFeatures: state.data.mrtStations.features,
+      vehiclesPerDirection: 2,
+      speed: 0.032,
+      flowPeriodMs: 2400,
+    }),
+    lrt: createMotionSystem({
+      key: "lrt",
+      mode: "LRT Jakarta",
+      color: "#f3ca4d",
+      lineFeature: state.data.lrtLine.features[0],
+      stationFeatures: state.data.lrtStations.features,
+      vehiclesPerDirection: 1,
+      speed: 0.021,
+      flowPeriodMs: 2900,
+    }),
+  };
+}
+
+function createMotionSystem(config) {
+  const coordinates = config.lineFeature.geometry.coordinates;
+  const metrics = preparePathMetrics(coordinates);
+  const startLabel = config.stationFeatures[0]?.properties?.labelName || "Start";
+  const endLabel = config.stationFeatures.at(-1)?.properties?.labelName || "End";
+  const vehicles = [];
+
+  for (let index = 0; index < config.vehiclesPerDirection; index += 1) {
+    const forwardOffset = (index / config.vehiclesPerDirection + 0.08) % 1;
+    const reverseOffset = (index / config.vehiclesPerDirection + 0.45) % 1;
+
+    vehicles.push({
+      direction: 1,
+      phaseOffset: forwardOffset,
+      speed: config.speed + index * 0.004,
+      label: `To ${endLabel}`,
+    });
+
+    vehicles.push({
+      direction: -1,
+      phaseOffset: reverseOffset,
+      speed: config.speed + index * 0.003,
+      label: `To ${startLabel}`,
+    });
+  }
+
+  return {
+    key: config.key,
+    mode: config.mode,
+    color: config.color,
+    metrics,
+    startLabel,
+    endLabel,
+    vehicles,
+    flowPeriodMs: config.flowPeriodMs,
+  };
+}
+
+function startMotionAnimation() {
+  if (!state.map) {
+    return;
+  }
+
+  const tick = (timestamp) => {
+    if (timestamp - state.lastMotionUpdate >= 80) {
+      updateRailMotion(timestamp);
+      state.lastMotionUpdate = timestamp;
+    }
+    state.motionFrame = requestAnimationFrame(tick);
+  };
+
+  state.motionFrame = requestAnimationFrame(tick);
+}
+
+function updateRailMotion(timestamp) {
+  if (!state.map || !state.map.isStyleLoaded()) {
+    return;
+  }
+
+  Object.values(state.motionSystems).forEach((system) => {
+    const trainSource = state.map.getSource(`${system.key}-trains`);
+    if (trainSource) {
+      trainSource.setData(buildTrainCollection(system, timestamp));
+    }
+
+    const phase = ((timestamp % system.flowPeriodMs) / system.flowPeriodMs);
+    const forwardLayer = `${system.key}-line-flow-forward`;
+    const reverseLayer = `${system.key}-line-flow-reverse`;
+
+    if (state.map.getLayer(forwardLayer)) {
+      state.map.setPaintProperty(forwardLayer, "line-gradient", buildFlowGradient(system.color, phase, false));
+    }
+
+    if (state.map.getLayer(reverseLayer)) {
+      state.map.setPaintProperty(reverseLayer, "line-gradient", buildFlowGradient(system.color, (phase + 0.5) % 1, true));
+    }
+  });
+}
+
+function buildTrainCollection(system, timestamp) {
+  const features = system.vehicles.map((vehicle, index) => {
+    const travel = ((timestamp / 1000) * vehicle.speed + vehicle.phaseOffset) % 1;
+    const progress = vehicle.direction === 1 ? travel : 1 - travel;
+    const position = interpolateAlongPath(system.metrics, progress);
+
+    return {
+      type: "Feature",
+      geometry: {
+        type: "Point",
+        coordinates: position.coordinates,
+      },
+      properties: {
+        id: `${system.key}-${index}`,
+        color: system.color,
+        label: vehicle.label,
+        bearing: position.bearing,
+      },
+    };
+  });
+
+  return {
+    type: "FeatureCollection",
+    features,
+  };
+}
+
+function preparePathMetrics(coordinates) {
+  const segmentLengths = [];
+  let total = 0;
+
+  for (let index = 0; index < coordinates.length - 1; index += 1) {
+    const start = coordinates[index];
+    const end = coordinates[index + 1];
+    const length = Math.hypot(end[0] - start[0], end[1] - start[1]);
+    segmentLengths.push(length);
+    total += length;
+  }
+
+  return {
+    coordinates,
+    segmentLengths,
+    totalLength: total,
+  };
+}
+
+function interpolateAlongPath(metrics, progress) {
+  const target = clamp(progress, 0, 1) * metrics.totalLength;
+  let traversed = 0;
+
+  for (let index = 0; index < metrics.segmentLengths.length; index += 1) {
+    const segmentLength = metrics.segmentLengths[index];
+    if (traversed + segmentLength >= target) {
+      const local = segmentLength === 0 ? 0 : (target - traversed) / segmentLength;
+      const start = metrics.coordinates[index];
+      const end = metrics.coordinates[index + 1];
+      return {
+        coordinates: [
+          start[0] + (end[0] - start[0]) * local,
+          start[1] + (end[1] - start[1]) * local,
+        ],
+        bearing: Math.atan2(end[1] - start[1], end[0] - start[0]) * (180 / Math.PI),
+      };
+    }
+    traversed += segmentLength;
+  }
+
+  const fallbackStart = metrics.coordinates.at(-2) || metrics.coordinates[0];
+  const fallbackEnd = metrics.coordinates.at(-1) || metrics.coordinates[0];
+  return {
+    coordinates: fallbackEnd,
+    bearing: Math.atan2(fallbackEnd[1] - fallbackStart[1], fallbackEnd[0] - fallbackStart[0]) * (180 / Math.PI),
+  };
+}
+
+function buildFlowGradient(hexColor, phase, reverse) {
+  const transparent = "rgba(255,255,255,0)";
+  const glow = hexToRgba(hexColor, 0.4);
+  const bright = hexToRgba(hexColor, 0.95);
+  const head = clamp(reverse ? 1 - phase : phase, 0, 1);
+  const start = clamp(head - 0.16, 0, 1);
+  const centerA = clamp(head - 0.04, 0, 1);
+  const centerB = clamp(head + 0.04, 0, 1);
+  const end = clamp(head + 0.16, 0, 1);
+
+  return [
+    "interpolate",
+    ["linear"],
+    ["line-progress"],
+    0,
+    transparent,
+    start,
+    transparent,
+    centerA,
+    glow,
+    head,
+    bright,
+    centerB,
+    glow,
+    end,
+    transparent,
+    1,
+    transparent,
+  ];
 }
 
 function buildRouteTypeColors(routeTypeCounts) {
   const entries = Object.keys(routeTypeCounts).sort();
-  const map = {};
+  const colors = {};
 
   entries.forEach((type, index) => {
     const lowered = type.toLowerCase();
 
     if (lowered.includes("brt")) {
-      map[type] = "#ff7a21";
-      return;
-    }
-    if (lowered.includes("mikro") || lowered.includes("feeder")) {
-      map[type] = "#2fd1c3";
-      return;
-    }
-    if (lowered.includes("royal")) {
-      map[type] = "#f3ca4d";
+      colors[type] = "#ff7a21";
       return;
     }
 
-    map[type] = TYPE_PALETTE[index % TYPE_PALETTE.length];
+    if (lowered.includes("mikro") || lowered.includes("feeder")) {
+      colors[type] = "#2fd1c3";
+      return;
+    }
+
+    if (lowered.includes("royal")) {
+      colors[type] = "#f3ca4d";
+      return;
+    }
+
+    if (lowered.includes("jabodetabek")) {
+      colors[type] = "#78c4ff";
+      return;
+    }
+
+    colors[type] = TYPE_PALETTE[index % TYPE_PALETTE.length];
   });
 
-  return map;
+  return colors;
 }
 
 function buildRouteColorExpression(routeTypeColors) {
@@ -1128,7 +1627,7 @@ function buildScheduleSummary(weekdaySeries, weekendSeries) {
   const weekend = weekendSeries?.first || weekendSeries?.last
     ? `Weekend ${weekendSeries.first || "?"} - ${weekendSeries.last || "?"}`
     : "Weekend times unavailable";
-  return `${weekday}<br>${weekend}`;
+  return `${escapeHtml(weekday)}<br>${escapeHtml(weekend)}`;
 }
 
 function normalizeText(value) {
@@ -1145,15 +1644,19 @@ function searchScore(item, rawQuery, normalizedQuery) {
   if (normalizedTitle === normalizedQuery) {
     score += 300;
   }
+
   if (normalizedTitle.startsWith(normalizedQuery)) {
     score += 160;
   }
+
   if (item.searchText.includes(normalizedQuery)) {
     score += 80;
   }
+
   if ((item.subtitle || "").toLowerCase().includes(rawQuery.toLowerCase())) {
     score += 20;
   }
+
   if (item.kind === "route") {
     score += 15;
   }
@@ -1170,6 +1673,7 @@ function formatDate(value) {
   if (Number.isNaN(date.getTime())) {
     return "Unknown";
   }
+
   return new Intl.DateTimeFormat("en-US", {
     dateStyle: "medium",
     timeStyle: "short",
@@ -1199,6 +1703,7 @@ function boundsArrayToFitBounds(bounds) {
   if (!Array.isArray(bounds) || bounds.length !== 4) {
     return null;
   }
+
   return [
     [bounds[0], bounds[1]],
     [bounds[2], bounds[3]],
@@ -1241,6 +1746,12 @@ function decorateRouteFeatures(collection) {
   });
 }
 
+function decorateStationFeatures(collection) {
+  collection.features.forEach((feature) => {
+    feature.properties.labelName = shortenStationName(feature.properties.name);
+  });
+}
+
 function summarizeRouteGroups(features) {
   const counts = {};
 
@@ -1248,6 +1759,7 @@ function summarizeRouteGroups(features) {
     if (!feature.properties.isActive) {
       return;
     }
+
     const group = feature.properties.routeGroup || classifyRouteGroup(feature.properties);
     counts[group] = (counts[group] || 0) + 1;
   });
@@ -1263,29 +1775,66 @@ function classifyRouteGroup(props) {
   if (routeType === "BRT") {
     return "BRT";
   }
+
   if (routeType === "Mikrotrans" || code.startsWith("JAK")) {
     return "Mikrotrans";
   }
+
   if (routeType === "Royaltrans" || String(props.TPBUS || "").includes("RY")) {
     return "Royaltrans";
   }
+
   if (routeType === "Bus Wisata" || code.startsWith("BW")) {
     return "Bus Wisata";
   }
+
   if (routeType === "Rusun" || lowered.includes("rusun")) {
     return "Rusun";
   }
+
   if (routeType === "Transjabodetabek") {
     return "Transjabodetabek";
   }
+
   if (routeType === "Angkutan Umum Integrasi") {
     return "Angkutan Umum Integrasi";
   }
+
   if (routeType === "Monas Explorer" || routeType === "Pencakar Langit" || routeType === "Sejarah Jakarta") {
     return "Bus Wisata";
   }
 
   return "Other services";
+}
+
+function shortenStationName(name) {
+  return String(name || "")
+    .replace(/^Stasiun MRT\s+/i, "")
+    .replace(/^Stasiun LRT\s+/i, "")
+    .replace(/^Stasiun\s+/i, "")
+    .replace(/^Bundaran HI Bank Jakarta$/i, "Bundaran HI")
+    .replace(/^ASEAN Headquarter$/i, "ASEAN")
+    .replace(/\s+Bank Syariah Indonesia$/i, "")
+    .replace(/\s+Indomaret$/i, "")
+    .replace(/\s+TUKU$/i, "")
+    .replace(/\s+Mastercard$/i, "")
+    .replace(/\s+Mandiri$/i, "")
+    .replace(/\s+BNI$/i, "")
+    .replace(/\s+BCA$/i, "")
+    .trim();
+}
+
+function hexToRgba(hex, alpha) {
+  const normalized = hex.replace("#", "");
+  const bigint = Number.parseInt(normalized, 16);
+  const r = (bigint >> 16) & 255;
+  const g = (bigint >> 8) & 255;
+  const b = bigint & 255;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
 }
 
 function escapeHtml(value) {
