@@ -92,6 +92,15 @@ const LAYER_GROUPS = {
   ],
 };
 
+const DEFAULT_LAYER_VISIBILITY = {
+  routes: true,
+  stops: true,
+  rail: true,
+  mrt: true,
+  lrt: true,
+  disaster: false,
+};
+
 const state = {
   data: null,
   map: null,
@@ -104,6 +113,7 @@ const state = {
   routeSequencesPromise: null,
   routeSequencesStatus: "idle",
   routeSequencesError: null,
+  layerVisibility: { ...DEFAULT_LAYER_VISIBILITY },
   openPanel: null,
   motionSystems: {},
   motionFrame: null,
@@ -122,6 +132,7 @@ document.addEventListener("DOMContentLoaded", initializeApp);
 async function initializeApp() {
   cacheElements();
   bindStaticUi();
+  syncLayerInputState();
   renderDisasterPanel();
   updateDisasterControls();
   setOpenPanel(null);
@@ -208,16 +219,22 @@ function bindStaticUi() {
 
   elements.layerInputs.forEach((input) => {
     input.addEventListener("change", (event) => {
-      if (!state.map || !state.map.isStyleLoaded()) {
+      const group = event.target.dataset.layerGroup;
+      const isChecked = event.target.checked;
+
+      state.layerVisibility[group] = isChecked;
+      syncLayerInputState();
+
+      if (group === "disaster" && isChecked && !state.disaster.data) {
+        void ensureDisasterData().then((data) => {
+          state.layerVisibility.disaster = Boolean(data);
+          syncLayerInputState();
+          syncLayerToggleVisibility();
+        });
         return;
       }
 
-      if (event.target.dataset.layerGroup === "disaster" && !state.disaster.data) {
-        event.target.checked = false;
-        return;
-      }
-
-      applyLayerGroupVisibility(event.target.dataset.layerGroup, event.target.checked);
+      syncLayerToggleVisibility();
     });
   });
 
@@ -239,6 +256,8 @@ function bindStaticUi() {
 
 function togglePanel(panelId) {
   if (panelId === "disasterDrawer" && state.openPanel !== panelId) {
+    state.layerVisibility.disaster = true;
+    syncLayerInputState();
     ensureDisasterData();
   }
 
@@ -269,11 +288,26 @@ function setOpenPanel(panelId) {
       elements.searchInput.select();
     }, 60);
   }
+
+  syncLayerToggleVisibility();
 }
 
 function syncLayerToggleVisibility() {
+  if (!state.map || !state.map.isStyleLoaded()) {
+    return;
+  }
+
+  Object.entries(state.layerVisibility).forEach(([group, visible]) => {
+    applyLayerGroupVisibility(group, visible);
+  });
+}
+
+function syncLayerInputState() {
   elements.layerInputs.forEach((input) => {
-    applyLayerGroupVisibility(input.dataset.layerGroup, input.checked);
+    const group = input.dataset.layerGroup;
+    if (Object.prototype.hasOwnProperty.call(state.layerVisibility, group)) {
+      input.checked = Boolean(state.layerVisibility[group]);
+    }
   });
 }
 
@@ -1179,8 +1213,10 @@ function updateDisasterControls() {
   const isReady = state.disaster.status === "ready" && Boolean(state.disaster.data);
 
   if (elements.disasterLayerInput) {
-    elements.disasterLayerInput.disabled = !isReady;
+    elements.disasterLayerInput.disabled = isLoading;
   }
+
+  syncLayerInputState();
 
   elements.panelButtons
     .filter((button) => button.dataset.panelTarget === "disasterDrawer")
@@ -1214,16 +1250,9 @@ async function ensureDisasterData() {
 
     populateDisasterSources();
 
-    if (elements.disasterLayerInput) {
-      elements.disasterLayerInput.checked = true;
-    }
-
     updateDisasterControls();
     renderDisasterPanel();
-
-    if (state.map && state.map.isStyleLoaded()) {
-      applyLayerGroupVisibility("disaster", true);
-    }
+    syncLayerToggleVisibility();
 
     return data;
   } catch (error) {
@@ -1231,8 +1260,10 @@ async function ensureDisasterData() {
     state.disaster.status = "error";
     state.disaster.data = null;
     state.disaster.error = error;
+    state.layerVisibility.disaster = false;
     renderDisasterPanel();
     updateDisasterControls();
+    syncLayerToggleVisibility();
     return null;
   }
 }
