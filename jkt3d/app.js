@@ -191,6 +191,7 @@ function togglePanel(panelId) {
 
 function setOpenPanel(panelId) {
   state.openPanel = panelId;
+  document.body.dataset.activePanel = panelId || "";
 
   PANEL_IDS.forEach((id) => {
     const panel = elements.panels[id];

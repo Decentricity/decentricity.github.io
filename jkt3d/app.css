@@ -258,10 +258,16 @@ input {
   width: min(620px, calc(100vw - 36px));
   max-height: min(72vh, 740px);
   transform: translateX(-50%) translateY(-18px) scale(0.98);
+  z-index: 9;
 }
 
 .search-dialog.is-open {
   transform: translateX(-50%) translateY(0) scale(1);
+}
+
+.search-dialog .search-results {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .drawer {
@@ -478,6 +484,7 @@ input {
   gap: 12px;
   pointer-events: none;
   z-index: 3;
+  transition: opacity 180ms ease, transform 180ms ease;
 }
 
 .hud-card {
@@ -541,7 +548,7 @@ input {
   border-radius: 28px;
   overflow: auto;
   transform: translateY(calc(100% - 104px));
-  transition: transform 260ms ease;
+  transition: transform 260ms ease, opacity 180ms ease;
   z-index: 6;
 }
 
@@ -673,6 +680,14 @@ input {
 .maplibregl-ctrl-top-right {
   top: 110px;
   right: 18px;
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+body[data-active-panel="searchDialog"] .map-hud,
+body[data-active-panel="searchDialog"] .detail-sheet,
+body[data-active-panel="searchDialog"] .maplibregl-ctrl-top-right {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .maplibregl-ctrl-group {
@@ -738,18 +753,30 @@ input {
     width: 100%;
   }
 
-  .search-dialog,
+  .search-dialog {
+    top: 94px;
+    left: 12px;
+    right: 12px;
+    bottom: max(16px, calc(16px + env(safe-area-inset-bottom)));
+    width: auto;
+    max-height: none;
+    transform: translateY(24px);
+  }
+
+  .search-dialog.is-open {
+    transform: translateY(0);
+  }
+
   .drawer {
     top: auto;
     left: 12px;
     right: 12px;
     bottom: 126px;
     width: auto;
-    max-height: calc(100vh - 260px);
+    max-height: calc(100dvh - 260px);
     transform: translateY(24px);
   }
 
-  .search-dialog.is-open,
   .atlas-drawer.is-open,
   .layers-drawer.is-open {
     transform: translateY(0);
@@ -795,6 +822,18 @@ input {
   .maplibregl-ctrl-top-right {
     top: 158px;
     right: 12px;
+  }
+
+  body[data-active-panel="searchDialog"] .map-hud {
+    transform: translateY(24px);
+  }
+
+  body[data-active-panel="searchDialog"] .detail-sheet {
+    transform: translateY(100%);
+  }
+
+  body[data-active-panel="searchDialog"] .maplibregl-ctrl-top-right {
+    transform: translateY(-14px);
   }
 }
 
