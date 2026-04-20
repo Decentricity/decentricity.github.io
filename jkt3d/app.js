@@ -10,6 +10,7 @@ const DATA_FILES = {
 };
 
 const ROUTE_SEQUENCE_URL = "./data/transjakarta-route-sequences.json";
+const ROUTE_SEQUENCE_TIMEOUT_MS = 8000;
 const BMKG_FORECAST_URLS = [
   "https://api.bmkg.go.id/publik/prakiraan-cuaca?adm4=31.71.01.1001",
   "https://raw.githubusercontent.com/infoBMKG/data-cuaca/main/31.71.01.1001.json",
@@ -101,6 +102,8 @@ const state = {
   routeLookup: new Map(),
   routeSequences: null,
   routeSequencesPromise: null,
+  routeSequencesStatus: "idle",
+  routeSequencesError: null,
   openPanel: null,
   motionSystems: {},
   motionFrame: null,
@@ -149,6 +152,7 @@ async function initializeApp() {
       syncLayerToggleVisibility();
       startMotionAnimation();
       hideLoading();
+      warmRouteSequences();
     });
   } catch (error) {
     console.error(error);
@@ -1774,20 +1778,44 @@ function updateSelectionSources(routeFeature, pointFeature) {
 }
 
 function showRouteDetail(feature) {
+  if (!state.routeSequences && state.routeSequencesStatus === "idle") {
+    void ensureRouteSequences();
+  }
+
   const props = feature.properties;
   const sequence = state.routeSequences?.[props.KODRUTE] || null;
   const directions = (sequence?.directions || []).slice(0, 2);
   const serviceTags = [props.routeGroup, props.TPBUS, props.isActive ? "Operational" : "Not operational"];
+  const routeSequenceStatus = state.routeSequences ? "ready" : state.routeSequencesStatus;
 
   if (props.TPRUTE && props.TPRUTE !== props.routeGroup) {
     serviceTags.push(props.TPRUTE);
   }
 
-  const sequenceMarkup = state.routeSequences
+  const sequenceMarkup = routeSequenceStatus === "ready"
     ? directions.length
       ? `<div class="direction-columns">${directions.map(renderDirectionCard).join("")}</div>`
       : '<p class="detail-copy">This route is present in the geometry layer, but a stop sequence preview was not available in the exported sequence file.</p>'
-    : '<p class="detail-copy">Loading stop sequence preview…</p>';
+    : routeSequenceStatus === "error"
+      ? `
+        <p class="detail-copy">Stop sequence preview is temporarily unavailable. Route geometry and map interaction remain usable.</p>
+        <p class="detail-copy">${escapeHtml(state.routeSequencesError?.message || "The preview request did not complete.")}</p>
+      `
+      : '<p class="detail-copy">Loading stop sequence preview…</p>';
+
+  const previewSummary = routeSequenceStatus === "ready"
+    ? sequence
+      ? `${sequence.directions.length} direction set(s)`
+      : "No sequence found"
+    : routeSequenceStatus === "error"
+      ? "Unavailable"
+      : "Loading on demand";
+
+  const actionButtons = ['<button type="button" class="detail-action" data-action="frame-selection">Frame route</button>'];
+
+  if (routeSequenceStatus === "error") {
+    actionButtons.push('<button type="button" class="detail-action" data-action="retry-route-preview">Retry preview</button>');
+  }
 
   const html = `
     <div class="detail-header">
@@ -1805,24 +1833,26 @@ function showRouteDetail(feature) {
     <div class="detail-meta-grid">
       ${renderMetaCard("Distance", props.KM ? `${escapeHtml(String(props.KM))} km` : "Not exposed")}
       ${renderMetaCard("Route code", escapeHtml(props.KODRUTE || "N/A"))}
-      ${renderMetaCard("Stop preview", state.routeSequences ? (sequence ? `${sequence.directions.length} direction set(s)` : "No sequence found") : "Loading on demand")}
+      ${renderMetaCard("Stop preview", escapeHtml(previewSummary))}
       ${renderMetaCard("Source status", escapeHtml(props.STSOPRS || "Unknown"))}
     </div>
 
     ${sequenceMarkup}
 
     <div class="detail-action-row">
-      <button type="button" class="detail-action" data-action="frame-selection">Frame route</button>
+      ${actionButtons.join("")}
     </div>
   `;
 
   showDetail(html);
 
-  ensureRouteSequences().then(() => {
-    if (state.selection?.kind === "route" && state.selection.feature.properties.KODRUTE === props.KODRUTE) {
-      showRouteDetail(state.selection.feature);
-    }
-  });
+  if (routeSequenceStatus === "loading" && state.routeSequencesPromise) {
+    state.routeSequencesPromise.finally(() => {
+      if (state.selection?.kind === "route" && state.selection.feature.properties.KODRUTE === props.KODRUTE) {
+        showRouteDetail(state.selection.feature);
+      }
+    });
+  }
 }
 
 function showStopDetail(feature) {
@@ -2103,6 +2133,16 @@ function handleDetailAction(event) {
   }
 
   const action = button.dataset.action;
+
+  if (action === "retry-route-preview" && state.selection.kind === "route") {
+    void ensureRouteSequences({ force: true }).finally(() => {
+      if (state.selection?.kind === "route") {
+        showRouteDetail(state.selection.feature);
+      }
+    });
+    showRouteDetail(state.selection.feature);
+    return;
+  }
 
   if (action === "frame-selection") {
     if (state.selection.kind === "route") {
@@ -2702,30 +2742,82 @@ function cloneFeature(feature) {
   return JSON.parse(JSON.stringify(feature));
 }
 
-async function ensureRouteSequences() {
+function warmRouteSequences() {
+  window.setTimeout(() => {
+    if (state.routeSequencesStatus === "idle") {
+      void ensureRouteSequences();
+    }
+  }, 450);
+}
+
+async function ensureRouteSequences(options = {}) {
+  const { force = false } = options;
+
   if (state.routeSequences) {
     return state.routeSequences;
   }
 
-  if (!state.routeSequencesPromise) {
-    state.routeSequencesPromise = fetch(ROUTE_SEQUENCE_URL)
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`Failed to load ${ROUTE_SEQUENCE_URL}: ${response.status}`);
-        }
-        return response.json();
-      })
+  if (state.routeSequencesStatus === "loading" && state.routeSequencesPromise) {
+    return state.routeSequencesPromise;
+  }
+
+  if (state.routeSequencesStatus === "error" && !force) {
+    return null;
+  }
+
+  state.routeSequencesStatus = "loading";
+  state.routeSequencesError = null;
+  state.routeSequencesPromise = fetchJsonWithTimeout(ROUTE_SEQUENCE_URL, { timeoutMs: ROUTE_SEQUENCE_TIMEOUT_MS })
       .then((data) => {
         state.routeSequences = data;
+        state.routeSequencesStatus = "ready";
         return data;
       })
       .catch((error) => {
         console.error(error);
+        state.routeSequences = null;
+        state.routeSequencesStatus = "error";
+        state.routeSequencesError = error;
         return null;
+      })
+      .finally(() => {
+        state.routeSequencesPromise = null;
       });
-  }
 
   return state.routeSequencesPromise;
+}
+
+async function fetchJsonWithTimeout(url, options = {}) {
+  const { timeoutMs = 8000, cache = "default" } = options;
+  const controller = typeof AbortController === "function" ? new AbortController() : null;
+  const timeoutId = controller
+    ? window.setTimeout(() => {
+        controller.abort();
+      }, timeoutMs)
+    : null;
+
+  try {
+    const response = await fetch(url, {
+      cache,
+      signal: controller?.signal,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to load ${url}: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      throw new Error(`Timed out loading stop sequence preview after ${Math.round(timeoutMs / 1000)}s.`);
+    }
+
+    throw error;
+  } finally {
+    if (timeoutId) {
+      window.clearTimeout(timeoutId);
+    }
+  }
 }
 
 function decorateRouteFeatures(collection) {
