@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>JKT3D Beta</title>
-  <meta name="description" content="A map-first Jakarta transit atlas built from official Transjakarta, JakartaSatu, MRT Jakarta, and LRT Jakarta sources.">
+  <meta name="description" content="A Jakarta transit atlas built from official Transjakarta, JakartaSatu, MRT Jakarta, and LRT Jakarta sources.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -23,7 +23,7 @@
             <h1>JKT3D</h1>
             <span class="brand-pill">Beta</span>
           </div>
-          <p class="subcopy">Map-first Jakarta transit atlas with animated MRT and LRT direction cues.</p>
+          <p class="subcopy">Jakarta transit atlas with routes, stations, and service layers.</p>
         </div>
 
         <div class="topbar-actions">
@@ -82,7 +82,7 @@
         </div>
 
         <section class="section-block">
-          <p class="detail-copy">Use the map as the primary surface. Open this drawer only when you need filters.</p>
+          <p class="detail-copy">Control layer visibility and camera settings here.</p>
           <button type="button" class="ghost-button" data-map-action="reset-view">Reset camera</button>
         </section>
 
@@ -105,7 +105,7 @@
         </div>
 
         <div class="hud-card hud-card-flow">
-          <p class="hud-eyebrow">Animated rail flow</p>
+          <p class="hud-eyebrow">Rail directions</p>
           <div id="lineFlowLegend" class="flow-chip-list"></div>
         </div>
       </div>
@@ -115,8 +115,8 @@
         <button id="closeDetailButton" type="button" class="icon-button sheet-close hidden" aria-label="Close details">Close</button>
         <div class="detail-empty" id="detailEmpty">
           <p class="eyebrow">Selection</p>
-          <h2>Map-first by default</h2>
-          <p>Tap a route, stop, or station to pull details into this sheet without covering the whole map.</p>
+          <h2>No selection</h2>
+          <p>Tap a route, stop, or station to inspect details here.</p>
         </div>
         <div class="detail-content hidden" id="detailContent"></div>
       </section>

@@ -101,14 +101,6 @@ input {
   opacity: 0.5;
 }
 
-.map-topbar,
-.map-hud,
-.overlay-panel,
-.detail-sheet,
-.loading-screen {
-  z-index: 4;
-}
-
 .map-topbar {
   position: absolute;
   top: 18px;
@@ -119,6 +111,7 @@ input {
   justify-content: space-between;
   gap: 14px;
   pointer-events: none;
+  z-index: 4;
 }
 
 .brand-chip,
@@ -251,6 +244,7 @@ input {
   opacity: 0;
   pointer-events: none;
   transition: opacity 220ms ease, transform 220ms ease;
+  z-index: 7;
 }
 
 .overlay-panel.is-open {
@@ -483,6 +477,7 @@ input {
   justify-content: space-between;
   gap: 12px;
   pointer-events: none;
+  z-index: 3;
 }
 
 .hud-card {
@@ -547,6 +542,7 @@ input {
   overflow: auto;
   transform: translateY(calc(100% - 104px));
   transition: transform 260ms ease;
+  z-index: 6;
 }
 
 .detail-sheet.is-open {
@@ -644,6 +640,7 @@ input {
     radial-gradient(circle at top, rgba(47, 209, 195, 0.18), transparent 30%),
     linear-gradient(180deg, rgba(6, 10, 11, 0.9), rgba(6, 10, 11, 0.97));
   transition: opacity 260ms ease, visibility 260ms ease;
+  z-index: 8;
 }
 
 .loading-screen.hidden {
