@@ -28,6 +28,7 @@
 
         <div class="topbar-actions">
           <button type="button" class="chrome-button" data-panel-target="searchDialog">Search</button>
+          <button type="button" class="chrome-button" data-panel-target="disasterDrawer">Disaster Data</button>
           <button type="button" class="chrome-button" data-panel-target="atlasDrawer">Atlas</button>
           <button type="button" class="chrome-button" data-panel-target="layersDrawer">Layers</button>
         </div>
@@ -72,6 +73,39 @@
         </details>
       </aside>
 
+      <aside class="overlay-panel drawer disaster-drawer" id="disasterDrawer">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Disaster Data</p>
+            <h2>PetaBencana + BMKG</h2>
+          </div>
+          <button type="button" class="icon-button" data-close-target="disasterDrawer" aria-label="Close disaster data">Close</button>
+        </div>
+
+        <section class="section-block">
+          <p class="detail-copy" id="disasterStatus">
+            Disaster layers start disabled. Open this panel to fetch Jakarta flood infrastructure from PetaBencana and BMKG forecast context.
+          </p>
+        </section>
+
+        <div class="stats-grid" id="disasterStatsGrid"></div>
+
+        <section class="section-block">
+          <h3>Loaded overlays</h3>
+          <div id="disasterLegend" class="legend-list"></div>
+        </section>
+
+        <section class="section-block">
+          <h3>BMKG outlook</h3>
+          <div id="disasterBmkgSummary" class="source-list"></div>
+        </section>
+
+        <details class="section-block sources-block" open>
+          <summary>Disaster sources</summary>
+          <div id="disasterSourceList" class="source-list"></div>
+        </details>
+      </aside>
+
       <aside class="overlay-panel drawer layers-drawer" id="layersDrawer">
         <div class="panel-header">
           <div>
@@ -94,6 +128,7 @@
             <label class="toggle-pill"><input type="checkbox" data-layer-group="rail" checked>Jakarta rail geometry</label>
             <label class="toggle-pill"><input type="checkbox" data-layer-group="mrt" checked>MRT Jakarta</label>
             <label class="toggle-pill"><input type="checkbox" data-layer-group="lrt" checked>LRT Jakarta</label>
+            <label class="toggle-pill"><input type="checkbox" data-layer-group="disaster" disabled>Disaster data</label>
           </div>
         </section>
       </aside>
