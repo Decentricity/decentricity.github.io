@@ -80,8 +80,12 @@ const LAYER_GROUPS = {
   disaster: [
     "pb-waterways",
     "pb-waterways-hit",
+    "pb-pumps-halo",
     "pb-pumps",
+    "pb-pump-labels",
+    "pb-floodgates-halo",
     "pb-floodgates",
+    "pb-floodgate-labels",
     "pb-floodgauges-halo",
     "pb-floodgauges",
     "pb-reports-halo",
@@ -185,6 +189,7 @@ function cacheElements() {
   elements.detailSheet = document.getElementById("detailSheet");
   elements.closeDetailButton = document.getElementById("closeDetailButton");
   elements.lineFlowLegend = document.getElementById("lineFlowLegend");
+  elements.flowHudCard = document.querySelector(".hud-card-flow");
   elements.disasterStatus = document.getElementById("disasterStatus");
   elements.disasterStatsGrid = document.getElementById("disasterStatsGrid");
   elements.disasterLegend = document.getElementById("disasterLegend");
@@ -300,6 +305,8 @@ function syncLayerToggleVisibility() {
   Object.entries(state.layerVisibility).forEach(([group, visible]) => {
     applyLayerGroupVisibility(group, visible);
   });
+
+  updateHudVisibility();
 }
 
 function syncLayerInputState() {
@@ -394,8 +401,6 @@ function addLayers(map) {
       "line-opacity": 0.78,
     },
   });
-
-  addDisasterLayers(map);
 
   map.addLayer({
     id: "tj-routes-shadow",
@@ -503,6 +508,8 @@ function addLayers(map) {
       "circle-opacity": ["case", ["get", "isActive"], 0.92, 0.32],
     },
   });
+
+  addDisasterLayers(map);
 
   map.addLayer({
     id: "selected-route-halo",
@@ -744,15 +751,61 @@ function addDisasterLayers(map) {
   });
 
   map.addLayer({
+    id: "pb-pumps-halo",
+    type: "circle",
+    source: "pb-pumps",
+    paint: {
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 8.5, 12, 12.5, 15, 16.5],
+      "circle-color": "rgba(255, 122, 33, 0.28)",
+      "circle-opacity": 0.95,
+      "circle-blur": 0.7,
+    },
+  });
+
+  map.addLayer({
     id: "pb-pumps",
     type: "circle",
     source: "pb-pumps",
     paint: {
-      "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 3.8, 12, 5.4, 15, 7.8],
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 5.4, 12, 7.6, 15, 10.4],
       "circle-color": "#ff7a21",
-      "circle-stroke-width": 1.4,
-      "circle-stroke-color": "#fff1de",
+      "circle-stroke-width": 1.8,
+      "circle-stroke-color": "#fff6ea",
       "circle-opacity": 0.96,
+    },
+  });
+
+  map.addLayer({
+    id: "pb-pump-labels",
+    type: "symbol",
+    source: "pb-pumps",
+    minzoom: 10.4,
+    layout: {
+      "text-field": ["coalesce", ["get", "title"], ["get", "name"], "Pump"],
+      "text-font": ["Open Sans Bold"],
+      "text-size": ["interpolate", ["linear"], ["zoom"], 10.4, 9.5, 14, 11.5],
+      "text-anchor": "top",
+      "text-offset": [0, 1.15],
+      "text-allow-overlap": false,
+      "text-ignore-placement": false,
+      "symbol-sort-key": 10,
+    },
+    paint: {
+      "text-color": "#ffd7bc",
+      "text-halo-color": "rgba(7, 12, 14, 0.98)",
+      "text-halo-width": 1.35,
+    },
+  });
+
+  map.addLayer({
+    id: "pb-floodgates-halo",
+    type: "circle",
+    source: "pb-floodgates",
+    paint: {
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 9, 12, 13, 15, 17],
+      "circle-color": "rgba(111, 215, 255, 0.24)",
+      "circle-opacity": 0.95,
+      "circle-blur": 0.7,
     },
   });
 
@@ -761,11 +814,33 @@ function addDisasterLayers(map) {
     type: "circle",
     source: "pb-floodgates",
     paint: {
-      "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 4.3, 12, 6.1, 15, 8.8],
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 5.8, 12, 8.1, 15, 10.8],
       "circle-color": "#6fd7ff",
-      "circle-stroke-width": 1.5,
-      "circle-stroke-color": "#06202a",
+      "circle-stroke-width": 1.9,
+      "circle-stroke-color": "#04171f",
       "circle-opacity": 0.96,
+    },
+  });
+
+  map.addLayer({
+    id: "pb-floodgate-labels",
+    type: "symbol",
+    source: "pb-floodgates",
+    minzoom: 10.4,
+    layout: {
+      "text-field": ["coalesce", ["get", "title"], ["get", "name"], "Floodgate"],
+      "text-font": ["Open Sans Bold"],
+      "text-size": ["interpolate", ["linear"], ["zoom"], 10.4, 9.5, 14, 11.5],
+      "text-anchor": "top",
+      "text-offset": [0, 1.15],
+      "text-allow-overlap": false,
+      "text-ignore-placement": false,
+      "symbol-sort-key": 8,
+    },
+    paint: {
+      "text-color": "#d9f6ff",
+      "text-halo-color": "rgba(7, 12, 14, 0.98)",
+      "text-halo-width": 1.35,
     },
   });
 
@@ -1069,6 +1144,8 @@ function renderFlowLegend() {
       `,
     )
     .join("");
+
+  updateHudVisibility();
 }
 
 function renderDisasterPanel() {
@@ -1224,6 +1301,26 @@ function updateDisasterControls() {
       button.textContent = isLoading ? "Loading…" : "Disaster Data";
       button.disabled = false;
     });
+}
+
+function updateHudVisibility() {
+  if (!elements.flowHudCard) {
+    return;
+  }
+
+  const showMrt = Boolean(state.layerVisibility.mrt);
+  const showLrt = Boolean(state.layerVisibility.lrt);
+  const items = Array.from(elements.lineFlowLegend.querySelectorAll(".flow-chip"));
+
+  items.forEach((item) => {
+    const text = item.textContent || "";
+    const isMrtItem = text.includes("MRT Jakarta");
+    const isLrtItem = text.includes("LRT Jakarta");
+    const visible = (isMrtItem && showMrt) || (isLrtItem && showLrt);
+    item.hidden = !visible;
+  });
+
+  elements.flowHudCard.hidden = !showMrt && !showLrt;
 }
 
 async function ensureDisasterData() {
