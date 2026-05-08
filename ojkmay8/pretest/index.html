@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Pre-Test | Analytics Mindset & Financial Insights</title>
+    <link rel="stylesheet" href="./styles.css">
+    <script src="https://unpkg.com/lucide@1.14.0/dist/umd/lucide.min.js" defer></script>
+    <script src="./app.js" defer></script>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="masthead">
+        <div class="masthead-copy">
+          <p class="eyebrow">Form A | Pre-Test</p>
+          <h1>Analytics Mindset &amp; Communicating Financial Insights</h1>
+          <p class="lede">Five scenario questions. Score appears after submission.</p>
+        </div>
+
+        <div class="status-panel" aria-live="polite">
+          <div>
+            <span class="panel-label">Progress</span>
+            <strong id="progressCount">0/5</strong>
+          </div>
+          <div class="meter" aria-hidden="true">
+            <span id="progressBar"></span>
+          </div>
+        </div>
+
+        <svg class="data-visual" viewBox="0 0 360 220" role="img" aria-label="Financial analytics dashboard illustration">
+          <rect x="20" y="18" width="320" height="184" rx="18" fill="#f8fafc"></rect>
+          <rect x="42" y="42" width="96" height="54" rx="10" fill="#dbeafe"></rect>
+          <rect x="154" y="42" width="164" height="54" rx="10" fill="#ccfbf1"></rect>
+          <rect x="42" y="116" width="276" height="54" rx="10" fill="#fff7ed"></rect>
+          <path d="M64 151 L103 137 L144 145 L188 128 L229 134 L294 122" fill="none" stroke="#0f766e" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"></path>
+          <circle cx="64" cy="151" r="7" fill="#0f766e"></circle>
+          <circle cx="188" cy="128" r="7" fill="#0f766e"></circle>
+          <circle cx="294" cy="122" r="7" fill="#0f766e"></circle>
+          <rect x="64" y="61" width="52" height="8" rx="4" fill="#1d4ed8"></rect>
+          <rect x="176" y="61" width="116" height="8" rx="4" fill="#0f766e"></rect>
+          <rect x="176" y="76" width="72" height="8" rx="4" fill="#115e59" opacity=".45"></rect>
+        </svg>
+      </header>
+
+      <form id="quizForm" class="quiz" novalidate>
+        <div id="questionList" class="question-list"></div>
+        <p id="formMessage" class="form-message" role="alert"></p>
+        <div class="actions">
+          <button class="button button-secondary" type="button" id="resetBtn">
+            <i data-lucide="rotate-ccw" aria-hidden="true"></i>
+            <span>Reset</span>
+          </button>
+          <button class="button button-primary" type="submit">
+            <i data-lucide="send" aria-hidden="true"></i>
+            <span>Submit</span>
+          </button>
+        </div>
+      </form>
+
+      <section id="resultPanel" class="result-panel" tabindex="-1" hidden>
+        <span class="panel-label">Result</span>
+        <h2 id="scoreLine">Score: 0/5</h2>
+        <p id="scoreDetail"></p>
+      </section>
+    </main>
+  </body>
+</html>
