@@ -1,0 +1,788 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>UFO Release 01 - Decentricity Mirror Notes</title>
+  <meta name="description" content="Structured summary of selected high-interest files mirrored from war.gov UFO Release 01, with links to every file in the Decentricity GitHub repository.">
+  <style>
+    :root {
+      --bg: #08090b;
+      --panel: #12151a;
+      --panel-2: #181d25;
+      --ink: #f5f7fb;
+      --muted: #a9b2bf;
+      --line: #303846;
+      --accent: #69e0b5;
+      --accent-2: #ffcb6b;
+      --danger: #ff6b7a;
+      --link: #9bd4ff;
+      --max: 1180px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background: var(--bg);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.55;
+    }
+
+    a {
+      color: var(--link);
+      text-decoration: none;
+    }
+
+    a:hover,
+    a:focus {
+      text-decoration: underline;
+    }
+
+    .site-header {
+      border-bottom: 1px solid var(--line);
+      background: rgba(8, 9, 11, 0.92);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      backdrop-filter: blur(10px);
+    }
+
+    .nav {
+      width: min(var(--max), calc(100% - 32px));
+      margin: 0 auto;
+      min-height: 56px;
+      display: flex;
+      gap: 18px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      color: var(--ink);
+      font-weight: 800;
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+
+    .nav-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      align-items: center;
+      justify-content: flex-end;
+      font-size: 0.92rem;
+    }
+
+    main {
+      width: min(var(--max), calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+      gap: 28px;
+      align-items: center;
+      padding: 48px 0 34px;
+      min-height: 560px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      gap: 10px;
+      align-items: center;
+      color: var(--accent);
+      font-size: 0.82rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0;
+      margin-bottom: 14px;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 36px;
+      height: 2px;
+      background: var(--accent);
+      display: inline-block;
+    }
+
+    h1,
+    h2,
+    h3 {
+      letter-spacing: 0;
+      line-height: 1.12;
+    }
+
+    h1 {
+      font-size: 4.8rem;
+      margin: 0 0 18px;
+      max-width: 820px;
+    }
+
+    h2 {
+      font-size: 2.2rem;
+      margin: 0 0 16px;
+    }
+
+    h3 {
+      margin: 0 0 10px;
+      font-size: 1.12rem;
+    }
+
+    .lede {
+      max-width: 720px;
+      color: var(--muted);
+      font-size: 1.18rem;
+      margin: 0 0 24px;
+    }
+
+    .hero-actions,
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--ink);
+      padding: 9px 14px;
+      font-weight: 750;
+    }
+
+    .button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #06100d;
+    }
+
+    .visual {
+      border: 1px solid var(--line);
+      background: #020304;
+      overflow: hidden;
+    }
+
+    .visual img {
+      display: block;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 4 / 3;
+      object-fit: cover;
+    }
+
+    .caption {
+      padding: 12px 14px;
+      color: var(--muted);
+      font-size: 0.88rem;
+      border-top: 1px solid var(--line);
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      margin: 0 0 42px;
+    }
+
+    .stat {
+      padding: 18px;
+      border-right: 1px solid var(--line);
+      min-height: 96px;
+      background: var(--panel);
+    }
+
+    .stat:last-child {
+      border-right: 0;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 1.8rem;
+      line-height: 1;
+      color: var(--accent-2);
+    }
+
+    .stat span {
+      display: block;
+      color: var(--muted);
+      margin-top: 8px;
+      font-size: 0.92rem;
+    }
+
+    section {
+      padding: 28px 0 38px;
+    }
+
+    .section-head {
+      display: flex;
+      gap: 18px;
+      align-items: end;
+      justify-content: space-between;
+      margin-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 14px;
+    }
+
+    .section-head p {
+      max-width: 620px;
+      color: var(--muted);
+      margin: 0;
+    }
+
+    .findings {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .finding,
+    .case,
+    .file-group {
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+
+    .finding {
+      padding: 18px;
+    }
+
+    .finding b {
+      color: var(--accent);
+    }
+
+    .finding p,
+    .case p {
+      color: var(--muted);
+      margin: 0;
+    }
+
+    .case-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .case {
+      padding: 18px;
+    }
+
+    .case-top {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .rank {
+      flex: 0 0 auto;
+      width: 38px;
+      height: 38px;
+      display: inline-grid;
+      place-items: center;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      color: var(--accent-2);
+      font-weight: 850;
+    }
+
+    .tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 13px 0 0;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      border: 1px solid var(--line);
+      padding: 3px 8px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      background: #0b0d10;
+    }
+
+    .file-index {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .file-group h3 {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel-2);
+    }
+
+    .file-list {
+      list-style: none;
+      margin: 0;
+      padding: 8px 0;
+    }
+
+    .file-list li {
+      display: flex;
+      gap: 10px;
+      justify-content: space-between;
+      padding: 8px 16px;
+      border-bottom: 1px solid rgba(48, 56, 70, 0.55);
+    }
+
+    .file-list li:last-child {
+      border-bottom: 0;
+    }
+
+    .file-list a {
+      word-break: break-word;
+    }
+
+    .file-kind {
+      color: var(--muted);
+      white-space: nowrap;
+      font-size: 0.82rem;
+    }
+
+    .note {
+      border-left: 4px solid var(--danger);
+      background: #151117;
+      color: var(--muted);
+      padding: 14px 16px;
+      margin: 18px 0 0;
+    }
+
+    footer {
+      width: min(var(--max), calc(100% - 32px));
+      margin: 0 auto;
+      padding: 34px 0 44px;
+      color: var(--muted);
+      border-top: 1px solid var(--line);
+    }
+
+    @media (max-width: 900px) {
+      h1 {
+        font-size: 3.4rem;
+      }
+
+      h2 {
+        font-size: 1.9rem;
+      }
+
+      .hero,
+      .case-grid,
+      .file-index,
+      .findings {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        min-height: auto;
+        padding-top: 32px;
+      }
+
+      .stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .stat:nth-child(2) {
+        border-right: 0;
+      }
+
+      .stat:nth-child(-n + 2) {
+        border-bottom: 1px solid var(--line);
+      }
+    }
+
+    @media (max-width: 560px) {
+      h1 {
+        font-size: 2.55rem;
+      }
+
+      h2 {
+        font-size: 1.55rem;
+      }
+
+      .lede {
+        font-size: 1.05rem;
+      }
+
+      .nav {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 12px 0;
+      }
+
+      .nav-links {
+        justify-content: flex-start;
+      }
+
+      .stats {
+        grid-template-columns: 1fr;
+      }
+
+      .stat,
+      .stat:nth-child(2) {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .stat:last-child {
+        border-bottom: 0;
+      }
+
+      .section-head {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav" aria-label="Primary">
+      <a class="brand" href="/">Decentricity</a>
+      <div class="nav-links">
+        <a href="#findings">Findings</a>
+        <a href="#cases">Cases</a>
+        <a href="#files">File Index</a>
+        <a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files">Mirror Repo</a>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="title">
+      <div>
+        <div class="eyebrow">PURSUE Release 01</div>
+        <h1 id="title">UFO files worth reading first.</h1>
+        <p class="lede">
+          I mirrored and annotated a focused subset of the May 8, 2026 war.gov
+          UFO Release 01: the records with the best mix of primary-source value,
+          modern sensor context, witness detail, and historical significance.
+        </p>
+        <div class="hero-actions">
+          <a class="button primary" href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files">Open the structured mirror</a>
+          <a class="button" href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/docs/observations.md">Read observations</a>
+          <a class="button" href="https://www.war.gov/ufo/">Official source</a>
+        </div>
+      </div>
+      <figure class="visual">
+        <a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/files/05-nasa-apollo-lunar/nasa-uap-vm6-apollo-17-1972.jpg">
+          <img src="https://raw.githubusercontent.com/Decentricity/war-gov-ufo-release-01-interesting-files/main/files/05-nasa-apollo-lunar/nasa-uap-vm6-apollo-17-1972.jpg" alt="Apollo 17 lunar sky image mirrored from war.gov UFO Release 01.">
+        </a>
+        <figcaption class="caption">
+          Apollo 17 VM6 image from the mirror. The release flags a triangular-dot
+          lunar-sky feature for further analysis, but does not settle what it is.
+        </figcaption>
+      </figure>
+    </section>
+
+    <div class="stats" aria-label="Mirror summary">
+      <div class="stat">
+        <strong>10</strong>
+        <span>ranked cases</span>
+      </div>
+      <div class="stat">
+        <strong>21</strong>
+        <span>mirrored source assets</span>
+      </div>
+      <div class="stat">
+        <strong>1</strong>
+        <span>large GitHub Release asset</span>
+      </div>
+      <div class="stat">
+        <strong>SHA</strong>
+        <span>checksums for every asset</span>
+      </div>
+    </div>
+
+    <section id="findings">
+      <div class="section-head">
+        <div>
+          <h2>What Stood Out</h2>
+        </div>
+        <p>
+          The strongest material is not one isolated image. It is the combination
+          of mission reports, DVIDS source pages, sensor video, FBI interviews,
+          NASA transcripts, and older intelligence files.
+        </p>
+      </div>
+
+      <div class="findings">
+        <article class="finding">
+          <h3><b>Modern sensor cases</b></h3>
+          <p>
+            PR34 and PR28 are the first reads: Greece sensor-video cases with
+            mission-report context, unusual motion descriptions, and public DVIDS
+            media.
+          </p>
+        </article>
+        <article class="finding">
+          <h3><b>Witness-heavy modern records</b></h3>
+          <p>
+            The Western U.S. slides and USPER statement are high-strangeness
+            modern accounts, but they are also heavily redacted and should be
+            read as unresolved evidence, not proof.
+          </p>
+        </article>
+        <article class="finding">
+          <h3><b>Historical depth</b></h3>
+          <p>
+            Apollo transcripts, Socorro, WWII foo-fighter files, and the 1955
+            Russell report show continuity across agencies and decades.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <section id="cases">
+      <div class="section-head">
+        <div>
+          <h2>Ranked Case Notes</h2>
+        </div>
+        <p>
+          These are concise summaries; each case folder in the repository links
+          back to source files, byte counts, checksums, and mirror strategy.
+        </p>
+      </div>
+
+      <div class="case-grid">
+        <article class="case">
+          <div class="case-top">
+            <h3>PR34, Greece Ocean, October 2023</h3>
+            <span class="rank">01</span>
+          </div>
+          <p>Best modern video-led item: IR footage and a mission report describing near-surface movement and multiple 90-degree turns around 80 mph.</p>
+          <div class="tag-row">
+            <a class="tag" href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/tree/main/files/01-pr34-greece-ocean-2023">case folder</a>
+            <a class="tag" href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/releases/tag/large-assets-release-01">large video</a>
+          </div>
+        </article>
+
+        <article class="case">
+          <div class="case-top">
+            <h3>PR28, Greece SWIR, January 2024</h3>
+            <span class="rank">02</span>
+          </div>
+          <p>Multi-sensor case described as SWIR-visible, lost in visible spectrum, and moving around 434 knots.</p>
+          <div class="tag-row">
+            <a class="tag" href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/tree/main/files/02-pr28-greece-swir-2024">case folder</a>
+            <a class="tag" href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/files/02-pr28-greece-swir-2024/dvids-1006073-pr28.mp4">video</a>
+          </div>
+        </article>
+
+        <article class="case">
+          <div class="case-top">
+            <h3>Western U.S. Field Events</h3>
+            <span class="rank">03</span>
+          </div>
+          <p>AARO slides summarizing federal law-enforcement observations: orb sequences, a large fiery orb, and silent kite-shaped objects.</p>
+          <div class="tag-row">
+            <a class="tag" href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/tree/main/files/03-western-us-field-events">case folder</a>
+          </div>
+        </article>
+
+        <article class="case">
+          <div class="case-top">
+            <h3>USPER Late-2025 Statement</h3>
+            <span class="rank">04</span>
+          </div>
+          <p>Redacted senior U.S. person statement involving helicopter activity, NVG/FLIR observations, orb formations, and aircraft interactions.</p>
+          <div class="tag-row">
+            <a class="tag" href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/tree/main/files/04-usper-late-2025-statement">case folder</a>
+          </div>
+        </article>
+
+        <article class="case">
+          <div class="case-top">
+            <h3>NASA Apollo Lunar Material</h3>
+            <span class="rank">05</span>
+          </div>
+          <p>Apollo 11, 12, and 17 records covering translunar object discussion, lunar-sky images, flashes, particles, and plausible mundane explanations.</p>
+          <div class="tag-row">
+            <a class="tag" href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/tree/main/files/05-nasa-apollo-lunar">case folder</a>
+          </div>
+        </article>
+
+        <article class="case">
+          <div class="case-top">
+            <h3>FBI Socorro, 1964</h3>
+            <span class="rank">06</span>
+          </div>
+          <p>Classic Lonnie Zamora physical-trace case with ground marks, burned vegetation, object-on-legs narrative, and sketches.</p>
+          <div class="tag-row">
+            <a class="tag" href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/tree/main/files/06-fbi-socorro-1964">case folder</a>
+          </div>
+        </article>
+
+        <article class="case">
+          <div class="case-top">
+            <h3>FBI September 2023 Sighting</h3>
+            <span class="rank">07</span>
+          </div>
+          <p>Modern FBI interviews and composite sketch describing a large metallic object, bright light, and rapid disappearance near a test-site context.</p>
+          <div class="tag-row">
+            <a class="tag" href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/tree/main/files/07-fbi-september-2023">case folder</a>
+          </div>
+        </article>
+
+        <article class="case">
+          <div class="case-top">
+            <h3>WWII Foo-Fighter File, 1945</h3>
+            <span class="rank">08</span>
+          </div>
+          <p>Allied wartime intelligence file on night-light phenomena and cylindrical objects over Europe, predating the post-1947 flying-disc wave.</p>
+          <div class="tag-row">
+            <a class="tag" href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/tree/main/files/08-wwii-foo-fighters-1945">case folder</a>
+          </div>
+        </article>
+
+        <article class="case">
+          <div class="case-top">
+            <h3>Senator Russell Sighting, 1955</h3>
+            <span class="rank">09</span>
+          </div>
+          <p>USAF intelligence report on Senator Richard Russell and other U.S. observers reporting disc-like craft in the Trans-Caucasus.</p>
+          <div class="tag-row">
+            <a class="tag" href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/tree/main/files/09-russell-sighting-1955">case folder</a>
+          </div>
+        </article>
+
+        <article class="case">
+          <div class="case-top">
+            <h3>USAF Reporting Framework, 1949</h3>
+            <span class="rank">10</span>
+          </div>
+          <p>Institutional context: formal unconventional-aircraft collection fields for shape, radar, Geiger checks, soil sampling, and reliability checks.</p>
+          <div class="tag-row">
+            <a class="tag" href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/tree/main/files/10-reporting-framework-1949">case folder</a>
+          </div>
+        </article>
+      </div>
+
+      <div class="note">
+        These notes do not claim exotic origin. The point of the mirror is to
+        preserve and organize the strongest public records for follow-up.
+      </div>
+    </section>
+
+    <section id="files">
+      <div class="section-head">
+        <div>
+          <h2>Complete Repository File Index</h2>
+        </div>
+        <p>
+          Every file I put in the mirror repository is linked here, plus the
+          oversized PR34 MP4 that lives as a GitHub Release asset.
+        </p>
+      </div>
+
+      <div class="file-index">
+        <div class="file-group">
+          <h3>Repository Docs And Metadata</h3>
+          <ul class="file-list">
+            <li><a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/.gitattributes">.gitattributes</a><span class="file-kind">config</span></li>
+            <li><a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/.gitignore">.gitignore</a><span class="file-kind">config</span></li>
+            <li><a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/LICENSE">LICENSE</a><span class="file-kind">license</span></li>
+            <li><a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/README.md">README.md</a><span class="file-kind">readme</span></li>
+            <li><a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/docs/methodology.md">docs/methodology.md</a><span class="file-kind">notes</span></li>
+            <li><a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/docs/observations.md">docs/observations.md</a><span class="file-kind">notes</span></li>
+            <li><a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/metadata/checksums.sha256">metadata/checksums.sha256</a><span class="file-kind">checksums</span></li>
+            <li><a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/metadata/download_report.json">metadata/download_report.json</a><span class="file-kind">json</span></li>
+            <li><a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/metadata/selected_manifest.json">metadata/selected_manifest.json</a><span class="file-kind">json</span></li>
+            <li><a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/scripts/download_selected_assets.py">scripts/download_selected_assets.py</a><span class="file-kind">script</span></li>
+          </ul>
+        </div>
+
+        <div class="file-group">
+          <h3>01 - PR34 Greece Ocean</h3>
+          <ul class="file-list">
+            <li><a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/files/01-pr34-greece-ocean-2023/README.md">case README</a><span class="file-kind">notes</span></li>
+            <li><a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/files/01-pr34-greece-ocean-2023/dow-uap-d33-mission-report-greece-october-2023.pdf">D33 mission report</a><span class="file-kind">pdf</span></li>
+            <li><a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/files/01-pr34-greece-ocean-2023/dvids-1006080-source-page.html">DVIDS source page</a><span class="file-kind">html</span></li>
+            <li><a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/releases/download/large-assets-release-01/dvids-1006080-pr34.mp4">PR34 MP4 release asset</a><span class="file-kind">mp4</span></li>
+          </ul>
+        </div>
+
+        <div class="file-group">
+          <h3>02 - PR28 Greece SWIR</h3>
+          <ul class="file-list">
+            <li><a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/files/02-pr28-greece-swir-2024/README.md">case README</a><span class="file-kind">notes</span></li>
+            <li><a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/files/02-pr28-greece-swir-2024/dow-uap-d25-mission-report-greece-january-2024.pdf">D25 mission report</a><span class="file-kind">pdf</span></li>
+            <li><a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/files/02-pr28-greece-swir-2024/dvids-1006073-pr28.mp4">PR28 MP4</a><span class="file-kind">mp4</span></li>
+            <li><a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/files/02-pr28-greece-swir-2024/dvids-1006073-source-page.html">DVIDS source page</a><span class="file-kind">html</span></li>
+          </ul>
+        </div>
+
+        <div class="file-group">
+          <h3>03-04 - Modern Witness Records</h3>
+          <ul class="file-list">
+            <li><a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/files/03-western-us-field-events/README.md">Western US README</a><span class="file-kind">notes</span></li>
+            <li><a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/files/03-western-us-field-events/western_us_event_slides_5.08.2026.pdf">Western US slides</a><span class="file-kind">pdf</span></li>
+            <li><a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/files/04-usper-late-2025-statement/README.md">USPER README</a><span class="file-kind">notes</span></li>
+            <li><a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/files/04-usper-late-2025-statement/usper-statement-redacted.pdf">USPER statement</a><span class="file-kind">pdf</span></li>
+          </ul>
+        </div>
+
+        <div class="file-group">
+          <h3>05 - NASA Apollo</h3>
+          <ul class="file-list">
+            <li><a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/files/05-nasa-apollo-lunar/README.md">case README</a><span class="file-kind">notes</span></li>
+            <li><a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/files/05-nasa-apollo-lunar/nasa-uap-d1-apollo-12-transcript-1969.pdf">Apollo 12 transcript</a><span class="file-kind">pdf</span></li>
+            <li><a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/files/05-nasa-apollo-lunar/nasa-uap-d2-apollo-17-transcript-1972.pdf">Apollo 17 transcript</a><span class="file-kind">pdf</span></li>
+            <li><a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/files/05-nasa-apollo-lunar/nasa-uap-d4-apollo-11-technical-crew-debriefing-1969.pdf">Apollo 11 debrief</a><span class="file-kind">pdf</span></li>
+            <li><a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/files/05-nasa-apollo-lunar/nasa-uap-d6-apollo-17-technical-crew-debriefing-1973.pdf">Apollo 17 technical debrief</a><span class="file-kind">pdf</span></li>
+            <li><a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/files/05-nasa-apollo-lunar/nasa-uap-vm6-apollo-17-1972.jpg">Apollo 17 VM6 image</a><span class="file-kind">jpg</span></li>
+          </ul>
+        </div>
+
+        <div class="file-group">
+          <h3>06-07 - FBI Cases</h3>
+          <ul class="file-list">
+            <li><a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/files/06-fbi-socorro-1964/README.md">Socorro README</a><span class="file-kind">notes</span></li>
+            <li><a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/files/06-fbi-socorro-1964/65_hs1-834228961_62-hq-83894_serial_438.pdf">Socorro serial 438</a><span class="file-kind">pdf</span></li>
+            <li><a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/files/07-fbi-september-2023/README.md">September 2023 README</a><span class="file-kind">notes</span></li>
+            <li><a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/files/07-fbi-september-2023/2024-04-30-composite-sketch.pdf">Composite sketch</a><span class="file-kind">pdf</span></li>
+            <li><a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/files/07-fbi-september-2023/serial-3_redacted.pdf">Serial 4 / serial-3 file</a><span class="file-kind">pdf</span></li>
+            <li><a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/files/07-fbi-september-2023/serial-4-redacted_redacted.pdf">Serial 5 / serial-4 file</a><span class="file-kind">pdf</span></li>
+            <li><a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/files/07-fbi-september-2023/serial-5-redacted_redacted.pdf">Serial 3 / serial-5 file</a><span class="file-kind">pdf</span></li>
+          </ul>
+        </div>
+
+        <div class="file-group">
+          <h3>08-10 - Historical And Framework Files</h3>
+          <ul class="file-list">
+            <li><a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/files/08-wwii-foo-fighters-1945/README.md">WWII README</a><span class="file-kind">notes</span></li>
+            <li><a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/files/08-wwii-foo-fighters-1945/331_120752_numeric_files_1944-1945_37153_german_armament_equipment_documents.pdf">WWII foo-fighters file</a><span class="file-kind">pdf</span></li>
+            <li><a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/files/09-russell-sighting-1955/README.md">Russell README</a><span class="file-kind">notes</span></li>
+            <li><a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/files/09-russell-sighting-1955/341_110677_numerical_file_5-2500.pdf">Russell 1955 report</a><span class="file-kind">pdf</span></li>
+            <li><a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/files/10-reporting-framework-1949/README.md">Reporting framework README</a><span class="file-kind">notes</span></li>
+            <li><a href="https://github.com/Decentricity/war-gov-ufo-release-01-interesting-files/blob/main/files/10-reporting-framework-1949/65_hs1-834228961_62-hq-83894_serial_164.pdf">Serial 164 reporting framework</a><span class="file-kind">pdf</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>
+      Built from the Decentricity mirror of public war.gov/DVIDS source material.
+      Last updated for Release 01 on May 9, 2026.
+    </p>
+  </footer>
+</body>
+</html>
