@@ -303,7 +303,7 @@ h2 {
 }
 
 .slide-image-pane {
-  align-items: center;
+  align-items: flex-start;
   background: #05080c;
   display: flex;
   justify-content: center;
@@ -315,6 +315,7 @@ h2 {
   border-radius: 0;
   box-shadow: none;
   display: block;
+  flex: 0 0 auto;
   height: auto;
   max-width: 1080px;
   object-fit: contain;
