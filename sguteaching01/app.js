@@ -5,7 +5,7 @@ const slides = [
     id: "stack",
     title: "Blockchain Beyond Enterprise",
     time: "0:00-0:45",
-    thesis: "Not a slower database. A commitment machine for hostile environments.",
+    thesis: "Not a slower database. A history machine for hostile environments.",
     keyLine: "If students understand history, state, incentives, and ordering, the rest of blockchain becomes one connected story.",
     copyHtml: `
       <div class="title-slide-copy">
