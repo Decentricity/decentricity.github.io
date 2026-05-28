@@ -246,7 +246,8 @@ const app = {
   sceneState: slides.map((slide) => initialState(slide.id)),
   timerSeconds: 0,
   timerInterval: null,
-  autoplayInterval: null
+  autoplayInterval: null,
+  renderedSlideIndex: null
 };
 
 const els = {
@@ -449,18 +450,38 @@ function render() {
   renderDots();
 
   const state = app.sceneState[app.slideIndex];
-  let interaction = "";
   if (slide.id === "stack") {
-    els.gameBoard.innerHTML = renderTitleSlide(slide);
+    if (app.renderedSlideIndex !== app.slideIndex) {
+      els.gameBoard.innerHTML = renderTitleSlide(slide);
+      app.renderedSlideIndex = app.slideIndex;
+    }
     return;
   }
+
+  const interaction = renderInteraction(slide, state);
+  if (app.renderedSlideIndex !== app.slideIndex) {
+    els.gameBoard.innerHTML = renderSlideWithInteraction(slide, interaction);
+    app.renderedSlideIndex = app.slideIndex;
+    return;
+  }
+
+  const interactionContent = els.gameBoard.querySelector("[data-interaction-content]");
+  if (interactionContent) {
+    interactionContent.innerHTML = interaction;
+  } else {
+    els.gameBoard.innerHTML = renderSlideWithInteraction(slide, interaction);
+  }
+}
+
+function renderInteraction(slide, state) {
+  let interaction = "";
   if (slide.id === "double") interaction = renderDouble(state);
   if (slide.id === "bitcoin") interaction = renderBitcoin(state);
   if (slide.id === "ethereum") interaction = renderEthereum(state);
   if (slide.id === "uniswap") interaction = renderUniswap(state);
   if (slide.id === "mev") interaction = renderMev(state);
   if (slide.id === "scanner") interaction = renderScanner(state);
-  els.gameBoard.innerHTML = renderSlideWithInteraction(slide, interaction);
+  return interaction;
 }
 
 function renderTitleSlide(slide) {
@@ -476,7 +497,7 @@ function renderSlideWithInteraction(slide, interaction) {
     <section class="interactive-panel">
       <div class="panel-glow" aria-hidden="true"></div>
       <p class="surface-title">Interactive simulation</p>
-      ${interaction}
+      <div data-interaction-content>${interaction}</div>
     </section>
   </div>`;
 }

@@ -285,7 +285,7 @@ h2 {
 }
 
 .slide-copy {
-  animation: copyEnter 360ms ease both;
+  background: #0c1219;
   padding: 1rem;
 }
 
@@ -1233,17 +1233,6 @@ code {
   }
   to {
     top: 100%;
-  }
-}
-
-@keyframes copyEnter {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
   }
 }
 
