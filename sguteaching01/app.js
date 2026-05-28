@@ -3,10 +3,44 @@
 const slides = [
   {
     id: "stack",
-    title: "Opening Thesis: Blockchain Is a Commitment Machine",
+    title: "Blockchain Beyond Enterprise",
     time: "0:00-0:45",
-    thesis: "A first-principles story from digital scarcity to degen DeFi.",
+    thesis: "Not a slower database. A commitment machine for hostile environments.",
     keyLine: "If students understand history, state, incentives, and ordering, the rest of blockchain becomes one connected story.",
+    copyHtml: `
+      <div class="title-slide-copy">
+        <p class="copy-eyebrow">10-minute demo teaching</p>
+        <h3>Blockchain</h3>
+        <h4>Beyond Enterprise</h4>
+        <p class="copy-subtitle">A first-principles story from digital scarcity to degen DeFi</p>
+        <div class="title-thesis">
+          <p>Not a slower database.</p>
+          <p>A commitment machine for hostile environments.</p>
+        </div>
+        <div class="arc-row">
+          <span>copy</span>
+          <span>timestamp</span>
+          <span>consensus</span>
+          <span>code</span>
+          <span>markets</span>
+          <span>adversaries</span>
+        </div>
+        <div class="source-row">
+          <span>Bitcoin</span>
+          <span>Hashcash</span>
+          <span>Timestamping</span>
+          <span>Uniswap</span>
+        </div>
+        <div class="teaching-promise">
+          <strong>Teaching promise</strong>
+          <p>Students leave with a mental model that can explain Bitcoin, Ethereum, Uniswap, yield farming, flash loans, and MEV using one thread: who controls history, state, incentives, and ordering?</p>
+        </div>
+        <div class="copy-footer">
+          <span>Demo teaching · Master of Information Technology</span>
+          <span>Visuals: primary paper thumbnails from original sources; custom diagrams. Speaker notes include source credits.</span>
+        </div>
+      </div>
+    `,
     stack: [
       ["copy", "Digital files duplicate perfectly."],
       ["timestamp", "Shared systems need an ordering rule."],
@@ -18,45 +52,144 @@ const slides = [
   },
   {
     id: "double",
-    title: "First Principles + History",
+    title: "FIRST PRINCIPLES + HISTORY",
     time: "0:45-2:00",
     thesis: "The first problem is not cryptography. It is history.",
-    keyLine: "Blockchain begins as a way to make digital history hard to fake."
+    keyLine: "Blockchain begins as a way to make digital history hard to fake.",
+    copyHtml: `
+      <div class="slide-copy-kicker">FIRST PRINCIPLES + HISTORY <span>02</span></div>
+      <h3>The first problem is not cryptography. It is history.</h3>
+      <p class="copy-callout">A physical coin cannot be in two hands at once. A digital file can.</p>
+      <div class="spend-row">
+        <div><strong>Bob receives</strong><span>“looks valid locally”</span></div>
+        <div class="coin-inline">₿</div>
+        <div><strong>Carol receives</strong><span>“also looks valid locally”</span></div>
+      </div>
+      <p class="copy-callout amber">The network needs one official ordering rule: whose spend happened first?</p>
+      <div class="copy-panel">
+        <strong>The puzzle pieces before Bitcoin</strong>
+        <div class="timeline-copy">
+          <span>1982/83</span><b>Chaum</b><em>private digital cash</em>
+          <span>1991</span><b>Haber–Stornetta</b><em>tamper-evident time</em>
+          <span>1997/2002</span><b>Hashcash</b><em>make abuse costly</em>
+          <span>2008</span><b>Bitcoin</b><em>ledger + PoW + incentives</em>
+          <span>2014+</span><b>Ethereum</b><em>programmable state</em>
+        </div>
+      </div>
+      <p class="copy-conclusion">Blockchain begins as a way to make digital history hard to fake.</p>
+      <p class="copy-source">Demo teaching · Master of Information Technology · Sources: Chaum (1983); Haber & Stornetta (1991); Back (2002); Nakamoto (2008); Ethereum project docs.</p>
+    `
   },
   {
     id: "bitcoin",
-    title: "Timestamping + Consensus",
+    title: "TIMESTAMPING + CONSENSUS",
     time: "2:00-3:40",
     thesis: "Bitcoin makes history expensive to rewrite.",
-    keyLine: "Consensus is a social contract with math teeth."
+    keyLine: "Consensus is a social contract with math teeth.",
+    copyHtml: `
+      <div class="slide-copy-kicker">TIMESTAMPING + CONSENSUS <span>03</span></div>
+      <h3>Bitcoin makes history expensive to rewrite</h3>
+      <div class="copy-steps">
+        <div><strong>1 · Commit to many records with one root</strong><span>Change one leaf, and the path to the root breaks.</span><span>Merkle roots compress many facts into one verifiable commitment.</span></div>
+        <div><strong>2 · Link the roots into a chain</strong><span>accepted history</span><span>rewrite attempt</span><span>Hash-linking means a change in the past propagates forward.</span></div>
+        <div><strong>3 · Add proof-of-work + incentives</strong><span>Cheap to verify · nodes check signatures, hashes, rules</span><span>Costly to forge · attacker must redo work and outpace the network</span><span>Paid to extend · miners are rewarded for accepted history</span></div>
+      </div>
+      <p class="copy-callout">Fork choice · nodes converge on the chain with most cumulative work</p>
+      <p class="copy-conclusion">Consensus is a social contract with math teeth.</p>
+      <p class="copy-source">Demo teaching · Master of Information Technology · Sources/visuals: Hash Tree diagram by Azaghal/David Göthberg, CC0; Nakamoto (2008); Back (2002).</p>
+    `
   },
   {
     id: "ethereum",
-    title: "Programmable State",
+    title: "PROGRAMMABLE STATE",
     time: "3:40-5:00",
     thesis: "Ethereum makes the ledger execute.",
-    keyLine: "Boring interfaces are coordination superpowers."
+    keyLine: "Boring interfaces are coordination superpowers.",
+    copyHtml: `
+      <div class="slide-copy-kicker">PROGRAMMABLE STATE <span>04</span></div>
+      <h3>Ethereum: the ledger learns to execute</h3>
+      <div class="compare-copy">
+        <div><strong>Bitcoin asks:</strong><span>“Who owns the coins?”</span></div>
+        <div><strong>Ethereum asks:</strong><span>“What state transition is valid?”</span></div>
+      </div>
+      <p class="formula-copy">State Sₜ + Transaction T + Contract code → New state Sₜ₊₁</p>
+      <p class="copy-callout">The ledger becomes a virtual machine: contracts encode rules that everyone can verify.</p>
+      <p class="copy-callout amber">Composability: standards turn contracts into reusable market infrastructure</p>
+      <pre class="code-copy">function transfer(address to, uint amount)
+function balanceOf(address owner)
+event Transfer(address from, address to, uint amount)</pre>
+      <div class="arc-row compact"><span>Wallet</span><span>ERC‑20</span><span>DEX</span><span>Lending</span><span>Governance</span></div>
+      <p class="copy-conclusion">Lower coordination cost + new dependencies and attack surface</p>
+      <p class="copy-source">Demo teaching · Master of Information Technology · Sources/visuals: Ethereum Yellow Paper; Ethereum whitepaper/docs; EIP‑20/ERC‑20 standard; Ethereum logo from Wikimedia Commons.</p>
+    `
   },
   {
     id: "uniswap",
-    title: "DeFi From First Principles",
+    title: "DEFI FROM FIRST PRINCIPLES",
     time: "5:00-6:30",
     thesis: "Uniswap is a market maker made of math.",
-    keyLine: "If the protocol defines the payoff rule, the protocol defines the market behavior."
+    keyLine: "If the protocol defines the payoff rule, the protocol defines the market behavior.",
+    copyHtml: `
+      <div class="slide-copy-kicker">DEFI FROM FIRST PRINCIPLES <span>05</span></div>
+      <h3>Uniswap: a market maker made of math</h3>
+      <p class="copy-callout">Replace the human market maker with a rule.</p>
+      <p class="copy-callout amber">The rule is the counterparty.</p>
+      <div class="copy-steps role-copy">
+        <div><strong>Liquidity providers</strong><span>put assets into a pool; earn fees; take inventory risk</span></div>
+        <div><strong>Traders</strong><span>move the pool along the curve by swapping one asset for another</span></div>
+        <div><strong>Arbitrageurs</strong><span>pull on-chain price toward outside markets — and get paid</span></div>
+      </div>
+      <p class="copy-callout">Academic lens: AMMs are mechanism design, liquidity, price discovery, adverse selection, and incentives — not just “crypto trading.”</p>
+      <p class="copy-conclusion">First-principles lesson: if the protocol defines the payoff rule, the protocol defines the market behavior.</p>
+      <p class="copy-source">Demo teaching · Master of Information Technology · Sources/visuals: Uniswap logo from Wikimedia Commons; Uniswap v2/v3 docs and papers; constant-product curve redrawn from AMM invariant.</p>
+    `
   },
   {
     id: "mev",
-    title: "Degen DeFi + MEV",
+    title: "DEGEN DEFI + MEV",
     time: "6:30-8:45",
     thesis: "The wild layer is an adversarial laboratory.",
-    keyLine: "The user trades not only against price, but against visibility, latency, and ordering power."
+    keyLine: "The user trades not only against price, but against visibility, latency, and ordering power.",
+    copyHtml: `
+      <div class="slide-copy-kicker">DEGEN DEFI + MEV <span>06</span></div>
+      <h3>The wild layer is an adversarial laboratory</h3>
+      <p class="copy-callout">The “degen” layer looks chaotic because it is chaotic — but chaos is where mechanisms get stress-tested.</p>
+      <div class="copy-steps">
+        <div><strong>Mechanisms that mutate in public</strong></div>
+        <div><strong>Yield farming</strong><span>What happens when liquidity itself becomes a game?</span></div>
+        <div><strong>Governance tokens</strong><span>When does “ownership” become control, theater, or attack surface?</span></div>
+        <div><strong>Flash loans</strong><span>What if capital can appear for one transaction and vanish?</span></div>
+        <div><strong>Forks & memes</strong><span>How fast do narratives, incentives, and code replicate?</span></div>
+      </div>
+      <p class="copy-callout">A degen protocol can be a paper, a market, a social narrative, and an exploit target — all at once.</p>
+      <p class="copy-callout amber">MEV: when ordering becomes valuable</p>
+      <div class="arc-row compact"><span>Bot buy</span><span>User swap</span><span>Bot sell</span></div>
+      <p class="copy-conclusion">The user trades not only against price, but against visibility, latency, and ordering power.</p>
+      <div class="arc-row compact"><span>consensus</span><span>game theory</span><span>market microstructure</span><span>security</span><span>culture</span></div>
+      <p class="copy-source">Demo teaching · Master of Information Technology · Sources/visuals: Daian et al. “Flash Boys 2.0”; mev.wiki sandwich attack; Flashbots brand asset; DeFi mechanisms synthesized from protocol practice.</p>
+    `
   },
   {
     id: "scanner",
-    title: "Closing Synthesis",
+    title: "CLOSING SYNTHESIS",
     time: "8:45-10:00",
     thesis: "For any protocol, ask what state is tracked, who changes it, who validates it, and who profits from ordering or breaking it.",
-    keyLine: "Blockchain is coordination technology for adversarial environments."
+    keyLine: "Blockchain is coordination technology for adversarial environments.",
+    copyHtml: `
+      <div class="slide-copy-kicker">CLOSING SYNTHESIS <span>07</span></div>
+      <h3>The mental model students should leave with</h3>
+      <p class="copy-callout">For any blockchain protocol, ask four questions:</p>
+      <div class="question-copy">
+        <div><b>1</b><strong>What state is being tracked?</strong><span>coins, documents, contract variables, balances, positions, votes</span></div>
+        <div><b>2</b><strong>Who can propose changes?</strong><span>users, miners, validators, sequencers, contracts, governance</span></div>
+        <div><b>3</b><strong>Who validates the change?</strong><span>nodes, cryptographic checks, economic rules, consensus participants</span></div>
+        <div><b>4</b><strong>Who profits from ordering or breaking it?</strong><span>searchers, LPs, attackers, validators, insiders, users, treasury</span></div>
+      </div>
+      <p class="copy-callout amber">One story, many systems</p>
+      <div class="arc-row compact"><span>digital copyability</span><span>tamper-evident history</span><span>costly consensus</span><span>programmable state</span><span>mechanism markets</span><span>adversarial ordering</span></div>
+      <p class="copy-conclusion">Blockchain is coordination technology for adversarial environments.</p>
+      <p class="copy-source">Sources are embedded in speaker notes: Chaum; Haber–Stornetta; Back; Nakamoto; Ethereum Yellow Paper/docs; EIP‑20; Uniswap; Daian et al.; mev.wiki.</p>
+    `
   }
 ];
 
@@ -112,7 +245,8 @@ const app = {
   slideIndex: 0,
   sceneState: slides.map((slide) => initialState(slide.id)),
   timerSeconds: 0,
-  timerInterval: null
+  timerInterval: null,
+  autoplayInterval: null
 };
 
 const els = {
@@ -172,6 +306,7 @@ function initialState(id) {
 function setSlide(index) {
   app.slideIndex = Math.max(0, Math.min(slides.length - 1, index));
   history.replaceState(null, "", `#slide-${app.slideIndex + 1}`);
+  app.sceneState[app.slideIndex] = initialState(slides[app.slideIndex].id);
   render();
 }
 
@@ -314,13 +449,36 @@ function render() {
   renderDots();
 
   const state = app.sceneState[app.slideIndex];
-  if (slide.id === "stack") els.gameBoard.innerHTML = renderStack(slide, state);
-  if (slide.id === "double") els.gameBoard.innerHTML = renderDouble(state);
-  if (slide.id === "bitcoin") els.gameBoard.innerHTML = renderBitcoin(state);
-  if (slide.id === "ethereum") els.gameBoard.innerHTML = renderEthereum(state);
-  if (slide.id === "uniswap") els.gameBoard.innerHTML = renderUniswap(state);
-  if (slide.id === "mev") els.gameBoard.innerHTML = renderMev(state);
-  if (slide.id === "scanner") els.gameBoard.innerHTML = renderScanner(state);
+  let interaction = "";
+  if (slide.id === "stack") {
+    els.gameBoard.innerHTML = renderTitleSlide(slide);
+    return;
+  }
+  if (slide.id === "double") interaction = renderDouble(state);
+  if (slide.id === "bitcoin") interaction = renderBitcoin(state);
+  if (slide.id === "ethereum") interaction = renderEthereum(state);
+  if (slide.id === "uniswap") interaction = renderUniswap(state);
+  if (slide.id === "mev") interaction = renderMev(state);
+  if (slide.id === "scanner") interaction = renderScanner(state);
+  els.gameBoard.innerHTML = renderSlideWithInteraction(slide, interaction);
+}
+
+function renderTitleSlide(slide) {
+  return `<div class="title-replica">
+    <div class="fx-lattice" aria-hidden="true"></div>
+    ${slide.copyHtml}
+  </div>`;
+}
+
+function renderSlideWithInteraction(slide, interaction) {
+  return `<div class="scene-layout">
+    <article class="slide-copy">${slide.copyHtml}</article>
+    <section class="interactive-panel">
+      <div class="panel-glow" aria-hidden="true"></div>
+      <p class="surface-title">Interactive simulation</p>
+      ${interaction}
+    </section>
+  </div>`;
 }
 
 function renderDots() {
@@ -731,6 +889,32 @@ function updateTimer() {
   els.timerReadout.textContent = `${minutes}:${seconds}`;
 }
 
+function startAutoplay() {
+  if (app.autoplayInterval) clearInterval(app.autoplayInterval);
+  app.autoplayInterval = setInterval(() => {
+    if (!els.lineModal.hidden) return;
+    const slide = slides[app.slideIndex];
+    const state = app.sceneState[app.slideIndex];
+    if (sceneComplete(slide, state)) {
+      app.sceneState[app.slideIndex] = initialState(slide.id);
+      render();
+      return;
+    }
+    stepScene();
+  }, 1800);
+}
+
+function sceneComplete(slide, state) {
+  if (slide.id === "stack") return state.placed.length === slide.stack.length;
+  if (slide.id === "double") return state.history;
+  if (slide.id === "bitcoin") return state.forkChoice;
+  if (slide.id === "ethereum") return state.bob > 0 && state.risk && ["Wallet", "DEX", "Lending", "Governance"].every((name) => state.connected.includes(name));
+  if (slide.id === "uniswap") return state.shock && state.event.includes("Arbitrage");
+  if (slide.id === "mev") return state.phase >= 3;
+  if (slide.id === "scanner") return state.selected === protocols.length - 1 && state.revealed >= 4;
+  return false;
+}
+
 function showKeyLine() {
   const slide = slides[app.slideIndex];
   els.modalText.textContent = slide.keyLine;
@@ -765,3 +949,4 @@ if (hashMatch) {
 
 render();
 updateTimer();
+startAutoplay();
