@@ -252,8 +252,9 @@ const app = {
   sceneState: slides.map((slide) => initialState(slide.id)),
   timerSeconds: 0,
   timerInterval: null,
-  autoplayInterval: null,
-  renderedSlideIndex: null
+  renderedSlideIndex: null,
+  hintCycleIndex: 0,
+  hintInterval: null
 };
 
 const els = {
@@ -321,6 +322,8 @@ function initialState(id) {
 }
 
 function setSlide(index) {
+  clearHedgehogHint();
+  app.hintCycleIndex = 0;
   app.slideIndex = Math.max(0, Math.min(slides.length - 1, index));
   history.replaceState(null, "", `#slide-${app.slideIndex + 1}`);
   app.sceneState[app.slideIndex] = initialState(slides[app.slideIndex].id);
@@ -329,6 +332,8 @@ function setSlide(index) {
 
 function resetScene() {
   const slide = slides[app.slideIndex];
+  clearHedgehogHint();
+  app.hintCycleIndex = 0;
   app.sceneState[app.slideIndex] = initialState(slide.id);
   render();
 }
@@ -404,6 +409,7 @@ function stepScene() {
 function handleBoardClick(event) {
   const button = event.target.closest("[data-action]");
   if (!button) return;
+  app.hintCycleIndex = 0;
   const action = button.dataset.action;
   const value = button.dataset.value;
   const slide = slides[app.slideIndex];
@@ -471,6 +477,7 @@ function render() {
       els.gameBoard.innerHTML = renderTitleSlide(slide);
       app.renderedSlideIndex = app.slideIndex;
     }
+    updateHedgehogHint();
     return;
   }
 
@@ -478,6 +485,7 @@ function render() {
   if (app.renderedSlideIndex !== app.slideIndex) {
     els.gameBoard.innerHTML = renderSlideWithInteraction(slide, interaction);
     app.renderedSlideIndex = app.slideIndex;
+    updateHedgehogHint();
     return;
   }
 
@@ -487,6 +495,7 @@ function render() {
   } else {
     els.gameBoard.innerHTML = renderSlideWithInteraction(slide, interaction);
   }
+  updateHedgehogHint();
 }
 
 function renderInteraction(slide, state) {
@@ -552,6 +561,84 @@ function toggleMenu() {
 function closeMenu() {
   els.controlMenu.hidden = true;
   els.menuToggle.setAttribute("aria-expanded", "false");
+}
+
+function startHedgehogGuide() {
+  if (app.hintInterval) clearInterval(app.hintInterval);
+  app.hintInterval = setInterval(() => {
+    const targets = getHedgehogTargets();
+    if (targets.length < 2) return;
+    app.hintCycleIndex = (app.hintCycleIndex + 1) % targets.length;
+    updateHedgehogHint();
+  }, 1700);
+}
+
+function updateHedgehogHint() {
+  clearHedgehogHint();
+  const targets = getHedgehogTargets();
+  if (!targets.length) return;
+  const target = targets[app.hintCycleIndex % targets.length];
+  target.classList.add("hedgehog-target");
+  const marker = document.createElement("span");
+  marker.className = "hedgehog-guide";
+  marker.setAttribute("aria-hidden", "true");
+  marker.textContent = "🦔";
+  target.appendChild(marker);
+}
+
+function clearHedgehogHint() {
+  document.querySelectorAll(".hedgehog-guide").forEach((node) => node.remove());
+  document.querySelectorAll(".hedgehog-target").forEach((node) => node.classList.remove("hedgehog-target"));
+}
+
+function getHedgehogTargets() {
+  const slide = slides[app.slideIndex];
+  const state = app.sceneState[app.slideIndex];
+  const buttons = (action, value = null) => Array
+    .from(els.gameBoard.querySelectorAll(`[data-action="${action}"]`))
+    .filter((button) => !button.disabled && (value === null || button.dataset.value === String(value)));
+
+  if (slide.id === "double") {
+    if (state.sends.length === 0) return buttons("send");
+    if (state.sends.length === 1) return buttons("send");
+    if (!state.history) return buttons("history");
+  }
+
+  if (slide.id === "bitcoin") {
+    if (!state.tampered) return buttons("tamper");
+    if (state.honestWork < 5) return buttons("mine");
+    if (!state.forkChoice) return buttons("fork");
+  }
+
+  if (slide.id === "ethereum") {
+    if (state.bob === 0) return buttons("transfer");
+    const unconnected = ["Wallet", "DEX", "Lending", "Governance"]
+      .flatMap((name) => buttons("connect", name));
+    if (unconnected.length) return unconnected;
+    if (!state.risk) return buttons("risk");
+  }
+
+  if (slide.id === "uniswap") {
+    if (state.event === "Pool price matches the outside market.") return buttons("swap");
+    if (!state.shock) return buttons("shock");
+    if (Math.abs(poolPrice(state) - state.externalPrice) > 12) return buttons("arb");
+    return buttons("swap");
+  }
+
+  if (slide.id === "mev") {
+    if (state.phase < 1) return buttons("phase", 1);
+    if (state.phase < 2) return buttons("phase", 2);
+    if (state.phase < 3) return buttons("phase", 3);
+    return buttons("mechanism");
+  }
+
+  if (slide.id === "scanner") {
+    if (state.revealed < 4) return buttons("reveal");
+    const nextProtocol = Math.min(state.selected + 1, protocols.length - 1);
+    if (nextProtocol !== state.selected) return buttons("protocol", nextProtocol);
+  }
+
+  return [];
 }
 
 function renderStack(slide, state) {
@@ -947,32 +1034,6 @@ function updateTimer() {
   els.timerReadout.textContent = `${minutes}:${seconds}`;
 }
 
-function startAutoplay() {
-  if (app.autoplayInterval) clearInterval(app.autoplayInterval);
-  app.autoplayInterval = setInterval(() => {
-    if (!els.lineModal.hidden) return;
-    const slide = slides[app.slideIndex];
-    const state = app.sceneState[app.slideIndex];
-    if (sceneComplete(slide, state)) {
-      app.sceneState[app.slideIndex] = initialState(slide.id);
-      render();
-      return;
-    }
-    stepScene();
-  }, 1800);
-}
-
-function sceneComplete(slide, state) {
-  if (slide.id === "stack") return state.placed.length === slide.stack.length;
-  if (slide.id === "double") return state.history;
-  if (slide.id === "bitcoin") return state.forkChoice;
-  if (slide.id === "ethereum") return state.bob > 0 && state.risk && ["Wallet", "DEX", "Lending", "Governance"].every((name) => state.connected.includes(name));
-  if (slide.id === "uniswap") return state.shock && state.event.includes("Arbitrage");
-  if (slide.id === "mev") return state.phase >= 3;
-  if (slide.id === "scanner") return state.selected === protocols.length - 1 && state.revealed >= 4;
-  return false;
-}
-
 function showKeyLine() {
   const slide = slides[app.slideIndex];
   els.modalText.textContent = slide.keyLine;
@@ -1007,4 +1068,4 @@ if (hashMatch) {
 
 render();
 updateTimer();
-startAutoplay();
+startHedgehogGuide();
