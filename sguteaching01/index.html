@@ -12,53 +12,44 @@
 </head>
 <body>
   <div class="app" id="app">
-    <header class="topbar">
-      <div class="brand">
-        <div class="brand-mark" aria-hidden="true">HM</div>
-        <div>
-          <p class="eyebrow">SGU teaching demo</p>
-          <h1>History Machine</h1>
-        </div>
-      </div>
-
-      <div class="top-actions" aria-label="Presentation controls">
-        <div class="timer" aria-label="Ten minute timer">
-          <span id="timerReadout">00:00</span>
-          <button id="timerToggle" type="button">Start</button>
-          <button id="timerReset" type="button">Reset</button>
-        </div>
-      </div>
-    </header>
-
     <main class="deck">
       <section class="stage" aria-live="polite">
-        <div class="stage-head">
-          <div>
-            <p class="scene-kicker" id="sceneKicker">Slide 1 / 7</p>
-            <h2 id="sceneTitle"></h2>
-          </div>
-          <div class="scene-time" id="sceneTime"></div>
-        </div>
-
-        <p class="scene-thesis" id="sceneThesis"></p>
         <div class="game-board" id="gameBoard"></div>
 
-        <div class="deck-controls" aria-label="Slide controls">
-          <button id="prevSlide" type="button">Back</button>
-          <button id="stepScene" type="button">Step</button>
-          <button id="resetScene" type="button">Reset Scene</button>
-          <button id="keyLine" type="button">Key Line</button>
-          <button id="nextSlide" type="button">Next</button>
+        <div class="menu-shell">
+          <button class="menu-toggle" id="menuToggle" type="button" aria-expanded="false" aria-controls="controlMenu" aria-label="Open controls">☰</button>
+          <div class="control-menu" id="controlMenu" hidden>
+            <div class="menu-status">
+              <p class="scene-kicker" id="sceneKicker">Slide 1 / 7</p>
+              <h2 id="sceneTitle"></h2>
+              <div class="scene-time" id="sceneTime"></div>
+              <p class="scene-thesis" id="sceneThesis"></p>
+            </div>
+
+            <div class="timer" aria-label="Ten minute timer">
+              <span id="timerReadout">00:00</span>
+              <button id="timerToggle" type="button">Start</button>
+              <button id="timerReset" type="button">Reset</button>
+            </div>
+
+            <div class="deck-controls" aria-label="Slide controls">
+              <button id="prevSlide" type="button">Back</button>
+              <button id="stepScene" type="button">Step</button>
+              <button id="resetScene" type="button">Reset Scene</button>
+              <button id="keyLine" type="button">Key Line</button>
+              <button id="nextSlide" type="button">Next</button>
+            </div>
+
+            <div class="progress-wrap" aria-label="Slide progress">
+              <div class="progress-track">
+                <div class="progress-fill" id="progressFill"></div>
+              </div>
+              <div class="progress-dots" id="progressDots"></div>
+            </div>
+          </div>
         </div>
       </section>
     </main>
-
-    <footer class="progress-wrap" aria-label="Slide progress">
-      <div class="progress-track">
-        <div class="progress-fill" id="progressFill"></div>
-      </div>
-      <div class="progress-dots" id="progressDots"></div>
-    </footer>
   </div>
 
   <div class="modal" id="lineModal" hidden>

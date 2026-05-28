@@ -268,6 +268,8 @@ const els = {
   timerReadout: document.getElementById("timerReadout"),
   timerToggle: document.getElementById("timerToggle"),
   timerReset: document.getElementById("timerReset"),
+  menuToggle: document.getElementById("menuToggle"),
+  controlMenu: document.getElementById("controlMenu"),
   lineModal: document.getElementById("lineModal"),
   modalText: document.getElementById("modalText")
 };
@@ -280,14 +282,22 @@ document.getElementById("keyLine").addEventListener("click", showKeyLine);
 document.getElementById("closeModal").addEventListener("click", closeModal);
 els.timerToggle.addEventListener("click", toggleTimer);
 els.timerReset.addEventListener("click", resetTimer);
+els.menuToggle.addEventListener("click", toggleMenu);
 els.gameBoard.addEventListener("click", handleBoardClick);
 els.progressDots.addEventListener("click", handleDotClick);
 els.lineModal.addEventListener("click", (event) => {
   if (event.target === els.lineModal) closeModal();
 });
 
+document.addEventListener("click", (event) => {
+  if (els.controlMenu.hidden) return;
+  if (event.target.closest(".menu-shell")) return;
+  closeMenu();
+});
+
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && !els.lineModal.hidden) closeModal();
+  else if (event.key === "Escape" && !els.controlMenu.hidden) closeMenu();
   if (!els.lineModal.hidden) return;
   if (event.key === "ArrowRight") setSlide(app.slideIndex + 1);
   if (event.key === "ArrowLeft") setSlide(app.slideIndex - 1);
@@ -530,6 +540,18 @@ function handleDotClick(event) {
   const button = event.target.closest("[data-slide]");
   if (!button) return;
   setSlide(Number(button.dataset.slide));
+  closeMenu();
+}
+
+function toggleMenu() {
+  const willOpen = els.controlMenu.hidden;
+  els.controlMenu.hidden = !willOpen;
+  els.menuToggle.setAttribute("aria-expanded", String(willOpen));
+}
+
+function closeMenu() {
+  els.controlMenu.hidden = true;
+  els.menuToggle.setAttribute("aria-expanded", "false");
 }
 
 function renderStack(slide, state) {
