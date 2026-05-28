@@ -6,13 +6,7 @@ const slides = [
     title: "Opening Thesis: Blockchain Is a Commitment Machine",
     time: "0:00-0:45",
     thesis: "A first-principles story from digital scarcity to degen DeFi.",
-    cue: "Open with the thesis: not a slower enterprise database, but a way to make shared commitments in hostile digital environments.",
     keyLine: "If students understand history, state, incentives, and ordering, the rest of blockchain becomes one connected story.",
-    bullets: [
-      "Copyability creates the first coordination problem.",
-      "Timestamping, consensus, code, markets, and adversaries become the teaching arc.",
-      "Bitcoin, Ethereum, Uniswap, yield farming, flash loans, and MEV can share one mental model."
-    ],
     stack: [
       ["copy", "Digital files duplicate perfectly."],
       ["timestamp", "Shared systems need an ordering rule."],
@@ -27,79 +21,42 @@ const slides = [
     title: "First Principles + History",
     time: "0:45-2:00",
     thesis: "The first problem is not cryptography. It is history.",
-    cue: "Use the physical coin versus digital file contrast. Cryptography can prove both signed spends; it cannot choose which one happened first.",
-    keyLine: "Blockchain begins as a way to make digital history hard to fake.",
-    bullets: [
-      "A physical coin cannot be in two hands at once.",
-      "Bob and Carol can both receive locally valid digital spends.",
-      "Chaum, Haber-Stornetta, Hashcash, Bitcoin, and Ethereum are puzzle pieces in one historical arc."
-    ]
+    keyLine: "Blockchain begins as a way to make digital history hard to fake."
   },
   {
     id: "bitcoin",
     title: "Timestamping + Consensus",
     time: "2:00-3:40",
     thesis: "Bitcoin makes history expensive to rewrite.",
-    cue: "Teach the design in three moves: compress many records into one root, link roots into a chain, then add proof-of-work plus incentives.",
-    keyLine: "Consensus is a social contract with math teeth.",
-    bullets: [
-      "Merkle roots compress many facts into one commitment.",
-      "Hash-linking means a past change propagates forward.",
-      "Cheap to verify, costly to forge, paid to extend accepted history."
-    ]
+    keyLine: "Consensus is a social contract with math teeth."
   },
   {
     id: "ethereum",
     title: "Programmable State",
     time: "3:40-5:00",
     thesis: "Ethereum makes the ledger execute.",
-    cue: "Move from Bitcoin asking who owns the coins to Ethereum asking what state transition is valid.",
-    keyLine: "Boring interfaces are coordination superpowers.",
-    bullets: [
-      "Current state plus transaction plus contract code produces new state.",
-      "Every node can verify the same transition.",
-      "ERC-20 composability connects wallets, DEXes, lending, and governance."
-    ]
+    keyLine: "Boring interfaces are coordination superpowers."
   },
   {
     id: "uniswap",
     title: "DeFi From First Principles",
     time: "5:00-6:30",
     thesis: "Uniswap is a market maker made of math.",
-    cue: "Do not teach Uniswap as a product demo. Teach it as the design answer to: can the counterparty be a rule?",
-    keyLine: "If the protocol defines the payoff rule, the protocol defines the market behavior.",
-    bullets: [
-      "Liquidity providers put assets into a pool and earn fees.",
-      "Traders move the pool along the curve.",
-      "Arbitrageurs pull on-chain price toward outside markets."
-    ]
+    keyLine: "If the protocol defines the payoff rule, the protocol defines the market behavior."
   },
   {
     id: "mev",
     title: "Degen DeFi + MEV",
     time: "6:30-8:45",
     thesis: "The wild layer is an adversarial laboratory.",
-    cue: "Respect the chaos without glamorizing it: yield farming, governance tokens, flash loans, forks, memes, and MEV stress-test mechanisms in public.",
-    keyLine: "The user trades not only against price, but against visibility, latency, and ordering power.",
-    bullets: [
-      "Yield farming turns liquidity into a game.",
-      "Flash loans make capital appear for exactly one transaction.",
-      "A sandwich attack turns transparent ordering into extractable value."
-    ]
+    keyLine: "The user trades not only against price, but against visibility, latency, and ordering power."
   },
   {
     id: "scanner",
     title: "Closing Synthesis",
     time: "8:45-10:00",
     thesis: "For any protocol, ask what state is tracked, who changes it, who validates it, and who profits from ordering or breaking it.",
-    cue: "Slow down here. This is the reusable framework that unifies coins, documents, contracts, pools, votes, liquidations, and MEV.",
-    keyLine: "Blockchain is coordination technology for adversarial environments.",
-    bullets: [
-      "What state is being tracked?",
-      "Who can propose changes?",
-      "Who validates the change?",
-      "Who profits from ordering or breaking it?"
-    ]
+    keyLine: "Blockchain is coordination technology for adversarial environments."
   }
 ];
 
@@ -165,15 +122,11 @@ const els = {
   sceneTime: document.getElementById("sceneTime"),
   sceneThesis: document.getElementById("sceneThesis"),
   gameBoard: document.getElementById("gameBoard"),
-  sceneCue: document.getElementById("sceneCue"),
-  sceneBullets: document.getElementById("sceneBullets"),
-  sceneLine: document.getElementById("sceneLine"),
   progressFill: document.getElementById("progressFill"),
   progressDots: document.getElementById("progressDots"),
   timerReadout: document.getElementById("timerReadout"),
   timerToggle: document.getElementById("timerToggle"),
   timerReset: document.getElementById("timerReset"),
-  patterToggle: document.getElementById("patterToggle"),
   lineModal: document.getElementById("lineModal"),
   modalText: document.getElementById("modalText")
 };
@@ -186,7 +139,6 @@ document.getElementById("keyLine").addEventListener("click", showKeyLine);
 document.getElementById("closeModal").addEventListener("click", closeModal);
 els.timerToggle.addEventListener("click", toggleTimer);
 els.timerReset.addEventListener("click", resetTimer);
-els.patterToggle.addEventListener("click", togglePatter);
 els.gameBoard.addEventListener("click", handleBoardClick);
 els.progressDots.addEventListener("click", handleDotClick);
 els.lineModal.addEventListener("click", (event) => {
@@ -200,7 +152,6 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "ArrowLeft") setSlide(app.slideIndex - 1);
   if (event.key.toLowerCase() === "r") resetScene();
   if (event.key.toLowerCase() === "k") showKeyLine();
-  if (event.key.toLowerCase() === "p") togglePatter();
   if (event.key === " ") {
     event.preventDefault();
     stepScene();
@@ -358,9 +309,6 @@ function render() {
   els.sceneTitle.textContent = slide.title;
   els.sceneTime.textContent = slide.time;
   els.sceneThesis.textContent = slide.thesis;
-  els.sceneCue.textContent = slide.cue;
-  els.sceneLine.textContent = slide.keyLine;
-  els.sceneBullets.innerHTML = slide.bullets.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
   els.progressFill.style.width = `${((app.slideIndex + 1) / slides.length) * 100}%`;
   els.gameBoard.className = `game-board game-${slide.id}`;
   renderDots();
@@ -781,11 +729,6 @@ function updateTimer() {
   const minutes = String(Math.floor(app.timerSeconds / 60)).padStart(2, "0");
   const seconds = String(app.timerSeconds % 60).padStart(2, "0");
   els.timerReadout.textContent = `${minutes}:${seconds}`;
-}
-
-function togglePatter() {
-  document.body.classList.toggle("patter-mode");
-  els.patterToggle.classList.toggle("active", document.body.classList.contains("patter-mode"));
 }
 
 function showKeyLine() {

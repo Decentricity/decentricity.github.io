@@ -167,13 +167,12 @@ h2 {
 .deck {
   display: grid;
   gap: 1rem;
-  grid-template-columns: minmax(0, 1fr) 330px;
+  grid-template-columns: minmax(0, 1fr);
   margin: 0 auto;
   max-width: 1440px;
 }
 
-.stage,
-.cue-panel {
+.stage {
   background: rgba(14, 19, 27, 0.94);
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -233,27 +232,6 @@ h2 {
 #stepScene,
 #keyLine {
   border-color: rgba(62, 215, 188, 0.7);
-}
-
-.cue-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  padding: 1rem;
-}
-
-.cue-panel p {
-  margin-bottom: 0;
-}
-
-.cue-panel ul {
-  color: var(--muted);
-  margin: 0.4rem 0 0;
-  padding-left: 1.1rem;
-}
-
-.cue-panel li + li {
-  margin-top: 0.35rem;
 }
 
 .progress-wrap {
@@ -904,23 +882,6 @@ code {
   text-align: center;
 }
 
-.patter-mode .cue-panel,
-.patter-mode .scene-thesis {
-  display: none;
-}
-
-.patter-mode .deck {
-  grid-template-columns: minmax(0, 1fr);
-}
-
-.patter-mode .stage {
-  min-height: calc(100vh - 150px);
-}
-
-.patter-mode .game-board {
-  min-height: calc(100vh - 320px);
-}
-
 @media (max-width: 1120px) {
   .deck,
   .stack-scene,
@@ -928,10 +889,6 @@ code {
   .pool-grid,
   .mempool-layout {
     grid-template-columns: 1fr;
-  }
-
-  .cue-panel {
-    order: -1;
   }
 
   .stage {
