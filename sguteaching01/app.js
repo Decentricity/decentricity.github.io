@@ -56,6 +56,7 @@ const slides = [
     time: "0:45-2:00",
     thesis: "The first problem is not cryptography. It is history.",
     keyLine: "Blockchain begins as a way to make digital history hard to fake.",
+    image: "assets/slide-02.webp",
     copyHtml: `
       <div class="slide-copy-kicker">FIRST PRINCIPLES + HISTORY <span>02</span></div>
       <h3>The first problem is not cryptography. It is history.</h3>
@@ -86,6 +87,7 @@ const slides = [
     time: "2:00-3:40",
     thesis: "Bitcoin makes history expensive to rewrite.",
     keyLine: "Consensus is a social contract with math teeth.",
+    image: "assets/slide-03.webp",
     copyHtml: `
       <div class="slide-copy-kicker">TIMESTAMPING + CONSENSUS <span>03</span></div>
       <h3>Bitcoin makes history expensive to rewrite</h3>
@@ -105,6 +107,7 @@ const slides = [
     time: "3:40-5:00",
     thesis: "Ethereum makes the ledger execute.",
     keyLine: "Boring interfaces are coordination superpowers.",
+    image: "assets/slide-04.webp",
     copyHtml: `
       <div class="slide-copy-kicker">PROGRAMMABLE STATE <span>04</span></div>
       <h3>Ethereum: the ledger learns to execute</h3>
@@ -129,6 +132,7 @@ event Transfer(address from, address to, uint amount)</pre>
     time: "5:00-6:30",
     thesis: "Uniswap is a market maker made of math.",
     keyLine: "If the protocol defines the payoff rule, the protocol defines the market behavior.",
+    image: "assets/slide-05.webp",
     copyHtml: `
       <div class="slide-copy-kicker">DEFI FROM FIRST PRINCIPLES <span>05</span></div>
       <h3>Uniswap: a market maker made of math</h3>
@@ -150,6 +154,7 @@ event Transfer(address from, address to, uint amount)</pre>
     time: "6:30-8:45",
     thesis: "The wild layer is an adversarial laboratory.",
     keyLine: "The user trades not only against price, but against visibility, latency, and ordering power.",
+    image: "assets/slide-06.webp",
     copyHtml: `
       <div class="slide-copy-kicker">DEGEN DEFI + MEV <span>06</span></div>
       <h3>The wild layer is an adversarial laboratory</h3>
@@ -175,6 +180,7 @@ event Transfer(address from, address to, uint amount)</pre>
     time: "8:45-10:00",
     thesis: "For any protocol, ask what state is tracked, who changes it, who validates it, and who profits from ordering or breaking it.",
     keyLine: "Blockchain is coordination technology for adversarial environments.",
+    image: "assets/slide-07.webp",
     copyHtml: `
       <div class="slide-copy-kicker">CLOSING SYNTHESIS <span>07</span></div>
       <h3>The mental model students should leave with</h3>
@@ -493,13 +499,22 @@ function renderTitleSlide(slide) {
 
 function renderSlideWithInteraction(slide, interaction) {
   return `<div class="scene-layout">
-    <article class="slide-copy">${slide.copyHtml}</article>
+    ${renderSlidePane(slide)}
     <section class="interactive-panel">
       <div class="panel-glow" aria-hidden="true"></div>
       <p class="surface-title">Interactive simulation</p>
       <div data-interaction-content>${interaction}</div>
     </section>
   </div>`;
+}
+
+function renderSlidePane(slide) {
+  if (slide.image) {
+    return `<article class="slide-copy slide-image-pane">
+      <img src="${escapeHtml(slide.image)}" alt="${escapeHtml(slide.title)} slide" loading="eager" decoding="async">
+    </article>`;
+  }
+  return `<article class="slide-copy">${slide.copyHtml}</article>`;
 }
 
 function renderDots() {
