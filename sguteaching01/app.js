@@ -506,7 +506,55 @@ function renderInteraction(slide, state) {
   if (slide.id === "uniswap") interaction = renderUniswap(state);
   if (slide.id === "mev") interaction = renderMev(state);
   if (slide.id === "scanner") interaction = renderScanner(state);
-  return interaction;
+  return `<p class="simulation-feedback">${escapeHtml(renderSimulationFeedback(slide, state))}</p>${interaction}`;
+}
+
+function renderSimulationFeedback(slide, state) {
+  if (slide.id === "double") {
+    if (state.sends.length === 0) return "Choose Bob or Carol first. The choice affects which locally valid spend appears first in the shared history.";
+    if (state.sends.length === 1) return `You sent the signed coin to ${state.sends[0]}. It looks valid locally; choose the other recipient to expose the double-spend problem.`;
+    if (!state.history) return "You created two locally valid spends. Now the affected system is ordering: the network needs one official rule for whose spend happened first.";
+    return `The ordering rule accepted ${state.sends[0]} first and rejected the conflicting spend. Local validity became shared history.`;
+  }
+
+  if (slide.id === "bitcoin") {
+    if (!state.tampered) return "Press Tamper Record to alter one committed record. Watch how one local change affects the root and the linked history.";
+    if (state.honestWork < 5) return "You changed a record. Its commitment path and later blocks broke, so the rewrite attempt now has to redo work while the honest chain keeps moving.";
+    if (!state.forkChoice) return "Honest work is ahead. Apply fork choice to show how nodes converge on the history with the most cumulative work.";
+    return "Fork choice selected the higher-work history. The affected object is not one block; it is the network’s accepted version of history.";
+  }
+
+  if (slide.id === "ethereum") {
+    if (state.bob === 0) return "Execute the transfer. The choice affects contract state: balances, event logs, and the new state every node verifies.";
+    const missing = ["Wallet", "DEX", "Lending", "Governance"].filter((name) => !state.connected.includes(name));
+    if (missing.length) return `The transfer changed balances and emitted an event. Now connect ${missing[0]} to show how the ERC-20 interface affects composability.`;
+    if (!state.risk) return "Wallets, DEXes, lending, and governance all understand the token interface. Show the attack surface created by those dependencies.";
+    return "The same standard that lowers coordination cost also expands the dependency graph. The affected system is the whole composable app stack.";
+  }
+
+  if (slide.id === "uniswap") {
+    if (state.event === "Pool price matches the outside market.") return "Swap against the pool. The choice affects reserves, price, and the fees paid to liquidity providers.";
+    if (!state.shock) return "The trader moved the pool along the curve. Now shock the outside price to create a gap between on-chain and off-chain markets.";
+    if (Math.abs(poolPrice(state) - state.externalPrice) > 12) return "The outside price moved away from the pool price. That affects arbitrage incentives: someone can trade until the gap narrows.";
+    return "Arbitrage pulled the pool toward the outside market. The payoff rule shaped behavior without a human market maker.";
+  }
+
+  if (slide.id === "mev") {
+    if (state.phase < 1) return "Put the user swap into the mempool. The affected thing is visibility: pending intent becomes observable before final ordering.";
+    if (state.phase < 2) return "The user swap is visible. Exploit ordering to show how a searcher can act before and after the user.";
+    if (state.phase < 3) return "The bot inserted a buy before and a sell after the user. Finalize the block to lock in the ordering effect.";
+    if (!state.activeMechanism) return "The sandwich sequence is finalized. Choose any degen mechanism; the hedgehog will cycle through the possible routes.";
+    return `You selected ${state.activeMechanism}. This affects the framing: degen DeFi is a public stress test for incentives, governance, capital, and narratives.`;
+  }
+
+  if (slide.id === "scanner") {
+    const protocol = protocols[state.selected].name;
+    if (state.revealed < 4) return `Reveal the four-question scan for ${protocol}. Each answer shows which part of the protocol’s coordination problem is affected.`;
+    if (state.selected < protocols.length - 1) return `You completed the scan for ${protocol}. Choose the next protocol to compare the same four questions across systems.`;
+    return "The scanner is complete. The affected mental model is the whole chain: state, proposers, validators, and ordering incentives.";
+  }
+
+  return "";
 }
 
 function renderTitleSlide(slide) {
@@ -737,12 +785,12 @@ function renderBitcoin(state) {
         <div class="hash-tree">
           <div class="hash-row">
             ${leaves.map((leaf, index) => `<button type="button" class="hash-node ${broken && index === 1 ? "broken" : ""}" data-action="tamper">
-              <strong>L${index + 1}</strong><span>${escapeHtml(index === 1 && broken ? "LP withdraw?" : leaf)}</span>
+              <strong>Record ${index + 1}</strong><span>${escapeHtml(index === 1 && broken ? "LP withdraw?" : leaf)}</span>
             </button>`).join("")}
           </div>
           <div class="hash-row">
-            <div class="hash-node ${broken ? "broken" : ""}"><strong>H12</strong><span>${broken ? "mismatch" : "ok"}</span></div>
-            <div class="hash-node"><strong>H34</strong><span>ok</span></div>
+            <div class="hash-node ${broken ? "broken" : ""}"><strong>Pair hash A</strong><span>${broken ? "mismatch" : "ok"}</span></div>
+            <div class="hash-node"><strong>Pair hash B</strong><span>ok</span></div>
           </div>
           <div class="hash-row">
             <div class="hash-node root ${broken ? "broken" : ""}"><strong>Merkle root</strong><span>${broken ? "commitment breaks" : "one root commits to many records"}</span></div>

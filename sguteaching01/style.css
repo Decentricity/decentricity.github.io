@@ -1378,6 +1378,18 @@ code {
   color: #b37752;
 }
 
+.simulation-feedback {
+  background: #fff5ca;
+  border: 1px solid #efc879;
+  border-radius: 8px;
+  color: #65452a;
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1.35;
+  margin: 0 0 0.75rem;
+  padding: 0.7rem 0.8rem;
+}
+
 .metric span,
 .stack-copy span,
 .recipient span,
