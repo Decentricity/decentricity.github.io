@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Foundation for Finance</title>
+  <meta name="description" content="Online teaching slides for a practical two-day AI foundation course for finance, FP&A, accounting, audit, and reporting teams.">
+  <meta property="og:title" content="AI Foundation for Finance">
+  <meta property="og:description" content="Practical online slides for finance AI, reporting, forecasting, demos, and governance.">
+  <meta property="og:type" content="website">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app" id="app">
+    <main class="deck" aria-live="polite">
+      <section class="stage">
+        <div class="slide-shell">
+          <div class="slide-copy" id="slideCopy"></div>
+          <div class="slide-visual" id="slideVisual" aria-hidden="true"></div>
+        </div>
+
+        <div class="menu-shell">
+          <button class="menu-toggle" id="menuToggle" type="button" aria-expanded="false" aria-controls="controlMenu" aria-label="Open controls">Menu</button>
+          <div class="control-menu" id="controlMenu" hidden>
+            <div class="menu-status">
+              <p class="scene-kicker" id="sceneKicker">Slide 1 / 1</p>
+              <h2 id="sceneTitle"></h2>
+              <div class="scene-time" id="sceneTime"></div>
+              <p class="scene-thesis" id="sceneThesis"></p>
+            </div>
+
+            <div class="timer" aria-label="Session timer">
+              <span id="timerReadout">00:00</span>
+              <button id="timerToggle" type="button">Start</button>
+              <button id="timerReset" type="button">Reset</button>
+            </div>
+
+            <div class="deck-controls" aria-label="Slide controls">
+              <button id="prevSlide" type="button">Back</button>
+              <button id="stepSlide" type="button">Step</button>
+              <button id="keyLine" type="button">Key Line</button>
+              <button id="notesToggle" type="button">Notes</button>
+              <button id="nextSlide" type="button">Next</button>
+            </div>
+
+            <div class="progress-wrap" aria-label="Slide progress">
+              <div class="progress-track">
+                <div class="progress-fill" id="progressFill"></div>
+              </div>
+              <div class="progress-dots" id="progressDots"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal" id="lineModal" hidden>
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <p class="panel-label" id="modalTitle">Key line</p>
+      <p id="modalText"></p>
+      <button id="closeModal" type="button">Close</button>
+    </div>
+  </div>
+
+  <aside class="notes-panel" id="notesPanel" hidden aria-label="Presenter notes">
+    <div class="notes-head">
+      <p class="panel-label">Presenter Notes</p>
+      <button id="closeNotes" type="button" aria-label="Close notes">Close</button>
+    </div>
+    <div id="notesContent"></div>
+  </aside>
+
+  <script src="app.js"></script>
+</body>
+</html>
