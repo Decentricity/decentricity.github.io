@@ -137,7 +137,7 @@ const slides = [
         ["09:30", "AI in finance", "Opportunity mapping"],
         ["10:45", "Model types", "Finance problem matching"],
         ["13:00", "Responsible AI", "Risk review checklist"],
-        ["14:00", "Data processing", "Cleaning and extraction demos"],
+        ["14:00", "Data processing", "Three labs: cleaning, PDF, LLM extraction"],
         ["15:45", "Analysis", "Ratios, variance, dashboard"]
       ]
     },
@@ -264,8 +264,8 @@ const slides = [
     }
   },
   {
-    kicker: "Demo 1",
-    title: "From messy spreadsheet to clean dataset",
+    kicker: "Session 4 Lab 1",
+    title: "Cleaning messy finance data",
     time: "14:00-14:35",
     thesis: "AI can suggest cleaning formulas, but finance users still reconcile totals and document assumptions.",
     tags: ["Sheets", "Data Quality", "Reconciliation"],
@@ -300,8 +300,8 @@ const slides = [
     }
   },
   {
-    kicker: "Demo 2",
-    title: "From PDF to structured table",
+    kicker: "Session 4 Lab 2",
+    title: "PDF and invoice extraction",
     time: "14:35-15:05",
     thesis: "PDF extraction is useful only when extracted fields are reconciled back to the original document.",
     tags: ["Colab", "PDF", "OCR", "CSV"],
@@ -335,6 +335,46 @@ const slides = [
         "Run structuring cell and export CSV.",
         "Open CSV in Sheets and reconcile fields to the PDF.",
         "Use fallback text or CSV if Colab package installation fails."
+      ]
+    }
+  },
+  {
+    kicker: "Session 4 Lab 3",
+    title: "LLM-assisted extraction from financial text",
+    time: "15:05-15:30",
+    thesis: "Participants use an AI chat tool to extract structured finance fields from unstructured text, then compare every field against the source.",
+    tags: ["AI Chat", "Docs", "Extraction", "Validation"],
+    keyLine: "The LLM output is a proposed extraction table, not a source of truth.",
+    layout: "cards",
+    points: [
+      ["Start with text", "Use a short financial text excerpt, not a full confidential report."],
+      ["Extract fields", "Company, reporting period, revenue, gross profit, net income, key variance, explanation, and risks."],
+      ["Require evidence", "Ask for source quote, confidence, and review_needed for each extracted field."],
+      ["Compare to source", "Mark correct fields, missing fields, unsupported values, and statements requiring review."]
+    ],
+    visual: {
+      type: "docs",
+      title: "LLM extraction table",
+      subtitle: "Every extracted field needs source evidence.",
+      badge: "Lab 3",
+      docs: [
+        ["CO", "Company name", "must appear in source text"],
+        ["PER", "Reporting period", "date or period copied exactly"],
+        ["REV", "Revenue", "number, unit, and currency checked"],
+        ["NI", "Net income", "no inferred value if missing"],
+        ["VAR", "Key variance", "source-backed movement only"],
+        ["RISK", "Risks mentioned", "not found if not explicit"]
+      ]
+    },
+    notes: {
+      demo: [
+        "Open the short financial text excerpt.",
+        "Paste the excerpt into an AI chat tool with the extraction prompt.",
+        "Ask for a table with field_name, extracted_value, source_quote, confidence, and review_needed.",
+        "Copy the output into Google Docs or Google Sheets.",
+        "Compare each extracted field against the source text.",
+        "Mark unsupported values, missing fields, and fields requiring human review.",
+        "Discuss why this differs from PDF extraction: the LLM structures language, but finance validates evidence."
       ],
       prompt: [
         "Extract structured finance fields from the text below. Use only the source text. Return a table with field_name, extracted_value, source_quote, confidence, and review_needed. If a field is missing, write \"not found.\" Do not infer values that are not explicitly present."
@@ -380,7 +420,7 @@ const slides = [
     }
   },
   {
-    kicker: "Demo 3",
+    kicker: "Session 5 Demo",
     title: "From numbers to CFO commentary",
     time: "15:45-16:25",
     thesis: "A strong prompt forces AI to distinguish facts from possible explanations and unanswered management questions.",
