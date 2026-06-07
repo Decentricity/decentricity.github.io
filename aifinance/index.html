@@ -19,37 +19,39 @@
           <div class="slide-visual" id="slideVisual" aria-hidden="true"></div>
         </div>
 
-        <div class="menu-shell">
-          <button class="menu-toggle" id="menuToggle" type="button" aria-expanded="false" aria-controls="controlMenu" aria-label="Open controls">Menu</button>
-          <div class="control-menu" id="controlMenu" hidden>
-            <div class="menu-status">
-              <p class="scene-kicker" id="sceneKicker">Slide 1 / 1</p>
-              <h2 id="sceneTitle"></h2>
-              <div class="scene-time" id="sceneTime"></div>
-              <p class="scene-thesis" id="sceneThesis"></p>
-            </div>
-
-            <div class="timer" aria-label="Session timer">
-              <span id="timerReadout">00:00</span>
-              <button id="timerToggle" type="button">Start</button>
-              <button id="timerReset" type="button">Reset</button>
-            </div>
-
-            <div class="deck-controls" aria-label="Slide controls">
-              <button id="prevSlide" type="button">Back</button>
-              <button id="stepSlide" type="button">Step</button>
-              <button id="keyLine" type="button">Key Line</button>
-              <button id="notesToggle" type="button">Notes</button>
-              <button id="nextSlide" type="button">Next</button>
-            </div>
-
-            <div class="progress-wrap" aria-label="Slide progress">
-              <div class="progress-track">
-                <div class="progress-fill" id="progressFill"></div>
+        <div class="top-controls" aria-label="Primary slide navigation">
+          <button id="prevSlide" type="button">Back</button>
+          <div class="menu-shell">
+            <button class="menu-toggle" id="menuToggle" type="button" aria-expanded="false" aria-controls="controlMenu" aria-label="Open controls">Menu</button>
+            <div class="control-menu" id="controlMenu" hidden>
+              <div class="menu-status">
+                <p class="scene-kicker" id="sceneKicker">Slide 1 / 1</p>
+                <h2 id="sceneTitle"></h2>
+                <div class="scene-time" id="sceneTime"></div>
+                <p class="scene-thesis" id="sceneThesis"></p>
               </div>
-              <div class="progress-dots" id="progressDots"></div>
+
+              <div class="timer" aria-label="Session timer">
+                <span id="timerReadout">00:00</span>
+                <button id="timerToggle" type="button">Start</button>
+                <button id="timerReset" type="button">Reset</button>
+              </div>
+
+              <div class="deck-controls" aria-label="Slide controls">
+                <button id="stepSlide" type="button">Step</button>
+                <button id="keyLine" type="button">Key Line</button>
+                <button id="notesToggle" type="button">Notes</button>
+              </div>
+
+              <div class="progress-wrap" aria-label="Slide progress">
+                <div class="progress-track">
+                  <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-dots" id="progressDots"></div>
+              </div>
             </div>
           </div>
+          <button id="nextSlide" type="button">Next</button>
         </div>
       </section>
     </main>
