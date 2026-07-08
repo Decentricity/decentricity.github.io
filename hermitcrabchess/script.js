@@ -760,6 +760,10 @@
       newGameButton: document.getElementById("newGameButton"),
       scenarioSelect: document.getElementById("scenarioSelect"),
       loadScenarioButton: document.getElementById("loadScenarioButton"),
+      menuButton: document.getElementById("menuButton"),
+      closeMenuButton: document.getElementById("closeMenuButton"),
+      menuBackdrop: document.getElementById("menuBackdrop"),
+      appMenu: document.getElementById("appMenu"),
       moveHint: document.getElementById("moveHint"),
       turnStatus: document.getElementById("turnStatus"),
       whiteShellStatus: document.getElementById("whiteShellStatus"),
@@ -784,9 +788,60 @@
       selected = null;
       legalActions = [];
       render();
+      closeMenu();
     });
 
+    elements.menuButton.addEventListener("click", openMenu);
+    elements.closeMenuButton.addEventListener("click", closeMenu);
+    elements.menuBackdrop.addEventListener("click", closeMenu);
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        closeMenu();
+      }
+    });
+
+    registerServiceWorker();
     render();
+  }
+
+  function openMenu() {
+    elements.menuBackdrop.hidden = false;
+    elements.appMenu.setAttribute("aria-hidden", "false");
+    elements.menuButton.setAttribute("aria-expanded", "true");
+    document.body.classList.add("menu-open");
+
+    requestAnimationFrame(() => {
+      elements.menuBackdrop.classList.add("open");
+      elements.appMenu.classList.add("open");
+    });
+  }
+
+  function closeMenu() {
+    if (!elements.appMenu) {
+      return;
+    }
+
+    elements.menuBackdrop.classList.remove("open");
+    elements.appMenu.classList.remove("open");
+    elements.appMenu.setAttribute("aria-hidden", "true");
+    elements.menuButton.setAttribute("aria-expanded", "false");
+    document.body.classList.remove("menu-open");
+
+    window.setTimeout(() => {
+      if (!elements.appMenu.classList.contains("open")) {
+        elements.menuBackdrop.hidden = true;
+      }
+    }, 190);
+  }
+
+  function registerServiceWorker() {
+    if (!("serviceWorker" in navigator) || window.location.protocol === "file:") {
+      return;
+    }
+
+    navigator.serviceWorker.register("service-worker.js").catch(() => {
+      // Local static hosting still works if service worker registration is unavailable.
+    });
   }
 
   function render() {

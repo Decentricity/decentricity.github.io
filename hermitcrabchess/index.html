@@ -2,73 +2,101 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Hermit Crab Chess</title>
+  <meta name="theme-color" content="#9e365e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Hermit Crab Chess">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="stylesheet" href="style.css">
   <script src="script.js" defer></script>
 </head>
 <body>
-  <header class="site-header">
-    <div>
-      <p class="eyebrow">local hotseat prototype</p>
-      <h1>Hermit Crab Chess</h1>
-      <p class="lede">Mostly normal chess, until a king borrows an allied piece as a shell and stops caring about checkmate.</p>
-    </div>
-  </header>
-
-  <main class="app-shell">
-    <section class="board-panel" aria-label="Chessboard and controls">
-      <div class="board-frame">
-        <div id="board" class="board" role="grid" aria-label="Hermit Crab Chess board"></div>
+  <div class="app">
+    <header class="site-header">
+      <div class="title-block">
+        <p class="eyebrow">hotseat variant</p>
+        <h1>Hermit Crab Chess</h1>
       </div>
 
-      <div class="controls">
-        <button id="newGameButton" type="button">New Game</button>
+      <div class="app-actions">
+        <button id="newGameButton" class="new-game-button" type="button">New</button>
+        <button id="menuButton" class="menu-button" type="button" aria-controls="appMenu" aria-expanded="false" aria-label="Open menu">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+    </header>
 
-        <label class="scenario-control" for="scenarioSelect">
-          <span>Test setup</span>
-          <select id="scenarioSelect">
-            <option value="standard">Standard start</option>
-            <option value="knight-shell">Knight shell drill</option>
-            <option value="bishop-shell">Bishop shell drill</option>
-            <option value="rook-shell">Rook shell drill</option>
-            <option value="queen-shell">Queen shell drill</option>
-            <option value="white-pawn-shell">White pawn shell drill</option>
-            <option value="black-pawn-shell">Black pawn shell drill</option>
-            <option value="shelled-capture">Shelled king capture</option>
-            <option value="unshelled-checkmate">Unshelled checkmate</option>
-          </select>
-        </label>
+    <main class="app-shell">
+      <section class="board-panel" aria-label="Chessboard and controls">
+        <div class="board-frame">
+          <div id="board" class="board" role="grid" aria-label="Hermit Crab Chess board"></div>
+        </div>
 
-        <button id="loadScenarioButton" type="button">Load</button>
+        <p id="moveHint" class="move-hint" aria-live="polite">Select a piece to see legal moves.</p>
+
+        <section class="status-panel quick-status" aria-label="Game status">
+          <div id="resultBanner" class="result-banner" hidden></div>
+
+          <dl class="status-grid">
+            <div>
+              <dt>Turn</dt>
+              <dd id="turnStatus">White</dd>
+            </div>
+            <div>
+              <dt>White shell</dt>
+              <dd id="whiteShellStatus">None</dd>
+            </div>
+            <div>
+              <dt>Black shell</dt>
+              <dd id="blackShellStatus">None</dd>
+            </div>
+            <div>
+              <dt>Check</dt>
+              <dd id="checkStatus">No checks.</dd>
+            </div>
+          </dl>
+        </section>
+      </section>
+    </main>
+
+    <div id="menuBackdrop" class="menu-backdrop" hidden></div>
+
+    <aside id="appMenu" class="app-menu" aria-label="Game menu" aria-hidden="true">
+      <div class="menu-header">
+        <h1>Hermit Crab Chess</h1>
+        <button id="closeMenuButton" class="close-menu-button" type="button" aria-label="Close menu">Close</button>
       </div>
 
-      <p id="moveHint" class="move-hint" aria-live="polite">Select a piece to see legal moves.</p>
-    </section>
+      <section class="menu-section">
+        <h2>Practice Setups</h2>
+        <div class="controls">
+          <label class="scenario-control" for="scenarioSelect">
+            <span>Test setup</span>
+            <select id="scenarioSelect">
+              <option value="standard">Standard start</option>
+              <option value="knight-shell">Knight shell drill</option>
+              <option value="bishop-shell">Bishop shell drill</option>
+              <option value="rook-shell">Rook shell drill</option>
+              <option value="queen-shell">Queen shell drill</option>
+              <option value="white-pawn-shell">White pawn shell drill</option>
+              <option value="black-pawn-shell">Black pawn shell drill</option>
+              <option value="shelled-capture">Shelled king capture</option>
+              <option value="unshelled-checkmate">Unshelled checkmate</option>
+            </select>
+          </label>
 
-    <aside class="info-panel">
-      <section class="status-panel" aria-label="Game status">
-        <div id="resultBanner" class="result-banner" hidden></div>
+          <button id="loadScenarioButton" type="button">Load</button>
+        </div>
+      </section>
 
-        <dl class="status-grid">
-          <div>
-            <dt>Turn</dt>
-            <dd id="turnStatus">White</dd>
-          </div>
-          <div>
-            <dt>White king shell</dt>
-            <dd id="whiteShellStatus">None</dd>
-          </div>
-          <div>
-            <dt>Black king shell</dt>
-            <dd id="blackShellStatus">None</dd>
-          </div>
-          <div>
-            <dt>Check status</dt>
-            <dd id="checkStatus">No checks.</dd>
-          </div>
-        </dl>
-
+      <section class="menu-section" aria-label="Captured pieces">
+        <h2>Captured Pieces</h2>
         <div class="captured-grid" aria-label="Captured pieces">
           <div>
             <h2>White captured</h2>
@@ -79,14 +107,16 @@
             <p id="capturedByBlack" class="captured-list">None</p>
           </div>
         </div>
+      </section>
 
+      <section class="menu-section">
         <div class="move-log-wrap">
           <h2>Move log</h2>
           <ol id="moveLog" class="move-log"></ol>
         </div>
       </section>
 
-      <section class="rules-panel">
+      <section class="menu-section rules-panel">
         <h2>Hermit Crab Chess Rules</h2>
         <ul>
           <li>Unshelled kings are normal kings: they can be checked, cannot move into check, and can be checkmated.</li>
@@ -98,6 +128,6 @@
         </ul>
       </section>
     </aside>
-  </main>
+  </div>
 </body>
 </html>

@@ -31,4 +31,6 @@ No Stockfish, minimax, bot, engine analysis, or AI opponent is included.
 
 Open `index.html` directly, or serve the repo with a static server and visit `/hermitcrabchess/`.
 
+For PWA testing, use a local static server or GitHub Pages so `manifest.webmanifest` and `service-worker.js` are served over HTTP(S). Direct `file://` opening still works for gameplay, but service worker registration is skipped.
+
 The page includes a `Test setup` selector for manual checks such as knight shell movement, bishop/rook/queen shell movement, pawn shell direction, direct shelled-king capture, and unshelled checkmate.

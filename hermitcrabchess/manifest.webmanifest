@@ -1,0 +1,25 @@
+{
+  "name": "Hermit Crab Chess",
+  "short_name": "Crab Chess",
+  "description": "A local hotseat chess variant where kings wear allied pieces as shells.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#fff4f8",
+  "theme_color": "#9e365e",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
