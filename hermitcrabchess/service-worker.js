@@ -1,4 +1,4 @@
-const CACHE_NAME = "hermit-crab-chess-v2";
+const CACHE_NAME = "hermit-crab-chess-v3";
 const APP_ASSETS = [
   "./",
   "index.html",
