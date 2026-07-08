@@ -99,7 +99,8 @@ h1 {
 
 .board {
   display: grid;
-  grid-template-columns: repeat(8, 1fr);
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-template-rows: repeat(8, minmax(0, 1fr));
   aspect-ratio: 1;
   width: 100%;
 }
@@ -113,6 +114,7 @@ h1 {
   min-height: 0;
   border: 0;
   padding: 0;
+  overflow: hidden;
   color: var(--ink);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
