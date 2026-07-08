@@ -1,4 +1,4 @@
-const CACHE_NAME = "hermit-crab-chess-v3";
+const CACHE_NAME = "hermit-crab-chess-v4";
 const APP_ASSETS = [
   "./",
   "index.html",
@@ -7,7 +7,8 @@ const APP_ASSETS = [
   "manifest.webmanifest",
   "icon.svg",
   "icon-192.png",
-  "icon-512.png"
+  "icon-512.png",
+  "splash.png"
 ];
 
 self.addEventListener("install", (event) => {

@@ -764,6 +764,8 @@
       closeMenuButton: document.getElementById("closeMenuButton"),
       menuBackdrop: document.getElementById("menuBackdrop"),
       appMenu: document.getElementById("appMenu"),
+      splashScreen: document.getElementById("splashScreen"),
+      startGameButton: document.getElementById("startGameButton"),
       moveHint: document.getElementById("moveHint"),
       turnStatus: document.getElementById("turnStatus"),
       whiteShellStatus: document.getElementById("whiteShellStatus"),
@@ -794,6 +796,7 @@
     elements.menuButton.addEventListener("click", openMenu);
     elements.closeMenuButton.addEventListener("click", closeMenu);
     elements.menuBackdrop.addEventListener("click", closeMenu);
+    elements.startGameButton.addEventListener("click", hideSplash);
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape") {
         closeMenu();
@@ -802,6 +805,13 @@
 
     registerServiceWorker();
     render();
+  }
+
+  function hideSplash() {
+    elements.splashScreen.classList.add("hidden");
+    window.setTimeout(() => {
+      elements.splashScreen.hidden = true;
+    }, 230);
   }
 
   function openMenu() {
