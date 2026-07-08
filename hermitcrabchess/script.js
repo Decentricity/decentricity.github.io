@@ -181,7 +181,9 @@
     // Unshelled kings obey ordinary king movement and king-safety rules.
     // Shelled kings stop using king movement and attachment entirely; they use the shell piece only.
     if (!shell) {
-      const attachActions = generateAttachActions(currentState, row, col, king);
+      const attachActions = isInCheck(currentState, king.color)
+        ? []
+        : generateAttachActions(currentState, row, col, king);
       const kingMoves = generatePseudoMoves(currentState, row, col, "k", { shellMove: false });
       return kingMoves
         .filter((action) => moveKeepsUnshelledKingSafe(currentState, action, king.color))

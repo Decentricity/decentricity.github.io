@@ -19,8 +19,8 @@ No Stockfish, minimax, bot, engine analysis, or AI opponent is included.
 - En passant disabled.
 - Pawns auto-promote to queens.
 - Unshelled kings use normal check and checkmate rules.
-- A king can attach an adjacent allied non-king piece. Attaching consumes the turn, removes that piece, and stores the piece type as the shell.
-- A checked unshelled king may attach a shell to escape into Hermit Crab Mode.
+- A king can attach an adjacent allied non-king piece only if the king is not currently in check. Attaching consumes the turn, removes that piece, and stores the piece type as the shell.
+- A checked unshelled king must escape check by ordinary king movement or other legal chess responses; it cannot attach a shell while in check.
 - Shelled kings move only like the shell piece and ignore check/checkmate.
 - Shelled kings can be captured directly; direct capture ends the game.
 - MVP rule: shell replacement is omitted. Once a king has a shell, it cannot attach another piece.
