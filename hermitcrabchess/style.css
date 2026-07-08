@@ -98,10 +98,8 @@ h1 {
 }
 
 .board {
-  display: grid;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
-  grid-template-rows: repeat(8, minmax(0, 1fr));
-  aspect-ratio: 1;
+  display: flex;
+  flex-wrap: wrap;
   width: 100%;
 }
 
@@ -109,7 +107,9 @@ h1 {
   position: relative;
   display: grid;
   place-items: center;
-  width: 100%;
+  flex: 0 0 12.5%;
+  aspect-ratio: 1 / 1;
+  width: 12.5%;
   min-width: 0;
   min-height: 0;
   border: 0;
