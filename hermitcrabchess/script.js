@@ -530,6 +530,19 @@
     return actions;
   }
 
+  function getUnshelledKingEscapeActions(currentState, color) {
+    if (currentState.shells[color]) {
+      return [];
+    }
+
+    const king = findKing(currentState, color);
+    if (!king) {
+      return [];
+    }
+
+    return generateLegalActionsForSquare(currentState, king.row, king.col, color);
+  }
+
   function applyActionToState(currentState, action) {
     if (!action || currentState.gameOver) {
       return currentState;
@@ -656,14 +669,17 @@
   function settleGameStatus(currentState) {
     const color = currentState.turn;
     const inCheck = isInCheck(currentState, color);
-    const legalCount = getAllLegalActions(currentState, color).length;
 
-    if (inCheck && legalCount === 0) {
-      currentState.gameOver = true;
-      currentState.result = `${colorName(color)} is checkmated. ${colorName(opposite(color))} wins.`;
+    if (inCheck) {
+      const kingEscapeCount = getUnshelledKingEscapeActions(currentState, color).length;
+      if (kingEscapeCount === 0) {
+        currentState.gameOver = true;
+        currentState.result = `${colorName(color)} is checkmated. ${colorName(opposite(color))} wins.`;
+      }
       return;
     }
 
+    const legalCount = getAllLegalActions(currentState, color).length;
     if (!inCheck && legalCount === 0) {
       currentState.gameOver = true;
       currentState.result = `Draw by no legal moves for ${colorName(color).toLowerCase()}.`;
@@ -1149,9 +1165,11 @@
     cloneState,
     generateLegalActionsForSquare,
     generateDetachActions,
+    getUnshelledKingEscapeActions,
     getAllLegalActions,
     applyActionToState,
     applyActionBySquares,
+    settleGameStatus,
     isInCheck,
     isSquareAttackedBy,
     squareToCoords,
