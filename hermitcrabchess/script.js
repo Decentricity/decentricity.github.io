@@ -973,8 +973,8 @@
     elements.whiteShellStatus.textContent = formatShellStatus(WHITE);
     elements.blackShellStatus.textContent = formatShellStatus(BLACK);
     elements.checkStatus.textContent = formatCheckStatus();
-    elements.capturedByWhite.textContent = formatCaptured(WHITE);
-    elements.capturedByBlack.textContent = formatCaptured(BLACK);
+    renderCapturedList(elements.capturedByWhite, WHITE);
+    renderCapturedList(elements.capturedByBlack, BLACK);
 
     if (state.gameOver) {
       elements.resultBanner.hidden = false;
@@ -1023,6 +1023,14 @@
   function formatCaptured(color) {
     const captured = state.capturedBy[color];
     return captured.length ? captured.map(pieceSymbol).join(" ") : "None";
+  }
+
+  function renderCapturedList(element, color) {
+    const captured = state.capturedBy[color];
+
+    element.textContent = formatCaptured(color);
+    element.classList.toggle("empty-captured", captured.length === 0);
+    element.classList.toggle("has-captured-pieces", captured.length > 0);
   }
 
   function renderHint() {

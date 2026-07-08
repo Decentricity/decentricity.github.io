@@ -1,22 +1,22 @@
 :root {
   color-scheme: light;
-  --ink: #17241d;
-  --muted: #52665a;
-  --page: #f5fbf0;
-  --panel: #ffffff;
-  --panel-strong: #e7f5e3;
-  --line: #bad6c1;
-  --green: #1f7a55;
-  --green-dark: #0f5c40;
-  --aqua: #63c7b2;
-  --coral: #e85f5c;
-  --gold: #f6c85f;
-  --light-square: #eaf5df;
-  --dark-square: #6ba17b;
-  --legal: #176b87;
-  --capture: #d43f3a;
-  --attach: #7b4ed8;
-  --shadow: 0 18px 45px rgba(22, 48, 33, 0.14);
+  --ink: #35202a;
+  --muted: #795d6b;
+  --page: #fff4f8;
+  --panel: #fffafd;
+  --panel-strong: #ffeaf2;
+  --line: #efbfd0;
+  --green: #ca5d82;
+  --green-dark: #9e365e;
+  --aqua: #b7e4df;
+  --coral: #e95f79;
+  --gold: #ffd1dc;
+  --light-square: #fff6fa;
+  --dark-square: #e9a9c0;
+  --legal: #8d6ab8;
+  --capture: #d94a68;
+  --attach: #c05f9f;
+  --shadow: 0 18px 45px rgba(127, 57, 86, 0.16);
 }
 
 * {
@@ -27,8 +27,8 @@ body {
   margin: 0;
   min-height: 100vh;
   background:
-    linear-gradient(135deg, rgba(99, 199, 178, 0.18), transparent 30%),
-    linear-gradient(315deg, rgba(246, 200, 95, 0.18), transparent 34%),
+    linear-gradient(135deg, rgba(255, 207, 222, 0.72), transparent 34%),
+    linear-gradient(315deg, rgba(183, 228, 223, 0.36), transparent 38%),
     var(--page);
   color: var(--ink);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -77,7 +77,7 @@ h1 {
 .board-panel,
 .status-panel,
 .rules-panel {
-  background: rgba(255, 255, 255, 0.86);
+  background: rgba(255, 250, 253, 0.92);
   border: 1px solid var(--line);
   border-radius: 8px;
   box-shadow: var(--shadow);
@@ -140,7 +140,7 @@ h1 {
 }
 
 .square.check {
-  box-shadow: inset 0 0 0 4px var(--capture), inset 0 0 22px rgba(212, 63, 58, 0.45);
+  box-shadow: inset 0 0 0 4px var(--capture), inset 0 0 22px rgba(217, 74, 104, 0.38);
 }
 
 .square.legal:not(.has-piece)::after {
@@ -148,7 +148,7 @@ h1 {
   width: 28%;
   height: 28%;
   border-radius: 50%;
-  background: rgba(23, 107, 135, 0.68);
+  background: rgba(141, 106, 184, 0.68);
 }
 
 .square.capture {
@@ -198,7 +198,7 @@ h1 {
 }
 
 .piece.black-piece {
-  color: #102016;
+  color: #2d1720;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.24);
 }
 
@@ -215,16 +215,16 @@ h1 {
   border: 2px solid #fff;
   border-radius: 999px;
   background: var(--gold);
-  color: #34270a;
+  color: #5c2439;
   font-size: 0.82rem;
   font-weight: 900;
-  box-shadow: 0 2px 8px rgba(23, 36, 29, 0.2);
+  box-shadow: 0 2px 8px rgba(127, 57, 86, 0.24);
 }
 
 .coord {
   position: absolute;
   z-index: 2;
-  color: rgba(23, 36, 29, 0.55);
+  color: rgba(53, 32, 42, 0.55);
   font-size: 0.68rem;
   font-weight: 800;
   pointer-events: none;
@@ -305,7 +305,7 @@ h1 {
   padding: 10px 12px;
   border-radius: 8px;
   background: var(--gold);
-  color: #2f250b;
+  color: #5c2439;
   font-weight: 900;
 }
 
@@ -355,7 +355,13 @@ dd {
   min-height: 30px;
   margin: 0;
   font-size: 1.45rem;
+  font-weight: 800;
   line-height: 1.3;
+}
+
+.captured-list.empty-captured {
+  font-size: 1rem;
+  font-weight: 800;
 }
 
 .move-log-wrap {
