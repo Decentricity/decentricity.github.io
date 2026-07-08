@@ -8,18 +8,78 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Hermit Crab Chess">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="manifest" href="manifest.webmanifest?v=5">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon-192.png">
-  <link rel="stylesheet" href="style.css">
-  <script src="script.js" defer></script>
+  <style>
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    .splash-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 2147483000;
+      width: 100vw;
+      height: 100vh;
+      height: 100svh;
+      max-width: 100vw;
+      max-height: 100svh;
+      overflow: hidden;
+      background: #120912;
+      transition: opacity 220ms ease, visibility 220ms ease;
+    }
+
+    .splash-screen.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .splash-art {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .splash-actions {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 1;
+      padding: 24px 20px calc(28px + env(safe-area-inset-bottom));
+      display: grid;
+      place-items: center;
+      background: linear-gradient(0deg, rgba(42, 16, 30, 0.72), transparent);
+    }
+
+    .start-game-button {
+      min-width: min(280px, 78vw);
+      min-height: 54px;
+      border: 2px solid rgba(255, 255, 255, 0.72);
+      border-radius: 999px;
+      background: linear-gradient(180deg, #ffd1dc, #ca5d82);
+      color: #35202a;
+      font: 950 1.08rem system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      box-shadow: 0 16px 42px rgba(53, 32, 42, 0.36);
+    }
+  </style>
+  <link rel="stylesheet" href="style.css?v=5">
+  <script src="script.js?v=5" defer></script>
 </head>
 <body>
   <div class="app">
     <section id="splashScreen" class="splash-screen" aria-label="Hermit Crab Chess start screen">
-      <img src="splash.png" alt="Hermit Crab Chess" class="splash-art">
+      <img src="splash.png?v=5" alt="Hermit Crab Chess" class="splash-art">
       <div class="splash-actions">
-        <button id="startGameButton" class="start-game-button" type="button">Start Game</button>
+        <button id="startGameButton" class="start-game-button" type="button" onclick="var s=document.getElementById('splashScreen'); s.classList.add('hidden'); setTimeout(function(){s.hidden=true;},230);">Start Game</button>
       </div>
     </section>
 

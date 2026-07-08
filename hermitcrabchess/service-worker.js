@@ -1,14 +1,14 @@
-const CACHE_NAME = "hermit-crab-chess-v4";
+const CACHE_NAME = "hermit-crab-chess-v5";
 const APP_ASSETS = [
   "./",
   "index.html",
-  "style.css",
-  "script.js",
-  "manifest.webmanifest",
+  "style.css?v=5",
+  "script.js?v=5",
+  "manifest.webmanifest?v=5",
   "icon.svg",
   "icon-192.png",
   "icon-512.png",
-  "splash.png"
+  "splash.png?v=5"
 ];
 
 self.addEventListener("install", (event) => {
@@ -52,11 +52,12 @@ self.addEventListener("fetch", (event) => {
   }
 
   event.respondWith(
-    caches.match(event.request)
-      .then((cached) => cached || fetch(event.request).then((response) => {
+    fetch(event.request)
+      .then((response) => {
         const copy = response.clone();
         caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
         return response;
-      }))
+      })
+      .catch(() => caches.match(event.request, { ignoreSearch: true }))
   );
 });
