@@ -202,23 +202,20 @@ h1 {
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.24);
 }
 
-.shell-badge {
+.shell-hat {
   position: absolute;
-  top: 5px;
-  right: 5px;
+  top: 3%;
+  left: 50%;
   z-index: 3;
-  display: grid;
-  place-items: center;
-  min-width: 24px;
-  height: 24px;
-  padding: 0 5px;
-  border: 2px solid #fff;
-  border-radius: 999px;
-  background: var(--gold);
-  color: #5c2439;
-  font-size: 0.82rem;
-  font-weight: 900;
-  box-shadow: 0 2px 8px rgba(127, 57, 86, 0.24);
+  font-size: 2.55rem;
+  line-height: 1;
+  pointer-events: none;
+  text-shadow:
+    0 2px 0 rgba(255, 255, 255, 0.5),
+    0 4px 10px rgba(127, 57, 86, 0.22);
+  transform: translate(-44%, -8%) rotate(-17deg);
+  transform-origin: 50% 80%;
+  user-select: none;
 }
 
 .coord {
@@ -427,13 +424,9 @@ dd {
     font-size: 2.05rem;
   }
 
-  .shell-badge {
-    top: 3px;
-    right: 3px;
-    min-width: 18px;
-    height: 18px;
-    font-size: 0.64rem;
-    border-width: 1px;
+  .shell-hat {
+    top: 1%;
+    font-size: 1.58rem;
   }
 
   .coord {

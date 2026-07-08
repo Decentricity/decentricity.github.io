@@ -15,14 +15,6 @@
     k: "king"
   };
 
-  const SHELL_LABELS = {
-    p: "P",
-    n: "N",
-    b: "B",
-    r: "R",
-    q: "Q"
-  };
-
   const PIECE_SYMBOLS = {
     w: {
       k: "♔",
@@ -873,11 +865,12 @@
           square.appendChild(pieceSpan);
 
           if (piece.type === "k" && state.shells[piece.color]) {
-            const badge = document.createElement("span");
-            badge.className = "shell-badge";
-            badge.textContent = SHELL_LABELS[state.shells[piece.color]];
-            badge.title = `${pieceName(state.shells[piece.color])} shell`;
-            square.appendChild(badge);
+            const shellPiece = createPiece(piece.color, state.shells[piece.color]);
+            const hat = document.createElement("span");
+            hat.className = `shell-hat ${piece.color === BLACK ? "black-piece" : "white-piece"}`;
+            hat.textContent = pieceSymbol(shellPiece);
+            hat.title = `${pieceName(state.shells[piece.color])} shell`;
+            square.appendChild(hat);
           }
         }
 
