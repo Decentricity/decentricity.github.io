@@ -162,7 +162,7 @@
     return null;
   }
 
-  function generateLegalActionsForSquare(currentState, row, col, forColor) {
+  function generateLegalActionsForSquare(currentState, row, col, forColor, options) {
     const piece = currentState.board[row][col];
     const color = forColor || currentState.turn;
 
@@ -171,7 +171,7 @@
     }
 
     if (piece.type === "k") {
-      return generateKingActions(currentState, row, col, piece);
+      return generateKingActions(currentState, row, col, piece, options);
     }
 
     const pseudoMoves = generatePseudoMoves(currentState, row, col, piece.type, { shellMove: false });
@@ -183,7 +183,7 @@
     return pseudoMoves.filter((action) => moveKeepsUnshelledKingSafe(currentState, action, piece.color));
   }
 
-  function generateKingActions(currentState, row, col, king) {
+  function generateKingActions(currentState, row, col, king, options) {
     const shell = currentState.shells[king.color];
 
     // Unshelled kings obey ordinary king movement and king-safety rules.
@@ -196,7 +196,10 @@
         .concat(attachActions);
     }
 
-    return generatePseudoMoves(currentState, row, col, shell, { shellMove: true });
+    const shellMoves = generatePseudoMoves(currentState, row, col, shell, { shellMove: true });
+    return options && options.includeDetach
+      ? shellMoves.concat(generateDetachActions(currentState, row, col, king))
+      : shellMoves;
   }
 
   function generateAttachActions(currentState, row, col, king) {
@@ -222,6 +225,27 @@
     }
 
     return actions;
+  }
+
+  function generateDetachActions(currentState, row, col, king) {
+    const shell = currentState.shells[king.color];
+
+    if (!shell) {
+      return [];
+    }
+
+    // Unshelling moves the carried shell piece away from the king. The king
+    // stays put, loses the shell, and must be safe as a normal unshelled king.
+    return generatePseudoMoves(currentState, row, col, shell, { shellMove: false })
+      .map((action) => ({
+        kind: "detach",
+        from: { row, col },
+        to: action.to,
+        shell,
+        capture: action.capture,
+        promotion: action.promotion
+      }))
+      .filter((action) => detachKeepsUnshelledKingSafe(currentState, action, king.color));
   }
 
   function generatePseudoMoves(currentState, row, col, movementType, options) {
@@ -375,6 +399,11 @@
     return !isInCheck(next, color);
   }
 
+  function detachKeepsUnshelledKingSafe(currentState, action, color) {
+    const next = simulateDetachOnly(currentState, action);
+    return !isInCheck(next, color);
+  }
+
   function simulateMoveOnly(currentState, action) {
     const next = cloneState(currentState);
     const moving = next.board[action.from.row][action.from.col];
@@ -383,6 +412,18 @@
     next.board[action.to.row][action.to.col] = action.promotion
       ? createPiece(moving.color, "q")
       : moving;
+
+    return next;
+  }
+
+  function simulateDetachOnly(currentState, action) {
+    const next = cloneState(currentState);
+    const king = next.board[action.from.row][action.from.col];
+
+    next.shells[king.color] = null;
+    next.board[action.to.row][action.to.col] = action.promotion
+      ? createPiece(king.color, "q")
+      : createPiece(king.color, action.shell);
 
     return next;
   }
@@ -488,7 +529,7 @@
 
     for (let row = 0; row < 8; row += 1) {
       for (let col = 0; col < 8; col += 1) {
-        actions.push(...generateLegalActionsForSquare(currentState, row, col, color));
+        actions.push(...generateLegalActionsForSquare(currentState, row, col, color, { includeDetach: true }));
       }
     }
 
@@ -516,6 +557,50 @@
       next.board[action.from.row][action.from.col] = null;
       next.shells[actorColor] = shellPiece.type;
       logEntry = `${colorName(actorColor)} king attached ${articleFor(pieceName(shellPiece.type))} ${pieceName(shellPiece.type)} from ${coordsToSquare(action.from.row, action.from.col)}.`;
+    } else if (action.kind === "detach") {
+      const king = next.board[action.from.row][action.from.col];
+      const target = next.board[action.to.row][action.to.col];
+
+      if (
+        !king ||
+        king.type !== "k" ||
+        !next.shells[king.color] ||
+        !detachKeepsUnshelledKingSafe(currentState, action, king.color)
+      ) {
+        return currentState;
+      }
+
+      actorColor = king.color;
+
+      if (target) {
+        next.capturedBy[actorColor].push(clonePiece(target));
+      }
+
+      next.shells[actorColor] = null;
+      next.board[action.to.row][action.to.col] = action.promotion
+        ? createPiece(actorColor, "q")
+        : createPiece(actorColor, action.shell);
+
+      logEntry = `${colorName(actorColor)} king unshelled ${articleFor(pieceName(action.shell))} ${pieceName(action.shell)} to ${coordsToSquare(action.to.row, action.to.col)}`;
+
+      if (target) {
+        logEntry += `, capturing ${colorName(target.color).toLowerCase()} ${pieceName(target.type)}`;
+      }
+
+      if (action.promotion) {
+        logEntry += " and promoting it to queen";
+      }
+
+      logEntry += ".";
+
+      if (target && target.type === "k") {
+        const wasShelled = Boolean(currentState.shells[target.color]);
+        next.shells[target.color] = null;
+        next.gameOver = true;
+        next.result = wasShelled
+          ? `${colorName(actorColor)} unshelled onto the shelled ${colorName(target.color).toLowerCase()} king. ${colorName(actorColor)} wins.`
+          : `${colorName(actorColor)} unshelled onto the unshelled ${colorName(target.color).toLowerCase()} king. ${colorName(actorColor)} wins.`;
+      }
     } else if (action.kind === "move") {
       const moving = next.board[action.from.row][action.from.col];
       const target = next.board[action.to.row][action.to.col];
@@ -754,8 +839,8 @@
         }
 
         if (action) {
-          square.classList.add(action.kind === "attach" ? "attach" : "legal");
-          if (action.kind === "move" && action.capture) {
+          square.classList.add(action.kind === "attach" ? "attach" : action.kind === "detach" ? "detach" : "legal");
+          if ((action.kind === "move" || action.kind === "detach") && action.capture) {
             square.classList.add("capture");
           }
         }
@@ -815,7 +900,7 @@
     }
 
     if (action) {
-      parts.push(action.kind === "attach" ? "attach target" : "legal move");
+      parts.push(action.kind === "attach" ? "attach target" : action.kind === "detach" ? "unshell target" : "legal move");
     }
 
     return parts.join(", ");
@@ -823,7 +908,7 @@
 
   function actionForTarget(row, col) {
     return legalActions.find((action) => {
-      if (action.kind === "move") {
+      if (action.kind === "move" || action.kind === "detach") {
         return action.to.row === row && action.to.col === col;
       }
 
@@ -850,8 +935,25 @@
 
     const piece = state.board[row][col];
 
+    if (
+      selected &&
+      selected.row === row &&
+      selected.col === col &&
+      piece &&
+      piece.color === state.turn &&
+      piece.type === "k" &&
+      state.shells[piece.color]
+    ) {
+      selected.mode = selected.mode === "detach" ? "move" : "detach";
+      legalActions = selected.mode === "detach"
+        ? generateDetachActions(state, row, col, piece)
+        : generateLegalActionsForSquare(state, row, col, state.turn);
+      render();
+      return;
+    }
+
     if (piece && piece.color === state.turn) {
-      selected = { row, col };
+      selected = { row, col, mode: "move" };
       legalActions = generateLegalActionsForSquare(state, row, col, state.turn);
       render();
       return;
@@ -941,6 +1043,7 @@
     const piece = state.board[selected.row][selected.col];
     const moveCount = legalActions.filter((action) => action.kind === "move").length;
     const attachCount = legalActions.filter((action) => action.kind === "attach").length;
+    const detachCount = legalActions.filter((action) => action.kind === "detach").length;
     const square = coordsToSquare(selected.row, selected.col);
 
     if (!piece) {
@@ -948,8 +1051,15 @@
       return;
     }
 
+    if (piece.type === "k" && state.shells[piece.color] && selected.mode === "detach") {
+      elements.moveHint.textContent = detachCount
+        ? `Unshelling mode: choose where the ${pieceName(state.shells[piece.color])} shell lands. ${detachCount} legal unshell targets.`
+        : `Unshelling mode: the ${pieceName(state.shells[piece.color])} shell has no legal landing square that leaves the king safe.`;
+      return;
+    }
+
     if (piece.type === "k" && state.shells[piece.color]) {
-      elements.moveHint.textContent = `${colorName(piece.color)} king on ${square} has a ${pieceName(state.shells[piece.color])} shell: ${moveCount} shell moves. It cannot attach another piece.`;
+      elements.moveHint.textContent = `${colorName(piece.color)} king on ${square} has a ${pieceName(state.shells[piece.color])} shell: ${moveCount} shell moves. Click the king again to unshell.`;
       return;
     }
 
@@ -970,6 +1080,7 @@
     createScenario,
     cloneState,
     generateLegalActionsForSquare,
+    generateDetachActions,
     getAllLegalActions,
     applyActionToState,
     applyActionBySquares,

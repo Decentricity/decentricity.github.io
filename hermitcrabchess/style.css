@@ -159,8 +159,12 @@ h1 {
   box-shadow: inset 0 0 0 4px var(--attach);
 }
 
-.square.attach::before {
-  content: "shell";
+.square.detach {
+  box-shadow: inset 0 0 0 4px var(--aqua);
+}
+
+.square.attach::before,
+.square.detach::before {
   position: absolute;
   left: 5px;
   bottom: 5px;
@@ -172,6 +176,16 @@ h1 {
   font-size: 0.62rem;
   font-weight: 800;
   text-transform: uppercase;
+}
+
+.square.attach::before {
+  content: "shell";
+}
+
+.square.detach::before {
+  content: "unshell";
+  background: var(--aqua);
+  color: #082d27;
 }
 
 .piece {

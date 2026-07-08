@@ -24,7 +24,8 @@ No Stockfish, minimax, bot, engine analysis, or AI opponent is included.
 - Shelled kings move only like the shell piece and ignore check/checkmate.
 - Shelled kings can be captured directly; direct capture ends the game.
 - MVP rule: shell replacement is omitted. Once a king has a shell, it cannot attach another piece.
-- Detaching is omitted: once attached, a shell stays until death.
+- Clicking a shelled king twice enters unshelling mode. The shell piece may land on a legal square for that piece; the king stays behind unshelled.
+- Unshelling consumes the turn and is only legal if the newly unshelled king is not in check.
 
 ## Local testing
 
