@@ -26,11 +26,14 @@
 html {
   height: 100%;
   overflow: hidden;
+  width: 100%;
 }
 
 body {
   margin: 0;
   height: 100%;
+  width: 100%;
+  max-width: 100%;
   overflow: hidden;
   overscroll-behavior: none;
   background:
@@ -47,8 +50,11 @@ select {
 }
 
 .app {
-  height: 100dvh;
+  height: 100vh;
+  height: 100svh;
   min-height: 100%;
+  width: 100%;
+  max-width: 100vw;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
@@ -127,6 +133,7 @@ h1 {
 
 .app-shell {
   width: 100%;
+  max-width: 100vw;
   min-height: 0;
   height: 100%;
   margin: 0 auto;
@@ -147,6 +154,8 @@ h1 {
 
 .board-panel {
   width: min(100%, 720px);
+  max-width: 100%;
+  min-width: 0;
   height: 100%;
   min-height: 0;
   padding: 0;
@@ -160,7 +169,7 @@ h1 {
 }
 
 .board-frame {
-  width: min(100%, 68dvh, 680px);
+  width: min(100%, 68svh, 680px);
   max-width: 680px;
   margin: 0 auto;
   border: 2px solid var(--green-dark);
@@ -173,6 +182,7 @@ h1 {
   display: flex;
   flex-wrap: wrap;
   width: 100%;
+  max-width: 100%;
 }
 
 .square {
@@ -349,10 +359,12 @@ h1 {
 .move-hint {
   min-height: 24px;
   width: min(100%, 680px);
+  max-width: 100%;
   margin: 0 auto;
   color: var(--muted);
   font-weight: 700;
   text-align: center;
+  overflow-wrap: anywhere;
 }
 
 .status-panel,
@@ -362,8 +374,11 @@ h1 {
 
 .quick-status {
   width: min(100%, 680px);
+  max-width: 100%;
+  min-width: 0;
   margin: 0 auto;
   padding: 8px;
+  overflow: hidden;
 }
 
 .result-banner {
@@ -385,6 +400,7 @@ h1 {
 .status-grid div,
 .captured-grid > div,
 .move-log-wrap {
+  min-width: 0;
   padding: 10px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -401,9 +417,11 @@ dt {
 dd {
   margin: 4px 0 0;
   font-weight: 800;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .captured-grid {
@@ -539,7 +557,7 @@ dd {
   }
 
   .board-frame {
-    width: min(100%, calc(100dvh - 232px));
+    width: min(100%, calc(100svh - 232px));
   }
 
   .coord {

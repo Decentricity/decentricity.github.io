@@ -1059,13 +1059,13 @@
       if (!king) {
         statuses.push(`${colorName(color)} king captured`);
       } else if (state.shells[color]) {
-        statuses.push(`${colorName(color)} shelled: check ignored`);
+        statuses.push(`${colorName(color)} shelled`);
       } else if (isInCheck(state, color)) {
         statuses.push(`${colorName(color)} in check`);
       }
     }
 
-    return statuses.length ? statuses.join(". ") + "." : "No checks.";
+    return statuses.length ? statuses.join("; ") + "." : "No checks.";
   }
 
   function formatCaptured(color) {
