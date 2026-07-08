@@ -23,8 +23,8 @@ No Stockfish, minimax, bot, engine analysis, or AI opponent is included.
 - A checked unshelled king may attach a shell to escape into Hermit Crab Mode.
 - Shelled kings move only like the shell piece and ignore check/checkmate.
 - Shelled kings can be captured directly; direct capture ends the game.
-- Shell replacement is supported.
-- Detaching is omitted: once attached, a shell stays until replacement or death.
+- MVP rule: shell replacement is omitted. Once a king has a shell, it cannot attach another piece.
+- Detaching is omitted: once attached, a shell stays until death.
 
 ## Local testing
 

@@ -185,18 +185,18 @@
 
   function generateKingActions(currentState, row, col, king) {
     const shell = currentState.shells[king.color];
-    const attachActions = generateAttachActions(currentState, row, col, king);
 
     // Unshelled kings obey ordinary king movement and king-safety rules.
-    // Shelled kings stop using king movement entirely and use the shell piece only.
+    // Shelled kings stop using king movement and attachment entirely; they use the shell piece only.
     if (!shell) {
+      const attachActions = generateAttachActions(currentState, row, col, king);
       const kingMoves = generatePseudoMoves(currentState, row, col, "k", { shellMove: false });
       return kingMoves
         .filter((action) => moveKeepsUnshelledKingSafe(currentState, action, king.color))
         .concat(attachActions);
     }
 
-    return generatePseudoMoves(currentState, row, col, shell, { shellMove: true }).concat(attachActions);
+    return generatePseudoMoves(currentState, row, col, shell, { shellMove: true });
   }
 
   function generateAttachActions(currentState, row, col, king) {
@@ -216,8 +216,7 @@
           kind: "attach",
           king: { row, col },
           from: { row: targetRow, col: targetCol },
-          shell: target.type,
-          replace: Boolean(currentState.shells[king.color])
+          shell: target.type
         });
       }
     }
@@ -509,14 +508,14 @@
       const king = next.board[action.king.row][action.king.col];
       const shellPiece = next.board[action.from.row][action.from.col];
 
-      if (!king || king.type !== "k" || !shellPiece) {
+      if (!king || king.type !== "k" || !shellPiece || next.shells[king.color]) {
         return currentState;
       }
 
       actorColor = king.color;
       next.board[action.from.row][action.from.col] = null;
       next.shells[actorColor] = shellPiece.type;
-      logEntry = `${colorName(actorColor)} king ${action.replace ? "replaced its shell with" : "attached"} ${articleFor(pieceName(shellPiece.type))} ${pieceName(shellPiece.type)} from ${coordsToSquare(action.from.row, action.from.col)}.`;
+      logEntry = `${colorName(actorColor)} king attached ${articleFor(pieceName(shellPiece.type))} ${pieceName(shellPiece.type)} from ${coordsToSquare(action.from.row, action.from.col)}.`;
     } else if (action.kind === "move") {
       const moving = next.board[action.from.row][action.from.col];
       const target = next.board[action.to.row][action.to.col];
@@ -950,7 +949,7 @@
     }
 
     if (piece.type === "k" && state.shells[piece.color]) {
-      elements.moveHint.textContent = `${colorName(piece.color)} king on ${square} has a ${pieceName(state.shells[piece.color])} shell: ${moveCount} shell moves, ${attachCount} replacement targets.`;
+      elements.moveHint.textContent = `${colorName(piece.color)} king on ${square} has a ${pieceName(state.shells[piece.color])} shell: ${moveCount} shell moves. It cannot attach another piece.`;
       return;
     }
 
