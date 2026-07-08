@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hermit Crab Chess</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div>
+      <p class="eyebrow">local hotseat prototype</p>
+      <h1>Hermit Crab Chess</h1>
+      <p class="lede">Mostly normal chess, until a king borrows an allied piece as a shell and stops caring about checkmate.</p>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <section class="board-panel" aria-label="Chessboard and controls">
+      <div class="board-frame">
+        <div id="board" class="board" role="grid" aria-label="Hermit Crab Chess board"></div>
+      </div>
+
+      <div class="controls">
+        <button id="newGameButton" type="button">New Game</button>
+
+        <label class="scenario-control" for="scenarioSelect">
+          <span>Test setup</span>
+          <select id="scenarioSelect">
+            <option value="standard">Standard start</option>
+            <option value="knight-shell">Knight shell drill</option>
+            <option value="bishop-shell">Bishop shell drill</option>
+            <option value="rook-shell">Rook shell drill</option>
+            <option value="queen-shell">Queen shell drill</option>
+            <option value="white-pawn-shell">White pawn shell drill</option>
+            <option value="black-pawn-shell">Black pawn shell drill</option>
+            <option value="shelled-capture">Shelled king capture</option>
+            <option value="unshelled-checkmate">Unshelled checkmate</option>
+          </select>
+        </label>
+
+        <button id="loadScenarioButton" type="button">Load</button>
+      </div>
+
+      <p id="moveHint" class="move-hint" aria-live="polite">Select a piece to see legal moves.</p>
+    </section>
+
+    <aside class="info-panel">
+      <section class="status-panel" aria-label="Game status">
+        <div id="resultBanner" class="result-banner" hidden></div>
+
+        <dl class="status-grid">
+          <div>
+            <dt>Turn</dt>
+            <dd id="turnStatus">White</dd>
+          </div>
+          <div>
+            <dt>White king shell</dt>
+            <dd id="whiteShellStatus">None</dd>
+          </div>
+          <div>
+            <dt>Black king shell</dt>
+            <dd id="blackShellStatus">None</dd>
+          </div>
+          <div>
+            <dt>Check status</dt>
+            <dd id="checkStatus">No checks.</dd>
+          </div>
+        </dl>
+
+        <div class="captured-grid" aria-label="Captured pieces">
+          <div>
+            <h2>White captured</h2>
+            <p id="capturedByWhite" class="captured-list">None</p>
+          </div>
+          <div>
+            <h2>Black captured</h2>
+            <p id="capturedByBlack" class="captured-list">None</p>
+          </div>
+        </div>
+
+        <div class="move-log-wrap">
+          <h2>Move log</h2>
+          <ol id="moveLog" class="move-log"></ol>
+        </div>
+      </section>
+
+      <section class="rules-panel">
+        <h2>Hermit Crab Chess Rules</h2>
+        <ul>
+          <li>Unshelled kings are normal kings: they can be checked, cannot move into check, and can be checkmated.</li>
+          <li>A king can spend its turn attaching one adjacent allied non-king piece. The piece leaves the board and becomes the king's shell.</li>
+          <li>A shelled king moves only like its shell piece. It does not use normal king moves and ignores check/checkmate.</li>
+          <li>Shelled kings must be captured directly. Capturing a shelled king ends the game immediately.</li>
+          <li>This prototype supports shell replacement. Detaching is omitted: once attached, a shell stays until replacement or death.</li>
+          <li>Castling and en passant are disabled. Pawns auto-promote to queens. There is no AI opponent or online multiplayer.</li>
+        </ul>
+      </section>
+    </aside>
+  </main>
+</body>
+</html>
