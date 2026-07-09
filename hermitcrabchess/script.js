@@ -561,9 +561,10 @@
       }
 
       actorColor = king.color;
-      next.board[action.from.row][action.from.col] = null;
+      next.board[action.king.row][action.king.col] = null;
+      next.board[action.from.row][action.from.col] = king;
       next.shells[actorColor] = shellPiece.type;
-      logEntry = `${colorName(actorColor)} king attached ${articleFor(pieceName(shellPiece.type))} ${pieceName(shellPiece.type)} from ${coordsToSquare(action.from.row, action.from.col)}.`;
+      logEntry = `${colorName(actorColor)} king moved to ${coordsToSquare(action.from.row, action.from.col)} and attached ${articleFor(pieceName(shellPiece.type))} ${pieceName(shellPiece.type)} shell.`;
     } else if (action.kind === "detach") {
       const king = next.board[action.from.row][action.from.col];
       const target = next.board[action.to.row][action.to.col];

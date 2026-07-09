@@ -20,7 +20,7 @@ No Stockfish, minimax, bot, engine analysis, or AI opponent is included.
 - Pawns auto-promote to queens.
 - Unshelled kings can be checked and cannot move into check.
 - MVP checkmate rule: a checked unshelled king is checkmated when the king itself has no legal king move. Other allied pieces do not rescue that check by blocking or capturing the attacker.
-- A king can attach an adjacent allied non-king piece only if the king is not currently in check. Attaching consumes the turn, removes that piece, and stores the piece type as the shell.
+- A king can attach an adjacent allied non-king piece only if the king is not currently in check. Attaching consumes the turn, moves the king onto that piece's square, and stores the piece type as the shell.
 - A checked unshelled king cannot attach a shell while in check.
 - Shelled kings move only like the shell piece and ignore check/checkmate.
 - Shelled kings can be captured directly; direct capture ends the game.
