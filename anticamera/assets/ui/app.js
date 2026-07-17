@@ -28,6 +28,10 @@ function createFrameId() {
     return globalThis.crypto?.randomUUID?.() ?? `frame-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 export class AntiCameraApp {
+    appShell;
+    cameraView;
+    filmView;
+    viewToggle;
     viewfinder;
     debugPanel;
     readout;
@@ -56,9 +60,14 @@ export class AntiCameraApp {
     queue;
     debugCapture = new CaptureDebugger();
     jobs = new Map();
+    appView = "camera";
     sequence = 0;
     lastContext = null;
-    constructor(viewfinder, debugPanel, readout, developingLayer, instantReveal, latestFrame, keyPanel, keyInput, keyMessage, batteryFill, batteryLabel, shutter, modeInputs, manualControls, gallery, dependencies = {}) {
+    constructor(appShell, cameraView, filmView, viewToggle, viewfinder, debugPanel, readout, developingLayer, instantReveal, latestFrame, keyPanel, keyInput, keyMessage, batteryFill, batteryLabel, shutter, modeInputs, manualControls, gallery, dependencies = {}) {
+        this.appShell = appShell;
+        this.cameraView = cameraView;
+        this.filmView = filmView;
+        this.viewToggle = viewToggle;
         this.viewfinder = viewfinder;
         this.debugPanel = debugPanel;
         this.readout = readout;
@@ -101,6 +110,9 @@ export class AntiCameraApp {
         this.viewfinder.addEventListener("click", () => {
             this.setDebugPanelOpen(!this.isDebugPanelOpen());
         });
+        this.viewToggle.addEventListener("click", () => {
+            this.setAppView(this.appView === "camera" ? "film" : "camera");
+        });
         document.addEventListener("keydown", (event) => {
             if (event.key === "Escape") {
                 this.setDebugPanelOpen(false);
@@ -126,6 +138,7 @@ export class AntiCameraApp {
         });
         this.gallery.onRetry((id) => this.retryJob(id));
         await this.refreshReadout();
+        this.setAppView("camera");
         if (!this.imageGenerator.canGenerate()) {
             this.showKeyPanel();
         }
@@ -305,6 +318,7 @@ export class AntiCameraApp {
         this.shutter.disabled = true;
     }
     showKeyPanel(message = "USER KEY REQUIRED") {
+        this.setAppView("camera");
         this.viewfinder.classList.remove("is-developing");
         this.viewfinder.classList.remove("needs-key");
         this.viewfinder.classList.add("needs-key");
@@ -334,14 +348,24 @@ export class AntiCameraApp {
     }
     async reveal(imageDataUrl) {
         await this.loadLatestFrame(imageDataUrl);
-        this.instantReveal.classList.remove("hidden");
-        this.latestFrame.classList.remove("hidden");
-        this.latestFrame.classList.add("is-developing");
-        await this.captureDelay(80);
-        this.latestFrame.classList.remove("is-developing");
-        await this.captureDelay(3600);
         this.latestFrame.classList.add("hidden");
         this.instantReveal.classList.add("hidden");
+    }
+    setAppView(view) {
+        this.appView = view;
+        this.appShell.dataset.view = view;
+        this.cameraView.setAttribute("aria-hidden", String(view !== "camera"));
+        this.filmView.setAttribute("aria-hidden", String(view !== "film"));
+        this.viewToggle.setAttribute("aria-label", view === "camera" ? "Open film roll" : "Return to camera");
+        this.viewToggle.setAttribute("aria-pressed", String(view === "film"));
+        this.viewToggle.classList.toggle("is-film-view", view === "film");
+        const cameraInert = view !== "camera";
+        const filmInert = view !== "film";
+        setInert(this.cameraView, cameraInert);
+        setInert(this.filmView, filmInert);
+        if (view === "film") {
+            this.setDebugPanelOpen(false);
+        }
     }
     isDebugPanelOpen() {
         return !this.debugPanel.hidden;
@@ -389,6 +413,9 @@ function isAuthenticationError(error) {
 }
 function safeError(error) {
     return error instanceof Error ? error.message : String(error);
+}
+function setInert(element, inert) {
+    element.inert = inert;
 }
 class CaptureDebugger {
     enabled = debugCaptureEnabled();

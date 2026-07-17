@@ -33,6 +33,8 @@ test("capture flow replaces a placeholder before gallery storage and allows repe
   assert.equal(harness.viewfinder.querySelector("#latest-frame"), null);
   assert.equal(harness.gallery.addCalls.length, 1);
   assert.equal(harness.shutter.disabled, false);
+  assert.equal(harness.appShell.dataset.view, "camera");
+  assert.equal(harness.filmView.getAttribute("aria-hidden"), "true");
 
   harness.manualSettings = {
     ...DEFAULT_MANUAL_SETTINGS,
@@ -45,6 +47,33 @@ test("capture flow replaces a placeholder before gallery storage and allows repe
   assert.equal(harness.latestFrame.src, "data:image/png;base64,second");
   assert.equal(harness.gallery.addCalls.length, 2);
   assert.equal(harness.shutter.disabled, false);
+});
+
+test("default view is Camera and the bottom switch opens and closes Film", async () => {
+  const harness = await createAppHarness();
+  await harness.app.start();
+
+  assert.equal(harness.appShell.dataset.view, "camera");
+  assert.equal(harness.cameraView.getAttribute("aria-hidden"), "false");
+  assert.equal(harness.filmView.getAttribute("aria-hidden"), "true");
+  assert.equal(harness.viewToggle.getAttribute("aria-label"), "Open film roll");
+  assert.equal(harness.viewToggle.getAttribute("aria-pressed"), "false");
+
+  harness.clickViewfinder();
+  assert.equal(harness.debugPanel.hidden, false);
+  harness.clickViewToggle();
+  assert.equal(harness.appShell.dataset.view, "film");
+  assert.equal(harness.cameraView.getAttribute("aria-hidden"), "true");
+  assert.equal(harness.filmView.getAttribute("aria-hidden"), "false");
+  assert.equal(harness.debugPanel.hidden, true);
+  assert.equal(harness.viewToggle.getAttribute("aria-label"), "Return to camera");
+  assert.equal(harness.viewToggle.getAttribute("aria-pressed"), "true");
+  assert.equal(harness.viewToggle.classList.contains("is-film-view"), true);
+
+  harness.clickViewToggle();
+  assert.equal(harness.appShell.dataset.view, "camera");
+  assert.equal(harness.cameraView.getAttribute("aria-hidden"), "false");
+  assert.equal(harness.filmView.getAttribute("aria-hidden"), "true");
 });
 
 test("debug panel is hidden by default and toggled from the optical viewfinder", async () => {
@@ -83,6 +112,33 @@ test("capture works while debug panel is open", async () => {
   assert.equal(harness.latestFrame.src, "data:image/png;base64,first");
   assert.equal(harness.gallery.addCalls.length, 1);
   assert.equal(harness.shutter.disabled, false);
+});
+
+test("queue continues while Film view is active and updates the hidden film roll", async () => {
+  const pending = deferred();
+  const harness = await createAppHarness({
+    generatorResults: [pending.promise]
+  });
+  await harness.app.start();
+
+  harness.clickShutter();
+  await harness.waitFor(() => harness.imageGenerator.calls.length === 1);
+  const id = harness.gallery.placeholders[0].id;
+  harness.clickViewToggle();
+  assert.equal(harness.appShell.dataset.view, "film");
+  assert.equal(harness.gallery.visibleTextFor(id), "DEVELOPING");
+
+  pending.resolve({
+    imageDataUrl: "data:image/png;base64,film",
+    provider: "mock-image-provider"
+  });
+  await harness.waitForCaptureCount(1);
+
+  assert.equal(harness.appShell.dataset.view, "film");
+  assert.equal(harness.gallery.itemsById.get(id).kind, "frame");
+  assert.equal(harness.latestFrame.src, "data:image/png;base64,film");
+  harness.clickViewToggle();
+  assert.equal(harness.appShell.dataset.view, "camera");
 });
 
 test("developing state lives in the film frame, not the optical viewfinder", async () => {
@@ -277,18 +333,26 @@ test("shutter sound is attempted for every accepted exposure and failure does no
 
 test("capture layout survives representative landscape, portrait, and tablet viewport sizes", async () => {
   for (const [width, height] of [
-    [844, 390],
-    [915, 412],
+    [360, 800],
     [390, 844],
     [412, 915],
+    [504, 1066],
+    [800, 360],
+    [844, 390],
+    [915, 412],
+    [1066, 504],
+    [768, 1024],
     [1024, 768]
   ]) {
     const harness = await createAppHarness({ viewportWidth: width, viewportHeight: height });
     await harness.app.start();
-    assert.equal(harness.document.querySelector(".app-orientation-shell") instanceof harness.window.HTMLElement, true);
+    assert.equal(harness.document.querySelector(".app-shell") instanceof harness.window.HTMLElement, true);
+    assert.equal(harness.document.querySelector(".camera-view") instanceof harness.window.HTMLElement, true);
+    assert.equal(harness.document.querySelector(".film-view") instanceof harness.window.HTMLElement, true);
     assert.equal(harness.document.querySelector(".camera-top-plate > #viewfinder"), harness.viewfinder);
     assert.equal(harness.document.querySelector(".camera-top-plate > #shutter"), harness.shutter);
     assert.equal(harness.document.getElementById("fullscreen-button") instanceof harness.window.HTMLButtonElement, true);
+    assert.equal(harness.viewToggle instanceof harness.window.HTMLButtonElement, true);
 
     harness.clickShutter();
     await harness.waitForCaptureCount(1);
@@ -339,6 +403,10 @@ async function createAppHarness(options = {}) {
   const { AntiCameraApp } = await import(`../assets/ui/app.js?cache=${Date.now()}-${Math.random()}`);
 
   const viewfinder = document.getElementById("viewfinder");
+  const appShell = document.getElementById("app-shell");
+  const cameraView = document.getElementById("camera-view");
+  const filmView = document.getElementById("film-view");
+  const viewToggle = document.getElementById("view-toggle");
   const debugPanel = document.getElementById("debug-panel");
   const readout = document.getElementById("context-readout");
   const developingLayer = document.getElementById("developing");
@@ -357,6 +425,10 @@ async function createAppHarness(options = {}) {
   const harness = {
     window,
     document,
+    appShell,
+    cameraView,
+    filmView,
+    viewToggle,
     viewfinder,
     debugPanel,
     readout,
@@ -377,6 +449,9 @@ async function createAppHarness(options = {}) {
     clickViewfinder() {
       viewfinder.dispatchEvent(new window.Event("click", { bubbles: true }));
     },
+    clickViewToggle() {
+      viewToggle.dispatchEvent(new window.Event("click", { bubbles: true }));
+    },
     key(keyValue) {
       const event = new window.Event("keydown", { bubbles: true, cancelable: true });
       Object.defineProperty(event, "key", { value: keyValue });
@@ -395,6 +470,10 @@ async function createAppHarness(options = {}) {
   harness.shutterSound = new FakeShutterSound();
 
   harness.app = new AntiCameraApp(
+    appShell,
+    cameraView,
+    filmView,
+    viewToggle,
     viewfinder,
     debugPanel,
     readout,

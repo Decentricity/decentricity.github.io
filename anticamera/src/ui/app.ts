@@ -25,6 +25,7 @@ type CaptureImageGenerator = Pick<ImageGenerator, "canGenerate" | "generate" | "
   providerId?: () => string;
 };
 type CaptureDelay = (ms: number) => Promise<void>;
+type AppView = "camera" | "film";
 
 interface AntiCameraAppDependencies {
   context?: CaptureContext;
@@ -78,10 +79,15 @@ export class AntiCameraApp {
   private readonly queue: CaptureQueue;
   private readonly debugCapture = new CaptureDebugger();
   private readonly jobs = new Map<string, RuntimeCaptureJob>();
+  private appView: AppView = "camera";
   private sequence = 0;
   private lastContext: Awaited<ReturnType<ContextCollector["snapshot"]>> | null = null;
 
   constructor(
+    private readonly appShell: HTMLElement,
+    private readonly cameraView: HTMLElement,
+    private readonly filmView: HTMLElement,
+    private readonly viewToggle: HTMLButtonElement,
     private readonly viewfinder: HTMLElement,
     private readonly debugPanel: HTMLElement,
     private readonly readout: HTMLElement,
@@ -127,6 +133,9 @@ export class AntiCameraApp {
     this.viewfinder.addEventListener("click", () => {
       this.setDebugPanelOpen(!this.isDebugPanelOpen());
     });
+    this.viewToggle.addEventListener("click", () => {
+      this.setAppView(this.appView === "camera" ? "film" : "camera");
+    });
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape") {
         this.setDebugPanelOpen(false);
@@ -155,6 +164,7 @@ export class AntiCameraApp {
     this.gallery.onRetry((id) => this.retryJob(id));
 
     await this.refreshReadout();
+    this.setAppView("camera");
     if (!this.imageGenerator.canGenerate()) {
       this.showKeyPanel();
     }
@@ -363,6 +373,7 @@ export class AntiCameraApp {
   }
 
   private showKeyPanel(message = "USER KEY REQUIRED"): void {
+    this.setAppView("camera");
     this.viewfinder.classList.remove("is-developing");
     this.viewfinder.classList.remove("needs-key");
     this.viewfinder.classList.add("needs-key");
@@ -396,14 +407,26 @@ export class AntiCameraApp {
 
   private async reveal(imageDataUrl: string): Promise<void> {
     await this.loadLatestFrame(imageDataUrl);
-    this.instantReveal.classList.remove("hidden");
-    this.latestFrame.classList.remove("hidden");
-    this.latestFrame.classList.add("is-developing");
-    await this.captureDelay(80);
-    this.latestFrame.classList.remove("is-developing");
-    await this.captureDelay(3600);
     this.latestFrame.classList.add("hidden");
     this.instantReveal.classList.add("hidden");
+  }
+
+  private setAppView(view: AppView): void {
+    this.appView = view;
+    this.appShell.dataset.view = view;
+    this.cameraView.setAttribute("aria-hidden", String(view !== "camera"));
+    this.filmView.setAttribute("aria-hidden", String(view !== "film"));
+    this.viewToggle.setAttribute("aria-label", view === "camera" ? "Open film roll" : "Return to camera");
+    this.viewToggle.setAttribute("aria-pressed", String(view === "film"));
+    this.viewToggle.classList.toggle("is-film-view", view === "film");
+
+    const cameraInert = view !== "camera";
+    const filmInert = view !== "film";
+    setInert(this.cameraView, cameraInert);
+    setInert(this.filmView, filmInert);
+    if (view === "film") {
+      this.setDebugPanelOpen(false);
+    }
   }
 
   private isDebugPanelOpen(): boolean {
@@ -461,6 +484,10 @@ function isAuthenticationError(error: unknown): boolean {
 
 function safeError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+function setInert(element: HTMLElement, inert: boolean): void {
+  (element as HTMLElement & { inert?: boolean }).inert = inert;
 }
 
 class CaptureDebugger {

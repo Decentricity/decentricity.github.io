@@ -25,6 +25,10 @@ new FullscreenController(requiredElement("fullscreen-button", HTMLButtonElement)
 registerPwa();
 
 const app = new AntiCameraApp(
+  requiredElement("app-shell", HTMLElement),
+  requiredElement("camera-view", HTMLElement),
+  requiredElement("film-view", HTMLElement),
+  requiredElement("view-toggle", HTMLButtonElement),
   requiredElement("viewfinder", HTMLElement),
   requiredElement("debug-panel", HTMLElement),
   requiredElement("context-readout", HTMLElement),

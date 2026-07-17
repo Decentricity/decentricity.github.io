@@ -14,8 +14,9 @@
     <link rel="stylesheet" href="./styles.css">
   </head>
   <body>
-    <div class="app-orientation-shell">
-    <main class="page" aria-label="Anti-Camera prototype">
+    <main class="app-shell" id="app-shell" data-view="camera" aria-label="Anti-Camera prototype">
+      <section id="camera-view" class="primary-view camera-view" aria-label="Camera">
+        <div class="camera-stage">
       <section class="camera-shell" aria-label="Anti-Camera body">
         <div class="camera-top-plate">
           <button
@@ -221,15 +222,33 @@
         </figure>
       </section>
 
+        </div>
+      </section>
+
+      <section id="film-view" class="primary-view film-view" aria-label="Film roll" aria-hidden="true">
       <section class="film-rack" aria-label="Film strip">
         <div class="film-rack-top">
           <span>FILM</span>
           <button class="json-button" id="export-json" type="button">JSON</button>
         </div>
-        <ol class="film-strip" id="film-strip"></ol>
+        <div class="film-scroll">
+          <ol class="film-strip" id="film-strip"></ol>
+        </div>
       </section>
+      </section>
+
+      <button
+        id="view-toggle"
+        class="view-toggle"
+        type="button"
+        aria-label="Open film roll"
+        aria-controls="film-view"
+        aria-pressed="false"
+      >
+        <span class="view-toggle-film" aria-hidden="true"></span>
+        <span class="view-toggle-camera" aria-hidden="true"></span>
+      </button>
     </main>
-    </div>
 
     <script type="module" src="./assets/main.js"></script>
   </body>

@@ -100,11 +100,18 @@ test("subject panel uses one cycling hardware button instead of a radial dial", 
 });
 
 test("camera shell uses a small optical viewfinder and hidden debug panel", () => {
+  const appShell = document.getElementById("app-shell");
+  const cameraView = document.getElementById("camera-view");
+  const filmView = document.getElementById("film-view");
   const viewfinder = document.getElementById("viewfinder");
   const debugPanel = document.getElementById("debug-panel");
   const latestFrame = document.getElementById("latest-frame");
   const instantReveal = document.getElementById("instant-reveal");
 
+  assert.equal(appShell.dataset.view, "camera");
+  assert.equal(cameraView.classList.contains("camera-view"), true);
+  assert.equal(filmView.classList.contains("film-view"), true);
+  assert.equal(filmView.getAttribute("aria-hidden"), "true");
   assert.equal(viewfinder.tagName, "BUTTON");
   assert.equal(viewfinder.classList.contains("optical-viewfinder"), true);
   assert.equal(viewfinder.getAttribute("aria-expanded"), "false");
@@ -120,6 +127,7 @@ test("camera shell uses a small optical viewfinder and hidden debug panel", () =
   assert.match(cssBlock(".optical-viewfinder"), /max-width:\s*none/);
   assert.match(cssBlock(".optical-viewfinder"), /height:\s*clamp\(48px,\s*12vw,\s*70px\)/);
   assert.match(css, /\.debug-panel\[hidden\]\s*\{[\s\S]*?display:\s*none/);
+  assert.match(cssBlock(".debug-panel"), /position:\s*absolute/);
   assert.match(cssBlock(".queue-status"), /min-height:\s*28px/);
 });
 
@@ -133,14 +141,49 @@ test("top plate keeps the optical viewfinder left and shutter right", () => {
   assert.match(cssBlock(".camera-top-plate"), /grid-template-columns:\s*clamp\(88px,\s*13vw,\s*116px\)/);
 });
 
-test("portrait devices render a rotated landscape app shell", () => {
+test("Camera and Film are full-viewport scenes with an isolated film scroller", () => {
+  const appShell = cssBlock(".app-shell");
+  const primary = cssBlock(".primary-view");
+  const camera = cssBlock(".camera-view");
+  const film = cssBlock(".film-view");
+
+  assert.match(appShell, /position:\s*fixed/);
+  assert.match(appShell, /width:\s*100dvw/);
+  assert.match(appShell, /height:\s*100dvh/);
+  assert.match(appShell, /overflow:\s*hidden/);
+  assert.match(appShell, /--safe-bottom:\s*env\(safe-area-inset-bottom,\s*0px\)/);
+  assert.match(primary, /position:\s*absolute/);
+  assert.match(primary, /width:\s*100dvw/);
+  assert.match(primary, /height:\s*100dvh/);
+  assert.match(primary, /overflow:\s*hidden/);
+  assert.match(primary, /var\(--switch-clearance\)/);
+  assert.match(camera, /place-items:\s*center/);
+  assert.match(film, /transform:\s*translateY\(100%\)/);
+  assert.match(cssBlock('.app-shell[data-view="film"] .camera-view'), /transform:\s*translateY\(-100%\)/);
+  assert.match(cssBlock('.app-shell[data-view="film"] .film-view'), /transform:\s*translateY\(0\)/);
+  assert.match(cssBlock(".film-scroll"), /overflow-y:\s*auto/);
+  assert.match(cssBlock(".film-scroll"), /overscroll-behavior:\s*contain/);
+});
+
+test("portrait layout no longer rotates the whole app", () => {
   const portrait = mediaOrientationBlock("portrait");
-  assert.match(cssBlock(".app-orientation-shell"), /min-height:\s*100vh/);
-  assert.match(portrait, /\.app-orientation-shell\s*\{[\s\S]*?position:\s*fixed/);
-  assert.match(portrait, /\.app-orientation-shell\s*\{[\s\S]*?width:\s*100vh/);
-  assert.match(portrait, /\.app-orientation-shell\s*\{[\s\S]*?height:\s*100vw/);
-  assert.match(portrait, /\.app-orientation-shell\s*\{[\s\S]*?transform:\s*translate\(-50%,\s*-50%\) rotate\(90deg\)/);
-  assert.match(portrait, /\.app-orientation-shell\s*\{[\s\S]*?overflow-y:\s*auto/);
+  assert.doesNotMatch(css, /app-orientation-shell|rotate\(90deg\)|width:\s*100vh|height:\s*100vw/);
+  assert.match(portrait, /\.camera-stage\s*\{[\s\S]*?height:\s*100%/);
+  assert.match(portrait, /\.manual-controls\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)\s+minmax\(0,\s*1fr\)/);
+  assert.match(portrait, /\.mode-cluster\s*\{[\s\S]*?grid-column:\s*1/);
+  assert.match(portrait, /\.iso-dial\s*\{[\s\S]*?grid-column:\s*2/);
+});
+
+test("bottom view switch is persistent and camera-like", () => {
+  const toggle = document.getElementById("view-toggle");
+  assert.equal(toggle.tagName, "BUTTON");
+  assert.equal(toggle.getAttribute("aria-label"), "Open film roll");
+  assert.equal(toggle.getAttribute("aria-controls"), "film-view");
+  assert.equal(toggle.getAttribute("aria-pressed"), "false");
+  assert.match(cssBlock(".view-toggle"), /position:\s*fixed/);
+  assert.match(cssBlock(".view-toggle"), /bottom:\s*calc\(env\(safe-area-inset-bottom,\s*0px\) \+ 8px\)/);
+  assert.match(cssBlock(".view-toggle"), /left:\s*50%/);
+  assert.match(cssBlock(".view-toggle"), /z-index:\s*50/);
 });
 
 test("Indoor and Outdoor selector aligns with the manual control plate", () => {
