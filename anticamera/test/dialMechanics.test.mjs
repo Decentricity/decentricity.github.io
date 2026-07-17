@@ -139,6 +139,84 @@ test("saved settings reload at the correct rotor angle", async () => {
   assert.equal(root.querySelector("[data-dial='iso']").style.getPropertyValue("--rotor-angle"), "84deg");
 });
 
+test("subject cycle button advances through the four internal modes", async () => {
+  const { window, root } = await setupManualControlsDom();
+  const controls = new ManualControls(root);
+  const button = root.querySelector("[data-control='subject-cycle']");
+
+  assert.equal(root.querySelectorAll("[data-control='subject-cycle']").length, 1);
+  assert.equal(root.querySelector(".subject-label").textContent, "LANDSCAPE");
+  assert.equal(visibleSubjectIcon(root), "landscape");
+
+  button.dispatchEvent(new window.Event("click", { bubbles: true }));
+  assert.equal(controls.currentSettings().subjectMode, "single-person");
+  assert.equal(root.querySelector(".subject-label").textContent, "PERSON");
+  assert.equal(visibleSubjectIcon(root), "single-person");
+
+  button.dispatchEvent(new window.Event("click", { bubbles: true }));
+  assert.equal(controls.currentSettings().subjectMode, "group");
+  assert.equal(root.querySelector(".subject-label").textContent, "GROUP");
+
+  button.dispatchEvent(new window.Event("click", { bubbles: true }));
+  assert.equal(controls.currentSettings().subjectMode, "crowd");
+  assert.equal(root.querySelector(".subject-label").textContent, "CROWD");
+
+  button.dispatchEvent(new window.Event("click", { bubbles: true }));
+  assert.equal(controls.currentSettings().subjectMode, "landscape");
+  assert.equal(root.querySelector(".subject-label").textContent, "LANDSCAPE");
+});
+
+test("subject cycle button supports keyboard activation and persisted modes", async () => {
+  const { window, root, storage } = await setupManualControlsDom();
+  storage.setItem("anticamera.manualSettings.v1", JSON.stringify({
+    ...DEFAULT_MANUAL_SETTINGS,
+    subjectMode: "crowd"
+  }));
+
+  const controls = new ManualControls(root);
+  const button = root.querySelector("[data-control='subject-cycle']");
+  assert.equal(root.querySelector(".subject-label").textContent, "CROWD");
+  assert.equal(button.getAttribute("aria-label"), "Subject mode: CROWD. Press to change mode.");
+
+  key(window, button, "Enter");
+  assert.equal(controls.currentSettings().subjectMode, "landscape");
+  assert.equal(root.querySelector(".subject-label").textContent, "LANDSCAPE");
+
+  key(window, button, " ");
+  assert.equal(controls.currentSettings().subjectMode, "single-person");
+  assert.equal(root.querySelector(".subject-label").textContent, "PERSON");
+
+  key(window, button, "ArrowLeft");
+  assert.equal(controls.currentSettings().subjectMode, "landscape");
+  assert.equal(root.querySelector(".subject-label").textContent, "LANDSCAPE");
+});
+
+test("subject mode freezes at shutter time from the cycle button", async () => {
+  const { window, root } = await setupManualControlsDom();
+  const controls = new ManualControls(root);
+  const button = root.querySelector("[data-control='subject-cycle']");
+
+  button.dispatchEvent(new window.Event("click", { bubbles: true }));
+  const frozen = controls.freezeSettings();
+  button.dispatchEvent(new window.Event("click", { bubbles: true }));
+
+  assert.equal(frozen.subjectMode, "single-person");
+  assert.equal(controls.currentSettings().subjectMode, "group");
+});
+
+test("old radial subject dial elements are absent from the DOM", async () => {
+  const { root } = await setupManualControlsDom();
+  new ManualControls(root);
+
+  assert.equal(root.querySelectorAll(".subject-cycle-button").length, 1);
+  assert.equal(root.querySelectorAll(".mode-dial").length, 0);
+  assert.equal(root.querySelectorAll(".mode-pointer").length, 0);
+  assert.equal(root.querySelectorAll(".mode-hub").length, 0);
+  assert.equal(root.querySelectorAll(".mode-choice").length, 0);
+  assert.equal(root.querySelectorAll("[data-subject-mode]").length, 0);
+  assert.equal(root.querySelector("[data-control='subject-cycle'] .subject-label").textContent.length > 0, true);
+});
+
 async function setupManualControlsDom() {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const { window, document } = parseHTML(html);
@@ -223,4 +301,9 @@ function key(window, element, keyValue) {
   const event = new window.Event("keydown", { bubbles: true, cancelable: true });
   Object.defineProperty(event, "key", { value: keyValue });
   element.dispatchEvent(event);
+}
+
+function visibleSubjectIcon(root) {
+  const visible = [...root.querySelectorAll("[data-subject-icon]")].find((icon) => !icon.hidden);
+  return visible?.getAttribute("data-subject-icon") ?? null;
 }

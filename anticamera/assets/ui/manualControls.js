@@ -1,4 +1,4 @@
-import { EXPOSURE_VALUES, ISO_VALUES, evLabel, flashLabel, focusStyleLabel, freezeManualSettings, loadManualSettings, nextExposure, nextIso, saveManualSettings, snapExposure, snapIso, subjectModeLabel } from "../context/manualSettings.js";
+import { DEFAULT_MANUAL_SETTINGS, EXPOSURE_VALUES, ISO_VALUES, SUBJECT_MODES, evLabel, flashLabel, focusStyleLabel, freezeManualSettings, loadManualSettings, nextExposure, nextIso, saveManualSettings, snapExposure, snapIso, subjectModeLabel } from "../context/manualSettings.js";
 import { advanceDialDrag, beginDialDrag as createDialDragState, pointerAngleDeg, valueToAngle } from "./dialMath.js";
 export const EV_DIAL = {
     values: EXPOSURE_VALUES,
@@ -9,12 +9,6 @@ export const ISO_DIAL = {
     values: ISO_VALUES,
     minAngle: -132,
     maxAngle: 132
-};
-const SUBJECT_ANGLES = {
-    landscape: 0,
-    "single-person": 90,
-    group: 180,
-    crowd: 270
 };
 export class ManualControls {
     root;
@@ -47,27 +41,39 @@ export class ManualControls {
             dial.addEventListener("keydown", (event) => this.handleDialKey(event, dial));
             dial.addEventListener("pointerdown", (event) => this.beginDialDrag(event, dial));
         });
+        this.root.querySelector("[data-control='subject-cycle']")?.addEventListener("keydown", (event) => {
+            this.handleSubjectKey(event);
+        });
     }
     handleButton(button) {
         const focusStyle = button.dataset.focusStyle;
         const flashMode = button.dataset.flashMode;
-        const subjectMode = button.dataset.subjectMode;
         const ev = button.dataset.ev;
         const iso = button.dataset.iso;
-        if (focusStyle) {
+        if (button.dataset.control === "subject-cycle") {
+            this.cycleSubjectMode(1);
+        }
+        else if (focusStyle) {
             this.update({ focusStyle });
         }
         else if (flashMode) {
             this.update({ flashMode });
-        }
-        else if (subjectMode) {
-            this.update({ subjectMode });
         }
         else if (ev !== undefined) {
             this.update({ exposureCompensationEv: snapExposure(Number(ev)) });
         }
         else if (iso !== undefined) {
             this.update({ iso: snapIso(Number(iso)) });
+        }
+    }
+    handleSubjectKey(event) {
+        if (event.key === "Enter" || event.key === " " || event.key === "ArrowRight" || event.key === "ArrowDown") {
+            event.preventDefault();
+            this.cycleSubjectMode(1);
+        }
+        else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+            event.preventDefault();
+            this.cycleSubjectMode(-1);
         }
     }
     handleDialKey(event, dial) {
@@ -193,24 +199,30 @@ export class ManualControls {
         }
     }
     render() {
-        this.renderSubjectDial();
+        this.renderSubjectButton();
         this.renderLever("focusStyle", this.settings.focusStyle);
         this.renderLever("flashMode", this.settings.flashMode);
         this.renderDial("ev", this.settings.exposureCompensationEv, EV_DIAL);
         this.renderDial("iso", this.settings.iso, ISO_DIAL);
     }
-    renderSubjectDial() {
-        const dial = this.root.querySelector("[data-control='subject']");
-        if (!dial) {
+    cycleSubjectMode(direction = 1) {
+        const currentIndex = SUBJECT_MODES.indexOf(this.settings.subjectMode);
+        const index = currentIndex >= 0 ? currentIndex : 0;
+        const nextIndex = (index + direction + SUBJECT_MODES.length) % SUBJECT_MODES.length;
+        this.update({ subjectMode: SUBJECT_MODES[nextIndex] ?? DEFAULT_MANUAL_SETTINGS.subjectMode });
+    }
+    renderSubjectButton() {
+        const button = this.root.querySelector("[data-control='subject-cycle']");
+        if (!button) {
             return;
         }
-        dial.style.setProperty("--mode-angle", `${SUBJECT_ANGLES[this.settings.subjectMode]}deg`);
-        dial.setAttribute("aria-label", `Subject mode dial, ${subjectModeLabel(this.settings.subjectMode)}`);
-        this.root.querySelectorAll("[data-subject-mode]").forEach((button) => {
-            const selected = button.dataset.subjectMode === this.settings.subjectMode;
-            button.classList.toggle("is-selected", selected);
-            button.setAttribute("role", "radio");
-            button.setAttribute("aria-checked", String(selected));
+        button.dataset.selected = this.settings.subjectMode;
+        button.setAttribute("aria-label", `Subject mode: ${subjectModeLabel(this.settings.subjectMode)}. Press to change mode.`);
+        button.querySelector("[data-subject-label]")?.replaceChildren(subjectButtonLabel(this.settings.subjectMode));
+        this.root.querySelectorAll("[data-subject-icon]").forEach((icon) => {
+            const active = icon.dataset.subjectIcon === this.settings.subjectMode;
+            icon.hidden = !active;
+            icon.classList.toggle("is-active", active);
         });
     }
     renderLever(key, selectedValue) {
@@ -250,4 +262,17 @@ export class ManualControls {
 }
 function dialDefinition(kind) {
     return kind === "ev" ? EV_DIAL : ISO_DIAL;
+}
+function subjectButtonLabel(mode) {
+    switch (mode) {
+        case "single-person":
+            return "PERSON";
+        case "group":
+            return "GROUP";
+        case "crowd":
+            return "CROWD";
+        case "landscape":
+        default:
+            return "LANDSCAPE";
+    }
 }

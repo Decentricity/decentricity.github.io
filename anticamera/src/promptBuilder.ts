@@ -30,6 +30,7 @@ export class PromptBuilder {
     const device = context.device;
     const pose = context.cameraPose;
     const settings = context.manualSettings;
+    const illumination = illuminationContext(context);
 
     const lines = [
       "You are Anti-Camera, a lensless camera that records context rather than light.",
@@ -37,6 +38,19 @@ export class PromptBuilder {
       "Do not claim to recreate reality. Do not include fantasy, surrealism, illustration, painting, CGI, or visible AI artifacts.",
       "Make the result look like a realistic compact point-and-shoot photograph on instant film.",
       "Use ordinary photographic imperfections: available light, weather haze, flash falloff, slight handheld framing, natural grain.",
+      "",
+      "PROMPT PRIORITY ORDER",
+      "PRIORITY 1 -- IMMUTABLE SCENE FACTS: time, timezone, daylight phase, weather, location, and indoor/outdoor state.",
+      "PRIORITY 2 -- CAMERA GEOMETRY: heading, pitch, roll, framing, and virtual lens.",
+      "PRIORITY 3 -- SUBJECT AND COMPOSITION: landscape, one person, group, or crowd.",
+      "PRIORITY 4 -- CAMERA RENDERING SETTINGS: exposure compensation, ISO, flash, and depth of field.",
+      "Lower-priority settings must never rewrite, reinterpret, or contradict higher-priority facts.",
+      "",
+      ...sceneFactRules(context, illumination),
+      "",
+      ...geographicContextRules(context),
+      "",
+      ...sceneConsistencyRules(context, illumination),
       "",
       "CAMERA POSE -- STRICT COMPOSITIONAL CONSTRAINT",
       poseLine("The virtual camera is facing azimuth", pose.azimuthDeg, directionLabelForAzimuth(pose.azimuthDeg), false),
@@ -56,13 +70,12 @@ export class PromptBuilder {
       "",
       ...poseCompositionRules(context),
       "",
-      ...geographicContextRules(context),
-      "",
       "Context captured at shutter press:",
       value("Local date", context.time.date),
       value("Local time", context.time.time),
       value("Timezone", context.time.timezone),
       value("Day period", context.time.dayPeriod),
+      value("Photographic daylight phase", illumination.phase),
       value("Indoor/outdoor switch", context.mode),
       value("Location label", location.label),
       value("Latitude", location.latitude),
@@ -106,15 +119,27 @@ export class PromptBuilder {
       "MANUAL CAMERA SETTINGS -- STRICT PHOTOGRAPHIC CONSTRAINTS",
       `Subject mode: ${subjectModeLabel(settings.subjectMode).toLowerCase()}.`,
       `Depth style: ${settings.focusStyle === "bokeh" ? "shallow depth of field / bokeh" : "broad depth of field / deep focus"}.`,
-      `Exposure compensation: ${evLabel(settings.exposureCompensationEv)}.`,
+      `Exposure compensation: ${evPromptLabel(settings.exposureCompensationEv)}.`,
       `Flash: ${settings.flashMode}.`,
       `Film speed: ISO ${settings.iso}.`,
       `Virtual lens: ${this.virtualLensMm} mm full-frame equivalent.`,
       "Treat these as physical camera settings, not as loose aesthetic suggestions.",
       "Apply them together coherently.",
-      "Do not contradict the supplied camera pitch, roll, heading, location, weather, time, or indoor/outdoor context.",
+      "Do not contradict immutable scene facts or the supplied camera pitch, roll, heading, location, weather, time, or indoor/outdoor context.",
       "",
-      ...manualSettingRules(context, this.virtualLensMm),
+      ...subjectPriorityRules(context),
+      "",
+      ...depthOfFieldRules(context, this.virtualLensMm),
+      "",
+      ...flashRules(context),
+      "",
+      ...filmSpeedRules(context),
+      "",
+      ...exposureRules(context, illumination),
+      "",
+      ...manualInteractionRules(context, this.virtualLensMm),
+      "",
+      ...finalConsistencyCheck(context, illumination),
       "",
       "Use azimuth together with location context only as geometry. The camera faces approximately "
         + `${directionLabelForAzimuth(pose.azimuthDeg)} from the supplied coordinates. `
@@ -125,6 +150,231 @@ export class PromptBuilder {
 
     return lines.join("\n");
   }
+}
+
+interface IlluminationContext {
+  phase: string;
+  timeText: string;
+  weatherText: string;
+  locationText: string;
+  isDaylight: boolean;
+  isNight: boolean;
+  isTwilight: boolean;
+}
+
+function illuminationContext(context: AntiCameraContext): IlluminationContext {
+  const phase = daylightPhase(context);
+  return {
+    phase,
+    timeText: context.time.time || "unknown local time",
+    weatherText: context.weather.description || "unknown weather",
+    locationText: locationSummary(context),
+    isDaylight: phase === "morning daylight" || phase === "midday daylight" || phase === "afternoon daylight",
+    isNight: phase === "night",
+    isTwilight: phase === "sunrise / early dawn" || phase === "sunset / twilight"
+  };
+}
+
+function daylightPhase(context: AntiCameraContext): string {
+  const hour = Number.isFinite(context.time.hour) ? context.time.hour : parseHour(context.time.time);
+  if (hour !== null) {
+    if (hour < 4) {
+      return "night";
+    }
+    if (hour < 5) {
+      return "pre-dawn";
+    }
+    if (hour < 6.5) {
+      return "sunrise / early dawn";
+    }
+    if (hour < 11) {
+      return "morning daylight";
+    }
+    if (hour < 14) {
+      return "midday daylight";
+    }
+    if (hour < 17) {
+      return "afternoon daylight";
+    }
+    if (hour < 18.5) {
+      return "sunset / twilight";
+    }
+    if (hour < 21) {
+      return "evening";
+    }
+    return "night";
+  }
+
+  switch (context.time.dayPeriod) {
+    case "morning":
+      return "morning daylight";
+    case "afternoon":
+      return "afternoon daylight";
+    case "evening":
+      return "evening";
+    case "night":
+    default:
+      return "night";
+  }
+}
+
+function parseHour(time: string): number | null {
+  const match = time.match(/^(\d{1,2})(?::(\d{2}))?/);
+  if (!match) {
+    return null;
+  }
+
+  const hour = Number(match[1]);
+  const minute = Number(match[2] ?? 0);
+  if (!Number.isFinite(hour) || hour < 0 || hour > 23 || !Number.isFinite(minute)) {
+    return null;
+  }
+
+  return hour + minute / 60;
+}
+
+function sceneFactRules(context: AntiCameraContext, illumination: IlluminationContext): string[] {
+  const weather = context.weather;
+  return [
+    "SCENE FACTS -- IMMUTABLE",
+    "The following describe the physical scene at shutter time and must remain true in the generated photograph:",
+    value("Local date", context.time.date),
+    value("Local clock time", context.time.time),
+    value("Timezone", context.time.timezone),
+    value("Daylight phase", illumination.phase),
+    value("Weather", weather.description),
+    value("Temperature", weather.temperatureC === undefined ? undefined : `${weather.temperatureC} C`),
+    value("Cloud cover", weather.cloudCoverPercent === undefined ? undefined : `${weather.cloudCoverPercent}%`),
+    value("Rain", weather.rainMm === undefined ? undefined : `${weather.rainMm} mm`),
+    value("Indoor/outdoor", context.mode),
+    value("Location", illumination.locationText),
+    "These facts define the actual environment.",
+    "Do not alter the time of day, daylight phase, weather, season, or location in response to exposure compensation, ISO, flash, depth of field, or subject mode.",
+    "Camera settings affect how this same scene is photographed. They do not create a different scene."
+  ];
+}
+
+function sceneConsistencyRules(context: AntiCameraContext, illumination: IlluminationContext): string[] {
+  const lines = [
+    "TIME, DAYLIGHT, AND WEATHER CONSISTENCY",
+    sceneSentence(context, illumination),
+    `The sky, ambient illumination, shadow direction, visible activity, and color temperature must remain consistent with approximately ${illumination.timeText} in ${illumination.locationText} under ${illumination.weatherText} weather.`,
+    "Exposure compensation must not apply a cinematic color grade.",
+    "Preserve color temperature appropriate to the stated local time, weather, and illumination source."
+  ];
+
+  if (illumination.isDaylight) {
+    lines.push("Do not depict dusk, sunset, twilight, evening, night, a purple sunset sky, an orange horizon glow, streetlights dominating the scene, or nighttime darkness.");
+    lines.push("A negative EV may make the daylight sky darker in recorded luminance, but it must remain recognizably the same daytime sky.");
+    lines.push("Do not replace a known daylight sky with sunset clouds, dusk gradients, purple twilight, orange horizon light, a starry sky, or a night sky.");
+    if (illumination.phase === "morning daylight" && clearWeather(context.weather.description)) {
+      lines.push("For clear morning weather, the underexposed sky may be a deeper blue or gray-blue, depending on atmospheric conditions, but not a dusk palette.");
+    }
+  } else if (illumination.isNight) {
+    lines.push("This is a nighttime scene. Do not create daylight merely because exposure compensation is positive.");
+    lines.push("Positive EV may over-record lamps, flash-lit nearby subjects, or bright surfaces, but the environment remains night.");
+  } else if (illumination.isTwilight) {
+    lines.push("This twilight or dawn illumination is an immutable scene fact; do not move the scene to midday, night, or a different weather condition.");
+  } else {
+    lines.push("This low-light phase is an immutable scene fact; exposure changes recorded brightness, not the actual hour or weather.");
+  }
+
+  return lines;
+}
+
+function sceneSentence(context: AntiCameraContext, illumination: IlluminationContext): string {
+  if (illumination.phase === "midday daylight") {
+    return `This is a daylight scene near midday in ${context.mode} context. Preserve a daytime sky and daylight environmental cues even if the photograph is severely underexposed.`;
+  }
+
+  if (illumination.phase === "morning daylight") {
+    return `This is an ${context.mode} morning-daylight scene.`;
+  }
+
+  if (illumination.phase === "afternoon daylight") {
+    return `This is an ${context.mode} afternoon-daylight scene.`;
+  }
+
+  if (illumination.phase === "night") {
+    return `This is an ${context.mode} nighttime scene.`;
+  }
+
+  return `This is an ${context.mode} ${illumination.phase} scene.`;
+}
+
+function finalConsistencyCheck(context: AntiCameraContext, illumination: IlluminationContext): string[] {
+  const ev = context.manualSettings.exposureCompensationEv;
+  const lines = [
+    "CONSISTENCY CHECK",
+    `Known scene: ${illumination.phase}, ${illumination.weatherText.toLowerCase()} weather.`,
+    `Requested camera exposure: ${evPromptLabel(ev)}.`
+  ];
+
+  if (ev < 0) {
+    lines.push(`Required result: a ${exposureAdjective(ev)} ${illumination.phase} photograph.`);
+  } else if (ev > 0) {
+    lines.push(`Required result: a ${exposureAdjective(ev)} version of the same ${illumination.phase} scene.`);
+  } else {
+    lines.push(`Required result: a neutral exposure of the same ${illumination.phase} scene.`);
+  }
+
+  if (illumination.isDaylight) {
+    lines.push("Forbidden result: dusk, sunset, twilight, evening, or nighttime.");
+  } else if (illumination.isNight) {
+    lines.push("Forbidden result: daylight or daytime.");
+  } else {
+    lines.push("Forbidden result: a different time of day, weather, season, or location.");
+  }
+
+  return lines;
+}
+
+function locationSummary(context: AntiCameraContext): string {
+  const location = context.location;
+  const reverse = location.reverseGeocode;
+  const address = reverse?.address;
+  const parts = [
+    reverse?.feature.name,
+    address?.neighborhood,
+    address?.suburb,
+    address?.city || address?.municipality,
+    address?.region,
+    address?.country
+  ].filter(Boolean);
+
+  if (parts.length > 0) {
+    return parts.join(", ");
+  }
+
+  return location.label || "unknown location";
+}
+
+function clearWeather(description: string): boolean {
+  return /\b(clear|sunny)\b/i.test(description);
+}
+
+function exposureAdjective(ev: number): string {
+  switch (ev) {
+    case -3:
+      return "severely underexposed";
+    case -2:
+      return "strongly underexposed";
+    case -1:
+      return "slightly underexposed";
+    case 1:
+      return "slightly overexposed";
+    case 2:
+      return "strongly overexposed";
+    case 3:
+      return "substantially overexposed";
+    case 0:
+    default:
+      return "neutrally exposed";
+  }
+}
+
+function evPromptLabel(ev: number): string {
+  return `${ev > 0 ? "+" : ""}${ev} EV`;
 }
 
 function poseLine(label: string, valueDeg: number | null, suffix: string, alwaysSign: boolean): string {
@@ -232,22 +482,6 @@ function geographicContextRules(context: AntiCameraContext): string[] {
   return lines;
 }
 
-function manualSettingRules(context: AntiCameraContext, lensMm: number): string[] {
-  return [
-    ...subjectPriorityRules(context),
-    "",
-    ...depthOfFieldRules(context, lensMm),
-    "",
-    ...exposureRules(context),
-    "",
-    ...flashRules(context),
-    "",
-    ...filmSpeedRules(context),
-    "",
-    ...manualInteractionRules(context, lensMm)
-  ];
-}
-
 function subjectPriorityRules(context: AntiCameraContext): string[] {
   switch (context.manualSettings.subjectMode) {
     case "single-person":
@@ -317,65 +551,51 @@ function depthOfFieldRules(context: AntiCameraContext, lensMm: number): string[]
   ];
 }
 
-function exposureRules(context: AntiCameraContext): string[] {
+function exposureRules(context: AntiCameraContext, illumination: IlluminationContext): string[] {
   const ev = context.manualSettings.exposureCompensationEv;
-  if (ev === -3) {
-    return [
-      "EXPOSURE COMPENSATION",
-      "Apply -3 EV relative to the model's neutral exposure.",
-      "The photograph should be substantially underexposed, with very dark midtones and heavily reduced shadow detail.",
-      "Do not reinterpret this as nighttime unless the other context indicates night."
-    ];
-  }
-
-  if (ev === -2) {
-    return [
-      "EXPOSURE COMPENSATION",
-      "Apply -2 EV relative to neutral exposure.",
-      "The photograph should be visibly underexposed, with darker midtones and reduced shadow detail.",
-      "Do not reinterpret this as nighttime unless the other context indicates night."
-    ];
-  }
-
-  if (ev === -1) {
-    return [
-      "EXPOSURE COMPENSATION",
-      "Apply -1 EV relative to neutral exposure.",
-      "The photograph should be slightly dark, with restrained midtones and somewhat deeper shadows."
-    ];
-  }
-
-  if (ev === 1) {
-    return [
-      "EXPOSURE COMPENSATION",
-      "Apply +1 EV relative to neutral exposure.",
-      "The photograph should be slightly bright, with lifted midtones while preserving plausible highlights."
-    ];
-  }
-
-  if (ev === 2) {
-    return [
-      "EXPOSURE COMPENSATION",
-      "Apply +2 EV relative to the model's neutral exposure.",
-      "The photograph should be visibly brighter, with lifted midtones and plausible highlight clipping.",
-      "Do not merely make the scene sunnier or change the time of day."
-    ];
-  }
-
-  if (ev === 3) {
-    return [
-      "EXPOSURE COMPENSATION",
-      "Apply +3 EV relative to neutral exposure.",
-      "The photograph should be substantially overexposed, with bright midtones and stronger plausible highlight clipping.",
-      "Do not merely make the scene sunnier or change the time of day."
-    ];
-  }
-
-  return [
-    "EXPOSURE COMPENSATION",
-    "Apply 0 EV relative to neutral exposure.",
-    "Use a neutral exposure consistent with the supplied time, weather, flash, ISO, movement, and indoor/outdoor context."
+  const lines = [
+    `EXPOSURE COMPENSATION: ${evPromptLabel(ev)}`,
+    "First establish a neutral photographic exposure for the immutable scene facts.",
+    `Apply ${evPromptLabel(ev)} relative to neutral exposure by changing recorded exposure only.`,
+    `Then apply ${evPromptLabel(ev)} to that same scene's neutral exposure.`,
+    "Do not reinterpret the EV number as a request for a darker or brighter environment."
   ];
+
+  if (ev < 0) {
+    const stops = Math.abs(ev) === 1 ? "one stop" : `${Math.abs(ev)} stops`;
+    lines.push(`Photograph the already-defined scene approximately ${stops} below a neutral exposure.`);
+    lines.push(`This must produce a ${exposureAdjective(ev)} version of the same scene: darker recorded midtones, reduced shadow detail, possible crushed blacks, dimmer foreground subjects, reduced visibility in dark areas, preserved bright-source hierarchy, and possible retention of some highlight detail.`);
+    lines.push("ABSOLUTE CONSTRAINT:");
+    lines.push("Do not convert daylight into dusk, sunset, twilight, evening, or night.");
+    lines.push("Do not change the sky into a sunset sky.");
+    lines.push("Do not move the sun toward the horizon.");
+    lines.push("Do not add evening color grading.");
+    lines.push("Do not introduce nighttime lighting.");
+    lines.push("Do not change the weather.");
+    if (illumination.isDaylight) {
+      lines.push("If the scene is daylight, retain unmistakable daylight cues while rendering the photograph underexposed.");
+    }
+  } else if (ev > 0) {
+    const stops = ev === 1 ? "one stop" : `${ev} stops`;
+    lines.push(`Photograph the already-defined scene approximately ${stops} above a neutral exposure.`);
+    lines.push("Exposure compensation increases recorded exposure only.");
+    lines.push(`This must produce a ${exposureAdjective(ev)} version of the same scene: lifted midtones, brighter recorded surfaces, washed highlights, plausible sky clipping, reduced highlight texture, and pale or blown bright surfaces at high positive EV.`);
+    lines.push("Do not change cloudy weather into sunshine.");
+    lines.push("Do not move the scene to midday.");
+    lines.push("Do not introduce a brighter time of day.");
+    lines.push("Do not change the sun position.");
+    lines.push("Do not change the weather.");
+    if (illumination.isNight) {
+      lines.push("If the scene is nighttime, keep it nighttime; overexposure may blow out lamps, flash-lit nearby subjects, or bright surfaces but must not create daylight.");
+    }
+  } else {
+    lines.push("Use a neutral exposure consistent with the immutable time, weather, flash, ISO, movement, and indoor/outdoor context.");
+    lines.push("Do not change the scene's hour, weather, or daylight phase.");
+  }
+
+  lines.push("Exposure compensation must not apply a cinematic color grade.");
+  lines.push("Preserve color temperature appropriate to the stated local time, weather, and illumination source.");
+  return lines;
 }
 
 function flashRules(context: AntiCameraContext): string[] {

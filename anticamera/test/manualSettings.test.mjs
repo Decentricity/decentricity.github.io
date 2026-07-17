@@ -125,10 +125,133 @@ test("bokeh and deep-focus prompt branches contain concrete optics", () => {
 test("EV prompt branches for -3, 0, and +3 are photographic", () => {
   const promptBuilder = new PromptBuilder();
   assert.match(promptBuilder.build(contextForPrompt({ exposureCompensationEv: -3 })), /Apply -3 EV/);
-  assert.match(promptBuilder.build(contextForPrompt({ exposureCompensationEv: -3 })), /substantially underexposed/);
+  assert.match(promptBuilder.build(contextForPrompt({ exposureCompensationEv: -3 })), /underexposed version of the same scene/);
   assert.match(promptBuilder.build(contextForPrompt({ exposureCompensationEv: 0 })), /Apply 0 EV/);
   assert.match(promptBuilder.build(contextForPrompt({ exposureCompensationEv: 3 })), /Apply \+3 EV/);
   assert.match(promptBuilder.build(contextForPrompt({ exposureCompensationEv: 3 })), /substantially overexposed/);
+});
+
+test("clear morning daylight at EV -3 cannot become dusk or night", () => {
+  const prompt = new PromptBuilder().build(contextForPrompt({
+    exposureCompensationEv: -3,
+    time: {
+      time: "10:03",
+      hour: 10,
+      dayPeriod: "morning"
+    },
+    weather: {
+      description: "Clear",
+      cloudCoverPercent: 10
+    }
+  }));
+
+  assert.match(prompt, /PRIORITY 1 -- IMMUTABLE SCENE FACTS/);
+  assert.match(prompt, /PRIORITY 4 -- CAMERA RENDERING SETTINGS/);
+  assert.match(prompt, /morning daylight/);
+  assert.match(prompt, /underexposed version of the same scene/);
+  assert.match(prompt, /Do not convert daylight into dusk/);
+  assert.match(prompt, /Do not change the sky into a sunset sky/);
+  assert.match(prompt, /Known scene: morning daylight, clear weather/);
+  assert.match(prompt, /Required result: a severely underexposed morning daylight photograph/);
+  assert.match(prompt, /Forbidden result: dusk, sunset, twilight, evening, or nighttime/);
+});
+
+test("cloudy midday daylight at EV -3 remains daylight", () => {
+  const prompt = new PromptBuilder().build(contextForPrompt({
+    exposureCompensationEv: -3,
+    time: {
+      time: "12:15",
+      hour: 12,
+      dayPeriod: "afternoon"
+    },
+    weather: {
+      description: "Cloudy",
+      cloudCoverPercent: 88
+    }
+  }));
+
+  assert.match(prompt, /midday daylight/);
+  assert.match(prompt, /Preserve a daytime sky and daylight environmental cues/);
+  assert.match(prompt, /Do not convert daylight into dusk/);
+  assert.match(prompt, /Do not change the weather/);
+});
+
+test("afternoon rain at EV +3 preserves weather and time", () => {
+  const prompt = new PromptBuilder().build(contextForPrompt({
+    exposureCompensationEv: 3,
+    time: {
+      time: "15:30",
+      hour: 15,
+      dayPeriod: "afternoon"
+    },
+    weather: {
+      description: "Rain",
+      rainMm: 3.5,
+      cloudCoverPercent: 95
+    }
+  }));
+
+  assert.match(prompt, /afternoon daylight/);
+  assert.match(prompt, /Rain: 3\.5 mm/);
+  assert.match(prompt, /Exposure compensation increases recorded exposure only/);
+  assert.match(prompt, /Do not change cloudy weather into sunshine/);
+  assert.match(prompt, /Do not change the weather/);
+});
+
+test("actual dusk at neutral EV is preserved as dusk context", () => {
+  const prompt = new PromptBuilder().build(contextForPrompt({
+    exposureCompensationEv: 0,
+    time: {
+      time: "17:45",
+      hour: 17,
+      dayPeriod: "evening"
+    },
+    weather: {
+      description: "Partly cloudy"
+    }
+  }));
+
+  assert.match(prompt, /sunset \/ twilight/);
+  assert.match(prompt, /This twilight or dawn illumination is an immutable scene fact/);
+  assert.match(prompt, /Apply 0 EV/);
+});
+
+test("actual night at EV +3 cannot become daylight", () => {
+  const prompt = new PromptBuilder().build(contextForPrompt({
+    exposureCompensationEv: 3,
+    time: {
+      time: "22:10",
+      hour: 22,
+      dayPeriod: "night"
+    },
+    weather: {
+      description: "Clear"
+    }
+  }));
+
+  assert.match(prompt, /night/);
+  assert.match(prompt, /Do not create daylight merely because exposure compensation is positive/);
+  assert.match(prompt, /must not create daylight/);
+  assert.match(prompt, /Forbidden result: daylight or daytime/);
+});
+
+test("indoor morning EV -3 preserves morning scene facts", () => {
+  const prompt = new PromptBuilder().build(contextForPrompt({
+    mode: "indoor",
+    exposureCompensationEv: -3,
+    time: {
+      time: "09:20",
+      hour: 9,
+      dayPeriod: "morning"
+    },
+    weather: {
+      description: "Clear"
+    }
+  }));
+
+  assert.match(prompt, /This is an indoor morning-daylight scene/);
+  assert.match(prompt, /underexposed version of the same scene/);
+  assert.match(prompt, /Do not convert daylight into dusk/);
 });
 
 test("flash on and off prompt branches", () => {
@@ -163,8 +286,8 @@ test("setting interactions are explicit physical reasoning", () => {
 test("accessibility labels exist for manual controls", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   assert.match(html, /aria-label="Manual photographic controls"/);
-  assert.match(html, /aria-label="Subject mode: landscape"/);
-  assert.match(html, /aria-label="Subject mode: one person"/);
+  assert.match(html, /aria-label="Subject mode: LANDSCAPE\. Press to change mode\."/);
+  assert.match(html, /data-control="subject-cycle"/);
   assert.match(html, /aria-label="Depth: bokeh"/);
   assert.match(html, /aria-label="Flash on"/);
   assert.match(html, /aria-label="Exposure compensation dial"/);
@@ -229,7 +352,8 @@ function contextForPrompt(overrides = {}) {
       cloudCoverPercent: 70,
       rainMm: 0,
       windKph: 8,
-      description: "Cloudy"
+      description: "Cloudy",
+      ...(overrides.weather || {})
     },
     cameraPose: {
       azimuthDeg: 237,

@@ -58,15 +58,11 @@ test("panels share grid rows, titles, and base dimensions", () => {
 });
 
 test("dial pointers are contained inside their panels", () => {
-  assert.doesNotMatch(css, /\.mode-pointer,\s*\.dial-index\s*\{[^}]*top:\s*-/s);
-  assert.match(cssBlock(".mode-pointer"), /top:\s*5px/);
+  assert.doesNotMatch(css, /\.mode-pointer/);
   assert.match(cssBlock(".dial-index"), /top:\s*calc\(var\(--panel-padding\) \+ var\(--panel-title-height\) \+ 1px\)/);
 });
 
-test("subject, EV, and ISO dial marks use even radial geometry", () => {
-  assert.deepEqual(subjectAngles(), [0, 90, 180, 270]);
-  assert.doesNotMatch(cssBlock(".mode-choice.is-selected"), /transform:/);
-
+test("EV and ISO dial marks use even radial geometry", () => {
   const evAngles = valuesFromMarkup("ev");
   assert.deepEqual(evAngles, [-120, -80, -40, 0, 40, 80, 120]);
   assert.deepEqual(intervals(evAngles), [40, 40, 40, 40, 40, 40]);
@@ -82,6 +78,19 @@ test("subject, EV, and ISO dial marks use even radial geometry", () => {
   assert.match(cssBlock(".iso-dial .dial-face button"), /--label-radius:\s*calc\(var\(--dial-size\) \* -0\.42\)/);
   assert.match(html, /class="dial-face dial-scale"/);
   assert.match(html, /class="dial-grip dial-rotor"/);
+});
+
+test("subject panel uses one cycling hardware button instead of a radial dial", () => {
+  assert.match(html, /class="subject-cycle-button"/);
+  assert.match(html, /data-control="subject-cycle"/);
+  assert.equal([...html.matchAll(/data-control="subject-cycle"/g)].length, 1);
+  assert.doesNotMatch(html, /mode-dial|mode-pointer|mode-hub|mode-choice|data-subject-mode|role="radiogroup" aria-label="Subject mode dial"/);
+  assert.doesNotMatch(css, /\.mode-dial|\.mode-pointer|\.mode-hub|\.mode-choice|--mode-angle|--mode-choice-angle/);
+
+  assert.match(cssBlock(".subject-cycle-button"), /display:\s*grid/);
+  assert.match(cssBlock(".subject-cycle-button"), /border:\s*2px solid #171816/);
+  assert.match(cssBlock(".subject-icon svg,\n.mechanical-lever svg"), /opacity:\s*1/);
+  assert.match(cssBlock(".subject-label"), /white-space:\s*nowrap/);
 });
 
 test("Indoor and Outdoor selector aligns with the manual control plate", () => {
@@ -143,14 +152,6 @@ function deliberateStackBreakpoint() {
   const block = mediaBlock("340");
   assert.match(block, /\.manual-controls\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)/);
   return 340;
-}
-
-function subjectAngles() {
-  return ["landscape", "single", "group", "crowd"].map((name) => {
-    const match = cssBlock(`.mode-${name}`).match(/--mode-choice-angle:\s*(-?\d+)deg/);
-    assert.ok(match, `Missing angle for ${name}`);
-    return Number(match[1]);
-  });
 }
 
 function valuesFromMarkup(kind) {

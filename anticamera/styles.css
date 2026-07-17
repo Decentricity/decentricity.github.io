@@ -329,7 +329,6 @@ button {
   --panel-bg: #262824;
   --panel-title-height: 16px;
   --dial-size: clamp(96px, 28vw, 124px);
-  --mode-icon-size: clamp(31px, 8.4vw, 38px);
   --selector-width: clamp(108px, 30vw, 132px);
   --selector-height: clamp(38px, 9vw, 42px);
   --control-row-height: calc(var(--dial-size) + var(--panel-title-height) + (var(--panel-padding) * 2) + 12px);
@@ -384,23 +383,10 @@ button {
   place-items: center;
 }
 
-.mode-dial {
-  position: relative;
-  align-self: center;
-  justify-self: center;
-  width: var(--dial-size);
-  height: var(--dial-size);
-  margin: 0;
-  border-radius: 50%;
-  background: #1c1e1b;
-  border: clamp(6px, 1.7vw, 8px) solid #444741;
-  box-shadow: inset 0 0 0 2px #11130f, 0 4px 8px rgba(0, 0, 0, 0.22);
-}
-
-.mode-pointer,
 .dial-index {
   position: absolute;
   left: 50%;
+  top: calc(var(--panel-padding) + var(--panel-title-height) + 1px);
   z-index: 4;
   width: 0;
   height: 0;
@@ -411,82 +397,60 @@ button {
   filter: drop-shadow(0 1px 0 #171816);
 }
 
-.mode-pointer {
-  top: 5px;
+.subject-cycle-button {
+  align-self: center;
+  justify-self: center;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  place-items: center;
+  gap: 6px;
+  width: min(82%, 136px);
+  min-width: 92px;
+  height: min(74%, 142px);
+  min-height: 108px;
+  padding: clamp(10px, 2vw, 14px) clamp(8px, 2vw, 12px);
+  background: #e2d7bf;
+  border: 2px solid #171816;
+  border-radius: 8px;
+  color: #11130f;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.35), inset 0 -5px 0 rgba(0, 0, 0, 0.16), 0 3px 0 #11130f;
 }
 
-.dial-index {
-  top: calc(var(--panel-padding) + var(--panel-title-height) + 1px);
+.subject-cycle-button:active {
+  transform: translateY(2px);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.28), 0 1px 0 #11130f;
 }
 
-.mode-hub {
-  position: absolute;
-  inset: calc(var(--dial-size) * 0.29);
-  z-index: 2;
-  border-radius: 50%;
-  background: #55574f;
-  border: 1px solid #191b18;
-  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.08), inset 0 -6px 10px rgba(0, 0, 0, 0.22);
-}
-
-.mode-hub::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 3px;
-  width: 4px;
-  height: calc(var(--dial-size) * 0.18);
-  transform: translateX(-50%) rotate(var(--mode-angle, 0deg));
-  transform-origin: 50% calc(var(--dial-size) * 0.35);
-  background: #f0e4c7;
-  border-radius: 2px;
-}
-
-.mode-choice {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  z-index: 3;
+.subject-icon {
   display: grid;
   place-items: center;
-  width: var(--mode-icon-size);
-  height: var(--mode-icon-size);
-  padding: 4px;
-  background: #d1c7b2;
-  border: 2px solid #171816;
-  border-radius: 50%;
-  color: #171816;
-  box-shadow: 0 2px 0 #121310;
-  transform: rotate(var(--mode-choice-angle)) translateY(calc(var(--dial-size) * -0.36)) rotate(calc(-1 * var(--mode-choice-angle))) translate(-50%, -50%);
+  width: min(76px, 76%);
+  height: min(76px, 76%);
+  color: currentColor;
 }
 
-.mode-choice svg,
+.subject-icon[hidden] {
+  display: none;
+}
+
+.subject-icon svg,
 .mechanical-lever svg {
   display: block;
   width: 100%;
   height: 100%;
   fill: currentColor;
+  opacity: 1;
 }
 
-.mode-choice.is-selected {
-  background: #f0e4c7;
-  box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.24);
-}
-
-.mode-landscape {
-  --mode-choice-angle: 0deg;
-}
-
-.mode-single {
-  --mode-choice-angle: 90deg;
-}
-
-.mode-group {
-  --mode-choice-angle: 180deg;
-}
-
-.mode-crowd {
-  --mode-choice-angle: 270deg;
+.subject-label {
+  display: block;
+  width: 100%;
+  color: currentColor;
+  font-size: clamp(0.62rem, 1.9vw, 0.72rem);
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .lever-column {

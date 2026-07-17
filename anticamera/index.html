@@ -45,44 +45,49 @@
         </button>
 
         <section class="manual-controls" id="manual-controls" aria-label="Manual photographic controls">
-          <div class="control-cluster mode-cluster">
+          <div class="control-cluster mode-cluster subject-control-panel">
             <span class="engraved-label">SUBJ</span>
-            <div class="mode-dial" data-control="subject" role="radiogroup" aria-label="Subject mode dial">
-              <span class="mode-pointer" aria-hidden="true"></span>
-              <button class="mode-choice mode-landscape" type="button" data-subject-mode="landscape" aria-label="Subject mode: landscape">
-                <svg viewBox="0 0 48 48" aria-hidden="true">
-                  <path d="M6 34h36v6H6z"></path>
-                  <path d="M7 34 18 18l8 11 5-7 10 12z"></path>
-                  <circle cx="34" cy="13" r="5"></circle>
-                  <path d="M9 15h12c3 0 5 2 5 5H9z"></path>
+            <button
+              class="subject-cycle-button"
+              type="button"
+              data-control="subject-cycle"
+              data-selected="landscape"
+              aria-label="Subject mode: LANDSCAPE. Press to change mode."
+            >
+              <span class="subject-icon" data-subject-icon="landscape" aria-hidden="true">
+                <svg viewBox="0 0 64 64" focusable="false">
+                  <path d="M7 48h50v8H7z"></path>
+                  <path d="M7 48 22 25l11 15 7-10 17 18z"></path>
+                  <circle cx="47" cy="18" r="7"></circle>
                 </svg>
-              </button>
-              <button class="mode-choice mode-single" type="button" data-subject-mode="single-person" aria-label="Subject mode: one person">
-                <svg viewBox="0 0 48 48" aria-hidden="true">
-                  <circle cx="24" cy="16" r="8"></circle>
-                  <path d="M11 39c2-10 7-15 13-15s11 5 13 15z"></path>
+              </span>
+              <span class="subject-icon" data-subject-icon="single-person" aria-hidden="true" hidden>
+                <svg viewBox="0 0 64 64" focusable="false">
+                  <circle cx="32" cy="21" r="12"></circle>
+                  <path d="M13 56c3-15 10-23 19-23s16 8 19 23z"></path>
                 </svg>
-              </button>
-              <button class="mode-choice mode-group" type="button" data-subject-mode="group" aria-label="Subject mode: small group">
-                <svg viewBox="0 0 48 48" aria-hidden="true">
-                  <circle cx="18" cy="17" r="6"></circle>
-                  <circle cx="31" cy="16" r="7"></circle>
-                  <path d="M6 39c2-8 6-12 12-12s10 4 12 12z"></path>
-                  <path d="M20 39c2-9 6-14 12-14s10 5 12 14z"></path>
+              </span>
+              <span class="subject-icon" data-subject-icon="group" aria-hidden="true" hidden>
+                <svg viewBox="0 0 64 64" focusable="false">
+                  <circle cx="23" cy="23" r="9"></circle>
+                  <circle cx="42" cy="21" r="10"></circle>
+                  <path d="M7 56c3-13 9-20 18-20s15 7 18 20z"></path>
+                  <path d="M24 56c3-15 9-23 19-23s15 8 18 23z"></path>
                 </svg>
-              </button>
-              <button class="mode-choice mode-crowd" type="button" data-subject-mode="crowd" aria-label="Subject mode: crowd">
-                <svg viewBox="0 0 48 48" aria-hidden="true">
-                  <circle cx="12" cy="16" r="4"></circle>
-                  <circle cx="24" cy="14" r="5"></circle>
-                  <circle cx="36" cy="16" r="4"></circle>
-                  <circle cx="17" cy="25" r="4"></circle>
-                  <circle cx="31" cy="25" r="4"></circle>
-                  <path d="M5 40c1-7 4-11 9-11 4 0 7 3 8 8 1-5 5-8 10-8s8 4 10 11z"></path>
+              </span>
+              <span class="subject-icon" data-subject-icon="crowd" aria-hidden="true" hidden>
+                <svg viewBox="0 0 64 64" focusable="false">
+                  <circle cx="14" cy="22" r="7"></circle>
+                  <circle cx="32" cy="18" r="8"></circle>
+                  <circle cx="50" cy="22" r="7"></circle>
+                  <circle cx="23" cy="34" r="7"></circle>
+                  <circle cx="41" cy="34" r="7"></circle>
+                  <path d="M5 56c2-11 7-17 15-17 6 0 10 3 13 10 3-7 8-10 15-10 8 0 13 6 15 17z"></path>
+                  <path d="M16 56c2-10 7-16 16-16s14 6 16 16z"></path>
                 </svg>
-              </button>
-              <span class="mode-hub" aria-hidden="true"></span>
-            </div>
+              </span>
+              <span class="subject-label" data-subject-label aria-live="polite">LANDSCAPE</span>
+            </button>
           </div>
 
           <div class="lever-column">
