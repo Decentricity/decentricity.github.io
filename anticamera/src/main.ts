@@ -22,8 +22,10 @@ const manualControls = new ManualControls(requiredElement("manual-controls", HTM
 
 const app = new AntiCameraApp(
   requiredElement("viewfinder", HTMLElement),
+  requiredElement("debug-panel", HTMLElement),
   requiredElement("context-readout", HTMLElement),
   requiredElement("developing", HTMLElement),
+  requiredElement("instant-reveal", HTMLElement),
   requiredElement("latest-frame", HTMLImageElement),
   requiredElement("key-panel", HTMLFormElement),
   requiredElement("openai-key", HTMLInputElement),

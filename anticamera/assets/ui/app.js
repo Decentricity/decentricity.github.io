@@ -26,8 +26,10 @@ function createFrameId() {
 }
 export class AntiCameraApp {
     viewfinder;
+    debugPanel;
     readout;
     developingLayer;
+    instantReveal;
     latestFrame;
     keyPanel;
     keyInput;
@@ -51,10 +53,12 @@ export class AntiCameraApp {
     debugCapture = new CaptureDebugger();
     developing = false;
     lastContext = null;
-    constructor(viewfinder, readout, developingLayer, latestFrame, keyPanel, keyInput, keyMessage, batteryFill, batteryLabel, shutter, modeInputs, manualControls, gallery, dependencies = {}) {
+    constructor(viewfinder, debugPanel, readout, developingLayer, instantReveal, latestFrame, keyPanel, keyInput, keyMessage, batteryFill, batteryLabel, shutter, modeInputs, manualControls, gallery, dependencies = {}) {
         this.viewfinder = viewfinder;
+        this.debugPanel = debugPanel;
         this.readout = readout;
         this.developingLayer = developingLayer;
+        this.instantReveal = instantReveal;
         this.latestFrame = latestFrame;
         this.keyPanel = keyPanel;
         this.keyInput = keyInput;
@@ -81,6 +85,23 @@ export class AntiCameraApp {
         await this.context.startPassiveCollection().catch((error) => this.debugCapture.log("capture:passive-context-error", { error: safeError(error) }));
         this.shutter.addEventListener("click", () => {
             void this.capture();
+        });
+        this.viewfinder.addEventListener("click", () => {
+            this.setDebugPanelOpen(!this.isDebugPanelOpen());
+        });
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") {
+                this.setDebugPanelOpen(false);
+            }
+        });
+        document.addEventListener("click", (event) => {
+            const target = event.target;
+            if (this.isDebugPanelOpen()
+                && target instanceof Element
+                && !this.debugPanel.contains(target)
+                && !this.viewfinder.contains(target)) {
+                this.setDebugPanelOpen(false);
+            }
         });
         this.keyPanel.addEventListener("submit", (event) => {
             event.preventDefault();
@@ -185,27 +206,31 @@ export class AntiCameraApp {
         return selected?.value === "indoor" ? "indoor" : "outdoor";
     }
     showDeveloping() {
-        this.viewfinder.classList.add("is-dark");
+        this.viewfinder.classList.add("is-developing");
         this.viewfinder.classList.remove("needs-key");
         this.keyPanel.classList.add("hidden");
+        this.instantReveal.classList.add("hidden");
         this.latestFrame.classList.add("hidden");
         this.latestFrame.classList.remove("is-developing");
-        this.developingLayer.textContent = "Developing...";
+        this.developingLayer.textContent = "DEVELOPING";
         this.developingLayer.classList.remove("hidden");
     }
     showKeyPanel(message = "USER KEY REQUIRED") {
-        this.viewfinder.classList.remove("is-dark");
+        this.viewfinder.classList.remove("is-developing");
         this.viewfinder.classList.add("needs-key");
         this.developingLayer.classList.add("hidden");
+        this.instantReveal.classList.add("hidden");
         this.latestFrame.classList.add("hidden");
         this.keyPanel.classList.remove("hidden");
         this.keyMessage.textContent = message.toUpperCase();
+        this.setDebugPanelOpen(true);
         this.keyInput.focus();
     }
     showCaptureError(error) {
-        this.viewfinder.classList.add("is-dark");
+        this.viewfinder.classList.remove("is-developing");
         this.viewfinder.classList.remove("needs-key");
         this.keyPanel.classList.add("hidden");
+        this.instantReveal.classList.add("hidden");
         this.latestFrame.classList.add("hidden");
         this.developingLayer.textContent = captureErrorMessage(error);
         this.developingLayer.classList.remove("hidden");
@@ -227,6 +252,7 @@ export class AntiCameraApp {
     }
     async reveal(imageDataUrl) {
         await this.loadLatestFrame(imageDataUrl);
+        this.instantReveal.classList.remove("hidden");
         this.latestFrame.classList.remove("hidden");
         this.latestFrame.classList.add("is-developing");
         this.developingLayer.classList.add("hidden");
@@ -234,7 +260,17 @@ export class AntiCameraApp {
         this.latestFrame.classList.remove("is-developing");
         await this.captureDelay(3600);
         this.latestFrame.classList.add("hidden");
-        this.viewfinder.classList.remove("is-dark");
+        this.instantReveal.classList.add("hidden");
+        this.viewfinder.classList.remove("is-developing");
+    }
+    isDebugPanelOpen() {
+        return !this.debugPanel.hidden;
+    }
+    setDebugPanelOpen(open) {
+        this.debugPanel.hidden = !open;
+        this.debugPanel.classList.toggle("hidden", !open);
+        this.viewfinder.setAttribute("aria-expanded", String(open));
+        this.viewfinder.setAttribute("aria-label", open ? "Close camera context information" : "Open camera context information");
     }
     loadLatestFrame(imageDataUrl) {
         return new Promise((resolve, reject) => {

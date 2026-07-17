@@ -56,9 +56,9 @@ button {
 .camera-shell {
   position: relative;
   width: 100%;
-  padding: 22px 20px 26px;
-  background: var(--plastic);
-  border: 1px solid var(--plastic-edge);
+  padding: 0 14px 18px;
+  background: #30332f;
+  border: 1px solid #585b55;
   border-radius: 18px;
   box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34), inset 0 0 0 2px rgba(255, 255, 255, 0.04);
 }
@@ -67,7 +67,7 @@ button {
 .camera-shell::after {
   content: "";
   position: absolute;
-  top: 13px;
+  z-index: 4;
   width: 10px;
   height: 10px;
   background: var(--screw);
@@ -76,48 +76,185 @@ button {
 }
 
 .camera-shell::before {
-  left: 14px;
+  left: 17px;
+  top: 94px;
 }
 
 .camera-shell::after {
-  right: 14px;
+  right: 17px;
+  top: 94px;
 }
 
-.top-plate {
-  display: flex;
-  justify-content: space-between;
+.camera-top-plate {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr) auto auto;
   align-items: center;
-  margin: 0 6px 16px;
-  color: #d6d2c4;
-  font-size: 0.74rem;
+  gap: 10px;
+  min-height: 86px;
+  margin: 0 -14px;
+  padding: 12px 14px 10px;
+  color: #ded8c9;
+  background: #5c5f59;
+  border-bottom: 1px solid #1d1f1c;
+  border-radius: 18px 18px 5px 5px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), inset 0 -9px 18px rgba(0, 0, 0, 0.22);
+}
+
+.rewind-knob {
+  display: block;
+  width: 46px;
+  height: 46px;
+  border: 6px solid #252722;
+  border-radius: 50%;
+  background: #777970;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.18), inset 0 -6px 9px rgba(0, 0, 0, 0.22);
 }
 
 .brand-mark {
+  min-width: 0;
   font-weight: 700;
+  font-size: clamp(0.68rem, 2.4vw, 0.8rem);
+  white-space: nowrap;
 }
 
-.body-code {
-  color: #a9ab9d;
+.body-code,
+.top-status-marks {
+  color: #262822;
+  background: #d6d0c0;
+  border: 1px solid rgba(21, 23, 20, 0.38);
+  border-radius: 3px;
+  padding: 3px 5px;
+  font-size: clamp(0.5rem, 1.6vw, 0.6rem);
+  white-space: nowrap;
 }
 
-.viewfinder {
+.top-status-marks {
+  display: none;
+}
+
+.camera-back-door {
   position: relative;
-  min-height: 248px;
-  overflow: hidden;
-  padding: 14px 14px 16px;
-  background: var(--lcd);
+  margin-top: 0;
+  padding: 12px 10px 12px;
+  background: #3b3e39;
+  border: 1px solid #1b1d1a;
+  border-top: 0;
+  border-radius: 0 0 14px 14px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.camera-back-door::before {
+  content: "";
+  position: absolute;
+  inset: 12px 10px auto;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.back-service-row {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 72px;
+  padding: 4px 8px 10px;
+}
+
+.optical-viewfinder {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: clamp(74px, 20vw, 108px);
+  max-width: 22%;
+  height: clamp(48px, 12vw, 70px);
+  min-width: 70px;
+  padding: 7px;
+  background: #141613;
+  border: 5px solid #242621;
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 2px #080908, 0 3px 0 rgba(0, 0, 0, 0.32);
+}
+
+.optical-viewfinder.needs-key {
+  border-color: #5d211f;
+}
+
+.optical-viewfinder.is-developing::after {
+  content: "";
+  position: absolute;
+  right: -16px;
+  top: 8px;
+  width: 8px;
+  height: 8px;
+  background: #c6872d;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px #191a17;
+}
+
+.eyepiece-glass {
+  width: 100%;
+  height: 100%;
+  border-radius: 5px;
+  background: #050706;
+  box-shadow: inset 0 0 12px rgba(137, 159, 154, 0.24);
+}
+
+.eyepiece-reflection {
+  position: absolute;
+  left: 18px;
+  top: 14px;
+  width: 38%;
+  height: 12%;
+  background: rgba(206, 217, 213, 0.22);
+  border-radius: 999px;
+}
+
+.back-engraving {
+  display: grid;
+  gap: 4px;
+  color: #c7c1b0;
+  font-size: clamp(0.52rem, 1.7vw, 0.62rem);
+  white-space: nowrap;
+}
+
+.developing-indicator {
+  min-width: 82px;
+  max-width: 124px;
+  min-height: 28px;
+  padding: 6px 8px;
+  color: #e2d9c5;
+  background: #171916;
+  border: 1px solid #050605;
+  border-radius: 4px;
+  font-size: clamp(0.52rem, 1.6vw, 0.62rem);
+  line-height: 1.25;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: pre-line;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.42);
+}
+
+.debug-panel {
+  position: relative;
+  z-index: 3;
+  max-height: 42vh;
+  overflow: auto;
+  margin: 0 6px 12px;
+  padding: 10px 10px 12px;
   color: var(--ink);
-  border: 5px solid var(--plastic-dark);
-  border-radius: 7px;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.24);
+  background: var(--lcd);
+  border: 2px solid #20221f;
+  border-radius: 5px;
+  box-shadow: 0 8px 0 rgba(0, 0, 0, 0.18), inset 0 0 0 1px rgba(0, 0, 0, 0.22);
 }
 
-.viewfinder.is-dark {
-  background: var(--lcd-dark);
-  color: var(--lcd);
+.debug-panel[hidden] {
+  display: none;
 }
 
-.lcd-status {
+.debug-panel-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -127,10 +264,6 @@ button {
   padding-bottom: 8px;
   border-bottom: 1px solid rgba(21, 23, 20, 0.24);
   font-size: 0.72rem;
-}
-
-.viewfinder.is-dark .lcd-status {
-  border-bottom-color: rgba(184, 194, 167, 0.18);
 }
 
 .lcd-icons {
@@ -184,11 +317,11 @@ button {
   overflow-wrap: anywhere;
 }
 
-.viewfinder.is-dark .readout {
-  visibility: hidden;
+.debug-panel .readout {
+  display: grid;
 }
 
-.viewfinder.needs-key .readout {
+.debug-panel .key-panel:not(.hidden) + .readout {
   display: none;
 }
 
@@ -197,10 +330,6 @@ button {
   gap: 10px;
   margin-top: 24px;
   color: var(--ink);
-}
-
-.viewfinder.is-dark .key-panel {
-  color: var(--lcd);
 }
 
 .key-panel label {
@@ -239,31 +368,67 @@ button {
   font-size: 0.7rem;
 }
 
-.viewfinder.is-dark .key-panel p {
-  color: var(--lcd);
+.film-door-panel {
+  position: relative;
+  margin-top: 8px;
+  padding: 14px 10px 12px;
+  background: #2f322e;
+  border: 1px solid #191b18;
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04), inset 8px 0 0 rgba(0, 0, 0, 0.12);
 }
 
-.developing {
+.film-door-seam {
   position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  padding: 18px;
-  background: var(--lcd-dark);
-  color: var(--lcd);
-  font-size: 1rem;
-  line-height: 1.45;
-  text-align: center;
-  text-transform: uppercase;
-  white-space: pre-line;
+  inset: 8px;
+  border: 1px solid rgba(12, 13, 11, 0.48);
+  border-radius: 5px;
+  pointer-events: none;
+}
+
+.film-door-hinge {
+  position: absolute;
+  top: 18px;
+  bottom: 18px;
+  left: 8px;
+  width: 5px;
+  background: #191b18;
+  border-radius: 3px;
+  pointer-events: none;
+}
+
+.film-output-slot {
+  position: relative;
+  height: 16px;
+  margin: 12px auto 0;
+  width: min(70%, 270px);
+  padding: 4px;
+  background: #151714;
+  border: 1px solid #080908;
+  border-radius: 3px;
+  box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.44);
+}
+
+.film-output-slot span {
+  display: block;
+  height: 100%;
+  background: #050605;
+  border-radius: 2px;
+}
+
+.instant-reveal {
+  width: min(74%, 300px);
+  margin: 14px auto 0;
+  padding: 8px 8px 24px;
+  background: var(--film-edge);
+  border-radius: 4px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.34);
 }
 
 .latest-frame {
-  position: absolute;
-  inset: 0;
   display: block;
   width: 100%;
-  height: 100%;
+  aspect-ratio: 1 / 1;
   object-fit: cover;
   background: var(--film);
   opacity: 1;
@@ -281,12 +446,12 @@ button {
 .shutter {
   display: grid;
   place-items: center;
-  width: 116px;
-  height: 116px;
-  margin: 26px auto 22px;
+  width: clamp(68px, 17vw, 86px);
+  height: clamp(68px, 17vw, 86px);
+  margin: 0;
   padding: 0;
   background: var(--red);
-  border: 9px solid var(--red-dark);
+  border: clamp(6px, 1.8vw, 8px) solid var(--red-dark);
   border-radius: 50%;
   box-shadow: inset 0 0 0 4px rgba(255, 255, 255, 0.08), 0 8px 0 #272825;
 }
@@ -301,6 +466,7 @@ button {
 .key-row input:focus-visible,
 .key-row button:focus-visible,
 .manual-controls button:focus-visible,
+.optical-viewfinder:focus-visible,
 .analog-dial:focus-visible,
 .indoor-toggle input:focus-visible + label {
   outline: 2px solid var(--focus);
@@ -314,8 +480,8 @@ button {
 
 .shutter-inner {
   display: block;
-  width: 72px;
-  height: 72px;
+  width: 62%;
+  height: 62%;
   background: #c93e39;
   border: 2px solid rgba(0, 0, 0, 0.28);
   border-radius: 50%;
@@ -766,29 +932,42 @@ button {
   }
 
   .camera-shell {
-    padding: 20px 14px 22px;
+    padding: 0 8px 14px;
     border-radius: 14px;
   }
 
-  .viewfinder {
-    min-height: 232px;
-    padding: 12px;
+  .camera-top-plate {
+    grid-template-columns: 44px minmax(0, 1fr) auto auto;
+    gap: 8px;
+    min-height: 78px;
+    margin: 0 -8px;
+    padding: 10px 8px 9px;
+    border-radius: 14px 14px 5px 5px;
+  }
+
+  .rewind-knob {
+    width: 38px;
+    height: 38px;
+    border-width: 5px;
+  }
+
+  .back-service-row {
+    gap: 8px;
+    padding-inline: 4px;
+  }
+
+  .debug-panel {
+    margin-inline: 2px;
   }
 
   .readout {
     grid-template-columns: minmax(76px, 0.48fr) minmax(0, 1fr);
   }
 
-  .shutter {
-    width: 104px;
-    height: 104px;
-  }
-
   .manual-controls {
     --control-gap: 8px;
     --panel-padding: 7px;
     --dial-size: clamp(92px, 27vw, 106px);
-    --mode-icon-size: clamp(30px, 8.2vw, 35px);
     --selector-width: clamp(104px, 30vw, 118px);
   }
 }

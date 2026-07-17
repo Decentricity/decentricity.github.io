@@ -70,8 +70,10 @@ export class AntiCameraApp {
 
   constructor(
     private readonly viewfinder: HTMLElement,
+    private readonly debugPanel: HTMLElement,
     private readonly readout: HTMLElement,
     private readonly developingLayer: HTMLElement,
+    private readonly instantReveal: HTMLElement,
     private readonly latestFrame: HTMLImageElement,
     private readonly keyPanel: HTMLFormElement,
     private readonly keyInput: HTMLInputElement,
@@ -101,6 +103,25 @@ export class AntiCameraApp {
     await this.context.startPassiveCollection().catch((error) => this.debugCapture.log("capture:passive-context-error", { error: safeError(error) }));
     this.shutter.addEventListener("click", () => {
       void this.capture();
+    });
+    this.viewfinder.addEventListener("click", () => {
+      this.setDebugPanelOpen(!this.isDebugPanelOpen());
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        this.setDebugPanelOpen(false);
+      }
+    });
+    document.addEventListener("click", (event) => {
+      const target = event.target;
+      if (
+        this.isDebugPanelOpen()
+        && target instanceof Element
+        && !this.debugPanel.contains(target)
+        && !this.viewfinder.contains(target)
+      ) {
+        this.setDebugPanelOpen(false);
+      }
     });
     this.keyPanel.addEventListener("submit", (event) => {
       event.preventDefault();
@@ -224,29 +245,33 @@ export class AntiCameraApp {
   }
 
   private showDeveloping(): void {
-    this.viewfinder.classList.add("is-dark");
+    this.viewfinder.classList.add("is-developing");
     this.viewfinder.classList.remove("needs-key");
     this.keyPanel.classList.add("hidden");
+    this.instantReveal.classList.add("hidden");
     this.latestFrame.classList.add("hidden");
     this.latestFrame.classList.remove("is-developing");
-    this.developingLayer.textContent = "Developing...";
+    this.developingLayer.textContent = "DEVELOPING";
     this.developingLayer.classList.remove("hidden");
   }
 
   private showKeyPanel(message = "USER KEY REQUIRED"): void {
-    this.viewfinder.classList.remove("is-dark");
+    this.viewfinder.classList.remove("is-developing");
     this.viewfinder.classList.add("needs-key");
     this.developingLayer.classList.add("hidden");
+    this.instantReveal.classList.add("hidden");
     this.latestFrame.classList.add("hidden");
     this.keyPanel.classList.remove("hidden");
     this.keyMessage.textContent = message.toUpperCase();
+    this.setDebugPanelOpen(true);
     this.keyInput.focus();
   }
 
   private showCaptureError(error: unknown): void {
-    this.viewfinder.classList.add("is-dark");
+    this.viewfinder.classList.remove("is-developing");
     this.viewfinder.classList.remove("needs-key");
     this.keyPanel.classList.add("hidden");
+    this.instantReveal.classList.add("hidden");
     this.latestFrame.classList.add("hidden");
     this.developingLayer.textContent = captureErrorMessage(error);
     this.developingLayer.classList.remove("hidden");
@@ -272,6 +297,7 @@ export class AntiCameraApp {
 
   private async reveal(imageDataUrl: string): Promise<void> {
     await this.loadLatestFrame(imageDataUrl);
+    this.instantReveal.classList.remove("hidden");
     this.latestFrame.classList.remove("hidden");
     this.latestFrame.classList.add("is-developing");
     this.developingLayer.classList.add("hidden");
@@ -279,7 +305,22 @@ export class AntiCameraApp {
     this.latestFrame.classList.remove("is-developing");
     await this.captureDelay(3600);
     this.latestFrame.classList.add("hidden");
-    this.viewfinder.classList.remove("is-dark");
+    this.instantReveal.classList.add("hidden");
+    this.viewfinder.classList.remove("is-developing");
+  }
+
+  private isDebugPanelOpen(): boolean {
+    return !this.debugPanel.hidden;
+  }
+
+  private setDebugPanelOpen(open: boolean): void {
+    this.debugPanel.hidden = !open;
+    this.debugPanel.classList.toggle("hidden", !open);
+    this.viewfinder.setAttribute("aria-expanded", String(open));
+    this.viewfinder.setAttribute(
+      "aria-label",
+      open ? "Close camera context information" : "Open camera context information"
+    );
   }
 
   private loadLatestFrame(imageDataUrl: string): Promise<void> {

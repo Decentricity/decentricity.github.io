@@ -27,9 +27,11 @@ test("capture flow reveals generated image before gallery storage and allows a s
   assert.deepEqual(harness.imageGenerator.calls[0].context.manualSettings, settings);
   assert.deepEqual(harness.gallery.addCalls[0].context.manualSettings, settings);
   assert.equal(harness.latestFrame.src, "data:image/png;base64,first");
+  assert.equal(harness.viewfinder.querySelector("#latest-frame"), null);
   assert.equal(harness.gallery.addCalls.length, 1);
   assert.equal(harness.shutter.disabled, false);
   assert.ok(harness.developingLayer.classList.contains("hidden"));
+  assert.ok(harness.instantReveal.classList.contains("hidden"));
 
   harness.manualSettings = {
     ...DEFAULT_MANUAL_SETTINGS,
@@ -41,6 +43,66 @@ test("capture flow reveals generated image before gallery storage and allows a s
 
   assert.equal(harness.latestFrame.src, "data:image/png;base64,second");
   assert.equal(harness.gallery.addCalls.length, 2);
+  assert.equal(harness.shutter.disabled, false);
+});
+
+test("debug panel is hidden by default and toggled from the optical viewfinder", async () => {
+  const harness = await createAppHarness();
+  await harness.app.start();
+
+  assert.equal(harness.debugPanel.hidden, true);
+  assert.equal(harness.debugPanel.classList.contains("hidden"), true);
+  assert.equal(harness.viewfinder.getAttribute("aria-expanded"), "false");
+  assert.match(harness.readout.textContent, /Location:/);
+
+  harness.clickViewfinder();
+  assert.equal(harness.debugPanel.hidden, false);
+  assert.equal(harness.debugPanel.classList.contains("hidden"), false);
+  assert.equal(harness.viewfinder.getAttribute("aria-expanded"), "true");
+
+  harness.clickViewfinder();
+  assert.equal(harness.debugPanel.hidden, true);
+  assert.equal(harness.viewfinder.getAttribute("aria-expanded"), "false");
+
+  harness.clickViewfinder();
+  harness.key("Escape");
+  assert.equal(harness.debugPanel.hidden, true);
+  assert.equal(harness.viewfinder.getAttribute("aria-expanded"), "false");
+});
+
+test("capture works while debug panel is open", async () => {
+  const harness = await createAppHarness();
+  await harness.app.start();
+
+  harness.clickViewfinder();
+  assert.equal(harness.debugPanel.hidden, false);
+  harness.clickShutter();
+  await harness.waitForCaptureCount(1);
+
+  assert.equal(harness.latestFrame.src, "data:image/png;base64,first");
+  assert.equal(harness.gallery.addCalls.length, 1);
+  assert.equal(harness.shutter.disabled, false);
+});
+
+test("developing state uses a small indicator and not the optical viewfinder", async () => {
+  const pending = deferred();
+  const harness = await createAppHarness({
+    generatorResults: [pending.promise]
+  });
+  await harness.app.start();
+
+  harness.clickShutter();
+  await harness.waitFor(() => harness.developingLayer.textContent.includes("DEVELOPING"));
+  assert.equal(harness.viewfinder.querySelector("#developing"), null);
+  assert.equal(harness.viewfinder.querySelector("#latest-frame"), null);
+  assert.equal(harness.viewfinder.classList.contains("is-developing"), true);
+
+  pending.resolve({
+    imageDataUrl: "data:image/png;base64,slow",
+    provider: "mock-image-provider"
+  });
+  await harness.waitForCaptureCount(1);
+  assert.equal(harness.latestFrame.src, "data:image/png;base64,slow");
   assert.equal(harness.shutter.disabled, false);
 });
 
@@ -109,8 +171,10 @@ async function createAppHarness(options = {}) {
   const { AntiCameraApp } = await import(`../assets/ui/app.js?cache=${Date.now()}-${Math.random()}`);
 
   const viewfinder = document.getElementById("viewfinder");
+  const debugPanel = document.getElementById("debug-panel");
   const readout = document.getElementById("context-readout");
   const developingLayer = document.getElementById("developing");
+  const instantReveal = document.getElementById("instant-reveal");
   const latestFrame = document.getElementById("latest-frame");
   const keyPanel = document.getElementById("key-panel");
   const keyInput = document.getElementById("openai-key");
@@ -126,8 +190,10 @@ async function createAppHarness(options = {}) {
     window,
     document,
     viewfinder,
+    debugPanel,
     readout,
     developingLayer,
+    instantReveal,
     latestFrame,
     shutter,
     manualSettings: { ...DEFAULT_MANUAL_SETTINGS },
@@ -138,6 +204,14 @@ async function createAppHarness(options = {}) {
     app: null,
     clickShutter() {
       shutter.dispatchEvent(new window.Event("click", { bubbles: true }));
+    },
+    clickViewfinder() {
+      viewfinder.dispatchEvent(new window.Event("click", { bubbles: true }));
+    },
+    key(keyValue) {
+      const event = new window.Event("keydown", { bubbles: true, cancelable: true });
+      Object.defineProperty(event, "key", { value: keyValue });
+      document.dispatchEvent(event);
     },
     async waitForCaptureCount(count) {
       await waitFor(() => this.imageGenerator.calls.length >= count && !this.shutter.disabled);
@@ -152,8 +226,10 @@ async function createAppHarness(options = {}) {
 
   harness.app = new AntiCameraApp(
     viewfinder,
+    debugPanel,
     readout,
     developingLayer,
+    instantReveal,
     latestFrame,
     keyPanel,
     keyInput,
@@ -176,7 +252,7 @@ async function createAppHarness(options = {}) {
       delay: async () => undefined,
       minimumDevelopingTime: () => 0,
       permissionTimeoutMs: 5,
-      contextTimeoutMs: 5,
+      contextTimeoutMs: 50,
       generationTimeoutMs: options.generationTimeoutMs ?? 50,
       imageLoadTimeoutMs: 5
     }
@@ -215,7 +291,7 @@ class FakeContext {
 
   async snapshot(mode, frozenPose, frozenSettings) {
     const settings = frozenSettings ?? this.settingsProvider();
-    const context = contextForPrompt({ mode, cameraPose: frozenPose, manualSettings: settings });
+    const context = contextForPrompt({ mode, cameraPose: frozenPose ?? this.freezeCameraPose(), manualSettings: settings });
     this.snapshots.push(context);
     return context;
   }
@@ -382,6 +458,16 @@ function installInstantImage(image, window) {
       writable: true
     }
   });
+}
+
+function deferred() {
+  let resolve;
+  let reject;
+  const promise = new Promise((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
 }
 
 async function waitFor(predicate, timeoutMs = 120) {

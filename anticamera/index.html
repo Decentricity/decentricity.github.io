@@ -14,19 +14,49 @@
   <body>
     <main class="page" aria-label="Anti-Camera prototype">
       <section class="camera-shell" aria-label="Anti-Camera body">
-        <div class="top-plate" aria-hidden="true">
+        <div class="camera-top-plate">
+          <span class="rewind-knob" aria-hidden="true"></span>
           <span class="brand-mark">ANTI-CAMERA</span>
           <span class="body-code">AC-00</span>
+          <span class="top-status-marks" aria-hidden="true">ASA EV</span>
+          <button class="shutter" id="shutter" type="button" aria-label="Press shutter">
+            <span class="shutter-inner" aria-hidden="true"></span>
+          </button>
         </div>
 
-        <section class="viewfinder" id="viewfinder" aria-live="polite">
-          <div class="lcd-status">
-            <span class="lcd-title">VIEWFINDER</span>
-            <span class="lcd-icons">
-              <span class="battery-shell" aria-hidden="true"><span id="battery-fill" class="battery-fill"></span></span>
-              <span id="battery-label">--%</span>
-            </span>
+        <section class="camera-back-door" aria-label="Camera back">
+          <div class="back-service-row">
+            <button
+              id="viewfinder"
+              class="optical-viewfinder"
+              type="button"
+              aria-expanded="false"
+              aria-controls="debug-panel"
+              aria-label="Open camera context information"
+            >
+              <span class="eyepiece-glass" aria-hidden="true"></span>
+              <span class="eyepiece-reflection" aria-hidden="true"></span>
+            </button>
+            <div class="back-engraving" aria-hidden="true">
+              <span>LENSLESS</span>
+              <span>CONTEXT</span>
+            </div>
+            <div class="developing-indicator hidden" id="developing" aria-live="polite">DEVELOPING</div>
           </div>
+
+          <section
+            class="debug-panel hidden"
+            id="debug-panel"
+            aria-label="Camera context information"
+            hidden
+          >
+            <div class="debug-panel-top">
+              <span class="lcd-title">SERVICE DATA</span>
+              <span class="lcd-icons">
+                <span class="battery-shell" aria-hidden="true"><span id="battery-fill" class="battery-fill"></span></span>
+                <span id="battery-label">--%</span>
+              </span>
+            </div>
           <form class="key-panel hidden" id="key-panel">
             <label for="openai-key">OPENAI SECRET</label>
             <div class="key-row">
@@ -36,13 +66,11 @@
             <p id="key-message">USER KEY REQUIRED</p>
           </form>
           <dl class="readout" id="context-readout"></dl>
-          <div class="developing hidden" id="developing">Developing...</div>
-          <img class="latest-frame hidden" id="latest-frame" alt="Generated Anti-Camera frame">
-        </section>
+          </section>
 
-        <button class="shutter" id="shutter" type="button" aria-label="Press shutter">
-          <span class="shutter-inner" aria-hidden="true"></span>
-        </button>
+          <div class="film-door-panel">
+            <span class="film-door-seam" aria-hidden="true"></span>
+            <span class="film-door-hinge" aria-hidden="true"></span>
 
         <section class="manual-controls" id="manual-controls" aria-label="Manual photographic controls">
           <div class="control-cluster mode-cluster subject-control-panel">
@@ -173,6 +201,16 @@
           <input type="radio" id="mode-indoor" name="scene-mode" value="indoor">
           <label for="mode-indoor">Indoor</label>
         </fieldset>
+
+            <div class="film-output-slot" aria-hidden="true">
+              <span></span>
+            </div>
+          </div>
+        </section>
+
+        <figure class="instant-reveal hidden" id="instant-reveal" aria-live="polite">
+          <img class="latest-frame hidden" id="latest-frame" alt="Generated Anti-Camera frame">
+        </figure>
       </section>
 
       <section class="film-rack" aria-label="Film strip">
