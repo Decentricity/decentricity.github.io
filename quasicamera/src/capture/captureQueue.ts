@@ -6,6 +6,7 @@ export type CaptureJobStatus =
   | "collecting-context"
   | "detecting-faces"
   | "selecting-faces"
+  | "analyzing-objects"
   | "generating"
   | "developing"
   | "complete"

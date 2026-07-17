@@ -203,6 +203,83 @@ export interface FaceAnalysis {
   warning?: string | undefined;
 }
 
+export type ObjectCategory =
+  | "animal"
+  | "toy"
+  | "vehicle"
+  | "furniture"
+  | "food"
+  | "plant"
+  | "clothing"
+  | "container"
+  | "electronics"
+  | "tool"
+  | "building"
+  | "natural-feature"
+  | "other";
+
+export type ObjectRelationshipPredicate =
+  | "on-top-of"
+  | "under"
+  | "inside"
+  | "holding"
+  | "wearing"
+  | "attached-to"
+  | "next-to"
+  | "in-front-of"
+  | "behind"
+  | "surrounding"
+  | "riding"
+  | "sitting-on"
+  | "standing-on"
+  | "carrying"
+  | "part-of";
+
+export interface RecognizedObject {
+  id: string;
+  label: string;
+  normalizedLabel: string;
+  category: ObjectCategory;
+  boundingBox: FaceBoundingBox | null;
+  confidence: number | null;
+  salience: number;
+  attributes: string[];
+  count?: number | undefined;
+}
+
+export interface ObjectRelationship {
+  subjectObjectId: string;
+  predicate: ObjectRelationshipPredicate;
+  objectObjectId: string;
+  confidence: number | null;
+}
+
+export interface ObjectAnalysis {
+  objects: RecognizedObject[];
+  relationships: ObjectRelationship[];
+  provider: string;
+  warnings: string[];
+  omittedObjects?: Array<{
+    label: string;
+    normalizedLabel: string;
+    reason: string;
+  }> | undefined;
+}
+
+export interface PersistedRecognizedObject {
+  label: string;
+  normalizedLabel: string;
+  category: ObjectCategory;
+  attributes?: string[] | undefined;
+  count?: number | undefined;
+}
+
+export interface PersistedObjectRelationship {
+  subject: string;
+  predicate: ObjectRelationshipPredicate;
+  object: string;
+}
+
 export type SubjectMappingStrategy =
   | "synthetic-subjects"
   | "environmental-likeness"
@@ -230,6 +307,15 @@ export interface QuasiCameraShotAnalysis {
   subjectMappingStrategy: SubjectMappingStrategy;
   faceAnalysisProvider: string;
   faceAnalysisWarning?: string | undefined;
+  recognizedObjects?: PersistedRecognizedObject[] | undefined;
+  objectRelationships?: PersistedObjectRelationship[] | undefined;
+  objectAnalysisProvider?: string | undefined;
+  objectAnalysisWarnings?: string[] | undefined;
+  omittedObjects?: Array<{
+    label: string;
+    normalizedLabel: string;
+    reason: string;
+  }> | undefined;
 }
 
 export interface ImageGenerationRequest {

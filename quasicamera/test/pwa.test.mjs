@@ -38,7 +38,7 @@ test("page exposes PWA metadata and a discreet fullscreen control", () => {
 });
 
 test("service worker caches only same-origin static app shell files", () => {
-  assert.match(sw, /quasi-camera-static-v1/);
+  assert.match(sw, /quasi-camera-static-v2/);
   assert.match(sw, /\.\/index\.html/);
   assert.match(sw, /\.\/styles\.css/);
   assert.doesNotMatch(sw, /["']\.\/sw\.js["']/);
@@ -51,6 +51,8 @@ test("service worker caches only same-origin static app shell files", () => {
   assert.match(sw, /\.\/assets\/faces\/faceAnalyzer\.js/);
   assert.match(sw, /\.\/assets\/faces\/faceSelection\.js/);
   assert.match(sw, /\.\/assets\/faces\/faceCrops\.js/);
+  assert.match(sw, /\.\/assets\/objects\/objectAnalyzer\.js/);
+  assert.match(sw, /\.\/assets\/objects\/objectNormalization\.js/);
   assert.match(sw, /\.\/assets\/gallery\/filmExport\.js/);
   assert.match(sw, /key\.startsWith\("quasi-camera-static-"\)/);
   assert.match(sw, /request\.method !== "GET"/);

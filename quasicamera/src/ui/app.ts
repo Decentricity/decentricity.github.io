@@ -4,6 +4,7 @@ import type {
   DetectedFace,
   FaceAnalysis,
   IndoorOutdoor,
+  ObjectAnalysis,
   SourcePhotoReference,
   SubjectFaceSelection
 } from "../types.js";
@@ -13,6 +14,8 @@ import { ContextCollector } from "../context/contextCollector.js";
 import { BrowserFaceAnalyzer, type FaceAnalyzer } from "../faces/faceAnalyzer.js";
 import { createFaceCrops, type FaceCrop } from "../faces/faceCrops.js";
 import { selectFacesForSubjectMode } from "../faces/faceSelection.js";
+import { OpenAIObjectAnalyzer, type ObjectAnalyzer } from "../objects/objectAnalyzer.js";
+import { toPersistedObjectMetadata } from "../objects/objectNormalization.js";
 import { Gallery } from "../gallery/gallery.js";
 import { ImageGenerator } from "../image/imageGenerator.js";
 import { PromptBuilder } from "../promptBuilder.js";
@@ -33,7 +36,7 @@ function delay(ms: number): Promise<void> {
 
 type CaptureContext = Pick<ContextCollector, "startPassiveCollection" | "primeFromUserGesture" | "freezeCameraPose" | "snapshot">;
 type CapturePromptBuilder = {
-  build(context: AntiCameraContext, faceSelection?: SubjectFaceSelection): string;
+  build(context: AntiCameraContext, faceSelection?: SubjectFaceSelection, objectAnalysis?: ObjectAnalysis): string;
 };
 type CaptureImageGenerator = Pick<ImageGenerator, "canGenerate" | "generate" | "saveUserKey"> & {
   providerId?: () => string;
@@ -48,6 +51,7 @@ interface AntiCameraAppDependencies {
   imageGenerator?: CaptureImageGenerator;
   liveCamera?: Pick<LiveCamera, "start" | "captureStill" | "currentStatus">;
   faceAnalyzer?: FaceAnalyzer;
+  objectAnalyzer?: ObjectAnalyzer;
   faceCropper?: CaptureFaceCropper;
   shutterSound?: Pick<ShutterSound, "play">;
   delay?: CaptureDelay;
@@ -68,6 +72,7 @@ interface RuntimeCaptureJob extends CaptureJob {
   faceAnalysis?: FaceAnalysis | undefined;
   faceSelection?: SubjectFaceSelection | undefined;
   faceCrops?: FaceCrop[] | undefined;
+  objectAnalysis?: ObjectAnalysis | undefined;
   sourceReleased?: boolean | undefined;
 }
 
@@ -94,6 +99,7 @@ export class AntiCameraApp {
   private readonly imageGenerator: CaptureImageGenerator;
   private readonly liveCamera: Pick<LiveCamera, "start" | "captureStill" | "currentStatus">;
   private readonly faceAnalyzer: FaceAnalyzer;
+  private readonly objectAnalyzer: ObjectAnalyzer;
   private readonly faceCropper: CaptureFaceCropper;
   private readonly shutterSound: Pick<ShutterSound, "play">;
   private readonly captureDelay: CaptureDelay;
@@ -136,6 +142,7 @@ export class AntiCameraApp {
     this.imageGenerator = dependencies.imageGenerator ?? new ImageGenerator();
     this.liveCamera = dependencies.liveCamera ?? new LiveCamera(document.getElementById("camera-preview") as HTMLVideoElement);
     this.faceAnalyzer = dependencies.faceAnalyzer ?? new BrowserFaceAnalyzer();
+    this.objectAnalyzer = dependencies.objectAnalyzer ?? new OpenAIObjectAnalyzer();
     this.faceCropper = dependencies.faceCropper ?? createFaceCrops;
     this.shutterSound = dependencies.shutterSound ?? new ShutterSound();
     this.captureDelay = dependencies.delay ?? delay;
@@ -349,6 +356,23 @@ export class AntiCameraApp {
       }
       runtimeJob.faceCrops = faceCrops;
 
+      this.queue.setStatus(runtimeJob, "analyzing-objects");
+      const objectAnalysis = await this.objectAnalyzer.analyze(runtimeJob.sourcePhoto)
+        .catch((error): ObjectAnalysis => ({
+          objects: [],
+          relationships: [],
+          provider: "object-analysis-fallback",
+          warnings: [`Object analysis failed: ${safeError(error)}`]
+        }));
+      runtimeJob.objectAnalysis = objectAnalysis;
+      this.debugCapture.log("capture:objects-complete", {
+        id: runtimeJob.id,
+        count: objectAnalysis.objects.length,
+        relationships: objectAnalysis.relationships.length,
+        provider: objectAnalysis.provider
+      });
+
+      const objectMetadata = toPersistedObjectMetadata(objectAnalysis);
       const analysisWarning = analysis.warning ?? cropWarning;
       context.quasiCamera = {
         detectedFaceCount: analysis.count,
@@ -356,10 +380,15 @@ export class AntiCameraApp {
         selectedFaceIds: selection.selectedFaceIds,
         subjectMappingStrategy: selection.strategy,
         faceAnalysisProvider: analysis.provider,
-        ...(analysisWarning ? { faceAnalysisWarning: analysisWarning } : {})
+        ...(analysisWarning ? { faceAnalysisWarning: analysisWarning } : {}),
+        ...(objectMetadata.recognizedObjects.length > 0 ? { recognizedObjects: objectMetadata.recognizedObjects } : {}),
+        ...(objectMetadata.objectRelationships.length > 0 ? { objectRelationships: objectMetadata.objectRelationships } : {}),
+        objectAnalysisProvider: objectAnalysis.provider,
+        ...(objectMetadata.warnings.length > 0 ? { objectAnalysisWarnings: objectMetadata.warnings } : {}),
+        ...(objectMetadata.omittedObjects && objectMetadata.omittedObjects.length > 0 ? { omittedObjects: objectMetadata.omittedObjects } : {})
       };
 
-      const prompt = this.promptBuilder.build(context, selection);
+      const prompt = this.promptBuilder.build(context, selection, objectAnalysis);
       runtimeJob.prompt = prompt;
       this.debugCapture.log("capture:prompt-complete", { id: runtimeJob.id, promptLength: prompt.length });
       this.debugCapture.log("capture:provider-selected", { id: runtimeJob.id, provider: this.imageGenerator.providerId?.() ?? "unknown" });
@@ -405,7 +434,7 @@ export class AntiCameraApp {
       this.debugCapture.log("capture:complete", { id: runtimeJob.id });
     } finally {
       if (runtimeJob.imageDataUrl) {
-      this.releaseSource(runtimeJob);
+        this.releaseSource(runtimeJob);
       }
     }
   }

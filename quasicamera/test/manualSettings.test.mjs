@@ -146,8 +146,10 @@ test("clear morning daylight at EV -3 cannot become dusk or night", () => {
   }));
 
   assert.match(prompt, /PRIORITY 1 -- SELECTED HUMAN LIKENESS/);
-  assert.match(prompt, /PRIORITY 2 -- IMMUTABLE SCENE FACTS/);
-  assert.match(prompt, /PRIORITY 5 -- CAMERA RENDERING SETTINGS/);
+  assert.match(prompt, /PRIORITY 2 -- OBJECT SEMANTICS/);
+  assert.match(prompt, /PRIORITY 3 -- OBJECT RELATIONSHIPS/);
+  assert.match(prompt, /PRIORITY 4 -- IMMUTABLE SCENE FACTS/);
+  assert.match(prompt, /PRIORITY 7 -- CAMERA RENDERING SETTINGS/);
   assert.match(prompt, /morning daylight/);
   assert.match(prompt, /underexposed version of the same scene/);
   assert.match(prompt, /Do not convert daylight into dusk/);

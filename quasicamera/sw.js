@@ -1,4 +1,4 @@
-const STATIC_CACHE = "quasi-camera-static-v1";
+const STATIC_CACHE = "quasi-camera-static-v2";
 const STATIC_ASSETS = [
   "./",
   "./index.html",
@@ -36,6 +36,8 @@ const STATIC_ASSETS = [
   "./assets/image/keyStore.js",
   "./assets/image/localPrototypeProvider.js",
   "./assets/image/openAIImagesProvider.js",
+  "./assets/objects/objectAnalyzer.js",
+  "./assets/objects/objectNormalization.js",
   "./assets/ui/app.js",
   "./assets/ui/dialMath.js",
   "./assets/ui/fullscreenController.js",

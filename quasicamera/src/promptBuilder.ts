@@ -1,4 +1,4 @@
-import type { AntiCameraContext, SubjectFaceSelection } from "./types.js";
+import type { AntiCameraContext, ObjectAnalysis, ObjectRelationshipPredicate, RecognizedObject, SubjectFaceSelection } from "./types.js";
 import {
   aimLabelForPitch,
   directionLabelForAzimuth,
@@ -61,10 +61,103 @@ function subjectFaceSelectionRules(selection: SubjectFaceSelection): string[] {
   ];
 }
 
+function objectPreservationRules(analysis: ObjectAnalysis | undefined): string[] {
+  if (!analysis || analysis.objects.length === 0) {
+    return [
+      "HUMAN AND OBJECT PRESERVATION RULES",
+      "Selected human faces require recognizable identity preservation.",
+      "No salient non-human semantic objects were recognized for this exposure.",
+      "Do not fabricate object-analysis evidence. Continue with the face, subject-mode, context, and camera-setting instructions."
+    ];
+  }
+
+  const byId = new Map(analysis.objects.map((object) => [object.id, object]));
+  const objectLines = analysis.objects.map((object, index) => {
+    const count = object.count && object.count > 1 ? `${object.count} instances of ` : "";
+    const attributes = object.attributes.length > 0 ? `; attributes: ${object.attributes.join(", ")}` : "";
+    const label = count ? `${count}${object.normalizedLabel}` : `${articleFor(object.normalizedLabel)} ${object.normalizedLabel}`;
+    return `${index + 1}. ${label} (semantic category: ${object.category}${attributes})`;
+  });
+  const relationshipLines = analysis.relationships.flatMap((relationship) => {
+    const subject = byId.get(relationship.subjectObjectId);
+    const object = byId.get(relationship.objectObjectId);
+    if (!subject || !object) {
+      return [];
+    }
+
+    return relationshipSentence(subject, relationship.predicate, object);
+  });
+
+  return [
+    "HUMAN AND OBJECT PRESERVATION RULES",
+    "Selected human faces require recognizable identity preservation.",
+    "Non-human objects require semantic preservation only.",
+    "Do not waste reference fidelity trying to reproduce exact object colors, brands, scratches, fabric patterns, logos, license plates, model details, stitching, or material texture unless they are essential to the normalized object category.",
+    "Maintain the object categories and important relationships while allowing substantial visual reinvention.",
+    "",
+    "SEMANTIC OBJECTS TO PRESERVE",
+    "The source photograph contains these salient non-human objects:",
+    ...objectLines,
+    "Preserve these object categories in the regenerated photograph.",
+    "They do not need to be the exact same physical objects.",
+    "A preserved object does not need to be the exact same physical object as the source object.",
+    ...objectVariationLines(analysis.objects),
+    "Do not omit relationship-critical objects.",
+    "",
+    "OBJECT RELATIONSHIPS TO PRESERVE",
+    ...(relationshipLines.length > 0 ? relationshipLines : ["No high-confidence object-to-object relationship was recognized."]),
+    ...(relationshipLines.length > 0
+      ? [
+        "Preserve each relationship clearly in the regenerated scene.",
+        "Do not move relationship-critical objects into a different semantic arrangement unless the required relationship remains visibly true."
+      ]
+      : []),
+    "Use the source image as evidence of composition, viewpoint, selected faces, object categories, and relationships.",
+    "The new scene may radically transform the environment and visual appearance.",
+    "Do not simply reproduce the source photograph.",
+    "Do not remove salient preserved objects.",
+    "Do not change essential relationships."
+  ];
+}
+
+function objectVariationLines(objects: RecognizedObject[]): string[] {
+  const lines: string[] = [];
+  if (objects.some((object) => object.normalizedLabel === "car")) {
+    lines.push("The target car does not need to resemble the source car; make, model, body style, color, age, condition, license plate, and brand markings may change.");
+  }
+  if (objects.some((object) => object.normalizedLabel === "hedgehog plushie")) {
+    lines.push("The target hedgehog plushie does not need to resemble the source plushie; colors, fabric, stitching, character design, proportions, and material may change.");
+  }
+  objects
+    .filter((object) => object.normalizedLabel !== "car" && object.normalizedLabel !== "hedgehog plushie")
+    .slice(0, 3)
+    .forEach((object) => {
+      lines.push(`The target ${object.normalizedLabel} does not need to preserve exact color, brand, age, surface wear, or source-specific details.`);
+    });
+  return lines;
+}
+
+function articleFor(label: string): string {
+  return /^[aeiou]/i.test(label) ? "An" : "A";
+}
+
+function relationshipSentence(subject: RecognizedObject, predicate: ObjectRelationshipPredicate, object: RecognizedObject): string[] {
+  const subjectLabel = subject.normalizedLabel;
+  const objectLabel = object.normalizedLabel;
+  if (predicate === "on-top-of") {
+    return [
+      `The ${subjectLabel} is positioned on top of the ${objectLabel}.`,
+      `Do not place the ${subjectLabel} beside the ${objectLabel}, inside the ${objectLabel}, under the ${objectLabel}, or held by a person unless the ${subjectLabel} also remains visibly on top of the ${objectLabel}.`
+    ];
+  }
+
+  return [`The ${subjectLabel} is ${predicate.replaceAll("-", " ")} the ${objectLabel}.`];
+}
+
 export class PromptBuilder {
   constructor(private readonly virtualLensMm = 22) {}
 
-  build(context: AntiCameraContext, faceSelection?: SubjectFaceSelection): string {
+  build(context: AntiCameraContext, faceSelection?: SubjectFaceSelection, objectAnalysis?: ObjectAnalysis): string {
     const location = context.location;
     const weather = context.weather;
     const audio = context.audio;
@@ -79,20 +172,24 @@ export class PromptBuilder {
       "The source image is a real camera photograph captured at shutter time.",
       "Create a new, substantially transformed photographic scene.",
       "The source photograph supplies facial likeness references, approximate human pose and framing where useful, and camera viewpoint.",
-      "The new image does not need to preserve the original location, surrounding objects, furniture, vehicles, signage, or background.",
-      "Preserve people only according to the selected face rules below.",
+      "The new image does not need to preserve the original location, exact object appearance, furniture, vehicles, signage, or background.",
+      "Preserve selected people according to the face rules and preserve recognized non-human objects according to the semantic-object rules below.",
       "Do not include fantasy, surrealism, illustration, painting, CGI, or visible AI artifacts.",
       "Make the result look like a realistic compact point-and-shoot photograph on instant film.",
       "Use ordinary photographic imperfections: available light, weather haze, flash falloff, slight handheld framing, natural grain.",
       "",
       ...facePreservationRules(faceSelection),
       "",
+      ...objectPreservationRules(objectAnalysis),
+      "",
       "PROMPT PRIORITY ORDER",
       "PRIORITY 1 -- SELECTED HUMAN LIKENESS: preserve exactly the selected real face references according to subject mode.",
-      "PRIORITY 2 -- IMMUTABLE SCENE FACTS: time, timezone, daylight phase, weather, location, and indoor/outdoor state.",
-      "PRIORITY 3 -- CAMERA GEOMETRY: source viewpoint, heading, pitch, roll, framing, and virtual lens.",
-      "PRIORITY 4 -- SUBJECT AND COMPOSITION: landscape, one person, group, or crowd.",
-      "PRIORITY 5 -- CAMERA RENDERING SETTINGS: exposure compensation, ISO, flash, and depth of field.",
+      "PRIORITY 2 -- OBJECT SEMANTICS: recognized non-human objects remain the same general kind of object.",
+      "PRIORITY 3 -- OBJECT RELATIONSHIPS: important spatial and functional object relationships remain clear.",
+      "PRIORITY 4 -- IMMUTABLE SCENE FACTS: time, timezone, daylight phase, weather, location, and indoor/outdoor state.",
+      "PRIORITY 5 -- CAMERA GEOMETRY: source viewpoint, heading, pitch, roll, framing, and virtual lens.",
+      "PRIORITY 6 -- SUBJECT AND COMPOSITION: landscape, one person, group, or crowd.",
+      "PRIORITY 7 -- CAMERA RENDERING SETTINGS: exposure compensation, ISO, flash, and depth of field.",
       "Lower-priority settings must never rewrite, reinterpret, or contradict higher-priority facts.",
       "",
       ...sceneFactRules(context, illumination),
@@ -155,6 +252,9 @@ export class PromptBuilder {
       value("Selected source faces", context.quasiCamera?.selectedFaceCount),
       value("Subject mapping strategy", context.quasiCamera?.subjectMappingStrategy),
       value("Face analysis provider", context.quasiCamera?.faceAnalysisProvider),
+      value("Recognized non-human objects", context.quasiCamera?.recognizedObjects?.map((object) => object.normalizedLabel).join(", ")),
+      value("Recognized object relationships", context.quasiCamera?.objectRelationships?.map((relationship) => `${relationship.subject} ${relationship.predicate} ${relationship.object}`).join("; ")),
+      value("Object analysis provider", context.quasiCamera?.objectAnalysisProvider),
       value("Depth style", focusStyleLabel(settings.focusStyle)),
       value("Exposure compensation", evLabel(settings.exposureCompensationEv)),
       value("Flash", flashLabel(settings.flashMode)),

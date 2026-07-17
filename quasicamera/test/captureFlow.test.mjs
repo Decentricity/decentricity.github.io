@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { parseHTML } from "linkedom";
 import { DEFAULT_MANUAL_SETTINGS } from "../assets/context/manualSettings.js";
+import { PromptBuilder } from "../assets/promptBuilder.js";
 
 test("capture flow replaces a placeholder before gallery storage and allows repeat exposures", async () => {
   const firstResult = deferred();
@@ -57,6 +58,7 @@ test("capture flow replaces a placeholder before gallery storage and allows repe
   assert.equal(harness.shutter.disabled, false);
   assert.equal(harness.liveCamera.captures.length, 2);
   assert.equal(harness.faceAnalyzer.calls.length, 2);
+  assert.equal(harness.objectAnalyzer.calls.length, 2);
   assert.equal(harness.imageGenerator.calls[0].sourceImage.role, "source");
   assert.equal(harness.imageGenerator.calls[0].faceReferences.length, 1);
   assert.equal(harness.gallery.addCalls[0].context.quasiCamera.detectedFaceCount, 1);
@@ -347,6 +349,62 @@ test("shutter sound is attempted for every accepted exposure and failure does no
   assert.equal(harness.gallery.addCalls.length, 1);
 });
 
+test("semantic objects are added without changing face-preserving image input", async () => {
+  const objectAnalysis = hedgehogOnCarAnalysis();
+  const harness = await createAppHarness({
+    objectAnalyses: [objectAnalysis],
+    promptBuilder: new PromptBuilder()
+  });
+  await harness.app.start();
+
+  harness.clickShutter();
+  await harness.waitForCaptureCount(1);
+
+  const request = harness.imageGenerator.calls[0];
+  assert.equal(request.sourceImage.role, "source");
+  assert.equal(request.faceReferences.length, 1);
+  assert.match(request.prompt, /PRESERVE SELECTED HUMAN LIKENESS/);
+  assert.match(request.prompt, /There are 1 selected real face references/);
+  assert.match(request.prompt, /Selected human faces require recognizable identity preservation/);
+  assert.match(request.prompt, /Non-human objects require semantic preservation only/);
+  assert.match(request.prompt, /hedgehog plushie/);
+  assert.match(request.prompt, /car/);
+  assert.match(request.prompt, /on top of/);
+  assert.match(request.prompt, /does not need to be the exact same physical object/);
+  assert.match(request.prompt, /The target car does not need to resemble the source car/);
+  assert.match(request.prompt, /The target hedgehog plushie does not need to resemble the source plushie/);
+
+  const metadata = harness.gallery.addCalls[0].context.quasiCamera;
+  assert.deepEqual(metadata.recognizedObjects, [
+    { label: "hedgehog plushie", normalizedLabel: "hedgehog plushie", category: "toy", attributes: ["small"] },
+    { label: "car", normalizedLabel: "car", category: "vehicle" }
+  ]);
+  assert.deepEqual(metadata.objectRelationships, [
+    { subject: "hedgehog plushie", predicate: "on-top-of", object: "car" }
+  ]);
+  assert.equal(metadata.objectAnalysisProvider, "mock-object-analyzer");
+  assert.doesNotMatch(JSON.stringify(metadata), /boundingBox|source-photo|data:image/);
+});
+
+test("object-analysis failure leaves face generation intact", async () => {
+  const harness = await createAppHarness({
+    objectAnalyses: [new Error("object model unavailable")],
+    promptBuilder: new PromptBuilder()
+  });
+  await harness.app.start();
+
+  harness.clickShutter();
+  await harness.waitForCaptureCount(1);
+
+  const request = harness.imageGenerator.calls[0];
+  assert.equal(request.faceReferences.length, 1);
+  assert.match(request.prompt, /PRESERVE SELECTED HUMAN LIKENESS/);
+  assert.match(request.prompt, /No salient non-human semantic objects were recognized/);
+  assert.deepEqual(harness.gallery.addCalls[0].context.quasiCamera.objectAnalysisWarnings, [
+    "Object analysis failed: object model unavailable"
+  ]);
+});
+
 test("capture layout survives representative landscape, portrait, and tablet viewport sizes", async () => {
   for (const [width, height] of [
     [360, 800],
@@ -481,10 +539,11 @@ async function createAppHarness(options = {}) {
   };
 
   harness.context = new FakeContext(() => harness.manualSettings);
-  harness.promptBuilder = new FakePromptBuilder();
+  harness.promptBuilder = options.promptBuilder ?? new FakePromptBuilder();
   harness.imageGenerator = new FakeImageGenerator(options.generatorResults);
   harness.liveCamera = new FakeLiveCamera(options.sourcePhotos);
   harness.faceAnalyzer = new FakeFaceAnalyzer(options.faceAnalyses);
+  harness.objectAnalyzer = new FakeObjectAnalyzer(options.objectAnalyses);
   harness.gallery = new FakeGallery();
   harness.shutterSound = new FakeShutterSound();
 
@@ -518,6 +577,7 @@ async function createAppHarness(options = {}) {
       imageGenerator: harness.imageGenerator,
       liveCamera: harness.liveCamera,
       faceAnalyzer: harness.faceAnalyzer,
+      objectAnalyzer: harness.objectAnalyzer,
       faceCropper: async (source, faces) => faces.map((face, index) => ({
         faceId: face.id,
         cropBox: face.boundingBox,
@@ -583,10 +643,12 @@ class FakeContext {
 class FakePromptBuilder {
   calls = [];
   selections = [];
+  objectAnalyses = [];
 
-  build(context, selection) {
+  build(context, selection, objectAnalysis) {
     this.calls.push(context);
     this.selections.push(selection);
+    this.objectAnalyses.push(objectAnalysis);
     return `prompt ev=${context.manualSettings.exposureCompensationEv} iso=${context.manualSettings.iso} selected=${selection?.selectedFaceCount ?? 0}`;
   }
 }
@@ -690,6 +752,29 @@ class FakeFaceAnalyzer {
   }
 }
 
+class FakeObjectAnalyzer {
+  calls = [];
+
+  constructor(analyses = []) {
+    this.analyses = [...analyses];
+  }
+
+  async analyze(source) {
+    this.calls.push(source);
+    const next = this.analyses.shift();
+    if (next instanceof Error) {
+      throw next;
+    }
+
+    return next ?? {
+      objects: [],
+      relationships: [],
+      provider: "mock-object-analyzer",
+      warnings: []
+    };
+  }
+}
+
 function fakeFace(id, x, y, width, height) {
   return {
     id,
@@ -697,6 +782,43 @@ function fakeFace(id, x, y, width, height) {
     confidence: 0.9,
     areaRatio: (width * height) / (1200 * 900),
     centerDistance: 0.2
+  };
+}
+
+function hedgehogOnCarAnalysis() {
+  return {
+    provider: "mock-object-analyzer",
+    warnings: [],
+    objects: [
+      {
+        id: "object-1",
+        label: "hedgehog plushie",
+        normalizedLabel: "hedgehog plushie",
+        category: "toy",
+        boundingBox: { x: 500, y: 120, width: 140, height: 120 },
+        confidence: 0.92,
+        salience: 0.95,
+        attributes: ["small"]
+      },
+      {
+        id: "object-2",
+        label: "car",
+        normalizedLabel: "car",
+        category: "vehicle",
+        boundingBox: { x: 150, y: 280, width: 880, height: 360 },
+        confidence: 0.96,
+        salience: 0.9,
+        attributes: []
+      }
+    ],
+    relationships: [
+      {
+        subjectObjectId: "object-1",
+        predicate: "on-top-of",
+        objectObjectId: "object-2",
+        confidence: 0.91
+      }
+    ]
   };
 }
 

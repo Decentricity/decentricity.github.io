@@ -4,6 +4,8 @@ import { ContextCollector } from "../context/contextCollector.js";
 import { BrowserFaceAnalyzer } from "../faces/faceAnalyzer.js";
 import { createFaceCrops } from "../faces/faceCrops.js";
 import { selectFacesForSubjectMode } from "../faces/faceSelection.js";
+import { OpenAIObjectAnalyzer } from "../objects/objectAnalyzer.js";
+import { toPersistedObjectMetadata } from "../objects/objectNormalization.js";
 import { ImageGenerator } from "../image/imageGenerator.js";
 import { PromptBuilder } from "../promptBuilder.js";
 import { renderBattery, renderReadout } from "./readout.js";
@@ -56,6 +58,7 @@ export class AntiCameraApp {
     imageGenerator;
     liveCamera;
     faceAnalyzer;
+    objectAnalyzer;
     faceCropper;
     shutterSound;
     captureDelay;
@@ -95,6 +98,7 @@ export class AntiCameraApp {
         this.imageGenerator = dependencies.imageGenerator ?? new ImageGenerator();
         this.liveCamera = dependencies.liveCamera ?? new LiveCamera(document.getElementById("camera-preview"));
         this.faceAnalyzer = dependencies.faceAnalyzer ?? new BrowserFaceAnalyzer();
+        this.objectAnalyzer = dependencies.objectAnalyzer ?? new OpenAIObjectAnalyzer();
         this.faceCropper = dependencies.faceCropper ?? createFaceCrops;
         this.shutterSound = dependencies.shutterSound ?? new ShutterSound();
         this.captureDelay = dependencies.delay ?? delay;
@@ -272,6 +276,22 @@ export class AntiCameraApp {
                 this.debugCapture.log("capture:face-crop-error", { id: runtimeJob.id, error: cropWarning });
             }
             runtimeJob.faceCrops = faceCrops;
+            this.queue.setStatus(runtimeJob, "analyzing-objects");
+            const objectAnalysis = await this.objectAnalyzer.analyze(runtimeJob.sourcePhoto)
+                .catch((error) => ({
+                objects: [],
+                relationships: [],
+                provider: "object-analysis-fallback",
+                warnings: [`Object analysis failed: ${safeError(error)}`]
+            }));
+            runtimeJob.objectAnalysis = objectAnalysis;
+            this.debugCapture.log("capture:objects-complete", {
+                id: runtimeJob.id,
+                count: objectAnalysis.objects.length,
+                relationships: objectAnalysis.relationships.length,
+                provider: objectAnalysis.provider
+            });
+            const objectMetadata = toPersistedObjectMetadata(objectAnalysis);
             const analysisWarning = analysis.warning ?? cropWarning;
             context.quasiCamera = {
                 detectedFaceCount: analysis.count,
@@ -279,9 +299,14 @@ export class AntiCameraApp {
                 selectedFaceIds: selection.selectedFaceIds,
                 subjectMappingStrategy: selection.strategy,
                 faceAnalysisProvider: analysis.provider,
-                ...(analysisWarning ? { faceAnalysisWarning: analysisWarning } : {})
+                ...(analysisWarning ? { faceAnalysisWarning: analysisWarning } : {}),
+                ...(objectMetadata.recognizedObjects.length > 0 ? { recognizedObjects: objectMetadata.recognizedObjects } : {}),
+                ...(objectMetadata.objectRelationships.length > 0 ? { objectRelationships: objectMetadata.objectRelationships } : {}),
+                objectAnalysisProvider: objectAnalysis.provider,
+                ...(objectMetadata.warnings.length > 0 ? { objectAnalysisWarnings: objectMetadata.warnings } : {}),
+                ...(objectMetadata.omittedObjects && objectMetadata.omittedObjects.length > 0 ? { omittedObjects: objectMetadata.omittedObjects } : {})
             };
-            const prompt = this.promptBuilder.build(context, selection);
+            const prompt = this.promptBuilder.build(context, selection, objectAnalysis);
             runtimeJob.prompt = prompt;
             this.debugCapture.log("capture:prompt-complete", { id: runtimeJob.id, promptLength: prompt.length });
             this.debugCapture.log("capture:provider-selected", { id: runtimeJob.id, provider: this.imageGenerator.providerId?.() ?? "unknown" });
