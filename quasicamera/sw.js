@@ -1,4 +1,4 @@
-const STATIC_CACHE = "quasi-camera-static-v2";
+const STATIC_CACHE = "quasi-camera-static-v3";
 const STATIC_ASSETS = [
   "./",
   "./index.html",

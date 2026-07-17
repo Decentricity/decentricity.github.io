@@ -171,9 +171,9 @@ export class Gallery {
       panel.dataset.retryJob = placeholder.id;
       panel.setAttribute(
         "aria-label",
-        errorNumber ? `Exposure failed with error ${errorNumber}. Tap to retry.` : "Exposure failed. Tap to retry."
+        `Exposure failed with error ${errorNumber}. Tap to retry.`
       );
-      panel.textContent = errorNumber ? `EXPOSURE FAILED\nERROR ${errorNumber}\nTAP TO RETRY` : "EXPOSURE FAILED\nTAP TO RETRY";
+      panel.textContent = `EXPOSURE FAILED\nERROR ${errorNumber}\nTAP TO RETRY`;
     } else {
       panel.textContent = "DEVELOPING";
     }
@@ -271,9 +271,9 @@ function formatTimestamp(timestamp: string): string {
   }).format(new Date(timestamp));
 }
 
-export function errorNumberFor(error: string | undefined): string | null {
+export function errorNumberFor(error: string | undefined): string {
   if (!error) {
-    return null;
+    return "000";
   }
 
   const httpLike = error.match(/\b(?:HTTP|status|failed:|error)\s*#?\s*(\d{3})\b/i);
@@ -282,5 +282,32 @@ export function errorNumberFor(error: string | undefined): string | null {
   }
 
   const standalone = error.match(/\b([45]\d{2})\b/);
-  return standalone?.[1] ?? null;
+  if (standalone?.[1]) {
+    return standalone[1];
+  }
+
+  const lower = error.toLowerCase();
+  if (/timed out|timeout|abort/.test(lower)) {
+    return "408";
+  }
+  if (/api key|secret required|authentication|unauthorized|not authorized/.test(lower)) {
+    return "401";
+  }
+  if (/forbidden|permission denied/.test(lower)) {
+    return "403";
+  }
+  if (/source photo released|gone/.test(lower)) {
+    return "410";
+  }
+  if (/rate limit|too many requests|quota exceeded|film buffer full/.test(lower)) {
+    return "429";
+  }
+  if (/did not include an image|malformed|invalid response|bad gateway|gateway/.test(lower)) {
+    return "502";
+  }
+  if (/temporarily unavailable|overloaded|server busy/.test(lower)) {
+    return "503";
+  }
+
+  return "000";
 }
