@@ -42,7 +42,7 @@ export class EndpointImageProvider {
         const text = await response.text();
         const data = parseResponse(text);
         if (!response.ok) {
-            throw new Error(text || `image endpoint failed: ${response.status}`);
+            throw new Error(text ? `image endpoint failed: ${response.status} ${text}` : `image endpoint failed: ${response.status}`);
         }
         const base64 = data.b64_json || data.image_base64;
         const imageDataUrl = data.imageDataUrl || data.dataUrl || data.url || (base64 ? `data:image/png;base64,${base64}` : undefined);

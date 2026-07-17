@@ -405,6 +405,72 @@ test("object-analysis failure leaves face generation intact", async () => {
   ]);
 });
 
+test("OpenAI object analysis settles before OpenAI image editing", async () => {
+  const harness = await createAppHarness({
+    objectAnalyses: [{
+      ...hedgehogOnCarAnalysis(),
+      provider: "openai-responses:gpt-5.6"
+    }],
+    imageProviderId: "openai-images",
+    providerSettleDelayMs: 1234
+  });
+  await harness.app.start();
+
+  harness.clickShutter();
+  await harness.waitForCaptureCount(1);
+
+  assert.ok(harness.delayCalls.includes(1234));
+  assert.equal(harness.imageGenerator.calls.length, 1);
+  assert.equal(harness.imageGenerator.calls[0].faceReferences.length, 1);
+});
+
+test("rate-limited object analysis uses a longer settle delay before image editing", async () => {
+  const harness = await createAppHarness({
+    objectAnalyses: [{
+      objects: [],
+      relationships: [],
+      provider: "openai-responses:gpt-5.6",
+      warnings: ["Object analysis provider failed with HTTP 429: rate limit exceeded"]
+    }],
+    imageProviderId: "openai-images",
+    providerSettleDelayMs: 7,
+    rateLimitSettleDelayMs: 4321
+  });
+  await harness.app.start();
+
+  harness.clickShutter();
+  await harness.waitForCaptureCount(1);
+
+  assert.ok(harness.delayCalls.includes(4321));
+  assert.equal(harness.delayCalls.includes(7), false);
+  assert.equal(harness.imageGenerator.calls.length, 1);
+});
+
+test("rate-limited generation backs off and retries the same frozen request", async () => {
+  const harness = await createAppHarness({
+    generatorResults: [new Error("OpenAI image edit request failed: 429 rate limit"), "data:image/png;base64,recovered"],
+    imageProviderId: "openai-images",
+    generationRetryDelaysMs: [2222]
+  });
+  await harness.app.start();
+
+  harness.manualSettings = { ...DEFAULT_MANUAL_SETTINGS, iso: 800, exposureCompensationEv: -2 };
+  harness.clickShutter();
+  await harness.waitForCaptureCount(1);
+
+  assert.equal(harness.imageGenerator.calls.length, 2);
+  assert.ok(harness.delayCalls.includes(2222));
+  assert.deepEqual(harness.imageGenerator.calls.map((call) => call.context.manualSettings), [
+    { ...DEFAULT_MANUAL_SETTINGS, iso: 800, exposureCompensationEv: -2 },
+    { ...DEFAULT_MANUAL_SETTINGS, iso: 800, exposureCompensationEv: -2 }
+  ]);
+  assert.equal(harness.imageGenerator.calls[0].prompt, harness.imageGenerator.calls[1].prompt);
+  assert.equal(harness.imageGenerator.calls[0].sourceImage.dataUrl, harness.imageGenerator.calls[1].sourceImage.dataUrl);
+  assert.equal(harness.imageGenerator.calls[0].faceReferences.length, 1);
+  assert.equal(harness.gallery.addCalls[0].imageDataUrl, "data:image/png;base64,recovered");
+  assert.equal(harness.shutter.disabled, false);
+});
+
 test("capture layout survives representative landscape, portrait, and tablet viewport sizes", async () => {
   for (const [width, height] of [
     [360, 800],
@@ -518,6 +584,7 @@ async function createAppHarness(options = {}) {
     gallery: null,
     shutterSound: null,
     app: null,
+    delayCalls: [],
     clickShutter() {
       shutter.dispatchEvent(new window.Event("click", { bubbles: true }));
     },
@@ -540,7 +607,7 @@ async function createAppHarness(options = {}) {
 
   harness.context = new FakeContext(() => harness.manualSettings);
   harness.promptBuilder = options.promptBuilder ?? new FakePromptBuilder();
-  harness.imageGenerator = new FakeImageGenerator(options.generatorResults);
+  harness.imageGenerator = new FakeImageGenerator(options.generatorResults, options.imageProviderId);
   harness.liveCamera = new FakeLiveCamera(options.sourcePhotos);
   harness.faceAnalyzer = new FakeFaceAnalyzer(options.faceAnalyses);
   harness.objectAnalyzer = new FakeObjectAnalyzer(options.objectAnalyses);
@@ -588,12 +655,18 @@ async function createAppHarness(options = {}) {
         }
       })),
       shutterSound: harness.shutterSound,
-      delay: async () => undefined,
+      delay: async (ms) => {
+        harness.delayCalls.push(ms);
+        await options.delayImpl?.(ms);
+      },
       minimumDevelopingTime: () => 0,
       permissionTimeoutMs: 5,
       contextTimeoutMs: 50,
       generationTimeoutMs: options.generationTimeoutMs ?? 50,
       imageLoadTimeoutMs: 5,
+      providerSettleDelayMs: options.providerSettleDelayMs,
+      rateLimitSettleDelayMs: options.rateLimitSettleDelayMs,
+      generationRetryDelaysMs: options.generationRetryDelaysMs,
       maxQueuedCaptures: options.maxQueuedCaptures
     }
   );
@@ -658,8 +731,9 @@ class FakeImageGenerator {
   activeCount = 0;
   maxActive = 0;
 
-  constructor(results = ["data:image/png;base64,first", "data:image/png;base64,second"]) {
+  constructor(results = ["data:image/png;base64,first", "data:image/png;base64,second"], providerId = "mock-image-provider") {
     this.results = [...results];
+    this.id = providerId;
   }
 
   canGenerate() {
@@ -667,7 +741,7 @@ class FakeImageGenerator {
   }
 
   providerId() {
-    return "mock-image-provider";
+    return this.id;
   }
 
   saveUserKey() {}

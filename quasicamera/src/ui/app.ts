@@ -27,6 +27,9 @@ const PERMISSION_TIMEOUT_MS = 8_000;
 const CONTEXT_TIMEOUT_MS = 15_000;
 const GENERATION_TIMEOUT_MS = 300_000;
 const IMAGE_LOAD_TIMEOUT_MS = 15_000;
+const OPENAI_PROVIDER_SETTLE_DELAY_MS = 4_000;
+const RATE_LIMIT_SETTLE_DELAY_MS = 15_000;
+const GENERATION_RETRY_DELAYS_MS = [8_000, 20_000] as const;
 const MAX_CONCURRENT_GENERATIONS = 1;
 const MAX_QUEUED_CAPTURES = 10;
 
@@ -60,6 +63,9 @@ interface AntiCameraAppDependencies {
   permissionTimeoutMs?: number;
   contextTimeoutMs?: number;
   generationTimeoutMs?: number;
+  providerSettleDelayMs?: number;
+  rateLimitSettleDelayMs?: number;
+  generationRetryDelaysMs?: readonly number[];
   maxConcurrentGenerations?: number;
   maxQueuedCaptures?: number;
 }
@@ -108,6 +114,9 @@ export class AntiCameraApp {
   private readonly permissionTimeoutMs: number;
   private readonly contextTimeoutMs: number;
   private readonly generationTimeoutMs: number;
+  private readonly providerSettleDelayMs: number;
+  private readonly rateLimitSettleDelayMs: number;
+  private readonly generationRetryDelaysMs: readonly number[];
   private readonly queue: CaptureQueue;
   private readonly debugCapture = new CaptureDebugger();
   private readonly jobs = new Map<string, RuntimeCaptureJob>();
@@ -151,6 +160,9 @@ export class AntiCameraApp {
     this.permissionTimeoutMs = dependencies.permissionTimeoutMs ?? PERMISSION_TIMEOUT_MS;
     this.contextTimeoutMs = dependencies.contextTimeoutMs ?? CONTEXT_TIMEOUT_MS;
     this.generationTimeoutMs = dependencies.generationTimeoutMs ?? GENERATION_TIMEOUT_MS;
+    this.providerSettleDelayMs = dependencies.providerSettleDelayMs ?? OPENAI_PROVIDER_SETTLE_DELAY_MS;
+    this.rateLimitSettleDelayMs = dependencies.rateLimitSettleDelayMs ?? RATE_LIMIT_SETTLE_DELAY_MS;
+    this.generationRetryDelaysMs = dependencies.generationRetryDelaysMs ?? GENERATION_RETRY_DELAYS_MS;
     this.queue = new CaptureQueue({
       maxConcurrent: dependencies.maxConcurrentGenerations ?? MAX_CONCURRENT_GENERATIONS,
       maxQueuedCaptures: dependencies.maxQueuedCaptures ?? MAX_QUEUED_CAPTURES,
@@ -393,20 +405,27 @@ export class AntiCameraApp {
       this.debugCapture.log("capture:prompt-complete", { id: runtimeJob.id, promptLength: prompt.length });
       this.debugCapture.log("capture:provider-selected", { id: runtimeJob.id, provider: this.imageGenerator.providerId?.() ?? "unknown" });
 
+      const settleDelay = this.providerSettleDelayFor(objectAnalysis);
+      if (settleDelay > 0) {
+        this.debugCapture.log("capture:provider-cooldown", { id: runtimeJob.id, delayMs: settleDelay });
+        await this.captureDelay(settleDelay);
+      }
+
       this.queue.setStatus(runtimeJob, "generating");
       this.debugCapture.log("capture:request-start", { id: runtimeJob.id });
+      const generationRequest = {
+        context,
+        prompt,
+        sourceImage: {
+          dataUrl: runtimeJob.sourcePhoto.dataUrl,
+          role: "source" as const,
+          name: "source-photo.jpg"
+        },
+        faceReferences: faceCrops.map((crop) => crop.image),
+        inputFidelity: "high" as const
+      };
       const [result] = await Promise.all([
-        withTimeout(this.imageGenerator.generate({
-          context,
-          prompt,
-          sourceImage: {
-            dataUrl: runtimeJob.sourcePhoto.dataUrl,
-            role: "source",
-            name: "source-photo.jpg"
-          },
-          faceReferences: faceCrops.map((crop) => crop.image),
-          inputFidelity: "high"
-        }), this.generationTimeoutMs, "image generation"),
+        withTimeout(this.generateWithBackoff(generationRequest, runtimeJob.id), this.generationTimeoutMs, "image generation"),
         this.captureDelay(runtimeJob.minimumDevelopingTime)
       ]);
       runtimeJob.imageDataUrl = result.imageDataUrl;
@@ -531,6 +550,46 @@ export class AntiCameraApp {
     this.debugCapture.log("capture:gallery-save-error", { error: safeError(error) });
   }
 
+  private providerSettleDelayFor(objectAnalysis: ObjectAnalysis): number {
+    const objectProvider = objectAnalysis.provider.toLowerCase();
+    const imageProvider = (this.imageGenerator.providerId?.() ?? "").toLowerCase();
+    const objectWasRateLimited = objectAnalysis.warnings.some((warning) => isRateLimitOrContentionError(warning));
+
+    if (objectWasRateLimited) {
+      return this.rateLimitSettleDelayMs;
+    }
+
+    if (objectProvider.startsWith("openai-") && imageProvider.includes("openai")) {
+      return this.providerSettleDelayMs;
+    }
+
+    return 0;
+  }
+
+  private async generateWithBackoff(
+    request: Parameters<CaptureImageGenerator["generate"]>[0],
+    jobId: string
+  ): Promise<Awaited<ReturnType<CaptureImageGenerator["generate"]>>> {
+    for (let attempt = 0; ; attempt += 1) {
+      try {
+        return await this.imageGenerator.generate(request);
+      } catch (error) {
+        const retryDelay = this.generationRetryDelaysMs[attempt];
+        if (retryDelay === undefined || !isRateLimitOrContentionError(error)) {
+          throw error;
+        }
+
+        this.debugCapture.log("capture:generation-backoff", {
+          id: jobId,
+          attempt: attempt + 1,
+          delayMs: retryDelay,
+          error: safeError(error)
+        });
+        await this.captureDelay(retryDelay);
+      }
+    }
+  }
+
   private releaseSource(job: RuntimeCaptureJob): void {
     job.sourcePhoto = undefined;
     job.faceCrops = undefined;
@@ -630,6 +689,11 @@ function isAuthenticationError(error: unknown): boolean {
 
 function safeError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+function isRateLimitOrContentionError(error: unknown): boolean {
+  const message = safeError(error).toLowerCase();
+  return /\b429\b|rate limit|too many requests|quota exceeded|temporarily unavailable|overloaded|server busy|contention|\b5(?:00|02|03|04)\b/.test(message);
 }
 
 function setInert(element: HTMLElement, inert: boolean): void {

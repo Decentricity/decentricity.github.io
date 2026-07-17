@@ -47,7 +47,10 @@ export class OpenAIImagesProvider {
         const text = await response.text();
         const data = parseResponse(text);
         if (!response.ok) {
-            throw new Error(data.error?.message || text || `OpenAI image request failed: ${response.status}`);
+            const detail = data.error?.message || text;
+            throw new Error(detail
+                ? `OpenAI image request failed: ${response.status} ${detail}`
+                : `OpenAI image request failed: ${response.status}`);
         }
         const first = data.data?.[0];
         if (first?.b64_json) {
@@ -107,7 +110,10 @@ export class OpenAIImagesProvider {
         const text = await response.text();
         const data = parseResponse(text);
         if (!response.ok) {
-            throw new Error(data.error?.message || text || `OpenAI image edit request failed: ${response.status}`);
+            const detail = data.error?.message || text;
+            throw new Error(detail
+                ? `OpenAI image edit request failed: ${response.status} ${detail}`
+                : `OpenAI image edit request failed: ${response.status}`);
         }
         const first = data.data?.[0];
         if (first?.b64_json) {
