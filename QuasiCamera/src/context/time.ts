@@ -1,0 +1,38 @@
+import type { TimeContext } from "../types.js";
+
+export class TimeSensor {
+  snapshot(now = new Date()): TimeContext {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "Unknown";
+    const hour = now.getHours();
+
+    return {
+      iso: now.toISOString(),
+      date: new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(now),
+      time: new Intl.DateTimeFormat(undefined, {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false
+      }).format(now),
+      timezone,
+      hour,
+      dayPeriod: this.dayPeriod(hour)
+    };
+  }
+
+  private dayPeriod(hour: number): TimeContext["dayPeriod"] {
+    if (hour < 5 || hour >= 21) {
+      return "night";
+    }
+
+    if (hour < 12) {
+      return "morning";
+    }
+
+    if (hour < 18) {
+      return "afternoon";
+    }
+
+    return "evening";
+  }
+}
+

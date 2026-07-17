@@ -1,0 +1,16 @@
+const OPENAI_KEY_STORAGE = "quasicamera.openai.key";
+const OPENAI_MODEL_STORAGE = "quasicamera.openai.model";
+export class OpenAIKeyStore {
+    getKey() {
+        return localStorage.getItem(OPENAI_KEY_STORAGE) || undefined;
+    }
+    setKey(value) {
+        localStorage.setItem(OPENAI_KEY_STORAGE, value.trim());
+    }
+    clearKey() {
+        localStorage.removeItem(OPENAI_KEY_STORAGE);
+    }
+    getModel(defaultModel = "gpt-image-1.5") {
+        return localStorage.getItem(OPENAI_MODEL_STORAGE) || defaultModel;
+    }
+}

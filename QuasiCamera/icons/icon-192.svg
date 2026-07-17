@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192" role="img" aria-label="QuasiCamera">
+  <rect width="192" height="192" rx="32" fill="#11110f"/>
+  <rect x="24" y="50" width="144" height="88" rx="14" fill="#3d403c" stroke="#d8d0bf" stroke-width="6"/>
+  <rect x="38" y="66" width="48" height="30" rx="7" fill="#050706" stroke="#d8d0bf" stroke-width="5"/>
+  <circle cx="142" cy="73" r="18" fill="#9a2c2b" stroke="#591d1e" stroke-width="8"/>
+  <rect x="42" y="111" width="108" height="12" rx="3" fill="#151714"/>
+  <path d="M60 151h72" stroke="#d8d0bf" stroke-width="8" stroke-linecap="round"/>
+</svg>

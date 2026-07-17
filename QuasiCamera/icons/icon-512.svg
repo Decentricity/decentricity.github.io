@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="QuasiCamera">
+  <rect width="512" height="512" rx="96" fill="#11110f"/>
+  <rect x="64" y="134" width="384" height="236" rx="34" fill="#3d403c" stroke="#d8d0bf" stroke-width="16"/>
+  <rect x="102" y="178" width="128" height="82" rx="18" fill="#050706" stroke="#d8d0bf" stroke-width="14"/>
+  <path d="M126 202h80" stroke="#8fa09a" stroke-width="8" stroke-linecap="round" opacity=".45"/>
+  <circle cx="380" cy="194" r="50" fill="#9a2c2b" stroke="#591d1e" stroke-width="22"/>
+  <rect x="112" y="296" width="288" height="32" rx="8" fill="#151714"/>
+  <path d="M160 410h192" stroke="#d8d0bf" stroke-width="22" stroke-linecap="round"/>
+</svg>
