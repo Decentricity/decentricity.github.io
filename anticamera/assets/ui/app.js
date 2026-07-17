@@ -132,7 +132,7 @@ export class AntiCameraApp {
             await withTimeout(this.context.primeFromUserGesture(), this.permissionTimeoutMs, "sensor permissions")
                 .catch((error) => this.debugCapture.log("capture:permissions-error", { error: safeError(error) }));
             this.debugCapture.log("capture:permissions-complete");
-            const context = await withTimeout(this.context.snapshot(this.mode(), frozenPose, frozenSettings), this.contextTimeoutMs, "context snapshot");
+            const context = await withTimeout(this.context.snapshot(this.mode(), frozenPose, frozenSettings, { waitForReverseGeocodeMs: 900 }), this.contextTimeoutMs, "context snapshot");
             this.debugCapture.log("capture:context-complete", { capturedAt: context.capturedAt });
             const prompt = this.promptBuilder.build(context);
             this.debugCapture.log("capture:prompt-complete", { promptLength: prompt.length });

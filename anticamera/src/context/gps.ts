@@ -1,27 +1,59 @@
-import type { GeoContext } from "../types.js";
-import { compactLabel, round, safeError } from "./utils.js";
+import type { GeoContext, ReverseGeocodedLocation } from "../types.js";
+import {
+  type ReverseCacheState,
+  type ReverseGeocoder,
+  CascadingReverseGeocoder,
+  applyAccuracyToReverseGeocode,
+  cloneReverseGeocode,
+  formatLocationLabel,
+  haversineMeters,
+  needsReverseRefresh
+} from "./reverseGeocoder.js";
+import { round, safeError } from "./utils.js";
 
-interface ReverseGeocodeResponse {
-  city?: string;
-  locality?: string;
-  principalSubdivision?: string;
-  countryName?: string;
+export interface GpsSensorOptions {
+  reverseDebounceMs?: number;
+  reverseTimeoutMs?: number;
+  reverseStaleMs?: number;
+  reverseMoveThresholdMeters?: number;
+  reverseReuseDistanceMeters?: number;
 }
 
 export class GpsSensor {
   private current: GeoContext = {
     status: "pending",
-    label: "Waiting for GPS"
+    label: "Waiting for GPS",
+    reverseGeocodeStatus: "pending"
   };
 
   private watchId: number | null = null;
-  private reverseKey = "";
+  private reverseCache: (ReverseCacheState & { location: ReverseGeocodedLocation }) | null = null;
+  private reverseDebounceId: number | null = null;
+  private activeReverse: { controller: AbortController; settled: Promise<void> } | null = null;
+
+  private readonly reverseDebounceMs: number;
+  private readonly reverseTimeoutMs: number;
+  private readonly reverseStaleMs: number;
+  private readonly reverseMoveThresholdMeters: number;
+  private readonly reverseReuseDistanceMeters: number;
+
+  constructor(
+    private readonly reverseGeocoder: ReverseGeocoder = new CascadingReverseGeocoder(),
+    options: GpsSensorOptions = {}
+  ) {
+    this.reverseDebounceMs = options.reverseDebounceMs ?? 650;
+    this.reverseTimeoutMs = options.reverseTimeoutMs ?? 8_000;
+    this.reverseStaleMs = options.reverseStaleMs ?? 7 * 60_000;
+    this.reverseMoveThresholdMeters = options.reverseMoveThresholdMeters ?? 35;
+    this.reverseReuseDistanceMeters = options.reverseReuseDistanceMeters ?? 90;
+  }
 
   start(): void {
     if (!("geolocation" in navigator)) {
       this.current = {
         status: "unavailable",
-        label: "No browser GPS"
+        label: "No browser GPS",
+        reverseGeocodeStatus: "unavailable"
       };
       return;
     }
@@ -34,28 +66,34 @@ export class GpsSensor {
     this.watchId = navigator.geolocation.watchPosition(
       (position) => {
         const coords = position.coords;
+        const latitude = round(coords.latitude, 6) ?? coords.latitude;
+        const longitude = round(coords.longitude, 6) ?? coords.longitude;
+        const accuracy = round(coords.accuracy, 1);
+        const reusableReverse = this.reusableReverseGeocode(latitude, longitude, accuracy);
         this.current = {
           status: "granted",
-          latitude: round(coords.latitude, 6),
-          longitude: round(coords.longitude, 6),
+          latitude,
+          longitude,
           altitude: coords.altitude,
-          accuracy: round(coords.accuracy, 1),
+          accuracy,
           heading: coords.heading,
           speed: coords.speed,
-          label: this.current.city
-            ? compactLabel([this.current.city, this.current.country])
-            : `${round(coords.latitude, 4)}, ${round(coords.longitude, 4)}`,
-          city: this.current.city,
-          region: this.current.region,
-          country: this.current.country,
+          label: formatLocationLabel({ latitude, longitude, reverseGeocode: reusableReverse }),
+          city: reusableReverse?.address.city || this.current.city,
+          region: reusableReverse?.address.region || this.current.region,
+          country: reusableReverse?.address.country || this.current.country,
+          reverseGeocode: reusableReverse,
+          reverseGeocodeStatus: this.activeReverse ? "pending" : reusableReverse ? "granted" : "pending",
+          reverseGeocodeError: this.current.reverseGeocodeError,
           updatedAt: new Date(position.timestamp).toISOString()
         };
-        void this.reverseGeocode(coords.latitude, coords.longitude);
+        this.scheduleReverseGeocode(latitude, longitude, accuracy);
       },
       (error) => {
         this.current = {
           status: error.code === error.PERMISSION_DENIED ? "denied" : "error",
           label: error.code === error.PERMISSION_DENIED ? "GPS denied" : "GPS unavailable",
+          reverseGeocodeStatus: error.code === error.PERMISSION_DENIED ? "denied" : "error",
           error: error.message
         };
       },
@@ -67,45 +105,135 @@ export class GpsSensor {
     );
   }
 
-  snapshot(): GeoContext {
-    return { ...this.current };
+  async snapshot(options: { waitForReverseGeocodeMs?: number } = {}): Promise<GeoContext> {
+    const waitMs = options.waitForReverseGeocodeMs ?? 0;
+    if (waitMs > 0 && this.activeReverse) {
+      await waitForSettled(this.activeReverse.settled, waitMs).catch(() => undefined);
+    }
+
+    return cloneGeoContext(this.current);
   }
 
-  private async reverseGeocode(latitude: number, longitude: number): Promise<void> {
-    const key = `${round(latitude, 2)}:${round(longitude, 2)}`;
-    if (key === this.reverseKey) {
+  private scheduleReverseGeocode(latitude: number, longitude: number, accuracy: number | undefined): void {
+    if (!needsReverseRefresh({
+      currentLatitude: latitude,
+      currentLongitude: longitude,
+      currentAccuracy: accuracy,
+      cached: this.reverseCache,
+      now: Date.now(),
+      staleMs: this.reverseStaleMs,
+      moveThresholdMeters: this.reverseMoveThresholdMeters
+    })) {
       return;
     }
 
-    this.reverseKey = key;
-    const url = new URL("https://api.bigdatacloud.net/data/reverse-geocode-client");
-    url.searchParams.set("latitude", String(latitude));
-    url.searchParams.set("longitude", String(longitude));
-    url.searchParams.set("localityLanguage", navigator.language || "en");
+    this.current = {
+      ...this.current,
+      reverseGeocodeStatus: "pending"
+    };
 
-    try {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`reverse geocode ${response.status}`);
+    if (this.reverseDebounceId !== null) {
+      window.clearTimeout(this.reverseDebounceId);
+    }
+
+    this.reverseDebounceId = window.setTimeout(() => {
+      this.reverseDebounceId = null;
+      this.runReverseGeocode(latitude, longitude, accuracy);
+    }, this.reverseDebounceMs);
+  }
+
+  private runReverseGeocode(latitude: number, longitude: number, accuracy: number | undefined): void {
+    this.activeReverse?.controller.abort();
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), this.reverseTimeoutMs);
+    const settled = this.reverseGeocoder.reverse(latitude, longitude, {
+      language: navigator.language || "en",
+      signal: controller.signal
+    }).then((result) => {
+      const currentLatitude = this.current.latitude;
+      const currentLongitude = this.current.longitude;
+      if (currentLatitude === undefined || currentLongitude === undefined) {
+        return;
       }
 
-      const data = (await response.json()) as ReverseGeocodeResponse;
-      const city = data.city || data.locality;
-      const region = data.principalSubdivision;
-      const country = data.countryName;
+      const moved = haversineMeters(latitude, longitude, currentLatitude, currentLongitude);
+      if (moved > this.reverseReuseDistanceMeters) {
+        return;
+      }
+
+      const location = applyAccuracyToReverseGeocode(result, accuracy);
+      this.reverseCache = {
+        latitude,
+        longitude,
+        resolvedAt: Date.now(),
+        location,
+        ...(accuracy === undefined ? {} : { accuracy })
+      };
       this.current = {
         ...this.current,
-        city,
-        region,
-        country,
-        label: compactLabel([city, region, country]) || this.current.label
+        label: formatLocationLabel({
+          latitude: currentLatitude,
+          longitude: currentLongitude,
+          reverseGeocode: location
+        }),
+        city: location.address.city || undefined,
+        region: location.address.region || undefined,
+        country: location.address.country || undefined,
+        reverseGeocode: location,
+        reverseGeocodeStatus: "granted",
+        reverseGeocodeError: undefined
       };
-    } catch (error) {
+    }).catch((error) => {
       this.current = {
         ...this.current,
-        error: safeError(error)
+        reverseGeocodeStatus: this.current.reverseGeocode ? "error" : "error",
+        reverseGeocodeError: safeError(error),
+        label: formatLocationLabel(this.current)
       };
+    }).finally(() => {
+      window.clearTimeout(timeoutId);
+      if (this.activeReverse?.controller === controller) {
+        this.activeReverse = null;
+      }
+    });
+
+    this.activeReverse = {
+      controller,
+      settled
+    };
+  }
+
+  private reusableReverseGeocode(latitude: number, longitude: number, accuracy: number | undefined): ReverseGeocodedLocation | undefined {
+    const cached = this.reverseCache;
+    if (!cached) {
+      return this.current.reverseGeocode;
     }
+
+    const distance = haversineMeters(latitude, longitude, cached.latitude, cached.longitude);
+    if (distance > this.reverseReuseDistanceMeters) {
+      return undefined;
+    }
+
+    return applyAccuracyToReverseGeocode(cached.location, accuracy);
   }
 }
 
+function cloneGeoContext(context: GeoContext): GeoContext {
+  return {
+    ...context,
+    reverseGeocode: context.reverseGeocode ? cloneReverseGeocode(context.reverseGeocode) : undefined
+  };
+}
+
+function waitForSettled(promise: Promise<void>, timeoutMs: number): Promise<void> {
+  let timeoutId: number | undefined;
+  const timeout = new Promise<void>((resolve) => {
+    timeoutId = window.setTimeout(resolve, timeoutMs);
+  });
+
+  return Promise.race([promise, timeout]).finally(() => {
+    if (timeoutId !== undefined) {
+      window.clearTimeout(timeoutId);
+    }
+  });
+}

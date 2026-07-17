@@ -23,6 +23,35 @@ export interface TimeContext {
   dayPeriod: "night" | "morning" | "afternoon" | "evening";
 }
 
+export interface ReverseGeocodedLocation {
+  provider: string;
+  displayName: string | null;
+  feature: {
+    name: string | null;
+    type: string | null;
+    category: string | null;
+    latitude: number | null;
+    longitude: number | null;
+    distanceMeters: number | null;
+  };
+  address: {
+    houseNumber: string | null;
+    road: string | null;
+    neighborhood: string | null;
+    suburb: string | null;
+    district: string | null;
+    city: string | null;
+    municipality: string | null;
+    county: string | null;
+    region: string | null;
+    postcode: string | null;
+    country: string | null;
+    countryCode: string | null;
+  };
+  confidence: "high" | "medium" | "low";
+  resolvedAt: string;
+}
+
 export interface GeoContext {
   status: PermissionStateName;
   latitude?: number | undefined;
@@ -35,6 +64,9 @@ export interface GeoContext {
   region?: string | undefined;
   country?: string | undefined;
   label: string;
+  reverseGeocode?: ReverseGeocodedLocation | undefined;
+  reverseGeocodeStatus?: PermissionStateName | undefined;
+  reverseGeocodeError?: string | undefined;
   updatedAt?: string | undefined;
   error?: string | undefined;
 }

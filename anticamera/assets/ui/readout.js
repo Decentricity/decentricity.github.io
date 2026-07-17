@@ -3,8 +3,21 @@ import { settingsReadout, subjectModeLabel } from "../context/manualSettings.js"
 import { formatDegrees, round } from "../context/utils.js";
 export function renderReadout(container, context) {
     const pose = context.cameraPose;
+    const reverse = context.location.reverseGeocode;
+    const address = reverse?.address;
+    const feature = reverse?.feature;
     const rows = [
         ["Location", context.location.label],
+        ...optionalRows([
+            ["Feature", feature?.name],
+            ["Feature type", feature?.type],
+            ["Street", address?.road],
+            ["Neighborhood", address?.neighborhood],
+            ["Suburb", address?.suburb],
+            ["City", address?.city || address?.municipality],
+            ["Distance", feature?.distanceMeters === null || feature?.distanceMeters === undefined ? undefined : `~${feature.distanceMeters}m`],
+            ["Location confidence", reverse?.confidence ? capitalize(reverse.confidence) : undefined]
+        ]),
         ["Heading", formatDegrees(pose.azimuthDeg)],
         ["Pitch", signedDegrees(pose.pitchDeg)],
         ["Roll", signedDegrees(pose.rollDeg)],
@@ -62,4 +75,7 @@ function signedDegrees(value) {
 }
 function capitalize(value) {
     return `${value.slice(0, 1).toUpperCase()}${value.slice(1)}`;
+}
+function optionalRows(rows) {
+    return rows.flatMap(([label, detail]) => detail ? [[label, detail]] : []);
 }

@@ -32,10 +32,12 @@ export class ContextCollector {
     freezeCameraPose() {
         return this.motion.freezePose(Date.now());
     }
-    async snapshot(mode, frozenPose, frozenSettings = DEFAULT_MANUAL_SETTINGS) {
+    async snapshot(mode, frozenPose, frozenSettings = DEFAULT_MANUAL_SETTINGS, options = {}) {
         const now = new Date(frozenPose?.capturedAt ?? Date.now());
         const time = this.time.snapshot(now);
-        const location = this.gps.snapshot();
+        const location = await this.gps.snapshot(options.waitForReverseGeocodeMs === undefined
+            ? {}
+            : { waitForReverseGeocodeMs: options.waitForReverseGeocodeMs });
         const weather = await this.weather.snapshot(location);
         const cameraPose = frozenPose ?? this.motion.poseSnapshot(now.getTime());
         return {

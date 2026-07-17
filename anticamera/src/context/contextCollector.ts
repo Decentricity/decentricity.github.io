@@ -42,11 +42,14 @@ export class ContextCollector {
   async snapshot(
     mode: IndoorOutdoor,
     frozenPose?: CameraPose,
-    frozenSettings: ManualCameraSettings = DEFAULT_MANUAL_SETTINGS
+    frozenSettings: ManualCameraSettings = DEFAULT_MANUAL_SETTINGS,
+    options: { waitForReverseGeocodeMs?: number } = {}
   ): Promise<AntiCameraContext> {
     const now = new Date(frozenPose?.capturedAt ?? Date.now());
     const time = this.time.snapshot(now);
-    const location = this.gps.snapshot();
+    const location = await this.gps.snapshot(options.waitForReverseGeocodeMs === undefined
+      ? {}
+      : { waitForReverseGeocodeMs: options.waitForReverseGeocodeMs });
     const weather = await this.weather.snapshot(location);
     const cameraPose = frozenPose ?? this.motion.poseSnapshot(now.getTime());
 

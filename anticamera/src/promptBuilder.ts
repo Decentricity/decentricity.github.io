@@ -56,6 +56,8 @@ export class PromptBuilder {
       "",
       ...poseCompositionRules(context),
       "",
+      ...geographicContextRules(context),
+      "",
       "Context captured at shutter press:",
       value("Local date", context.time.date),
       value("Local time", context.time.time),
@@ -66,6 +68,15 @@ export class PromptBuilder {
       value("Latitude", location.latitude),
       value("Longitude", location.longitude),
       value("GPS accuracy meters", location.accuracy),
+      value("Reverse geocoding provider", location.reverseGeocode?.provider),
+      value("Nearest mapped feature", location.reverseGeocode?.feature.name),
+      value("Feature type", location.reverseGeocode?.feature.type),
+      value("Road", location.reverseGeocode?.address.road),
+      value("Neighborhood", location.reverseGeocode?.address.neighborhood),
+      value("Suburb", location.reverseGeocode?.address.suburb),
+      value("City", location.reverseGeocode?.address.city),
+      value("Region", location.reverseGeocode?.address.region),
+      value("Country", location.reverseGeocode?.address.country),
       value("Weather", weather.description),
       value("Temperature C", weather.temperatureC),
       value("Humidity percent", weather.humidityPercent),
@@ -176,6 +187,49 @@ function poseCompositionRules(context: AntiCameraContext): string[] {
 function formatSigned(value: number, alwaysSign: boolean): string {
   const sign = value >= 0 && alwaysSign ? "+" : "";
   return `${sign}${value.toFixed(1)}`;
+}
+
+function geographicContextRules(context: AntiCameraContext): string[] {
+  const location = context.location;
+  const reverse = location.reverseGeocode;
+  const address = reverse?.address;
+  const feature = reverse?.feature;
+  const lines = [
+    "GEOGRAPHIC CONTEXT",
+    "Exact coordinates:",
+    value("Latitude", location.latitude),
+    value("Longitude", location.longitude),
+    value("GPS accuracy", location.accuracy === undefined ? undefined : `approximately ${location.accuracy} meters`),
+    "",
+    "Reverse-geocoded context:",
+    value("Nearest mapped feature", feature?.name),
+    value("Feature type", feature?.type),
+    value("Approximate distance from GPS point", feature?.distanceMeters === null || feature?.distanceMeters === undefined ? undefined : `${feature.distanceMeters} meters`),
+    value("House number", address?.houseNumber),
+    value("Road", address?.road),
+    value("Neighborhood", address?.neighborhood),
+    value("Suburb", address?.suburb),
+    value("District", address?.district),
+    value("City", address?.city || address?.municipality),
+    value("Region", address?.region),
+    value("Postcode", address?.postcode),
+    value("Country", address?.country),
+    value("Reverse-geocoding provider", reverse?.provider),
+    value("Reverse-geocoding confidence", reverse?.confidence),
+    "",
+    "The coordinates are direct sensor data.",
+    "The address and named feature are reverse-geocoding results from the nearest suitable mapped object. They are contextual clues, not proof that the camera is physically inside that building.",
+    "Use the locality, street character, urban density, architecture, vegetation, and regional context to imagine a plausible scene.",
+    "Do not place a recognizable named building prominently in the image merely because it is the nearest mapped feature.",
+    "Do not reproduce a specific private house.",
+    "Do not invent signage, house numbers, business branding, or landmark visibility unless the context makes it genuinely plausible."
+  ];
+
+  if (!reverse || reverse.confidence === "low") {
+    lines.push("When GPS accuracy or reverse-geocoding confidence is low, rely more strongly on broad suburb/city/region context than on the exact nearest feature.");
+  }
+
+  return lines;
 }
 
 function manualSettingRules(context: AntiCameraContext, lensMm: number): string[] {

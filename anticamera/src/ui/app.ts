@@ -164,7 +164,7 @@ export class AntiCameraApp {
       this.debugCapture.log("capture:permissions-complete");
 
       const context = await withTimeout(
-        this.context.snapshot(this.mode(), frozenPose, frozenSettings),
+        this.context.snapshot(this.mode(), frozenPose, frozenSettings, { waitForReverseGeocodeMs: 900 }),
         this.contextTimeoutMs,
         "context snapshot"
       );

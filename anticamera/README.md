@@ -23,6 +23,10 @@ Anti-Camera does not access `video` or the device camera.
 
 The microphone is used only through the Web Audio API. Raw audio is not stored and not uploaded by this prototype. The app computes local descriptors such as volume, noisiness, spectral balance, and rough speech probability. Only those numeric/contextual features are eligible to leave the browser when an external image provider is configured.
 
+Location is intentional camera context. The app stores raw GPS coordinates and the best available reverse-geocoded place hierarchy with each generated frame, including nearby mapped feature, street, locality, city, region, country, provider, confidence, and approximate feature distance when available. This precise location context appears in JSON exports.
+
+Precise coordinates are sent only to the configured reverse-geocoding services and to the chosen image-generation provider as part of the captured context. Anti-Camera does not add analytics or maintain an unlimited background trail of locations.
+
 ## Image Providers
 
 The runtime uses a provider abstraction:
