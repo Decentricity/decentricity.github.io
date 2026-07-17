@@ -152,6 +152,8 @@ test("Camera and Film are full-viewport scenes with an isolated film scroller", 
   assert.match(appShell, /height:\s*100dvh/);
   assert.match(appShell, /overflow:\s*hidden/);
   assert.match(appShell, /--safe-bottom:\s*env\(safe-area-inset-bottom,\s*0px\)/);
+  assert.match(appShell, /--switch-width:\s*40px/);
+  assert.match(appShell, /--switch-height:\s*26px/);
   assert.match(primary, /position:\s*absolute/);
   assert.match(primary, /width:\s*100dvw/);
   assert.match(primary, /height:\s*100dvh/);
@@ -181,9 +183,19 @@ test("bottom view switch is persistent and camera-like", () => {
   assert.equal(toggle.getAttribute("aria-controls"), "film-view");
   assert.equal(toggle.getAttribute("aria-pressed"), "false");
   assert.match(cssBlock(".view-toggle"), /position:\s*fixed/);
-  assert.match(cssBlock(".view-toggle"), /bottom:\s*calc\(env\(safe-area-inset-bottom,\s*0px\) \+ 8px\)/);
+  assert.match(cssBlock(".view-toggle"), /bottom:\s*calc\(env\(safe-area-inset-bottom,\s*0px\) \+ 5px\)/);
   assert.match(cssBlock(".view-toggle"), /left:\s*50%/);
   assert.match(cssBlock(".view-toggle"), /z-index:\s*50/);
+});
+
+test("short landscape layout keeps controls compact and non-overlapping", () => {
+  const landscape = mediaLandscapeShortBlock();
+  assert.match(landscape, /\.app-shell\s*\{[\s\S]*?--switch-width:\s*34px/);
+  assert.match(landscape, /\.app-shell\s*\{[\s\S]*?--switch-height:\s*22px/);
+  assert.match(landscape, /\.film-door-panel\s*\{[\s\S]*?grid-template-rows:\s*auto auto auto/);
+  assert.match(landscape, /\.manual-controls\s*\{[\s\S]*?--dial-size:\s*clamp\(56px,\s*8\.4vw,\s*72px\)/);
+  assert.match(landscape, /\.indoor-toggle\s*\{[\s\S]*?width:\s*min\(42%,\s*330px\)/);
+  assert.match(landscape, /\.indoor-toggle label\s*\{[\s\S]*?min-height:\s*22px/);
 });
 
 test("Indoor and Outdoor selector aligns with the manual control plate", () => {
@@ -257,6 +269,24 @@ function mediaOrientationBlock(orientation) {
     }
   }
   assert.fail(`Unclosed ${orientation} media query`);
+}
+
+function mediaLandscapeShortBlock() {
+  const start = css.indexOf("@media (orientation: landscape) and (max-height: 520px)");
+  assert.notEqual(start, -1, "Missing short landscape media query");
+  const open = css.indexOf("{", start);
+  let depth = 0;
+  for (let index = open; index < css.length; index += 1) {
+    if (css[index] === "{") {
+      depth += 1;
+    } else if (css[index] === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        return css.slice(open + 1, index);
+      }
+    }
+  }
+  assert.fail("Unclosed short landscape media query");
 }
 
 function deliberateStackBreakpoint() {

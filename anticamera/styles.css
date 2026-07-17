@@ -57,8 +57,9 @@ button {
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);
   --view-padding: clamp(8px, 2.2vmin, 16px);
-  --switch-size: clamp(48px, 8vmin, 58px);
-  --switch-clearance: calc(var(--switch-size) + var(--safe-bottom) + 14px);
+  --switch-width: 40px;
+  --switch-height: 26px;
+  --switch-clearance: calc(var(--switch-height) + var(--safe-bottom) + 8px);
   position: fixed;
   inset: 0;
   width: 100dvw;
@@ -486,7 +487,7 @@ button {
   padding: 14px 10px 12px;
   min-height: 0;
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto auto;
+  grid-template-rows: auto auto auto;
   background: #2f322e;
   border: 1px solid #191b18;
   border-radius: 8px;
@@ -920,6 +921,7 @@ button {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0;
+  justify-self: center;
   margin: 0;
   padding: 4px;
   width: 100%;
@@ -1067,17 +1069,17 @@ button.film-placeholder {
 .view-toggle {
   position: fixed;
   left: 50%;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 5px);
   z-index: 50;
   display: grid;
   place-items: center;
-  width: var(--switch-size);
-  height: calc(var(--switch-size) * 0.76);
+  width: var(--switch-width);
+  height: var(--switch-height);
   padding: 0;
   color: #e0d7c5;
   background: #232622;
   border: 1px solid #0e100d;
-  border-radius: 12px 12px 7px 7px;
+  border-radius: 8px 8px 5px 5px;
   transform: translateX(-50%);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 4px 0 #11130f;
 }
@@ -1096,16 +1098,16 @@ button.film-placeholder {
 .view-toggle-camera {
   display: block;
   position: relative;
-  width: 28px;
-  height: 22px;
+  width: 22px;
+  height: 16px;
 }
 
 .view-toggle-film {
-  border: 2px solid currentColor;
+  border: 1px solid currentColor;
   border-radius: 3px;
   background:
     linear-gradient(currentColor 0 0) 6px 0 / 2px 100% no-repeat,
-    linear-gradient(currentColor 0 0) 18px 0 / 2px 100% no-repeat;
+    linear-gradient(currentColor 0 0) 14px 0 / 2px 100% no-repeat;
 }
 
 .view-toggle-film::before,
@@ -1114,7 +1116,7 @@ button.film-placeholder {
   position: absolute;
   left: 3px;
   right: 3px;
-  height: 2px;
+  height: 1px;
   background: currentColor;
 }
 
@@ -1133,8 +1135,8 @@ button.film-placeholder {
 .view-toggle-camera::before {
   content: "";
   position: absolute;
-  inset: 5px 3px 4px;
-  border: 2px solid currentColor;
+  inset: 5px 3px 3px;
+  border: 1px solid currentColor;
   border-radius: 3px;
 }
 
@@ -1145,7 +1147,7 @@ button.film-placeholder {
   top: 0;
   width: 10px;
   height: 7px;
-  border: 2px solid currentColor;
+  border: 1px solid currentColor;
   border-bottom: 0;
   border-radius: 4px 4px 0 0;
   transform: translateX(-50%);
@@ -1376,11 +1378,17 @@ button.film-placeholder {
 }
 
 @media (orientation: landscape) and (max-height: 520px) {
+  .app-shell {
+    --switch-width: 34px;
+    --switch-height: 22px;
+    --switch-clearance: calc(var(--switch-height) + var(--safe-bottom) + 5px);
+  }
+
   .primary-view {
     padding:
-      calc(var(--safe-top) + 7px)
+      calc(var(--safe-top) + 5px)
       calc(var(--safe-right) + 10px)
-      calc(var(--switch-clearance) + 7px)
+      calc(var(--switch-clearance) + 5px)
       calc(var(--safe-left) + 10px);
   }
 
@@ -1390,14 +1398,14 @@ button.film-placeholder {
   }
 
   .camera-shell {
-    padding: 0 10px 9px;
+    padding: 0 10px 7px;
     border-radius: 14px;
   }
 
   .camera-top-plate {
     grid-template-columns: clamp(78px, 11vw, 98px) minmax(0, 1fr) auto 34px clamp(60px, 8vw, 72px);
     gap: 8px;
-    min-height: 62px;
+    min-height: 58px;
     margin: 0 -10px;
     padding: 7px 10px 7px;
     border-radius: 14px 14px 5px 5px;
@@ -1415,7 +1423,7 @@ button.film-placeholder {
   }
 
   .camera-back-door {
-    padding: 7px 8px 8px;
+    padding: 5px 8px 6px;
   }
 
   .back-service-row {
@@ -1436,55 +1444,90 @@ button.film-placeholder {
 
   .film-door-panel {
     margin-top: 3px;
-    padding: 8px 8px 7px;
+    padding: 6px 8px 6px;
+    grid-template-rows: auto auto auto;
   }
 
   .manual-controls {
-    --control-gap: clamp(6px, 1.2vw, 9px);
-    --panel-padding: 5px;
-    --panel-title-height: 13px;
-    --dial-size: clamp(66px, 10vw, 88px);
-    --selector-width: clamp(100px, 16vw, 124px);
-    --selector-height: 34px;
-    --control-row-height: calc(var(--dial-size) + var(--panel-title-height) + (var(--panel-padding) * 2) + 7px);
-    margin: 3px 0 6px;
+    --control-gap: clamp(5px, 1vw, 7px);
+    --panel-padding: 4px;
+    --panel-title-height: 12px;
+    --dial-size: clamp(56px, 8.4vw, 72px);
+    --selector-width: clamp(88px, 14vw, 112px);
+    --selector-height: 28px;
+    --control-row-height: calc(var(--dial-size) + var(--panel-title-height) + (var(--panel-padding) * 2) + 5px);
+    margin: 2px 0 5px;
   }
 
   .subject-cycle-button {
-    min-height: 70px;
-    max-height: 104px;
-    padding: 7px;
+    min-width: 72px;
+    min-height: 54px;
+    max-height: 82px;
+    padding: 5px;
+    gap: 3px;
   }
 
   .subject-icon {
-    width: min(54px, 72%);
-    height: min(54px, 72%);
+    width: min(40px, 68%);
+    height: min(40px, 68%);
+  }
+
+  .subject-label {
+    font-size: 0.52rem;
+  }
+
+  .mechanical-lever {
+    gap: 4px;
   }
 
   .lever-track button {
-    min-height: 28px;
-    font-size: 0.5rem;
+    min-height: 24px;
+    font-size: 0.46rem;
+  }
+
+  .lever-track button svg {
+    width: 23px;
+  }
+
+  .flash-lever .lever-track button svg {
+    width: 10px;
+    height: 14px;
   }
 
   .dial-face button {
-    width: 23px;
-    min-height: 17px;
-    font-size: 0.4rem;
+    width: 21px;
+    min-height: 15px;
+    font-size: 0.35rem;
   }
 
   .iso-dial .dial-face button {
-    width: 25px;
-    font-size: 0.34rem;
+    width: 23px;
+    font-size: 0.3rem;
+  }
+
+  .dial-grip::after {
+    width: 3px;
+  }
+
+  .indoor-toggle {
+    width: min(42%, 330px);
+    padding: 2px;
   }
 
   .indoor-toggle label {
-    min-height: 30px;
-    font-size: 0.68rem;
+    min-height: 22px;
+    font-size: 0.56rem;
   }
 
   .film-output-slot {
-    height: 9px;
-    margin-top: 6px;
+    height: 7px;
+    margin-top: 4px;
+  }
+
+  .view-toggle-film,
+  .view-toggle-camera {
+    width: 18px;
+    height: 13px;
   }
 }
 

@@ -38,7 +38,7 @@ test("page exposes PWA metadata and a discreet fullscreen control", () => {
 });
 
 test("service worker caches only same-origin static app shell files", () => {
-  assert.match(sw, /anti-camera-static-v2/);
+  assert.match(sw, /anti-camera-static-v3/);
   assert.match(sw, /\.\/index\.html/);
   assert.match(sw, /\.\/styles\.css/);
   assert.doesNotMatch(sw, /["']\.\/sw\.js["']/);

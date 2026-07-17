@@ -1,4 +1,4 @@
-const STATIC_CACHE = "anti-camera-static-v2";
+const STATIC_CACHE = "anti-camera-static-v3";
 const STATIC_ASSETS = [
   "./",
   "./index.html",
