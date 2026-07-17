@@ -76,5 +76,5 @@ npm test
 The app is designed for GitHub Pages at:
 
 ```text
-https://decentricity.github.io/QuasiCamera/
+https://decentricity.github.io/quasicamera/
 ```
