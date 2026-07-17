@@ -44,6 +44,10 @@ export class ImageGenerator {
     }
   }
 
+  providerId(): string {
+    return this.chooseProvider().id;
+  }
+
   saveUserKey(value: string): void {
     this.keyStore.setKey(value);
   }
@@ -70,14 +74,51 @@ export class ImageGenerator {
 
 function readRuntimeConfig(): AntiCameraRuntimeConfig {
   const fromWindow = window.ANTICAMERA_CONFIG || {};
-  const storedHeaders = localStorage.getItem("anticamera.endpoint.headers");
+  const storedHeaders = safeStorageGet("anticamera.endpoint.headers");
+  const storedProvider = safeStorageGet("anticamera.provider");
 
   return {
     ...fromWindow,
-    provider: (localStorage.getItem("anticamera.provider") as AntiCameraRuntimeConfig["provider"]) || fromWindow.provider,
-    openaiApiKey: localStorage.getItem("anticamera.openai.key") || fromWindow.openaiApiKey,
-    openaiModel: localStorage.getItem("anticamera.openai.model") || fromWindow.openaiModel,
-    endpointUrl: localStorage.getItem("anticamera.endpoint.url") || fromWindow.endpointUrl,
-    endpointHeaders: storedHeaders ? JSON.parse(storedHeaders) as Record<string, string> : fromWindow.endpointHeaders
+    provider: validProvider(storedProvider) || fromWindow.provider,
+    openaiApiKey: safeStorageGet("anticamera.openai.key") || fromWindow.openaiApiKey,
+    openaiModel: safeStorageGet("anticamera.openai.model") || fromWindow.openaiModel,
+    endpointUrl: safeStorageGet("anticamera.endpoint.url") || fromWindow.endpointUrl,
+    endpointHeaders: parseEndpointHeaders(storedHeaders) || fromWindow.endpointHeaders
   };
+}
+
+function safeStorageGet(key: string): string | undefined {
+  try {
+    return localStorage.getItem(key) || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function validProvider(value: string | undefined): AntiCameraRuntimeConfig["provider"] | undefined {
+  return value === "openai" || value === "endpoint" || value === "local" ? value : undefined;
+}
+
+function parseEndpointHeaders(raw: string | undefined): Record<string, string> | undefined {
+  if (!raw) {
+    return undefined;
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return undefined;
+    }
+
+    const headers: Record<string, string> = {};
+    for (const [key, value] of Object.entries(parsed)) {
+      if (typeof key === "string" && typeof value === "string") {
+        headers[key] = value;
+      }
+    }
+
+    return headers;
+  } catch {
+    return undefined;
+  }
 }

@@ -248,10 +248,14 @@ button {
   inset: 0;
   display: grid;
   place-items: center;
+  padding: 18px;
   background: var(--lcd-dark);
   color: var(--lcd);
   font-size: 1rem;
+  line-height: 1.45;
+  text-align: center;
   text-transform: uppercase;
+  white-space: pre-line;
 }
 
 .latest-frame {
@@ -595,7 +599,6 @@ button {
 }
 
 .dial-face {
-  --dial-angle: 0deg;
   position: relative;
   align-self: center;
   justify-self: center;
@@ -606,8 +609,6 @@ button {
   background: #5f6158;
   border: clamp(6px, 1.7vw, 8px) solid #191b18;
   overflow: visible;
-  transform: rotate(var(--dial-angle));
-  transition: transform 130ms ease;
   box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.11), inset 0 -9px 16px rgba(0, 0, 0, 0.28), 0 4px 8px rgba(0, 0, 0, 0.22);
 }
 
@@ -624,7 +625,7 @@ button {
   border: 0;
   font-size: clamp(0.44rem, 1.5vw, 0.52rem);
   white-space: nowrap;
-  transform: rotate(var(--tick-angle)) translateY(var(--label-radius)) rotate(calc(-1 * var(--tick-angle))) rotate(calc(-1 * var(--dial-angle))) translate(-50%, -50%);
+  transform: rotate(var(--tick-angle)) translateY(var(--label-radius)) rotate(calc(-1 * var(--tick-angle))) translate(-50%, -50%);
 }
 
 .iso-dial .dial-face button {
@@ -645,6 +646,8 @@ button {
   border-radius: 50%;
   background: #343733;
   border: 1px solid #121310;
+  transform: rotate(var(--rotor-angle, 0deg));
+  transition: transform 130ms ease;
   box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.09), inset 0 -7px 10px rgba(0, 0, 0, 0.3);
 }
 

@@ -20,6 +20,9 @@ export class ImageGenerator {
             return false;
         }
     }
+    providerId() {
+        return this.chooseProvider().id;
+    }
     saveUserKey(value) {
         this.keyStore.setKey(value);
     }
@@ -40,13 +43,46 @@ export class ImageGenerator {
 }
 function readRuntimeConfig() {
     const fromWindow = window.ANTICAMERA_CONFIG || {};
-    const storedHeaders = localStorage.getItem("anticamera.endpoint.headers");
+    const storedHeaders = safeStorageGet("anticamera.endpoint.headers");
+    const storedProvider = safeStorageGet("anticamera.provider");
     return {
         ...fromWindow,
-        provider: localStorage.getItem("anticamera.provider") || fromWindow.provider,
-        openaiApiKey: localStorage.getItem("anticamera.openai.key") || fromWindow.openaiApiKey,
-        openaiModel: localStorage.getItem("anticamera.openai.model") || fromWindow.openaiModel,
-        endpointUrl: localStorage.getItem("anticamera.endpoint.url") || fromWindow.endpointUrl,
-        endpointHeaders: storedHeaders ? JSON.parse(storedHeaders) : fromWindow.endpointHeaders
+        provider: validProvider(storedProvider) || fromWindow.provider,
+        openaiApiKey: safeStorageGet("anticamera.openai.key") || fromWindow.openaiApiKey,
+        openaiModel: safeStorageGet("anticamera.openai.model") || fromWindow.openaiModel,
+        endpointUrl: safeStorageGet("anticamera.endpoint.url") || fromWindow.endpointUrl,
+        endpointHeaders: parseEndpointHeaders(storedHeaders) || fromWindow.endpointHeaders
     };
+}
+function safeStorageGet(key) {
+    try {
+        return localStorage.getItem(key) || undefined;
+    }
+    catch {
+        return undefined;
+    }
+}
+function validProvider(value) {
+    return value === "openai" || value === "endpoint" || value === "local" ? value : undefined;
+}
+function parseEndpointHeaders(raw) {
+    if (!raw) {
+        return undefined;
+    }
+    try {
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+            return undefined;
+        }
+        const headers = {};
+        for (const [key, value] of Object.entries(parsed)) {
+            if (typeof key === "string" && typeof value === "string") {
+                headers[key] = value;
+            }
+        }
+        return headers;
+    }
+    catch {
+        return undefined;
+    }
 }

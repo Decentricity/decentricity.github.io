@@ -1,4 +1,5 @@
 import { round, safeError } from "./utils.js";
+const WEATHER_TIMEOUT_MS = 8_000;
 export class WeatherService {
     cache = null;
     async snapshot(location) {
@@ -27,7 +28,7 @@ export class WeatherService {
         ].join(","));
         url.searchParams.set("timezone", "auto");
         try {
-            const response = await fetch(url);
+            const response = await fetchWithTimeout(url, WEATHER_TIMEOUT_MS);
             if (!response.ok) {
                 throw new Error(`weather ${response.status}`);
             }
@@ -91,5 +92,15 @@ export class WeatherService {
             return "Partly clear";
         }
         return "Clear";
+    }
+}
+async function fetchWithTimeout(url, timeoutMs) {
+    const controller = new AbortController();
+    const timeoutId = globalThis.setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        return await fetch(url, { signal: controller.signal });
+    }
+    finally {
+        globalThis.clearTimeout(timeoutId);
     }
 }

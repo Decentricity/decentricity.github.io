@@ -17,6 +17,8 @@ interface OpenMeteoResponse {
   current?: OpenMeteoCurrent;
 }
 
+const WEATHER_TIMEOUT_MS = 8_000;
+
 export class WeatherService {
   private cache: { key: string; expiresAt: number; weather: WeatherContext } | null = null;
 
@@ -52,7 +54,7 @@ export class WeatherService {
     url.searchParams.set("timezone", "auto");
 
     try {
-      const response = await fetch(url);
+      const response = await fetchWithTimeout(url, WEATHER_TIMEOUT_MS);
       if (!response.ok) {
         throw new Error(`weather ${response.status}`);
       }
@@ -131,3 +133,13 @@ export class WeatherService {
   }
 }
 
+async function fetchWithTimeout(url: URL, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = globalThis.setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, { signal: controller.signal });
+  } finally {
+    globalThis.clearTimeout(timeoutId);
+  }
+}

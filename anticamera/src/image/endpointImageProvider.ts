@@ -10,30 +10,49 @@ interface EndpointImageResponse {
   provider?: string;
 }
 
+const ENDPOINT_TIMEOUT_MS = 120_000;
+
 export class EndpointImageProvider implements ImageGeneratorProvider {
   readonly id = "configurable-endpoint";
 
   constructor(
     private readonly endpointUrl: string,
-    private readonly headers: Record<string, string>
+    private readonly headers: Record<string, string>,
+    private readonly timeoutMs = ENDPOINT_TIMEOUT_MS
   ) {}
 
   async generate(request: ImageGenerationRequest): Promise<ImageGenerationResult> {
-    const response = await fetch(this.endpointUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...this.headers
-      },
-      body: JSON.stringify({
-        prompt: request.prompt,
-        context: request.context
-      })
-    });
+    const controller = new AbortController();
+    const timeoutId = globalThis.setTimeout(() => controller.abort(), this.timeoutMs);
+    let response: Response;
 
-    const data = (await response.json()) as EndpointImageResponse;
+    try {
+      response = await fetch(this.endpointUrl, {
+        method: "POST",
+        signal: controller.signal,
+        headers: {
+          "Content-Type": "application/json",
+          ...this.headers
+        },
+        body: JSON.stringify({
+          prompt: request.prompt,
+          context: request.context
+        })
+      });
+    } catch (error) {
+      if (isAbortError(error)) {
+        throw new Error("image endpoint request timed out");
+      }
+
+      throw error;
+    } finally {
+      globalThis.clearTimeout(timeoutId);
+    }
+
+    const text = await response.text();
+    const data = parseResponse(text);
     if (!response.ok) {
-      throw new Error(`image endpoint failed: ${response.status}`);
+      throw new Error(text || `image endpoint failed: ${response.status}`);
     }
 
     const base64 = data.b64_json || data.image_base64;
@@ -49,3 +68,20 @@ export class EndpointImageProvider implements ImageGeneratorProvider {
   }
 }
 
+function parseResponse(text: string): EndpointImageResponse {
+  if (!text) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(text) as EndpointImageResponse;
+  } catch {
+    return {};
+  }
+}
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof DOMException
+    ? error.name === "AbortError"
+    : error instanceof Error && error.name === "AbortError";
+}

@@ -9,7 +9,6 @@ import type {
 import {
   EXPOSURE_VALUES,
   ISO_VALUES,
-  SUBJECT_MODES,
   evLabel,
   flashLabel,
   focusStyleLabel,
@@ -22,8 +21,29 @@ import {
   snapIso,
   subjectModeLabel
 } from "../context/manualSettings.js";
+import {
+  type DialDefinition,
+  type DialDragState,
+  advanceDialDrag,
+  beginDialDrag as createDialDragState,
+  pointerAngleDeg,
+  valueToAngle
+} from "./dialMath.js";
 
 type ManualSettingsListener = (settings: ManualCameraSettings) => void;
+type DialKind = "ev" | "iso";
+
+export const EV_DIAL: DialDefinition<ExposureCompensationEv> = {
+  values: EXPOSURE_VALUES,
+  minAngle: -120,
+  maxAngle: 120
+};
+
+export const ISO_DIAL: DialDefinition<FilmIso> = {
+  values: ISO_VALUES,
+  minAngle: -132,
+  maxAngle: 132
+};
 
 const SUBJECT_ANGLES: Record<SubjectMode, number> = {
   landscape: 0,
@@ -35,6 +55,7 @@ const SUBJECT_ANGLES: Record<SubjectMode, number> = {
 export class ManualControls {
   private settings = loadManualSettings();
   private listeners: ManualSettingsListener[] = [];
+  private activeDrag: { pointerId: number; dial: HTMLElement; state: DialDragState } | null = null;
 
   constructor(private readonly root: HTMLElement) {
     this.bind();
@@ -113,23 +134,71 @@ export class ManualControls {
       return;
     }
 
-    const kind = dial.dataset.dial;
+    const kind = dial.dataset.dial as DialKind | undefined;
     if (kind !== "ev" && kind !== "iso") {
       return;
     }
 
+    const face = dial.querySelector<HTMLElement>("[data-dial-face]");
+    if (!face) {
+      return;
+    }
+
     event.preventDefault();
+    this.endActiveDrag();
+
+    const definition = dialDefinition(kind);
+    const currentAngle = valueToAngle(
+      kind === "ev" ? this.settings.exposureCompensationEv : this.settings.iso,
+      definition.values,
+      definition.minAngle,
+      definition.maxAngle
+    );
+    const pointerAngle = pointerAngleDeg(event.clientX, event.clientY, face.getBoundingClientRect());
+    let dragState = createDialDragState(currentAngle, pointerAngle);
+
     dial.setPointerCapture(event.pointerId);
-    this.updateDialFromPointer(event, dial);
+    this.activeDrag = {
+      pointerId: event.pointerId,
+      dial,
+      state: dragState
+    };
 
     const move = (moveEvent: PointerEvent): void => {
-      this.updateDialFromPointer(moveEvent, dial);
+      if (!this.activeDrag || moveEvent.pointerId !== event.pointerId) {
+        return;
+      }
+
+      moveEvent.preventDefault();
+      const nextPointerAngle = pointerAngleDeg(moveEvent.clientX, moveEvent.clientY, face.getBoundingClientRect());
+      const next = advanceDialDrag(dragState, nextPointerAngle, definition);
+      dragState = next.state;
+      this.activeDrag.state = dragState;
+
+      if (kind === "ev") {
+        const exposureCompensationEv = next.value as ExposureCompensationEv;
+        if (exposureCompensationEv !== this.settings.exposureCompensationEv) {
+          this.update({ exposureCompensationEv });
+        }
+      } else {
+        const iso = next.value as FilmIso;
+        if (iso !== this.settings.iso) {
+          this.update({ iso });
+        }
+      }
     };
     const up = (upEvent: PointerEvent): void => {
-      dial.releasePointerCapture(upEvent.pointerId);
+      if (upEvent.pointerId !== event.pointerId) {
+        return;
+      }
+
+      if (dial.hasPointerCapture(upEvent.pointerId)) {
+        dial.releasePointerCapture(upEvent.pointerId);
+      }
       dial.removeEventListener("pointermove", move);
       dial.removeEventListener("pointerup", up);
       dial.removeEventListener("pointercancel", up);
+      this.activeDrag = null;
     };
 
     dial.addEventListener("pointermove", move);
@@ -137,21 +206,16 @@ export class ManualControls {
     dial.addEventListener("pointercancel", up);
   }
 
-  private updateDialFromPointer(event: PointerEvent, dial: HTMLElement): void {
-    const rect = dial.getBoundingClientRect();
-    const x = event.clientX - (rect.left + rect.width / 2);
-    const y = event.clientY - (rect.top + rect.height / 2);
-    const angle = clamp(Math.atan2(y, x) * 180 / Math.PI + 90, -140, 140);
-
-    if (dial.dataset.dial === "ev") {
-      const ratio = (clamp(angle, -120, 120) + 120) / 240;
-      const value = -3 + ratio * 6;
-      this.update({ exposureCompensationEv: snapExposure(value) });
-    } else {
-      const ratio = (clamp(angle, -132, 132) + 132) / 264;
-      const index = Math.round(ratio * (ISO_VALUES.length - 1));
-      this.update({ iso: ISO_VALUES[index] ?? this.settings.iso });
+  private endActiveDrag(): void {
+    if (!this.activeDrag) {
+      return;
     }
+
+    const { dial, pointerId } = this.activeDrag;
+    if (dial.hasPointerCapture(pointerId)) {
+      dial.releasePointerCapture(pointerId);
+    }
+    this.activeDrag = null;
   }
 
   private handleEvKey(key: string): void {
@@ -190,8 +254,8 @@ export class ManualControls {
     this.renderSubjectDial();
     this.renderLever("focusStyle", this.settings.focusStyle);
     this.renderLever("flashMode", this.settings.flashMode);
-    this.renderDial("ev", this.settings.exposureCompensationEv, EXPOSURE_VALUES, evAngle);
-    this.renderDial("iso", this.settings.iso, ISO_VALUES, isoAngle);
+    this.renderDial("ev", this.settings.exposureCompensationEv, EV_DIAL);
+    this.renderDial("iso", this.settings.iso, ISO_DIAL);
   }
 
   private renderSubjectDial(): void {
@@ -230,19 +294,17 @@ export class ManualControls {
   }
 
   private renderDial<T extends number>(
-    kind: "ev" | "iso",
+    kind: DialKind,
     selectedValue: T,
-    values: readonly T[],
-    angleForValue: (value: T) => number
+    definition: DialDefinition<T>
   ): void {
     const dial = this.root.querySelector<HTMLElement>(`[data-dial='${kind}']`);
-    const face = dial?.querySelector<HTMLElement>("[data-dial-face]");
-    if (!dial || !face) {
+    if (!dial) {
       return;
     }
 
-    const angle = angleForValue(selectedValue);
-    face.style.setProperty("--dial-angle", `${-angle}deg`);
+    const angle = valueToAngle(selectedValue, definition.values, definition.minAngle, definition.maxAngle);
+    dial.style.setProperty("--rotor-angle", `${angle}deg`);
     dial.setAttribute("aria-valuenow", String(selectedValue));
     dial.setAttribute("aria-valuetext", kind === "ev" ? evLabel(selectedValue as ExposureCompensationEv) : `ISO ${selectedValue}`);
     dial.setAttribute("aria-label", kind === "ev"
@@ -252,22 +314,13 @@ export class ManualControls {
     const attr = kind === "ev" ? "data-ev" : "data-iso";
     for (const button of dial.querySelectorAll<HTMLButtonElement>(`[${attr}]`)) {
       const value = Number(button.getAttribute(attr));
-      const selected = values.includes(value as T) && value === selectedValue;
+      const selected = definition.values.includes(value as T) && value === selectedValue;
       button.classList.toggle("is-selected", selected);
       button.setAttribute("aria-pressed", String(selected));
     }
   }
 }
 
-function evAngle(value: ExposureCompensationEv): number {
-  return value * 40;
-}
-
-function isoAngle(value: FilmIso): number {
-  const index = ISO_VALUES.indexOf(value);
-  return -132 + index * 24;
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
+function dialDefinition(kind: DialKind): DialDefinition<ExposureCompensationEv | FilmIso> {
+  return kind === "ev" ? EV_DIAL : ISO_DIAL;
 }

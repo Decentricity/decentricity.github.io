@@ -76,7 +76,12 @@ test("subject, EV, and ISO dial marks use even radial geometry", () => {
   assert.deepEqual(intervals(isoAngles), [24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24]);
 
   assert.match(cssBlock(".dial-face button"), /translateY\(var\(--label-radius\)\)/);
+  assert.doesNotMatch(cssBlock(".dial-face"), /transform:\s*rotate/);
+  assert.doesNotMatch(cssBlock(".dial-face button"), /--dial-angle|--rotor-angle/);
+  assert.match(cssBlock(".dial-grip"), /transform:\s*rotate\(var\(--rotor-angle,\s*0deg\)\)/);
   assert.match(cssBlock(".iso-dial .dial-face button"), /--label-radius:\s*calc\(var\(--dial-size\) \* -0\.42\)/);
+  assert.match(html, /class="dial-face dial-scale"/);
+  assert.match(html, /class="dial-grip dial-rotor"/);
 });
 
 test("Indoor and Outdoor selector aligns with the manual control plate", () => {

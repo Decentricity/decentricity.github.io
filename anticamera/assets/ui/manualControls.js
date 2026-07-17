@@ -1,4 +1,15 @@
 import { EXPOSURE_VALUES, ISO_VALUES, evLabel, flashLabel, focusStyleLabel, freezeManualSettings, loadManualSettings, nextExposure, nextIso, saveManualSettings, snapExposure, snapIso, subjectModeLabel } from "../context/manualSettings.js";
+import { advanceDialDrag, beginDialDrag as createDialDragState, pointerAngleDeg, valueToAngle } from "./dialMath.js";
+export const EV_DIAL = {
+    values: EXPOSURE_VALUES,
+    minAngle: -120,
+    maxAngle: 120
+};
+export const ISO_DIAL = {
+    values: ISO_VALUES,
+    minAngle: -132,
+    maxAngle: 132
+};
 const SUBJECT_ANGLES = {
     landscape: 0,
     "single-person": 90,
@@ -9,6 +20,7 @@ export class ManualControls {
     root;
     settings = loadManualSettings();
     listeners = [];
+    activeDrag = null;
     constructor(root) {
         this.root = root;
         this.bind();
@@ -83,37 +95,69 @@ export class ManualControls {
         if (kind !== "ev" && kind !== "iso") {
             return;
         }
+        const face = dial.querySelector("[data-dial-face]");
+        if (!face) {
+            return;
+        }
         event.preventDefault();
+        this.endActiveDrag();
+        const definition = dialDefinition(kind);
+        const currentAngle = valueToAngle(kind === "ev" ? this.settings.exposureCompensationEv : this.settings.iso, definition.values, definition.minAngle, definition.maxAngle);
+        const pointerAngle = pointerAngleDeg(event.clientX, event.clientY, face.getBoundingClientRect());
+        let dragState = createDialDragState(currentAngle, pointerAngle);
         dial.setPointerCapture(event.pointerId);
-        this.updateDialFromPointer(event, dial);
+        this.activeDrag = {
+            pointerId: event.pointerId,
+            dial,
+            state: dragState
+        };
         const move = (moveEvent) => {
-            this.updateDialFromPointer(moveEvent, dial);
+            if (!this.activeDrag || moveEvent.pointerId !== event.pointerId) {
+                return;
+            }
+            moveEvent.preventDefault();
+            const nextPointerAngle = pointerAngleDeg(moveEvent.clientX, moveEvent.clientY, face.getBoundingClientRect());
+            const next = advanceDialDrag(dragState, nextPointerAngle, definition);
+            dragState = next.state;
+            this.activeDrag.state = dragState;
+            if (kind === "ev") {
+                const exposureCompensationEv = next.value;
+                if (exposureCompensationEv !== this.settings.exposureCompensationEv) {
+                    this.update({ exposureCompensationEv });
+                }
+            }
+            else {
+                const iso = next.value;
+                if (iso !== this.settings.iso) {
+                    this.update({ iso });
+                }
+            }
         };
         const up = (upEvent) => {
-            dial.releasePointerCapture(upEvent.pointerId);
+            if (upEvent.pointerId !== event.pointerId) {
+                return;
+            }
+            if (dial.hasPointerCapture(upEvent.pointerId)) {
+                dial.releasePointerCapture(upEvent.pointerId);
+            }
             dial.removeEventListener("pointermove", move);
             dial.removeEventListener("pointerup", up);
             dial.removeEventListener("pointercancel", up);
+            this.activeDrag = null;
         };
         dial.addEventListener("pointermove", move);
         dial.addEventListener("pointerup", up);
         dial.addEventListener("pointercancel", up);
     }
-    updateDialFromPointer(event, dial) {
-        const rect = dial.getBoundingClientRect();
-        const x = event.clientX - (rect.left + rect.width / 2);
-        const y = event.clientY - (rect.top + rect.height / 2);
-        const angle = clamp(Math.atan2(y, x) * 180 / Math.PI + 90, -140, 140);
-        if (dial.dataset.dial === "ev") {
-            const ratio = (clamp(angle, -120, 120) + 120) / 240;
-            const value = -3 + ratio * 6;
-            this.update({ exposureCompensationEv: snapExposure(value) });
+    endActiveDrag() {
+        if (!this.activeDrag) {
+            return;
         }
-        else {
-            const ratio = (clamp(angle, -132, 132) + 132) / 264;
-            const index = Math.round(ratio * (ISO_VALUES.length - 1));
-            this.update({ iso: ISO_VALUES[index] ?? this.settings.iso });
+        const { dial, pointerId } = this.activeDrag;
+        if (dial.hasPointerCapture(pointerId)) {
+            dial.releasePointerCapture(pointerId);
         }
+        this.activeDrag = null;
     }
     handleEvKey(key) {
         if (key === "Home") {
@@ -152,8 +196,8 @@ export class ManualControls {
         this.renderSubjectDial();
         this.renderLever("focusStyle", this.settings.focusStyle);
         this.renderLever("flashMode", this.settings.flashMode);
-        this.renderDial("ev", this.settings.exposureCompensationEv, EXPOSURE_VALUES, evAngle);
-        this.renderDial("iso", this.settings.iso, ISO_VALUES, isoAngle);
+        this.renderDial("ev", this.settings.exposureCompensationEv, EV_DIAL);
+        this.renderDial("iso", this.settings.iso, ISO_DIAL);
     }
     renderSubjectDial() {
         const dial = this.root.querySelector("[data-control='subject']");
@@ -183,14 +227,13 @@ export class ManualControls {
             button.setAttribute("aria-checked", String(selected));
         });
     }
-    renderDial(kind, selectedValue, values, angleForValue) {
+    renderDial(kind, selectedValue, definition) {
         const dial = this.root.querySelector(`[data-dial='${kind}']`);
-        const face = dial?.querySelector("[data-dial-face]");
-        if (!dial || !face) {
+        if (!dial) {
             return;
         }
-        const angle = angleForValue(selectedValue);
-        face.style.setProperty("--dial-angle", `${-angle}deg`);
+        const angle = valueToAngle(selectedValue, definition.values, definition.minAngle, definition.maxAngle);
+        dial.style.setProperty("--rotor-angle", `${angle}deg`);
         dial.setAttribute("aria-valuenow", String(selectedValue));
         dial.setAttribute("aria-valuetext", kind === "ev" ? evLabel(selectedValue) : `ISO ${selectedValue}`);
         dial.setAttribute("aria-label", kind === "ev"
@@ -199,19 +242,12 @@ export class ManualControls {
         const attr = kind === "ev" ? "data-ev" : "data-iso";
         for (const button of dial.querySelectorAll(`[${attr}]`)) {
             const value = Number(button.getAttribute(attr));
-            const selected = values.includes(value) && value === selectedValue;
+            const selected = definition.values.includes(value) && value === selectedValue;
             button.classList.toggle("is-selected", selected);
             button.setAttribute("aria-pressed", String(selected));
         }
     }
 }
-function evAngle(value) {
-    return value * 40;
-}
-function isoAngle(value) {
-    const index = ISO_VALUES.indexOf(value);
-    return -132 + index * 24;
-}
-function clamp(value, min, max) {
-    return Math.max(min, Math.min(max, value));
+function dialDefinition(kind) {
+    return kind === "ev" ? EV_DIAL : ISO_DIAL;
 }
