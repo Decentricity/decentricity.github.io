@@ -1,11 +1,17 @@
 import type { AntiCameraContext } from "../types.js";
+import { aimLabelForPitch, frameLabelForScreen } from "../context/cameraPose.js";
 import { formatDegrees, round } from "../context/utils.js";
 
 export function renderReadout(container: HTMLElement, context: AntiCameraContext): void {
+  const pose = context.cameraPose;
   const rows: Array<[string, string]> = [
     ["Location", context.location.label],
-    ["Heading", formatDegrees(context.orientation.headingDegrees)],
-    ["Tilt", context.orientation.tilt],
+    ["Heading", formatDegrees(pose.azimuthDeg)],
+    ["Pitch", signedDegrees(pose.pitchDeg)],
+    ["Roll", signedDegrees(pose.rollDeg)],
+    ["Aim", aimLabelForPitch(pose.pitchDeg)],
+    ["Frame", frameLabelForScreen(pose.screenOrientationDeg)],
+    ["Pose", `${capitalize(pose.confidence)} confidence`],
     ["Time", context.time.time],
     ["Weather", weatherLine(context)],
     ["Noise", audioLine(context)],
@@ -54,3 +60,14 @@ function batteryLine(context: AntiCameraContext): string {
   return `${battery.levelPercent}%${battery.charging ? " charging" : ""}`;
 }
 
+function signedDegrees(value: number | null): string {
+  if (value === null) {
+    return "--";
+  }
+
+  return `${value >= 0 ? "+" : ""}${value.toFixed(1)} deg`;
+}
+
+function capitalize(value: string): string {
+  return `${value.slice(0, 1).toUpperCase()}${value.slice(1)}`;
+}

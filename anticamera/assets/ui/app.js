@@ -72,11 +72,12 @@ export class AntiCameraApp {
             this.showKeyPanel();
             return;
         }
+        const frozenPose = this.context.freezeCameraPose();
         this.developing = true;
         this.shutter.disabled = true;
         this.shutterSound.play();
         await this.context.primeFromUserGesture();
-        const context = await this.context.snapshot(this.mode());
+        const context = await this.context.snapshot(this.mode(), frozenPose);
         const prompt = this.promptBuilder.build(context);
         const minimumDevelopingTime = 2600 + Math.round(Math.random() * 1800);
         this.showDeveloping();

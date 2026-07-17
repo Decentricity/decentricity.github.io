@@ -1,4 +1,14 @@
-import type { MotionContext, OrientationContext } from "../types.js";
+import type { CameraPose, MotionContext, OrientationContext } from "../types.js";
+import {
+  aimLabelForPitch,
+  cameraPoseFromDeviceOrientation,
+  cameraPoseWithFreshness,
+  currentScreenOrientationDeg,
+  emptyCameraPose,
+  freezeCameraPose,
+  parseDebugPose,
+  smoothCameraPose
+} from "./cameraPose.js";
 import { clamp, round } from "./utils.js";
 
 type PermissionRequester = {
@@ -10,9 +20,15 @@ type WebKitOrientationEvent = DeviceOrientationEvent & {
 };
 
 export class MotionSensors {
+  private readonly simulator = parseDebugPose(window.location.search);
+
+  private cameraPose: CameraPose = this.simulator.enabled
+    ? this.simulator.pose
+    : emptyCameraPose();
+
   private orientation: OrientationContext = {
     status: "pending",
-    tilt: "Unknown"
+    aim: "Unknown"
   };
 
   private motion: MotionContext = {
@@ -28,8 +44,22 @@ export class MotionSensors {
       return;
     }
 
+    if (this.simulator.enabled) {
+      this.orientation = {
+        status: "granted",
+        aim: aimLabelForPitch(this.simulator.pose.pitchDeg),
+        sampleAgeMs: 0
+      };
+      this.motion = {
+        status: "granted",
+        movement: "Still"
+      };
+      this.listening = true;
+      return;
+    }
+
     if (!("DeviceOrientationEvent" in window) && !("DeviceMotionEvent" in window)) {
-      this.orientation = { status: "unavailable", tilt: "Unknown" };
+      this.orientation = { status: "unavailable", aim: "Unknown" };
       this.motion = { status: "unavailable", movement: "Unknown" };
       return;
     }
@@ -62,7 +92,7 @@ export class MotionSensors {
     const denied = results.some((result) => result.status === "fulfilled" && result.value === "denied");
 
     if (denied) {
-      this.orientation = { status: "denied", tilt: "Unknown" };
+      this.orientation = { status: "denied", aim: "Unknown" };
       this.motion = { status: "denied", movement: "Unknown" };
       return;
     }
@@ -71,26 +101,54 @@ export class MotionSensors {
   }
 
   orientationSnapshot(): OrientationContext {
-    return { ...this.orientation };
+    const now = Date.now();
+    return {
+      ...this.orientation,
+      sampleAgeMs: Math.max(0, now - this.cameraPose.capturedAt),
+      aim: aimLabelForPitch(this.poseSnapshot(now).pitchDeg)
+    };
   }
 
   motionSnapshot(): MotionContext {
     return { ...this.motion };
   }
 
+  poseSnapshot(now = Date.now()): CameraPose {
+    if (this.simulator.enabled) {
+      return freezeCameraPose(this.simulator.pose, now);
+    }
+
+    return cameraPoseWithFreshness(this.cameraPose, now);
+  }
+
+  freezePose(now = Date.now()): CameraPose {
+    return freezeCameraPose(this.poseSnapshot(now), now);
+  }
+
   private onOrientation = (event: DeviceOrientationEvent): void => {
+    const capturedAt = Date.now();
     const webkitEvent = event as WebKitOrientationEvent;
-    const heading = webkitEvent.webkitCompassHeading ?? (event.alpha === null ? undefined : 360 - event.alpha);
-    const beta = event.beta;
-    const gamma = event.gamma;
+    const measured = cameraPoseFromDeviceOrientation({
+      alpha: event.alpha,
+      beta: event.beta,
+      gamma: event.gamma,
+      webkitCompassHeading: webkitEvent.webkitCompassHeading,
+      screenOrientationDeg: currentScreenOrientationDeg(),
+      capturedAt
+    });
+
+    this.cameraPose = this.cameraPose.pitchDeg === null && this.cameraPose.rollDeg === null
+      ? measured
+      : smoothCameraPose(this.cameraPose, measured);
 
     this.orientation = {
       status: "granted",
-      headingDegrees: heading === undefined ? undefined : round((heading + 360) % 360),
       alpha: event.alpha,
-      beta,
-      gamma,
-      tilt: this.tiltFrom(beta, gamma)
+      beta: event.beta,
+      gamma: event.gamma,
+      webkitCompassHeading: webkitEvent.webkitCompassHeading,
+      sampleAgeMs: 0,
+      aim: aimLabelForPitch(this.cameraPose.pitchDeg)
     };
   };
 
@@ -122,34 +180,6 @@ export class MotionSensors {
     };
   };
 
-  private tiltFrom(beta: number | null, gamma: number | null): OrientationContext["tilt"] {
-    if (beta === null || gamma === null) {
-      return "Unknown";
-    }
-
-    if (Math.abs(beta) < 18 && Math.abs(gamma) < 18) {
-      return "Level";
-    }
-
-    if (beta > 25) {
-      return "Up";
-    }
-
-    if (beta < -25) {
-      return "Down";
-    }
-
-    if (gamma > 22) {
-      return "Right";
-    }
-
-    if (gamma < -22) {
-      return "Left";
-    }
-
-    return "Level";
-  }
-
   private movementFrom(average: number | undefined, rotationRate: number | undefined): MotionContext["movement"] {
     if (average === undefined) {
       return "Unknown";
@@ -171,4 +201,3 @@ export class MotionSensors {
     return "Riding";
   }
 }
-

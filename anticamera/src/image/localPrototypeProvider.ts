@@ -18,16 +18,19 @@ export class LocalPrototypeProvider implements ImageGeneratorProvider {
     const isIndoor = request.context.mode === "indoor";
     const isNight = request.context.time.dayPeriod === "night";
     const rain = weather.includes("rain") || weather.includes("storm");
+    const pitch = request.context.cameraPose.pitchDeg ?? 0;
+    const roll = request.context.cameraPose.rollDeg ?? 0;
 
     context.fillStyle = isNight ? "#1b1c1b" : isIndoor ? "#716d64" : "#9ca49a";
     context.fillRect(0, 0, 1024, 1024);
 
     if (isIndoor) {
-      this.drawIndoor(context, random, isNight);
+      this.drawIndoor(context, random, isNight, pitch);
     } else {
-      this.drawOutdoor(context, random, isNight, rain);
+      this.drawOutdoor(context, random, isNight, rain, pitch);
     }
 
+    this.applyRoll(context, roll);
     this.addWeatherAndFilm(context, random, rain, request.context.audio.descriptor);
 
     return {
@@ -36,19 +39,26 @@ export class LocalPrototypeProvider implements ImageGeneratorProvider {
     };
   }
 
-  private drawOutdoor(context: CanvasRenderingContext2D, random: () => number, isNight: boolean, rain: boolean): void {
+  private drawOutdoor(
+    context: CanvasRenderingContext2D,
+    random: () => number,
+    isNight: boolean,
+    rain: boolean,
+    pitch: number
+  ): void {
+    const horizonY = horizonFromPitch(pitch);
     context.fillStyle = isNight ? "#20242a" : rain ? "#7e8886" : "#a9b3ad";
-    context.fillRect(0, 0, 1024, 500);
+    context.fillRect(0, 0, 1024, horizonY);
 
     context.fillStyle = isNight ? "#22251f" : "#6d7663";
-    context.fillRect(0, 500, 1024, 524);
+    context.fillRect(0, horizonY, 1024, 1024 - horizonY);
 
     const blocks = 7 + Math.floor(random() * 8);
     for (let index = 0; index < blocks; index += 1) {
       const width = 70 + random() * 150;
       const height = 150 + random() * 390;
       const x = random() * 1024 - 60;
-      const y = 500 - height + random() * 80;
+      const y = horizonY - height + random() * 80;
       context.fillStyle = isNight ? shade("#272b30", random()) : shade("#747d77", random());
       context.fillRect(x, y, width, height);
 
@@ -67,7 +77,7 @@ export class LocalPrototypeProvider implements ImageGeneratorProvider {
     context.fillStyle = isNight ? "#30312b" : "#575e4f";
     for (let index = 0; index < 18; index += 1) {
       const x = random() * 1024;
-      const y = 480 + random() * 200;
+      const y = Math.max(60, horizonY - 20) + random() * 220;
       context.beginPath();
       context.arc(x, y, 28 + random() * 72, 0, Math.PI * 2);
       context.fill();
@@ -87,14 +97,15 @@ export class LocalPrototypeProvider implements ImageGeneratorProvider {
     }
   }
 
-  private drawIndoor(context: CanvasRenderingContext2D, random: () => number, isNight: boolean): void {
+  private drawIndoor(context: CanvasRenderingContext2D, random: () => number, isNight: boolean, pitch: number): void {
+    const wallBreak = horizonFromPitch(pitch);
     context.fillStyle = isNight ? "#34302a" : "#8a8475";
     context.fillRect(0, 0, 1024, 1024);
 
     context.fillStyle = isNight ? "#201d19" : "#625d53";
-    context.fillRect(0, 612, 1024, 412);
+    context.fillRect(0, wallBreak, 1024, 1024 - wallBreak);
 
-    const tableY = 640 + random() * 100;
+    const tableY = Math.max(wallBreak + 28, 560 + random() * 150);
     context.fillStyle = isNight ? "#493c2f" : "#76634f";
     context.fillRect(80, tableY, 864, 94);
 
@@ -117,6 +128,28 @@ export class LocalPrototypeProvider implements ImageGeneratorProvider {
       context.fillStyle = isNight ? "#7b6548" : "#b5a074";
       context.fillRect(x + 8, y + 8, width - 16, height - 16);
     }
+  }
+
+  private applyRoll(context: CanvasRenderingContext2D, roll: number): void {
+    if (Math.abs(roll) < 0.1) {
+      return;
+    }
+
+    const temp = document.createElement("canvas");
+    temp.width = 1024;
+    temp.height = 1024;
+    const tempContext = temp.getContext("2d");
+    if (!tempContext) {
+      return;
+    }
+
+    tempContext.drawImage(context.canvas, 0, 0);
+    context.save();
+    context.clearRect(0, 0, 1024, 1024);
+    context.translate(512, 512);
+    context.rotate((roll * Math.PI) / 180);
+    context.drawImage(temp, -612, -612, 1224, 1224);
+    context.restore();
   }
 
   private addWeatherAndFilm(
@@ -179,3 +212,7 @@ function clampByte(value: number): number {
   return Math.max(0, Math.min(255, Math.round(value)));
 }
 
+function horizonFromPitch(pitch: number): number {
+  const normalized = Math.max(-90, Math.min(90, pitch));
+  return Math.round(512 + (normalized / 90) * 460);
+}

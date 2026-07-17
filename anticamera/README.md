@@ -15,6 +15,7 @@ The generated image is not evidence. It is not a photograph of reality. It is th
 - Pressing the shutter plays a mechanical click, darkens the viewfinder, waits like instant film, then reveals a generated frame.
 - Frames are kept locally in IndexedDB and displayed as a film strip.
 - Metadata can be exported as JSON, including the hidden generated prompt and captured context.
+- The shutter freezes a numeric camera pose immediately: azimuth, pitch, roll, screen orientation, confidence, and timestamp.
 
 ## Privacy Boundary
 
@@ -39,6 +40,35 @@ Included providers:
 Direct OpenAI API keys in browser storage are acceptable only for this early BYOK phase. The prototype never commits or ships a shared key. A real public deployment should use `configurable-endpoint` so secrets remain server-side.
 
 The first shutter press asks for an OpenAI secret if one has not already been saved in the browser. It is stored in `localStorage` on that device.
+
+## Camera Pose
+
+Anti-Camera normalizes browser orientation into a camera-facing pose:
+
+- `azimuthDeg`: `0` = north, `90` = east, `180` = south, `270` = west.
+- `pitchDeg`: `0` = optical axis near the local horizon, positive = aimed upward, negative = aimed downward.
+- `rollDeg`: `0` = level horizon. Positive roll means the camera's top edge rotates clockwise as seen by the photographer looking along the optical axis.
+- `screenOrientationDeg`: the portrait/landscape device rotation used to determine the photographic frame's up edge.
+
+The prompt builder treats pose as a strict compositional constraint. It uses a fixed virtual lens of `22 mm` full-frame equivalent, modeled as rectilinear wide angle with no fisheye distortion.
+
+For desktop prompt testing without moving a phone, append:
+
+```text
+?debugPose=1
+```
+
+This injects:
+
+```text
+azimuth=237, pitch=38.4, roll=-7.2, screenOrientation=0
+```
+
+Custom values can be passed as comma-separated numbers:
+
+```text
+?debugPose=237,38.4,-7.2,0
+```
 
 Optional local configuration from the browser console:
 

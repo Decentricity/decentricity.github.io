@@ -28,17 +28,22 @@ export class ContextCollector {
             this.battery.start()
         ]);
     }
-    async snapshot(mode) {
-        const now = new Date();
+    freezeCameraPose() {
+        return this.motion.freezePose(Date.now());
+    }
+    async snapshot(mode, frozenPose) {
+        const now = new Date(frozenPose?.capturedAt ?? Date.now());
         const time = this.time.snapshot(now);
         const location = this.gps.snapshot();
         const weather = await this.weather.snapshot(location);
+        const cameraPose = frozenPose ?? this.motion.poseSnapshot(now.getTime());
         return {
             capturedAt: now.toISOString(),
             mode,
             time,
             location,
             weather,
+            cameraPose,
             orientation: this.motion.orientationSnapshot(),
             motion: this.motion.motionSnapshot(),
             audio: this.audio.snapshot(),

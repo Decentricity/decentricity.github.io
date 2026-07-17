@@ -38,13 +38,23 @@ export interface WeatherContext {
   error?: string | undefined;
 }
 
+export interface CameraPose {
+  azimuthDeg: number | null;
+  pitchDeg: number | null;
+  rollDeg: number | null;
+  screenOrientationDeg: number;
+  confidence: "high" | "medium" | "low";
+  capturedAt: number;
+}
+
 export interface OrientationContext {
   status: PermissionStateName;
-  headingDegrees?: number | undefined;
   alpha?: number | null | undefined;
   beta?: number | null | undefined;
   gamma?: number | null | undefined;
-  tilt: "Unknown" | "Level" | "Up" | "Down" | "Left" | "Right";
+  webkitCompassHeading?: number | null | undefined;
+  sampleAgeMs?: number | undefined;
+  aim: string;
 }
 
 export interface MotionContext {
@@ -101,6 +111,7 @@ export interface AntiCameraContext {
   time: TimeContext;
   location: GeoContext;
   weather: WeatherContext;
+  cameraPose: CameraPose;
   orientation: OrientationContext;
   motion: MotionContext;
   audio: AmbientAudioFeatures;

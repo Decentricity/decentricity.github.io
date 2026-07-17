@@ -1,8 +1,13 @@
+import { aimLabelForPitch, cameraPoseFromDeviceOrientation, cameraPoseWithFreshness, currentScreenOrientationDeg, emptyCameraPose, freezeCameraPose, parseDebugPose, smoothCameraPose } from "./cameraPose.js";
 import { clamp, round } from "./utils.js";
 export class MotionSensors {
+    simulator = parseDebugPose(window.location.search);
+    cameraPose = this.simulator.enabled
+        ? this.simulator.pose
+        : emptyCameraPose();
     orientation = {
         status: "pending",
-        tilt: "Unknown"
+        aim: "Unknown"
     };
     motion = {
         status: "pending",
@@ -14,8 +19,21 @@ export class MotionSensors {
         if (this.listening) {
             return;
         }
+        if (this.simulator.enabled) {
+            this.orientation = {
+                status: "granted",
+                aim: aimLabelForPitch(this.simulator.pose.pitchDeg),
+                sampleAgeMs: 0
+            };
+            this.motion = {
+                status: "granted",
+                movement: "Still"
+            };
+            this.listening = true;
+            return;
+        }
         if (!("DeviceOrientationEvent" in window) && !("DeviceMotionEvent" in window)) {
-            this.orientation = { status: "unavailable", tilt: "Unknown" };
+            this.orientation = { status: "unavailable", aim: "Unknown" };
             this.motion = { status: "unavailable", movement: "Unknown" };
             return;
         }
@@ -41,30 +59,54 @@ export class MotionSensors {
         const results = await Promise.allSettled(requests);
         const denied = results.some((result) => result.status === "fulfilled" && result.value === "denied");
         if (denied) {
-            this.orientation = { status: "denied", tilt: "Unknown" };
+            this.orientation = { status: "denied", aim: "Unknown" };
             this.motion = { status: "denied", movement: "Unknown" };
             return;
         }
         this.start();
     }
     orientationSnapshot() {
-        return { ...this.orientation };
+        const now = Date.now();
+        return {
+            ...this.orientation,
+            sampleAgeMs: Math.max(0, now - this.cameraPose.capturedAt),
+            aim: aimLabelForPitch(this.poseSnapshot(now).pitchDeg)
+        };
     }
     motionSnapshot() {
         return { ...this.motion };
     }
+    poseSnapshot(now = Date.now()) {
+        if (this.simulator.enabled) {
+            return freezeCameraPose(this.simulator.pose, now);
+        }
+        return cameraPoseWithFreshness(this.cameraPose, now);
+    }
+    freezePose(now = Date.now()) {
+        return freezeCameraPose(this.poseSnapshot(now), now);
+    }
     onOrientation = (event) => {
+        const capturedAt = Date.now();
         const webkitEvent = event;
-        const heading = webkitEvent.webkitCompassHeading ?? (event.alpha === null ? undefined : 360 - event.alpha);
-        const beta = event.beta;
-        const gamma = event.gamma;
+        const measured = cameraPoseFromDeviceOrientation({
+            alpha: event.alpha,
+            beta: event.beta,
+            gamma: event.gamma,
+            webkitCompassHeading: webkitEvent.webkitCompassHeading,
+            screenOrientationDeg: currentScreenOrientationDeg(),
+            capturedAt
+        });
+        this.cameraPose = this.cameraPose.pitchDeg === null && this.cameraPose.rollDeg === null
+            ? measured
+            : smoothCameraPose(this.cameraPose, measured);
         this.orientation = {
             status: "granted",
-            headingDegrees: heading === undefined ? undefined : round((heading + 360) % 360),
             alpha: event.alpha,
-            beta,
-            gamma,
-            tilt: this.tiltFrom(beta, gamma)
+            beta: event.beta,
+            gamma: event.gamma,
+            webkitCompassHeading: webkitEvent.webkitCompassHeading,
+            sampleAgeMs: 0,
+            aim: aimLabelForPitch(this.cameraPose.pitchDeg)
         };
     };
     onMotion = (event) => {
@@ -91,27 +133,6 @@ export class MotionSensors {
             movement: this.movementFrom(average, rotationRate)
         };
     };
-    tiltFrom(beta, gamma) {
-        if (beta === null || gamma === null) {
-            return "Unknown";
-        }
-        if (Math.abs(beta) < 18 && Math.abs(gamma) < 18) {
-            return "Level";
-        }
-        if (beta > 25) {
-            return "Up";
-        }
-        if (beta < -25) {
-            return "Down";
-        }
-        if (gamma > 22) {
-            return "Right";
-        }
-        if (gamma < -22) {
-            return "Left";
-        }
-        return "Level";
-    }
     movementFrom(average, rotationRate) {
         if (average === undefined) {
             return "Unknown";
