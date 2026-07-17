@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#2f312f">
+    <meta
+      name="description"
+      content="Anti-Camera is a lensless camera prototype that captures context instead of photons."
+    >
+    <title>Anti-Camera</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <main class="page" aria-label="Anti-Camera prototype">
+      <section class="camera-shell" aria-label="Anti-Camera body">
+        <div class="top-plate" aria-hidden="true">
+          <span class="brand-mark">ANTI-CAMERA</span>
+          <span class="body-code">AC-00</span>
+        </div>
+
+        <section class="viewfinder" id="viewfinder" aria-live="polite">
+          <div class="lcd-status">
+            <span class="lcd-title">VIEWFINDER</span>
+            <span class="lcd-icons">
+              <span class="battery-shell" aria-hidden="true"><span id="battery-fill" class="battery-fill"></span></span>
+              <span id="battery-label">--%</span>
+            </span>
+          </div>
+          <form class="key-panel hidden" id="key-panel">
+            <label for="openai-key">OPENAI SECRET</label>
+            <div class="key-row">
+              <input id="openai-key" name="openai-key" type="password" autocomplete="off" spellcheck="false" placeholder="sk-...">
+              <button type="submit">LOAD</button>
+            </div>
+            <p id="key-message">USER KEY REQUIRED</p>
+          </form>
+          <dl class="readout" id="context-readout"></dl>
+          <div class="developing hidden" id="developing">Developing...</div>
+          <img class="latest-frame hidden" id="latest-frame" alt="Generated Anti-Camera frame">
+        </section>
+
+        <button class="shutter" id="shutter" type="button" aria-label="Press shutter">
+          <span class="shutter-inner" aria-hidden="true"></span>
+        </button>
+
+        <fieldset class="indoor-toggle" aria-label="Indoor or outdoor">
+          <legend class="sr-only">Indoor or outdoor</legend>
+          <input type="radio" id="mode-outdoor" name="scene-mode" value="outdoor" checked>
+          <label for="mode-outdoor">Outdoor</label>
+          <input type="radio" id="mode-indoor" name="scene-mode" value="indoor">
+          <label for="mode-indoor">Indoor</label>
+        </fieldset>
+      </section>
+
+      <section class="film-rack" aria-label="Film strip">
+        <div class="film-rack-top">
+          <span>FILM</span>
+          <button class="json-button" id="export-json" type="button">JSON</button>
+        </div>
+        <ol class="film-strip" id="film-strip"></ol>
+      </section>
+    </main>
+
+    <script type="module" src="./assets/main.js"></script>
+  </body>
+</html>
