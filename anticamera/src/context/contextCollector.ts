@@ -1,4 +1,5 @@
-import type { AntiCameraContext, CameraPose, IndoorOutdoor } from "../types.js";
+import type { AntiCameraContext, CameraPose, IndoorOutdoor, ManualCameraSettings } from "../types.js";
+import { DEFAULT_MANUAL_SETTINGS, freezeManualSettings } from "./manualSettings.js";
 import { AmbientAudioSensor } from "./audio.js";
 import { BatterySensor } from "./battery.js";
 import { DeviceSensor } from "./device.js";
@@ -38,7 +39,11 @@ export class ContextCollector {
     return this.motion.freezePose(Date.now());
   }
 
-  async snapshot(mode: IndoorOutdoor, frozenPose?: CameraPose): Promise<AntiCameraContext> {
+  async snapshot(
+    mode: IndoorOutdoor,
+    frozenPose?: CameraPose,
+    frozenSettings: ManualCameraSettings = DEFAULT_MANUAL_SETTINGS
+  ): Promise<AntiCameraContext> {
     const now = new Date(frozenPose?.capturedAt ?? Date.now());
     const time = this.time.snapshot(now);
     const location = this.gps.snapshot();
@@ -52,6 +57,7 @@ export class ContextCollector {
       location,
       weather,
       cameraPose,
+      manualSettings: freezeManualSettings(frozenSettings),
       orientation: this.motion.orientationSnapshot(),
       motion: this.motion.motionSnapshot(),
       audio: this.audio.snapshot(),

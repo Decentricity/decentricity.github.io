@@ -1,5 +1,18 @@
 export type PermissionStateName = "pending" | "granted" | "denied" | "unavailable" | "error";
 export type IndoorOutdoor = "indoor" | "outdoor";
+export type FocusStyle = "deep-focus" | "bokeh";
+export type SubjectMode = "landscape" | "single-person" | "group" | "crowd";
+export type FlashMode = "off" | "on";
+export type ExposureCompensationEv = -3 | -2 | -1 | 0 | 1 | 2 | 3;
+export type FilmIso = 80 | 100 | 125 | 160 | 200 | 250 | 320 | 400 | 500 | 640 | 800 | 1000;
+
+export interface ManualCameraSettings {
+  focusStyle: FocusStyle;
+  exposureCompensationEv: ExposureCompensationEv;
+  subjectMode: SubjectMode;
+  flashMode: FlashMode;
+  iso: FilmIso;
+}
 
 export interface TimeContext {
   iso: string;
@@ -112,6 +125,7 @@ export interface AntiCameraContext {
   location: GeoContext;
   weather: WeatherContext;
   cameraPose: CameraPose;
+  manualSettings: ManualCameraSettings;
   orientation: OrientationContext;
   motion: MotionContext;
   audio: AmbientAudioFeatures;

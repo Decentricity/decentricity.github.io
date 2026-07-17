@@ -4,6 +4,12 @@ import {
   directionLabelForAzimuth,
   frameLabelForScreen
 } from "./context/cameraPose.js";
+import {
+  evLabel,
+  flashLabel,
+  focusStyleLabel,
+  subjectModeLabel
+} from "./context/manualSettings.js";
 
 function value(label: string, detail: string | number | undefined | null): string {
   if (detail === undefined || detail === null || detail === "") {
@@ -23,6 +29,7 @@ export class PromptBuilder {
     const motion = context.motion;
     const device = context.device;
     const pose = context.cameraPose;
+    const settings = context.manualSettings;
 
     const lines = [
       "You are Anti-Camera, a lensless camera that records context rather than light.",
@@ -70,6 +77,11 @@ export class PromptBuilder {
       value("Camera roll degrees", pose.rollDeg),
       value("Screen orientation degrees", pose.screenOrientationDeg),
       value("Camera aim", aimLabelForPitch(pose.pitchDeg)),
+      value("Subject mode", subjectModeLabel(settings.subjectMode)),
+      value("Depth style", focusStyleLabel(settings.focusStyle)),
+      value("Exposure compensation", evLabel(settings.exposureCompensationEv)),
+      value("Flash", flashLabel(settings.flashMode)),
+      value("Film speed ISO", settings.iso),
       value("Movement", motion.movement),
       value("Acceleration magnitude", motion.accelerationMagnitude),
       value("Ambient audio", audio.descriptor),
@@ -79,6 +91,19 @@ export class PromptBuilder {
       value("Device type", device.deviceType),
       value("Viewport", `${device.viewport.width}x${device.viewport.height} ${device.viewport.orientation}`),
       value("Language", device.language),
+      "",
+      "MANUAL CAMERA SETTINGS -- STRICT PHOTOGRAPHIC CONSTRAINTS",
+      `Subject mode: ${subjectModeLabel(settings.subjectMode).toLowerCase()}.`,
+      `Depth style: ${settings.focusStyle === "bokeh" ? "shallow depth of field / bokeh" : "broad depth of field / deep focus"}.`,
+      `Exposure compensation: ${evLabel(settings.exposureCompensationEv)}.`,
+      `Flash: ${settings.flashMode}.`,
+      `Film speed: ISO ${settings.iso}.`,
+      `Virtual lens: ${this.virtualLensMm} mm full-frame equivalent.`,
+      "Treat these as physical camera settings, not as loose aesthetic suggestions.",
+      "Apply them together coherently.",
+      "Do not contradict the supplied camera pitch, roll, heading, location, weather, time, or indoor/outdoor context.",
+      "",
+      ...manualSettingRules(context, this.virtualLensMm),
       "",
       "Use azimuth together with location context only as geometry. The camera faces approximately "
         + `${directionLabelForAzimuth(pose.azimuthDeg)} from the supplied coordinates. `
@@ -151,4 +176,244 @@ function poseCompositionRules(context: AntiCameraContext): string[] {
 function formatSigned(value: number, alwaysSign: boolean): string {
   const sign = value >= 0 && alwaysSign ? "+" : "";
   return `${sign}${value.toFixed(1)}`;
+}
+
+function manualSettingRules(context: AntiCameraContext, lensMm: number): string[] {
+  return [
+    ...subjectPriorityRules(context),
+    "",
+    ...depthOfFieldRules(context, lensMm),
+    "",
+    ...exposureRules(context),
+    "",
+    ...flashRules(context),
+    "",
+    ...filmSpeedRules(context),
+    "",
+    ...manualInteractionRules(context, lensMm)
+  ];
+}
+
+function subjectPriorityRules(context: AntiCameraContext): string[] {
+  switch (context.manualSettings.subjectMode) {
+    case "single-person":
+      return [
+        "SUBJECT PRIORITY: ONE PERSON",
+        "The user selected one-person mode. Imagine a plausible photograph centered on one principal human subject consistent with the contextual clues.",
+        "Use the available location, direction, audio, weather, time, and environmental context to determine a believable candid situation.",
+        "Do not create a formal studio portrait unless the context supports one.",
+        "Do not fabricate a recognizable real individual."
+      ];
+    case "group":
+      return [
+        "SUBJECT PRIORITY: SMALL GROUP",
+        "The user selected small-group mode. Imagine a plausible photograph featuring roughly two to five principal people consistent with the contextual clues.",
+        "Compose them as a coherent group rather than unrelated background pedestrians.",
+        "Keep body scale, interaction, and spatial placement natural."
+      ];
+    case "crowd":
+      return [
+        "SUBJECT PRIORITY: CROWD",
+        "The user selected crowd mode. Imagine a plausible crowded photograph consistent with the contextual clues.",
+        "The crowd should meaningfully shape the composition and density of the scene.",
+        "Avoid cloned faces, repeated bodies, duplicated clothing patterns, or impossible overlaps.",
+        "Subject mode is creative direction, not evidence that a crowd was detected."
+      ];
+    case "landscape":
+    default:
+      return [
+        "SUBJECT PRIORITY: LANDSCAPE / ENVIRONMENT",
+        "The environment is the principal subject.",
+        "Favor geography, architecture, streetscape, weather, spatial depth, or the surrounding interior.",
+        "People may appear naturally but should not dominate unless unavoidable from contextual evidence."
+      ];
+  }
+}
+
+function depthOfFieldRules(context: AntiCameraContext, lensMm: number): string[] {
+  const mode = context.manualSettings.subjectMode;
+  if (context.manualSettings.focusStyle === "bokeh") {
+    const rules = [
+      "DEPTH OF FIELD -- STRICT PHOTOGRAPHIC CONSTRAINT",
+      "Use shallow depth of field with a clearly defined focal plane.",
+      "Keep the principal subject optically sharp.",
+      "Render foreground and/or background elements progressively out of focus according to plausible lens geometry.",
+      "Produce natural optical bokeh, not uniform Gaussian blur and not a software portrait-mode cutout.",
+      `A ${lensMm} mm lens naturally has deep depth of field, so strong bokeh requires close subject distance and must remain optically believable.`
+    ];
+
+    if (mode === "single-person") {
+      rules.push("For one-person mode, favor focus on the person with plausible background separation.");
+    } else if (mode === "group") {
+      rules.push("For small-group mode, retain enough depth to keep all intended people sharp.");
+    } else if (mode === "crowd") {
+      rules.push("For crowd mode, avoid an impossibly thin focal plane that makes nearly everyone unusably blurred.");
+    } else {
+      rules.push("For landscape mode, allow foreground-detail focus or deliberate miniature-like depth only if photographically plausible; do not default to portrait bokeh.");
+    }
+
+    return rules;
+  }
+
+  return [
+    "DEPTH OF FIELD -- STRICT PHOTOGRAPHIC CONSTRAINT",
+    "Use broad depth of field.",
+    "Keep foreground, middle distance, and background reasonably legible where lighting permits.",
+    "Do not introduce conspicuous portrait-style background blur."
+  ];
+}
+
+function exposureRules(context: AntiCameraContext): string[] {
+  const ev = context.manualSettings.exposureCompensationEv;
+  if (ev === -3) {
+    return [
+      "EXPOSURE COMPENSATION",
+      "Apply -3 EV relative to the model's neutral exposure.",
+      "The photograph should be substantially underexposed, with very dark midtones and heavily reduced shadow detail.",
+      "Do not reinterpret this as nighttime unless the other context indicates night."
+    ];
+  }
+
+  if (ev === -2) {
+    return [
+      "EXPOSURE COMPENSATION",
+      "Apply -2 EV relative to neutral exposure.",
+      "The photograph should be visibly underexposed, with darker midtones and reduced shadow detail.",
+      "Do not reinterpret this as nighttime unless the other context indicates night."
+    ];
+  }
+
+  if (ev === -1) {
+    return [
+      "EXPOSURE COMPENSATION",
+      "Apply -1 EV relative to neutral exposure.",
+      "The photograph should be slightly dark, with restrained midtones and somewhat deeper shadows."
+    ];
+  }
+
+  if (ev === 1) {
+    return [
+      "EXPOSURE COMPENSATION",
+      "Apply +1 EV relative to neutral exposure.",
+      "The photograph should be slightly bright, with lifted midtones while preserving plausible highlights."
+    ];
+  }
+
+  if (ev === 2) {
+    return [
+      "EXPOSURE COMPENSATION",
+      "Apply +2 EV relative to the model's neutral exposure.",
+      "The photograph should be visibly brighter, with lifted midtones and plausible highlight clipping.",
+      "Do not merely make the scene sunnier or change the time of day."
+    ];
+  }
+
+  if (ev === 3) {
+    return [
+      "EXPOSURE COMPENSATION",
+      "Apply +3 EV relative to neutral exposure.",
+      "The photograph should be substantially overexposed, with bright midtones and stronger plausible highlight clipping.",
+      "Do not merely make the scene sunnier or change the time of day."
+    ];
+  }
+
+  return [
+    "EXPOSURE COMPENSATION",
+    "Apply 0 EV relative to neutral exposure.",
+    "Use a neutral exposure consistent with the supplied time, weather, flash, ISO, movement, and indoor/outdoor context."
+  ];
+}
+
+function flashRules(context: AntiCameraContext): string[] {
+  if (context.manualSettings.flashMode === "off") {
+    return [
+      "FLASH: OFF",
+      "Use only plausible ambient illumination.",
+      "Do not introduce direct on-camera flash characteristics."
+    ];
+  }
+
+  const rules = [
+    "FLASH: ON -- DIRECT COMPACT-CAMERA FLASH",
+    "Simulate a small direct flash mounted close to the lens axis.",
+    "Use a relatively hard frontal burst with rapid falloff.",
+    "Nearby subjects may be bright while the background remains darker.",
+    "Allow characteristic compact-camera effects where contextually appropriate: sharp-edged shadows behind nearby subjects, specular highlights, reflective surfaces catching the flash, slight red-eye risk, darker distant background, and frozen nearby motion.",
+    "Do not turn the entire environment into evenly lit daylight."
+  ];
+
+  if (context.mode === "outdoor" && context.time.dayPeriod !== "night") {
+    rules.push("Outdoors in bright daylight, flash acts as modest fill flash, not a dominant night flash.");
+  }
+
+  if (context.mode === "indoor" || context.time.dayPeriod === "night") {
+    rules.push("Indoors or at night, direct-flash character may be pronounced.");
+  }
+
+  if (context.manualSettings.subjectMode === "landscape") {
+    rules.push("Landscape mode with distant scenery: the tiny flash should have little or no effect on distant objects.");
+  }
+
+  if (context.manualSettings.subjectMode === "crowd") {
+    rules.push("Crowd mode: avoid lighting an entire large crowd uniformly from a tiny flash.");
+  }
+
+  return rules;
+}
+
+function filmSpeedRules(context: AntiCameraContext): string[] {
+  const iso = context.manualSettings.iso;
+  if (iso <= 160) {
+    return [
+      `FILM SPEED: ISO ${iso}`,
+      "Simulate slow fine-grained color film.",
+      "Use fine grain, cleaner tonal transitions, and lower apparent sensitivity.",
+      "In weak light, preserve the possibility of darker exposure or motion blur unless flash or other context compensates."
+    ];
+  }
+
+  if (iso <= 400) {
+    return [
+      `FILM SPEED: ISO ${iso}`,
+      "Simulate general-purpose consumer color film.",
+      "Use moderate fine-to-medium grain and balanced sensitivity."
+    ];
+  }
+
+  return [
+    `FILM SPEED: ISO ${iso}`,
+    "Simulate fast consumer film.",
+    "Use visibly coarser but organic film grain, reduced fine detail, slightly rougher color and shadow rendition, and greater sensitivity in low light.",
+    "Do not add digital sensor noise, block artifacts, or a uniform monochrome noise overlay."
+  ];
+}
+
+function manualInteractionRules(context: AntiCameraContext, lensMm: number): string[] {
+  const settings = context.manualSettings;
+  const rules = [
+    "SETTING INTERACTIONS AND PHYSICAL REASONING",
+    `A tiny direct flash cannot illuminate distant mountains, a skyline, or an entire street.`,
+    `Exposure compensation changes brightness, not the scene's hour, weather, location, or identity.`,
+    `ISO affects sensitivity and film texture, not depth of field.`,
+    `Subject mode affects composition, not factual claims about who is present.`,
+    `The ${lensMm} mm rectilinear lens sets a wide field of view; use perspective and subject distance to reconcile it with depth-of-field settings.`
+  ];
+
+  if (settings.iso <= 160 && settings.flashMode === "off" && (context.mode === "indoor" || context.time.dayPeriod === "night")) {
+    rules.push("ISO 80-160, flash off, and dim interior/night context: the image may be dark and/or exhibit plausible motion blur.");
+  }
+
+  if (settings.iso >= 500 && settings.flashMode === "off" && (context.mode === "indoor" || context.time.dayPeriod === "night")) {
+    rules.push("High ISO, flash off, and dim interior/night context: a brighter capture is more plausible, but with coarser organic film grain.");
+  }
+
+  if (settings.iso <= 160 && settings.flashMode === "on") {
+    rules.push("Low ISO with flash on: nearby subjects may still be sharply exposed by the flash despite lower ambient sensitivity.");
+  }
+
+  if (settings.iso >= 500 && settings.exposureCompensationEv === 3) {
+    rules.push("High ISO combined with +3 EV permits stronger highlight clipping and coarse shadow texture.");
+  }
+
+  return rules;
 }

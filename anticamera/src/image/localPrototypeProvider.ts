@@ -1,4 +1,4 @@
-import type { ImageGenerationRequest, ImageGenerationResult } from "../types.js";
+import type { ImageGenerationRequest, ImageGenerationResult, SubjectMode } from "../types.js";
 import type { ImageGeneratorProvider } from "./imageGenerator.js";
 
 export class LocalPrototypeProvider implements ImageGeneratorProvider {
@@ -20,6 +20,7 @@ export class LocalPrototypeProvider implements ImageGeneratorProvider {
     const rain = weather.includes("rain") || weather.includes("storm");
     const pitch = request.context.cameraPose.pitchDeg ?? 0;
     const roll = request.context.cameraPose.rollDeg ?? 0;
+    const settings = request.context.manualSettings;
 
     context.fillStyle = isNight ? "#1b1c1b" : isIndoor ? "#716d64" : "#9ca49a";
     context.fillRect(0, 0, 1024, 1024);
@@ -30,8 +31,15 @@ export class LocalPrototypeProvider implements ImageGeneratorProvider {
       this.drawOutdoor(context, random, isNight, rain, pitch);
     }
 
+    if (settings.focusStyle === "bokeh") {
+      this.applyDepthEffect(context, settings.subjectMode);
+    }
+
+    this.drawSubjectMode(context, random, settings.subjectMode, pitch, isNight);
+    this.applyFlash(context, settings.subjectMode, settings.flashMode === "on", isNight || isIndoor);
+    this.applyExposure(context, settings.exposureCompensationEv);
     this.applyRoll(context, roll);
-    this.addWeatherAndFilm(context, random, rain, request.context.audio.descriptor);
+    this.addWeatherAndFilm(context, random, rain, request.context.audio.descriptor, settings.iso);
 
     return {
       imageDataUrl: canvas.toDataURL("image/jpeg", 0.9),
@@ -152,15 +160,114 @@ export class LocalPrototypeProvider implements ImageGeneratorProvider {
     context.restore();
   }
 
+  private applyDepthEffect(context: CanvasRenderingContext2D, subjectMode: SubjectMode): void {
+    const temp = document.createElement("canvas");
+    temp.width = 1024;
+    temp.height = 1024;
+    const tempContext = temp.getContext("2d");
+    if (!tempContext) {
+      return;
+    }
+
+    tempContext.drawImage(context.canvas, 0, 0);
+    context.save();
+    context.filter = subjectMode === "crowd" || subjectMode === "group" ? "blur(3px)" : "blur(6px)";
+    context.drawImage(temp, 0, 0);
+    context.filter = "none";
+
+    if (subjectMode === "landscape") {
+      context.globalAlpha = 0.68;
+      context.drawImage(temp, 0, 560, 1024, 220, 0, 560, 1024, 220);
+      context.globalAlpha = 1;
+    }
+
+    context.restore();
+  }
+
+  private drawSubjectMode(
+    context: CanvasRenderingContext2D,
+    random: () => number,
+    subjectMode: SubjectMode,
+    pitch: number,
+    isNight: boolean
+  ): void {
+    if (subjectMode === "landscape") {
+      return;
+    }
+
+    const baseY = Math.max(510, Math.min(900, horizonFromPitch(pitch) + 230));
+    const color = isNight ? "#1f211d" : "#2f302a";
+    if (subjectMode === "single-person") {
+      this.drawPerson(context, 512, baseY, 1.65, color);
+      return;
+    }
+
+    const count = subjectMode === "group" ? 4 : 24;
+    for (let index = 0; index < count; index += 1) {
+      const spread = subjectMode === "group" ? 270 : 870;
+      const x = 512 - spread / 2 + random() * spread;
+      const y = baseY - 55 + random() * (subjectMode === "group" ? 80 : 190);
+      const scale = subjectMode === "group" ? 0.9 + random() * 0.42 : 0.36 + random() * 0.48;
+      this.drawPerson(context, x, y, scale, shade(color, random()));
+    }
+  }
+
+  private drawPerson(context: CanvasRenderingContext2D, x: number, y: number, scale: number, color: string): void {
+    context.save();
+    context.translate(x, y);
+    context.scale(scale, scale);
+    context.fillStyle = color;
+    context.beginPath();
+    context.arc(0, -54, 22, 0, Math.PI * 2);
+    context.fill();
+    context.beginPath();
+    context.moveTo(-38, 38);
+    context.quadraticCurveTo(-28, -22, 0, -22);
+    context.quadraticCurveTo(28, -22, 38, 38);
+    context.closePath();
+    context.fill();
+    context.restore();
+  }
+
+  private applyFlash(context: CanvasRenderingContext2D, subjectMode: SubjectMode, enabled: boolean, pronounced: boolean): void {
+    if (!enabled) {
+      return;
+    }
+
+    const strength = subjectMode === "landscape" ? 0.08 : pronounced ? 0.3 : 0.17;
+    const gradient = context.createRadialGradient(512, 520, 40, 512, 520, 720);
+    gradient.addColorStop(0, `rgba(255, 246, 218, ${strength})`);
+    gradient.addColorStop(0.35, `rgba(255, 246, 218, ${strength * 0.55})`);
+    gradient.addColorStop(1, "rgba(0, 0, 0, 0.24)");
+    context.fillStyle = gradient;
+    context.fillRect(0, 0, 1024, 1024);
+  }
+
+  private applyExposure(context: CanvasRenderingContext2D, ev: number): void {
+    if (ev === 0) {
+      return;
+    }
+
+    if (ev > 0) {
+      context.fillStyle = `rgba(255, 246, 220, ${Math.min(0.36, ev * 0.095)})`;
+    } else {
+      context.fillStyle = `rgba(0, 0, 0, ${Math.min(0.42, Math.abs(ev) * 0.115)})`;
+    }
+
+    context.fillRect(0, 0, 1024, 1024);
+  }
+
   private addWeatherAndFilm(
     context: CanvasRenderingContext2D,
     random: () => number,
     rain: boolean,
-    audioDescriptor: string
+    audioDescriptor: string,
+    iso: number
   ): void {
     const image = context.getImageData(0, 0, 1024, 1024);
     const data = image.data;
-    const grain = audioDescriptor === "Loud" || audioDescriptor === "Busy street" ? 26 : 18;
+    const isoGrain = iso <= 160 ? 8 : iso <= 400 ? 17 : 31;
+    const grain = isoGrain + (audioDescriptor === "Loud" || audioDescriptor === "Busy street" ? 8 : 0);
 
     for (let index = 0; index < data.length; index += 4) {
       const noise = (random() - 0.5) * grain;

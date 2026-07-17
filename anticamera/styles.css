@@ -296,6 +296,8 @@ button {
 .json-button:focus-visible,
 .key-row input:focus-visible,
 .key-row button:focus-visible,
+.manual-controls button:focus-visible,
+.analog-dial:focus-visible,
 .indoor-toggle input:focus-visible + label {
   outline: 2px solid var(--focus);
   outline-offset: 4px;
@@ -315,6 +317,295 @@ button {
   border-radius: 50%;
 }
 
+.manual-controls {
+  display: grid;
+  grid-template-columns: minmax(138px, 1fr) minmax(136px, 0.8fr);
+  gap: 14px;
+  margin: 6px 0 16px;
+  padding: 14px;
+  background: #343733;
+  border: 1px solid #20221f;
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04), inset 0 8px 22px rgba(0, 0, 0, 0.18);
+}
+
+.manual-controls button {
+  color: inherit;
+}
+
+.engraved-label {
+  display: block;
+  color: #bdb7a8;
+  font-size: 0.58rem;
+  line-height: 1;
+  text-align: center;
+}
+
+.control-cluster,
+.mechanical-lever,
+.analog-dial {
+  background: #262824;
+  border: 1px solid #151714;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+.mode-cluster {
+  display: grid;
+  gap: 7px;
+  min-height: 146px;
+  padding: 9px;
+  border-radius: 9px;
+}
+
+.mode-dial {
+  position: relative;
+  width: 122px;
+  height: 122px;
+  margin: 0 auto;
+  border-radius: 50%;
+  background: #1c1e1b;
+  border: 8px solid #444741;
+  box-shadow: inset 0 0 0 2px #11130f, 0 4px 8px rgba(0, 0, 0, 0.22);
+}
+
+.mode-pointer,
+.dial-index {
+  position: absolute;
+  left: 50%;
+  top: -9px;
+  z-index: 4;
+  width: 0;
+  height: 0;
+  transform: translateX(-50%);
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 14px solid #d6c9ad;
+  filter: drop-shadow(0 1px 0 #171816);
+}
+
+.mode-hub {
+  position: absolute;
+  inset: 34px;
+  z-index: 2;
+  border-radius: 50%;
+  background: #55574f;
+  border: 1px solid #191b18;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.08), inset 0 -6px 10px rgba(0, 0, 0, 0.22);
+}
+
+.mode-hub::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 2px;
+  width: 4px;
+  height: 22px;
+  transform: translateX(-50%) rotate(var(--mode-angle, 0deg));
+  transform-origin: 50% 44px;
+  background: #f0e4c7;
+  border-radius: 2px;
+}
+
+.mode-choice {
+  position: absolute;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 4px;
+  background: #d1c7b2;
+  border: 2px solid #171816;
+  border-radius: 50%;
+  color: #171816;
+  box-shadow: 0 2px 0 #121310;
+}
+
+.mode-choice svg,
+.mechanical-lever svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+}
+
+.mode-choice.is-selected {
+  background: #f0e4c7;
+  transform: translateY(2px);
+  box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.24);
+}
+
+.mode-landscape {
+  left: 42px;
+  top: 4px;
+}
+
+.mode-single {
+  right: 4px;
+  top: 42px;
+}
+
+.mode-group {
+  left: 42px;
+  bottom: 4px;
+}
+
+.mode-crowd {
+  left: 4px;
+  top: 42px;
+}
+
+.lever-column {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.mechanical-lever {
+  display: grid;
+  gap: 7px;
+  padding: 9px;
+  border-radius: 8px;
+}
+
+.lever-track {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+  min-height: 42px;
+  padding: 4px;
+  background: #151714;
+  border: 1px solid #080908;
+  border-radius: 5px;
+  box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.45);
+}
+
+.lever-track button {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+  min-height: 34px;
+  padding: 0 5px;
+  color: #d2c9b7;
+  background: transparent;
+  border: 0;
+  font-size: 0.58rem;
+}
+
+.lever-track button svg {
+  width: 30px;
+}
+
+.flash-lever .lever-track button svg {
+  width: 13px;
+  height: 17px;
+}
+
+.lever-thumb {
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  left: 5px;
+  width: calc(50% - 6px);
+  z-index: 1;
+  background: #696b61;
+  border: 1px solid #10110f;
+  border-radius: 4px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 2px 4px rgba(0, 0, 0, 0.38);
+  transition: transform 160ms ease;
+}
+
+.mechanical-lever[data-selected="bokeh"] .lever-thumb,
+.mechanical-lever[data-selected="on"] .lever-thumb {
+  transform: translateX(calc(100% + 2px));
+}
+
+.lever-track button.is-selected {
+  color: #fff3d0;
+}
+
+.dial-row {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 13px;
+}
+
+.analog-dial {
+  position: relative;
+  display: grid;
+  gap: 7px;
+  min-height: 162px;
+  padding: 9px 6px 7px;
+  border-radius: 9px;
+  touch-action: none;
+}
+
+.dial-face {
+  --dial-angle: 0deg;
+  position: relative;
+  width: 122px;
+  height: 122px;
+  margin: 0 auto;
+  border-radius: 50%;
+  background: #5f6158;
+  border: 8px solid #191b18;
+  transform: rotate(var(--dial-angle));
+  transition: transform 130ms ease;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.11), inset 0 -9px 16px rgba(0, 0, 0, 0.28), 0 4px 8px rgba(0, 0, 0, 0.22);
+}
+
+.dial-face button {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 28px;
+  min-height: 20px;
+  padding: 0;
+  color: #f1e3bf;
+  background: transparent;
+  border: 0;
+  font-size: 0.52rem;
+  transform: rotate(var(--tick-angle)) translateY(-52px) rotate(calc(-1 * var(--tick-angle))) rotate(calc(-1 * var(--dial-angle))) translate(-50%, -50%);
+}
+
+.iso-dial .dial-face button {
+  width: 34px;
+  font-size: 0.46rem;
+}
+
+.dial-face button.is-selected {
+  color: #ffffff;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.dial-grip {
+  position: absolute;
+  inset: 38px;
+  border-radius: 50%;
+  background: #343733;
+  border: 1px solid #121310;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.09), inset 0 -7px 10px rgba(0, 0, 0, 0.3);
+}
+
+.dial-grip::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 7px;
+  width: 4px;
+  height: 18px;
+  transform: translateX(-50%);
+  background: #d8d0bf;
+  border-radius: 2px;
+}
+
 .indoor-toggle {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -325,6 +616,7 @@ button {
   border: 1px solid #20221f;
   border-radius: 8px;
   background: var(--plastic-dark);
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.34);
 }
 
 .indoor-toggle input {
@@ -461,6 +753,34 @@ button {
   .shutter {
     width: 104px;
     height: 104px;
+  }
+
+  .manual-controls {
+    grid-template-columns: 1fr;
+    padding: 12px;
+  }
+
+  .dial-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .dial-face,
+  .mode-dial {
+    width: 112px;
+    height: 112px;
+  }
+
+  .dial-face button {
+    transform: rotate(var(--tick-angle)) translateY(-48px) rotate(calc(-1 * var(--tick-angle))) rotate(calc(-1 * var(--dial-angle))) translate(-50%, -50%);
+  }
+
+  .mode-choice {
+    width: 35px;
+    height: 35px;
+  }
+
+  .mode-hub {
+    inset: 31px;
   }
 }
 

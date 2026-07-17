@@ -1,5 +1,6 @@
 import type { AntiCameraContext } from "../types.js";
 import { aimLabelForPitch, frameLabelForScreen } from "../context/cameraPose.js";
+import { settingsReadout, subjectModeLabel } from "../context/manualSettings.js";
 import { formatDegrees, round } from "../context/utils.js";
 
 export function renderReadout(container: HTMLElement, context: AntiCameraContext): void {
@@ -12,6 +13,8 @@ export function renderReadout(container: HTMLElement, context: AntiCameraContext
     ["Aim", aimLabelForPitch(pose.pitchDeg)],
     ["Frame", frameLabelForScreen(pose.screenOrientationDeg)],
     ["Pose", `${capitalize(pose.confidence)} confidence`],
+    ["Mode", subjectModeLabel(context.manualSettings.subjectMode)],
+    ["Settings", settingsReadout(context.manualSettings)],
     ["Time", context.time.time],
     ["Weather", weatherLine(context)],
     ["Noise", audioLine(context)],

@@ -7,6 +7,7 @@ import {
   freezeCameraPose,
   smoothCameraPose
 } from "../assets/context/cameraPose.js";
+import { DEFAULT_MANUAL_SETTINGS } from "../assets/context/manualSettings.js";
 import { PromptBuilder } from "../assets/promptBuilder.js";
 
 function sample(alpha, beta, gamma, screenOrientationDeg = 0) {
@@ -178,6 +179,7 @@ function contextForPrompt(cameraPose) {
       description: "Cloudy"
     },
     cameraPose,
+    manualSettings: { ...DEFAULT_MANUAL_SETTINGS },
     orientation: {
       status: "granted",
       alpha: 0,

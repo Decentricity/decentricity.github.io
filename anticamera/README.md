@@ -52,6 +52,18 @@ Anti-Camera normalizes browser orientation into a camera-facing pose:
 
 The prompt builder treats pose as a strict compositional constraint. It uses a fixed virtual lens of `22 mm` full-frame equivalent, modeled as rectilinear wide angle with no fisheye distortion.
 
+## Manual Controls
+
+The prototype includes five physical-style manual controls:
+
+- Depth selector: deep focus or bokeh.
+- EV dial: `-3` through `+3` exposure compensation.
+- Subject mode dial: landscape, one person, group, or crowd.
+- Flash lever: off or on.
+- ASA / ISO dial: `80` through `1000`.
+
+The latest manual settings are stored locally in the browser. At shutter press, Anti-Camera freezes the current settings together with camera pose, then stores those exact values in the frame metadata and JSON export. The hidden prompt treats these as physical photographic constraints rather than aesthetic tags.
+
 For desktop prompt testing without moving a phone, append:
 
 ```text

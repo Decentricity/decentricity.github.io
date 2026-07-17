@@ -1,3 +1,4 @@
+import { DEFAULT_MANUAL_SETTINGS, freezeManualSettings } from "./manualSettings.js";
 import { AmbientAudioSensor } from "./audio.js";
 import { BatterySensor } from "./battery.js";
 import { DeviceSensor } from "./device.js";
@@ -31,7 +32,7 @@ export class ContextCollector {
     freezeCameraPose() {
         return this.motion.freezePose(Date.now());
     }
-    async snapshot(mode, frozenPose) {
+    async snapshot(mode, frozenPose, frozenSettings = DEFAULT_MANUAL_SETTINGS) {
         const now = new Date(frozenPose?.capturedAt ?? Date.now());
         const time = this.time.snapshot(now);
         const location = this.gps.snapshot();
@@ -44,6 +45,7 @@ export class ContextCollector {
             location,
             weather,
             cameraPose,
+            manualSettings: freezeManualSettings(frozenSettings),
             orientation: this.motion.orientationSnapshot(),
             motion: this.motion.motionSnapshot(),
             audio: this.audio.snapshot(),

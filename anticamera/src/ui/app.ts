@@ -3,6 +3,7 @@ import { ContextCollector } from "../context/contextCollector.js";
 import { Gallery } from "../gallery/gallery.js";
 import { ImageGenerator } from "../image/imageGenerator.js";
 import { PromptBuilder } from "../promptBuilder.js";
+import { ManualControls } from "./manualControls.js";
 import { renderBattery, renderReadout } from "./readout.js";
 import { ShutterSound } from "./shutterSound.js";
 
@@ -30,6 +31,7 @@ export class AntiCameraApp {
     private readonly batteryLabel: HTMLElement,
     private readonly shutter: HTMLButtonElement,
     private readonly modeInputs: NodeListOf<HTMLInputElement>,
+    private readonly manualControls: ManualControls,
     private readonly gallery: Gallery
   ) {}
 
@@ -42,6 +44,11 @@ export class AntiCameraApp {
     this.keyPanel.addEventListener("submit", (event) => {
       event.preventDefault();
       this.saveKey();
+    });
+    this.manualControls.onChange(() => {
+      if (!this.developing && this.keyPanel.classList.contains("hidden")) {
+        void this.refreshReadout();
+      }
     });
 
     await this.refreshReadout();
@@ -56,7 +63,7 @@ export class AntiCameraApp {
   }
 
   private async refreshReadout(): Promise<void> {
-    this.lastContext = await this.context.snapshot(this.mode());
+    this.lastContext = await this.context.snapshot(this.mode(), undefined, this.manualControls.currentSettings());
     renderReadout(this.readout, this.lastContext);
     renderBattery(this.batteryFill, this.batteryLabel, this.lastContext);
   }
@@ -72,12 +79,13 @@ export class AntiCameraApp {
     }
 
     const frozenPose = this.context.freezeCameraPose();
+    const frozenSettings = this.manualControls.freezeSettings();
     this.developing = true;
     this.shutter.disabled = true;
     this.shutterSound.play();
     await this.context.primeFromUserGesture();
 
-    const context = await this.context.snapshot(this.mode(), frozenPose);
+    const context = await this.context.snapshot(this.mode(), frozenPose, frozenSettings);
     const prompt = this.promptBuilder.build(context);
     const minimumDevelopingTime = 2600 + Math.round(Math.random() * 1800);
 

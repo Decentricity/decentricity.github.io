@@ -18,6 +18,7 @@ export class AntiCameraApp {
     batteryLabel;
     shutter;
     modeInputs;
+    manualControls;
     gallery;
     context = new ContextCollector();
     promptBuilder = new PromptBuilder();
@@ -25,7 +26,7 @@ export class AntiCameraApp {
     shutterSound = new ShutterSound();
     developing = false;
     lastContext = null;
-    constructor(viewfinder, readout, developingLayer, latestFrame, keyPanel, keyInput, keyMessage, batteryFill, batteryLabel, shutter, modeInputs, gallery) {
+    constructor(viewfinder, readout, developingLayer, latestFrame, keyPanel, keyInput, keyMessage, batteryFill, batteryLabel, shutter, modeInputs, manualControls, gallery) {
         this.viewfinder = viewfinder;
         this.readout = readout;
         this.developingLayer = developingLayer;
@@ -37,6 +38,7 @@ export class AntiCameraApp {
         this.batteryLabel = batteryLabel;
         this.shutter = shutter;
         this.modeInputs = modeInputs;
+        this.manualControls = manualControls;
         this.gallery = gallery;
     }
     async start() {
@@ -49,6 +51,11 @@ export class AntiCameraApp {
             event.preventDefault();
             this.saveKey();
         });
+        this.manualControls.onChange(() => {
+            if (!this.developing && this.keyPanel.classList.contains("hidden")) {
+                void this.refreshReadout();
+            }
+        });
         await this.refreshReadout();
         if (!this.imageGenerator.canGenerate()) {
             this.showKeyPanel();
@@ -60,7 +67,7 @@ export class AntiCameraApp {
         }, 1_000);
     }
     async refreshReadout() {
-        this.lastContext = await this.context.snapshot(this.mode());
+        this.lastContext = await this.context.snapshot(this.mode(), undefined, this.manualControls.currentSettings());
         renderReadout(this.readout, this.lastContext);
         renderBattery(this.batteryFill, this.batteryLabel, this.lastContext);
     }
@@ -73,11 +80,12 @@ export class AntiCameraApp {
             return;
         }
         const frozenPose = this.context.freezeCameraPose();
+        const frozenSettings = this.manualControls.freezeSettings();
         this.developing = true;
         this.shutter.disabled = true;
         this.shutterSound.play();
         await this.context.primeFromUserGesture();
-        const context = await this.context.snapshot(this.mode(), frozenPose);
+        const context = await this.context.snapshot(this.mode(), frozenPose, frozenSettings);
         const prompt = this.promptBuilder.build(context);
         const minimumDevelopingTime = 2600 + Math.round(Math.random() * 1800);
         this.showDeveloping();

@@ -44,6 +44,123 @@
           <span class="shutter-inner" aria-hidden="true"></span>
         </button>
 
+        <section class="manual-controls" id="manual-controls" aria-label="Manual photographic controls">
+          <div class="control-cluster mode-cluster">
+            <span class="engraved-label">SUBJ</span>
+            <div class="mode-dial" data-control="subject" role="radiogroup" aria-label="Subject mode dial">
+              <span class="mode-pointer" aria-hidden="true"></span>
+              <button class="mode-choice mode-landscape" type="button" data-subject-mode="landscape" aria-label="Subject mode: landscape">
+                <svg viewBox="0 0 48 48" aria-hidden="true">
+                  <path d="M6 34h36v6H6z"></path>
+                  <path d="M7 34 18 18l8 11 5-7 10 12z"></path>
+                  <circle cx="34" cy="13" r="5"></circle>
+                  <path d="M9 15h12c3 0 5 2 5 5H9z"></path>
+                </svg>
+              </button>
+              <button class="mode-choice mode-single" type="button" data-subject-mode="single-person" aria-label="Subject mode: one person">
+                <svg viewBox="0 0 48 48" aria-hidden="true">
+                  <circle cx="24" cy="16" r="8"></circle>
+                  <path d="M11 39c2-10 7-15 13-15s11 5 13 15z"></path>
+                </svg>
+              </button>
+              <button class="mode-choice mode-group" type="button" data-subject-mode="group" aria-label="Subject mode: small group">
+                <svg viewBox="0 0 48 48" aria-hidden="true">
+                  <circle cx="18" cy="17" r="6"></circle>
+                  <circle cx="31" cy="16" r="7"></circle>
+                  <path d="M6 39c2-8 6-12 12-12s10 4 12 12z"></path>
+                  <path d="M20 39c2-9 6-14 12-14s10 5 12 14z"></path>
+                </svg>
+              </button>
+              <button class="mode-choice mode-crowd" type="button" data-subject-mode="crowd" aria-label="Subject mode: crowd">
+                <svg viewBox="0 0 48 48" aria-hidden="true">
+                  <circle cx="12" cy="16" r="4"></circle>
+                  <circle cx="24" cy="14" r="5"></circle>
+                  <circle cx="36" cy="16" r="4"></circle>
+                  <circle cx="17" cy="25" r="4"></circle>
+                  <circle cx="31" cy="25" r="4"></circle>
+                  <path d="M5 40c1-7 4-11 9-11 4 0 7 3 8 8 1-5 5-8 10-8s8 4 10 11z"></path>
+                </svg>
+              </button>
+              <span class="mode-hub" aria-hidden="true"></span>
+            </div>
+          </div>
+
+          <div class="lever-column">
+            <div class="mechanical-lever" data-control="depth" role="radiogroup" aria-label="Depth selector">
+              <span class="engraved-label">DEPTH</span>
+              <div class="lever-track">
+                <button type="button" data-focus-style="deep-focus" aria-label="Depth: deep focus">
+                  <svg viewBox="0 0 34 24" aria-hidden="true">
+                    <path d="M3 18h28v3H3z"></path>
+                    <path d="M5 18 13 7l6 8 4-5 7 8z"></path>
+                    <circle cx="25" cy="7" r="3"></circle>
+                  </svg>
+                </button>
+                <button type="button" data-focus-style="bokeh" aria-label="Depth: bokeh">
+                  <svg viewBox="0 0 34 24" aria-hidden="true">
+                    <circle cx="9" cy="8" r="5"></circle>
+                    <circle cx="24" cy="7" r="3"></circle>
+                    <circle cx="20" cy="17" r="5"></circle>
+                    <path d="M5 20h24v2H5z"></path>
+                  </svg>
+                </button>
+                <span class="lever-thumb" aria-hidden="true"></span>
+              </div>
+            </div>
+
+            <div class="mechanical-lever flash-lever" data-control="flash" role="radiogroup" aria-label="Flash selector">
+              <span class="engraved-label">FLASH</span>
+              <div class="lever-track">
+                <button type="button" data-flash-mode="off" aria-label="Flash off">OFF</button>
+                <button type="button" data-flash-mode="on" aria-label="Flash on">
+                  <svg viewBox="0 0 22 28" aria-hidden="true">
+                    <path d="M12 1 3 15h7l-2 12 11-16h-7z"></path>
+                  </svg>
+                  ON
+                </button>
+                <span class="lever-thumb" aria-hidden="true"></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="dial-row">
+            <div class="analog-dial ev-dial" data-dial="ev" tabindex="0" role="group" aria-label="Exposure compensation dial">
+              <span class="engraved-label">EV</span>
+              <span class="dial-index" aria-hidden="true"></span>
+              <div class="dial-face" data-dial-face>
+                <button type="button" data-ev="-3" style="--tick-angle: -120deg" aria-label="Set exposure compensation to -3 EV">-3</button>
+                <button type="button" data-ev="-2" style="--tick-angle: -80deg" aria-label="Set exposure compensation to -2 EV">-2</button>
+                <button type="button" data-ev="-1" style="--tick-angle: -40deg" aria-label="Set exposure compensation to -1 EV">-1</button>
+                <button type="button" data-ev="0" style="--tick-angle: 0deg" aria-label="Set exposure compensation to 0 EV">0</button>
+                <button type="button" data-ev="1" style="--tick-angle: 40deg" aria-label="Set exposure compensation to +1 EV">+1</button>
+                <button type="button" data-ev="2" style="--tick-angle: 80deg" aria-label="Set exposure compensation to +2 EV">+2</button>
+                <button type="button" data-ev="3" style="--tick-angle: 120deg" aria-label="Set exposure compensation to +3 EV">+3</button>
+                <span class="dial-grip" aria-hidden="true"></span>
+              </div>
+            </div>
+
+            <div class="analog-dial iso-dial" data-dial="iso" tabindex="0" role="group" aria-label="ISO dial">
+              <span class="engraved-label">ASA / ISO</span>
+              <span class="dial-index" aria-hidden="true"></span>
+              <div class="dial-face" data-dial-face>
+                <button type="button" data-iso="80" style="--tick-angle: -132deg" aria-label="Set ISO to 80">80</button>
+                <button type="button" data-iso="100" style="--tick-angle: -108deg" aria-label="Set ISO to 100">100</button>
+                <button type="button" data-iso="125" style="--tick-angle: -84deg" aria-label="Set ISO to 125">125</button>
+                <button type="button" data-iso="160" style="--tick-angle: -60deg" aria-label="Set ISO to 160">160</button>
+                <button type="button" data-iso="200" style="--tick-angle: -36deg" aria-label="Set ISO to 200">200</button>
+                <button type="button" data-iso="250" style="--tick-angle: -12deg" aria-label="Set ISO to 250">250</button>
+                <button type="button" data-iso="320" style="--tick-angle: 12deg" aria-label="Set ISO to 320">320</button>
+                <button type="button" data-iso="400" style="--tick-angle: 36deg" aria-label="Set ISO to 400">400</button>
+                <button type="button" data-iso="500" style="--tick-angle: 60deg" aria-label="Set ISO to 500">500</button>
+                <button type="button" data-iso="640" style="--tick-angle: 84deg" aria-label="Set ISO to 640">640</button>
+                <button type="button" data-iso="800" style="--tick-angle: 108deg" aria-label="Set ISO to 800">800</button>
+                <button type="button" data-iso="1000" style="--tick-angle: 132deg" aria-label="Set ISO to 1000">1000</button>
+                <span class="dial-grip" aria-hidden="true"></span>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <fieldset class="indoor-toggle" aria-label="Indoor or outdoor">
           <legend class="sr-only">Indoor or outdoor</legend>
           <input type="radio" id="mode-outdoor" name="scene-mode" value="outdoor" checked>
