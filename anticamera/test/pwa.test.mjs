@@ -38,10 +38,10 @@ test("page exposes PWA metadata and a discreet fullscreen control", () => {
 });
 
 test("service worker caches only same-origin static app shell files", () => {
-  assert.match(sw, /anti-camera-static-v1/);
+  assert.match(sw, /anti-camera-static-v2/);
   assert.match(sw, /\.\/index\.html/);
   assert.match(sw, /\.\/styles\.css/);
-  assert.match(sw, /\.\/sw\.js/);
+  assert.doesNotMatch(sw, /["']\.\/sw\.js["']/);
   assert.match(sw, /\.\/manifest\.webmanifest/);
   assert.match(sw, /\.\/icons\/icon-192\.svg/);
   assert.match(sw, /\.\/icons\/icon-512\.svg/);
@@ -49,6 +49,8 @@ test("service worker caches only same-origin static app shell files", () => {
   assert.match(sw, /\.\/assets\/capture\/captureQueue\.js/);
   assert.match(sw, /request\.method !== "GET"/);
   assert.match(sw, /url\.origin !== self\.location\.origin/);
+  assert.match(sw, /STATIC_PATHS\.has\(url\.pathname\)/);
+  assert.match(sw, /fetch\(request,\s*\{\s*cache:\s*"no-cache"\s*\}\)/);
   assert.match(sw, /request\.mode === "navigate"/);
   assert.doesNotMatch(sw, /api\.openai\.com|nominatim|bigdatacloud|Authorization|sk-/i);
 });

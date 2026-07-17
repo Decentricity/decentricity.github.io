@@ -1,9 +1,8 @@
-const STATIC_CACHE = "anti-camera-static-v1";
+const STATIC_CACHE = "anti-camera-static-v2";
 const STATIC_ASSETS = [
   "./",
   "./index.html",
   "./styles.css",
-  "./sw.js",
   "./manifest.webmanifest",
   "./icons/icon-192.svg",
   "./icons/icon-512.svg",
@@ -38,6 +37,7 @@ const STATIC_ASSETS = [
   "./assets/ui/readout.js",
   "./assets/ui/shutterSound.js"
 ];
+const STATIC_PATHS = new Set(STATIC_ASSETS.map((asset) => new URL(asset, self.location.href).pathname));
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -68,27 +68,36 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  event.respondWith(
-    caches.match(request).then((cached) => {
-      if (cached) {
-        return cached;
-      }
+  if (request.mode !== "navigate" && !STATIC_PATHS.has(url.pathname)) {
+    return;
+  }
 
-      return fetch(request).then((response) => {
+  event.respondWith(
+    caches.open(STATIC_CACHE).then((cache) => {
+      return fetch(request, { cache: "no-cache" }).then((response) => {
         if (!response || !response.ok || response.type !== "basic") {
           return response;
         }
 
-        const copy = response.clone();
-        caches.open(STATIC_CACHE).then((cache) => {
-          void cache.put(request, copy);
-        });
+        void cache.put(request, response.clone());
         return response;
       }).catch(() => {
-        if (request.mode === "navigate") {
-          return caches.match("./index.html");
-        }
-        throw new Error("Offline and uncached");
+        return caches.match(request).then((cached) => {
+          if (cached) {
+            return cached;
+          }
+
+          if (request.mode === "navigate") {
+            return caches.match("./index.html");
+          }
+
+          return new Response("Offline and uncached", {
+            status: 503,
+            headers: {
+              "Content-Type": "text/plain; charset=utf-8"
+            }
+          });
+        });
       });
     })
   );
