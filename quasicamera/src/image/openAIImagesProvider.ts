@@ -11,7 +11,7 @@ interface OpenAIImageResponse {
   };
 }
 
-const OPENAI_IMAGE_TIMEOUT_MS = 120_000;
+const OPENAI_IMAGE_TIMEOUT_MS = 300_000;
 
 export class OpenAIImagesProvider implements ImageGeneratorProvider {
   readonly id = "openai-images";

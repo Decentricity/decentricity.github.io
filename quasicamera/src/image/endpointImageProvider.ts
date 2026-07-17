@@ -10,7 +10,7 @@ interface EndpointImageResponse {
   provider?: string;
 }
 
-const ENDPOINT_TIMEOUT_MS = 120_000;
+const ENDPOINT_TIMEOUT_MS = 300_000;
 
 export class EndpointImageProvider implements ImageGeneratorProvider {
   readonly id = "configurable-endpoint";
