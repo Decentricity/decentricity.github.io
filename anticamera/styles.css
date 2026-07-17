@@ -33,6 +33,7 @@ body {
   color: var(--cream);
   font-family: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   letter-spacing: 0;
+  overflow-x: hidden;
 }
 
 button,
@@ -46,17 +47,23 @@ button {
   cursor: pointer;
 }
 
+.app-orientation-shell {
+  min-height: 100vh;
+}
+
 .page {
-  width: min(100%, 520px);
+  width: min(100%, 980px);
   min-height: 100vh;
   margin: 0 auto;
-  padding: 18px 14px 36px;
+  padding: 14px 14px 36px;
 }
 
 .camera-shell {
   position: relative;
   width: 100%;
-  padding: 0 14px 18px;
+  max-width: 940px;
+  margin: 0 auto;
+  padding: 0 14px 16px;
   background: #30332f;
   border: 1px solid #585b55;
   border-radius: 18px;
@@ -87,10 +94,10 @@ button {
 
 .camera-top-plate {
   display: grid;
-  grid-template-columns: 54px minmax(0, 1fr) auto auto;
+  grid-template-columns: clamp(88px, 13vw, 116px) minmax(0, 1fr) auto 38px clamp(68px, 10vw, 86px);
   align-items: center;
   gap: 10px;
-  min-height: 86px;
+  min-height: 92px;
   margin: 0 -14px;
   padding: 12px 14px 10px;
   color: #ded8c9;
@@ -102,12 +109,19 @@ button {
 
 .rewind-knob {
   display: block;
-  width: 46px;
-  height: 46px;
-  border: 6px solid #252722;
+  width: 40px;
+  height: 40px;
+  border: 5px solid #252722;
   border-radius: 50%;
   background: #777970;
   box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.18), inset 0 -6px 9px rgba(0, 0, 0, 0.22);
+}
+
+.top-identity {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
 }
 
 .brand-mark {
@@ -129,7 +143,8 @@ button {
 }
 
 .top-status-marks {
-  display: none;
+  display: inline-block;
+  justify-self: end;
 }
 
 .camera-back-door {
@@ -166,8 +181,8 @@ button {
   position: relative;
   display: grid;
   place-items: center;
-  width: clamp(74px, 20vw, 108px);
-  max-width: 22%;
+  width: clamp(82px, 12vw, 112px);
+  max-width: none;
   height: clamp(48px, 12vw, 70px);
   min-width: 70px;
   padding: 7px;
@@ -219,9 +234,9 @@ button {
   white-space: nowrap;
 }
 
-.developing-indicator {
+.queue-status {
   min-width: 82px;
-  max-width: 124px;
+  max-width: 142px;
   min-height: 28px;
   padding: 6px 8px;
   color: #e2d9c5;
@@ -234,6 +249,39 @@ button {
   text-transform: uppercase;
   white-space: pre-line;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.42);
+}
+
+.fullscreen-button {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  background: #363933;
+  border: 1px solid #171916;
+  border-radius: 5px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 2px 0 rgba(0, 0, 0, 0.3);
+}
+
+.fullscreen-button span,
+.fullscreen-button span::before,
+.fullscreen-button span::after {
+  position: absolute;
+  inset: 8px;
+  border: 2px solid #d8d0bf;
+  border-radius: 2px;
+}
+
+.fullscreen-button span {
+  border-left-color: transparent;
+  border-right-color: transparent;
+}
+
+.fullscreen-button span::before,
+.fullscreen-button span::after {
+  content: "";
+  inset: -2px;
+  border-top-color: transparent;
+  border-bottom-color: transparent;
 }
 
 .debug-panel {
@@ -499,8 +547,8 @@ button {
   --selector-height: clamp(38px, 9vw, 42px);
   --control-row-height: calc(var(--dial-size) + var(--panel-title-height) + (var(--panel-padding) * 2) + 12px);
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  grid-template-rows: minmax(var(--control-row-height), auto) minmax(var(--control-row-height), auto);
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.9fr) minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: minmax(var(--control-row-height), auto);
   gap: var(--control-gap);
   align-items: stretch;
   width: 100%;
@@ -716,13 +764,13 @@ button {
 }
 
 .ev-dial {
-  grid-column: 1;
-  grid-row: 2;
+  grid-column: 3;
+  grid-row: 1;
 }
 
 .iso-dial {
-  grid-column: 2;
-  grid-row: 2;
+  grid-column: 4;
+  grid-row: 1;
 }
 
 .analog-dial {
@@ -889,6 +937,32 @@ button {
   background: var(--film);
 }
 
+.film-placeholder {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  padding: 12px;
+  color: #d8d0bf;
+  background: #2a2c28;
+  border: 0;
+  font-size: clamp(0.58rem, 1.7vw, 0.72rem);
+  line-height: 1.35;
+  text-align: center;
+  white-space: pre-line;
+  animation: developing-pulse 2400ms ease-in-out infinite;
+}
+
+button.film-placeholder {
+  cursor: pointer;
+}
+
+.film-frame-pending.error .film-placeholder {
+  color: #f0d8c8;
+  background: #3a2020;
+  animation: none;
+}
+
 .film-frame time {
   position: absolute;
   left: 8px;
@@ -926,6 +1000,43 @@ button {
   }
 }
 
+@keyframes developing-pulse {
+  0%,
+  100% {
+    opacity: 0.72;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (orientation: portrait) {
+  html,
+  body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .app-orientation-shell {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    width: 100vh;
+    height: 100vw;
+    overflow-y: auto;
+    overflow-x: hidden;
+    transform: translate(-50%, -50%) rotate(90deg);
+    transform-origin: center;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .page {
+    min-height: 100vw;
+  }
+}
+
 @media (max-width: 390px) {
   .page {
     padding: 10px 8px 28px;
@@ -937,7 +1048,7 @@ button {
   }
 
   .camera-top-plate {
-    grid-template-columns: 44px minmax(0, 1fr) auto auto;
+    grid-template-columns: clamp(82px, 22vw, 104px) minmax(0, 1fr) auto 34px clamp(68px, 18vw, 80px);
     gap: 8px;
     min-height: 78px;
     margin: 0 -8px;
@@ -974,27 +1085,39 @@ button {
 
 @media (max-width: 340px) {
   .manual-controls {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: auto auto;
   }
 
-  .mode-cluster,
-  .lever-column,
-  .ev-dial,
-  .iso-dial {
+  .mode-cluster {
     grid-column: 1;
-    grid-row: auto;
+    grid-row: 1;
+  }
+
+  .lever-column {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .ev-dial {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .iso-dial {
+    grid-column: 2;
+    grid-row: 2;
   }
 }
 
 @media (min-width: 820px) {
   .page {
-    width: min(100%, 760px);
-    padding-top: 30px;
+    width: min(100%, 980px);
+    padding-top: 22px;
   }
 
   .camera-shell {
-    max-width: 520px;
+    max-width: 940px;
     margin: 0 auto;
   }
 }

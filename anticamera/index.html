@@ -9,16 +9,34 @@
       content="Anti-Camera is a lensless camera prototype that captures context instead of photons."
     >
     <title>Anti-Camera</title>
+    <link rel="manifest" href="./manifest.webmanifest">
+    <link rel="icon" href="./icons/icon-192.svg" type="image/svg+xml">
     <link rel="stylesheet" href="./styles.css">
   </head>
   <body>
+    <div class="app-orientation-shell">
     <main class="page" aria-label="Anti-Camera prototype">
       <section class="camera-shell" aria-label="Anti-Camera body">
         <div class="camera-top-plate">
-          <span class="rewind-knob" aria-hidden="true"></span>
-          <span class="brand-mark">ANTI-CAMERA</span>
-          <span class="body-code">AC-00</span>
-          <span class="top-status-marks" aria-hidden="true">ASA EV</span>
+          <button
+            id="viewfinder"
+            class="optical-viewfinder"
+            type="button"
+            aria-expanded="false"
+            aria-controls="debug-panel"
+            aria-label="Open camera context information"
+          >
+            <span class="eyepiece-glass" aria-hidden="true"></span>
+            <span class="eyepiece-reflection" aria-hidden="true"></span>
+          </button>
+          <div class="top-identity">
+            <span class="brand-mark">ANTI-CAMERA</span>
+            <span class="body-code">AC-00</span>
+          </div>
+          <div class="queue-status" id="developing" aria-live="polite">READY</div>
+          <button class="fullscreen-button" id="fullscreen-button" type="button" aria-label="Enter fullscreen" aria-pressed="false">
+            <span aria-hidden="true"></span>
+          </button>
           <button class="shutter" id="shutter" type="button" aria-label="Press shutter">
             <span class="shutter-inner" aria-hidden="true"></span>
           </button>
@@ -26,22 +44,12 @@
 
         <section class="camera-back-door" aria-label="Camera back">
           <div class="back-service-row">
-            <button
-              id="viewfinder"
-              class="optical-viewfinder"
-              type="button"
-              aria-expanded="false"
-              aria-controls="debug-panel"
-              aria-label="Open camera context information"
-            >
-              <span class="eyepiece-glass" aria-hidden="true"></span>
-              <span class="eyepiece-reflection" aria-hidden="true"></span>
-            </button>
+            <span class="rewind-knob" aria-hidden="true"></span>
             <div class="back-engraving" aria-hidden="true">
               <span>LENSLESS</span>
               <span>CONTEXT</span>
             </div>
-            <div class="developing-indicator hidden" id="developing" aria-live="polite">DEVELOPING</div>
+            <span class="top-status-marks" aria-hidden="true">ASA EV</span>
           </div>
 
           <section
@@ -221,6 +229,7 @@
         <ol class="film-strip" id="film-strip"></ol>
       </section>
     </main>
+    </div>
 
     <script type="module" src="./assets/main.js"></script>
   </body>

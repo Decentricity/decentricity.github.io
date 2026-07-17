@@ -7,7 +7,7 @@ const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
 const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const { document } = parseHTML(html);
 
-test("manual controls use a unified two-column hardware plate at target widths", () => {
+test("manual controls use a unified landscape hardware plate at target widths", () => {
   const manual = cssBlock(".manual-controls");
   for (const variable of [
     "--control-gap",
@@ -22,15 +22,15 @@ test("manual controls use a unified two-column hardware plate at target widths",
   }
 
   assert.match(manual, /display:\s*grid/);
-  assert.match(manual, /grid-template-columns:\s*minmax\(0,\s*1fr\)\s+minmax\(0,\s*1fr\)/);
+  assert.match(manual, /grid-template-columns:\s*minmax\(0,\s*1\.05fr\)\s+minmax\(0,\s*0\.9fr\)\s+minmax\(0,\s*1fr\)\s+minmax\(0,\s*1fr\)/);
   assert.match(manual, /gap:\s*var\(--control-gap\)/);
   assert.match(manual, /padding:\s*var\(--control-gap\)/);
   assert.match(manual, /width:\s*100%/);
 
-  const representativeWidths = [360, 390, 504, 768];
+  const representativeWidths = [360, 390, 504, 768, 844, 915, 1024];
   const narrowBreakpoint = deliberateStackBreakpoint();
   for (const width of representativeWidths) {
-    assert.ok(width > narrowBreakpoint, `${width}px should keep the two-column control plate`);
+    assert.ok(width > narrowBreakpoint, `${width}px should keep the landscape control plate`);
   }
 
   const mobileBlock = mediaBlock("390");
@@ -53,10 +53,10 @@ test("panels share grid rows, titles, and base dimensions", () => {
   assert.match(cssBlock(".lever-column"), /grid-template-rows:\s*minmax\(0,\s*1fr\)\s+minmax\(0,\s*1fr\)/);
 
   assert.match(cssBlock(".dial-row"), /display:\s*contents/);
-  assert.match(cssBlock(".ev-dial"), /grid-column:\s*1/);
-  assert.match(cssBlock(".ev-dial"), /grid-row:\s*2/);
-  assert.match(cssBlock(".iso-dial"), /grid-column:\s*2/);
-  assert.match(cssBlock(".iso-dial"), /grid-row:\s*2/);
+  assert.match(cssBlock(".ev-dial"), /grid-column:\s*3/);
+  assert.match(cssBlock(".ev-dial"), /grid-row:\s*1/);
+  assert.match(cssBlock(".iso-dial"), /grid-column:\s*4/);
+  assert.match(cssBlock(".iso-dial"), /grid-row:\s*1/);
 });
 
 test("dial pointers are contained inside their panels", () => {
@@ -116,11 +116,31 @@ test("camera shell uses a small optical viewfinder and hidden debug panel", () =
   assert.equal(viewfinder.querySelector("#developing"), null);
   assert.equal(instantReveal.contains(latestFrame), true);
   assert.doesNotMatch(css, /\.viewfinder\s*\{/);
-  assert.match(cssBlock(".optical-viewfinder"), /width:\s*clamp\(74px,\s*20vw,\s*108px\)/);
-  assert.match(cssBlock(".optical-viewfinder"), /max-width:\s*22%/);
+  assert.match(cssBlock(".optical-viewfinder"), /width:\s*clamp\(82px,\s*12vw,\s*112px\)/);
+  assert.match(cssBlock(".optical-viewfinder"), /max-width:\s*none/);
   assert.match(cssBlock(".optical-viewfinder"), /height:\s*clamp\(48px,\s*12vw,\s*70px\)/);
   assert.match(css, /\.debug-panel\[hidden\]\s*\{[\s\S]*?display:\s*none/);
-  assert.match(cssBlock(".developing-indicator"), /min-height:\s*28px/);
+  assert.match(cssBlock(".queue-status"), /min-height:\s*28px/);
+});
+
+test("top plate keeps the optical viewfinder left and shutter right", () => {
+  const topPlate = document.querySelector(".camera-top-plate");
+  const children = [...topPlate.children];
+  assert.equal(children[0].id, "viewfinder");
+  assert.equal(children.at(-1).id, "shutter");
+  assert.ok(children.findIndex((child) => child.id === "fullscreen-button") < children.findIndex((child) => child.id === "shutter"));
+  assert.match(cssBlock(".camera-top-plate"), /display:\s*grid/);
+  assert.match(cssBlock(".camera-top-plate"), /grid-template-columns:\s*clamp\(88px,\s*13vw,\s*116px\)/);
+});
+
+test("portrait devices render a rotated landscape app shell", () => {
+  const portrait = mediaOrientationBlock("portrait");
+  assert.match(cssBlock(".app-orientation-shell"), /min-height:\s*100vh/);
+  assert.match(portrait, /\.app-orientation-shell\s*\{[\s\S]*?position:\s*fixed/);
+  assert.match(portrait, /\.app-orientation-shell\s*\{[\s\S]*?width:\s*100vh/);
+  assert.match(portrait, /\.app-orientation-shell\s*\{[\s\S]*?height:\s*100vw/);
+  assert.match(portrait, /\.app-orientation-shell\s*\{[\s\S]*?transform:\s*translate\(-50%,\s*-50%\) rotate\(90deg\)/);
+  assert.match(portrait, /\.app-orientation-shell\s*\{[\s\S]*?overflow-y:\s*auto/);
 });
 
 test("Indoor and Outdoor selector aligns with the manual control plate", () => {
@@ -178,9 +198,27 @@ function mediaBlock(width) {
   assert.fail(`Unclosed ${width}px media query`);
 }
 
+function mediaOrientationBlock(orientation) {
+  const start = css.indexOf(`@media (orientation: ${orientation})`);
+  assert.notEqual(start, -1, `Missing ${orientation} media query`);
+  const open = css.indexOf("{", start);
+  let depth = 0;
+  for (let index = open; index < css.length; index += 1) {
+    if (css[index] === "{") {
+      depth += 1;
+    } else if (css[index] === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        return css.slice(open + 1, index);
+      }
+    }
+  }
+  assert.fail(`Unclosed ${orientation} media query`);
+}
+
 function deliberateStackBreakpoint() {
   const block = mediaBlock("340");
-  assert.match(block, /\.manual-controls\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)/);
+  assert.match(block, /\.manual-controls\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)\s+minmax\(0,\s*1fr\)/);
   return 340;
 }
 

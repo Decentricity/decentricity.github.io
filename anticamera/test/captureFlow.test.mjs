@@ -4,7 +4,7 @@ import { test } from "node:test";
 import { parseHTML } from "linkedom";
 import { DEFAULT_MANUAL_SETTINGS } from "../assets/context/manualSettings.js";
 
-test("capture flow reveals generated image before gallery storage and allows a second exposure", async () => {
+test("capture flow replaces a placeholder before gallery storage and allows repeat exposures", async () => {
   const harness = await createAppHarness();
   const settings = {
     ...DEFAULT_MANUAL_SETTINGS,
@@ -20,18 +20,19 @@ test("capture flow reveals generated image before gallery storage and allows a s
   assert.equal(harness.context.snapshots.length, 1);
 
   harness.clickShutter();
+  assert.equal(harness.gallery.placeholders.length, 1);
+  assert.equal(harness.gallery.visibleTextFor(harness.gallery.placeholders[0].id), "DEVELOPING");
   await harness.waitForCaptureCount(1);
 
   assert.equal(harness.imageGenerator.calls.length, 1);
   assert.equal(harness.promptBuilder.calls.length, 1);
   assert.deepEqual(harness.imageGenerator.calls[0].context.manualSettings, settings);
   assert.deepEqual(harness.gallery.addCalls[0].context.manualSettings, settings);
+  assert.equal(harness.gallery.itemsById.get(harness.gallery.addCalls[0].id).kind, "frame");
   assert.equal(harness.latestFrame.src, "data:image/png;base64,first");
   assert.equal(harness.viewfinder.querySelector("#latest-frame"), null);
   assert.equal(harness.gallery.addCalls.length, 1);
   assert.equal(harness.shutter.disabled, false);
-  assert.ok(harness.developingLayer.classList.contains("hidden"));
-  assert.ok(harness.instantReveal.classList.contains("hidden"));
 
   harness.manualSettings = {
     ...DEFAULT_MANUAL_SETTINGS,
@@ -84,7 +85,7 @@ test("capture works while debug panel is open", async () => {
   assert.equal(harness.shutter.disabled, false);
 });
 
-test("developing state uses a small indicator and not the optical viewfinder", async () => {
+test("developing state lives in the film frame, not the optical viewfinder", async () => {
   const pending = deferred();
   const harness = await createAppHarness({
     generatorResults: [pending.promise]
@@ -92,7 +93,11 @@ test("developing state uses a small indicator and not the optical viewfinder", a
   await harness.app.start();
 
   harness.clickShutter();
-  await harness.waitFor(() => harness.developingLayer.textContent.includes("DEVELOPING"));
+  await harness.waitFor(() => harness.imageGenerator.calls.length === 1);
+  const id = harness.gallery.placeholders[0].id;
+
+  assert.match(harness.developingLayer.textContent, /1 DEVELOPING/);
+  assert.equal(harness.gallery.visibleTextFor(id), "DEVELOPING");
   assert.equal(harness.viewfinder.querySelector("#developing"), null);
   assert.equal(harness.viewfinder.querySelector("#latest-frame"), null);
   assert.equal(harness.viewfinder.classList.contains("is-developing"), true);
@@ -102,28 +107,125 @@ test("developing state uses a small indicator and not the optical viewfinder", a
     provider: "mock-image-provider"
   });
   await harness.waitForCaptureCount(1);
+  await harness.waitFor(() => harness.developingLayer.textContent.includes("READY"));
   assert.equal(harness.latestFrame.src, "data:image/png;base64,slow");
   assert.equal(harness.shutter.disabled, false);
 });
 
-test("provider failure exits developing state and retry can succeed", async () => {
+test("rapid shutter presses create ordered placeholders and process provider requests sequentially", async () => {
+  const first = deferred();
+  const second = deferred();
+  const third = deferred();
+  const harness = await createAppHarness({
+    generatorResults: [first.promise, second.promise, third.promise]
+  });
+  await harness.app.start();
+
+  harness.manualSettings = { ...DEFAULT_MANUAL_SETTINGS, iso: 100, exposureCompensationEv: 0 };
+  harness.clickShutter();
+  harness.manualSettings = { ...DEFAULT_MANUAL_SETTINGS, iso: 800, exposureCompensationEv: -2 };
+  harness.clickShutter();
+  harness.manualSettings = { ...DEFAULT_MANUAL_SETTINGS, iso: 200, exposureCompensationEv: 1 };
+  harness.clickShutter();
+
+  assert.equal(harness.gallery.placeholders.length, 3);
+  assert.equal(harness.shutterSound.plays, 3);
+  assert.deepEqual(
+    harness.gallery.placeholders.map((placeholder) => harness.gallery.visibleTextFor(placeholder.id)),
+    ["DEVELOPING", "DEVELOPING", "DEVELOPING"]
+  );
+  const originalOrder = harness.gallery.frameOrder();
+
+  await harness.waitFor(() => harness.imageGenerator.calls.length === 1);
+  assert.equal(harness.imageGenerator.activeCount, 1);
+  assert.equal(harness.imageGenerator.maxActive, 1);
+  assert.equal(harness.shutter.disabled, false);
+
+  first.resolve({
+    imageDataUrl: "data:image/png;base64,one",
+    provider: "mock-image-provider"
+  });
+  await harness.waitFor(() => harness.gallery.addCalls.length === 1 && harness.imageGenerator.calls.length === 2);
+  assert.deepEqual(harness.gallery.frameOrder(), originalOrder);
+  assert.equal(harness.gallery.itemsById.get(originalOrder[2]).kind, "frame");
+  assert.equal(harness.gallery.itemsById.get(originalOrder[1]).kind, "placeholder");
+
+  second.resolve({
+    imageDataUrl: "data:image/png;base64,two",
+    provider: "mock-image-provider"
+  });
+  await harness.waitFor(() => harness.gallery.addCalls.length === 2 && harness.imageGenerator.calls.length === 3);
+  assert.deepEqual(harness.gallery.frameOrder(), originalOrder);
+
+  third.resolve({
+    imageDataUrl: "data:image/png;base64,three",
+    provider: "mock-image-provider"
+  });
+  await harness.waitForCaptureCount(3);
+
+  assert.deepEqual(harness.gallery.frameOrder(), originalOrder);
+  assert.equal(harness.imageGenerator.maxActive, 1);
+  assert.deepEqual(
+    harness.promptBuilder.calls.map((context) => ({
+      iso: context.manualSettings.iso,
+      ev: context.manualSettings.exposureCompensationEv
+    })),
+    [
+      { iso: 100, ev: 0 },
+      { iso: 800, ev: -2 },
+      { iso: 200, ev: 1 }
+    ]
+  );
+});
+
+test("queue continues after a provider failure in the middle", async () => {
+  const harness = await createAppHarness({
+    generatorResults: [
+      "data:image/png;base64,one",
+      new Error("provider exploded"),
+      "data:image/png;base64,three"
+    ]
+  });
+  await harness.app.start();
+
+  harness.clickShutter();
+  harness.clickShutter();
+  harness.clickShutter();
+
+  await harness.waitFor(() => harness.imageGenerator.calls.length === 3 && harness.gallery.addCalls.length === 2);
+  assert.equal(harness.gallery.errorItems().length, 1);
+  assert.match(harness.gallery.errorItems()[0].placeholder.error, /provider exploded/);
+  assert.equal(harness.shutter.disabled, false);
+  assert.match(harness.developingLayer.textContent, /READY/);
+});
+
+test("failed placeholders can retry with the same frozen job state", async () => {
   const harness = await createAppHarness({
     generatorResults: [new Error("provider exploded"), "data:image/png;base64,retry"]
   });
   await harness.app.start();
 
+  harness.manualSettings = { ...DEFAULT_MANUAL_SETTINGS, iso: 640, exposureCompensationEv: -1 };
   harness.clickShutter();
-  await harness.waitFor(() => harness.developingLayer.textContent.includes("EXPOSURE FAILED"));
+  await harness.waitFor(() => harness.gallery.errorItems().length === 1);
+  const id = harness.gallery.errorItems()[0].placeholder.id;
   assert.equal(harness.shutter.disabled, false);
 
-  harness.clickShutter();
-  await harness.waitForCaptureCount(2);
+  harness.gallery.retry(id);
+  await harness.waitForCaptureCount(1);
+
+  assert.equal(harness.gallery.itemsById.get(id).kind, "frame");
   assert.equal(harness.latestFrame.src, "data:image/png;base64,retry");
-  assert.equal(harness.shutter.disabled, false);
-  assert.ok(harness.developingLayer.classList.contains("hidden"));
+  assert.deepEqual(
+    harness.promptBuilder.calls.map((context) => context.manualSettings),
+    [
+      { ...DEFAULT_MANUAL_SETTINGS, iso: 640, exposureCompensationEv: -1 },
+      { ...DEFAULT_MANUAL_SETTINGS, iso: 640, exposureCompensationEv: -1 }
+    ]
+  );
 });
 
-test("provider timeout exits developing state and leaves shutter usable", async () => {
+test("provider timeout marks the placeholder failed and leaves shutter usable", async () => {
   const harness = await createAppHarness({
     generatorResults: [new Promise(() => undefined)],
     generationTimeoutMs: 1
@@ -131,16 +233,63 @@ test("provider timeout exits developing state and leaves shutter usable", async 
   await harness.app.start();
 
   harness.clickShutter();
-  await harness.waitFor(() => harness.developingLayer.textContent.includes("NETWORK TIMEOUT"));
+  await harness.waitFor(() => harness.gallery.errorItems().length === 1);
 
   assert.equal(harness.shutter.disabled, false);
-  assert.match(harness.developingLayer.textContent, /PRESS SHUTTER TO RETRY/);
+  assert.match(harness.gallery.errorItems()[0].placeholder.error, /image generation timed out/);
 });
 
-test("capture layout survives representative viewport widths", async () => {
-  for (const width of [360, 390, 504, 768]) {
-    const harness = await createAppHarness({ viewportWidth: width });
+test("queue limit disables the shutter only while the film buffer is full", async () => {
+  const first = deferred();
+  const harness = await createAppHarness({
+    generatorResults: [first.promise, "data:image/png;base64,second"],
+    maxQueuedCaptures: 2
+  });
+  await harness.app.start();
+
+  harness.clickShutter();
+  harness.clickShutter();
+  assert.equal(harness.gallery.placeholders.length, 2);
+  assert.equal(harness.shutter.disabled, true);
+  assert.match(harness.developingLayer.textContent, /FILM BUFFER FULL/);
+
+  harness.clickShutter();
+  assert.equal(harness.gallery.placeholders.length, 2);
+
+  first.resolve({
+    imageDataUrl: "data:image/png;base64,one",
+    provider: "mock-image-provider"
+  });
+  await harness.waitFor(() => harness.shutter.disabled === false);
+});
+
+test("shutter sound is attempted for every accepted exposure and failure does not block capture", async () => {
+  const harness = await createAppHarness();
+  harness.shutterSound.throwNext = true;
+  await harness.app.start();
+
+  harness.clickShutter();
+  await harness.waitForCaptureCount(1);
+
+  assert.equal(harness.shutterSound.plays, 1);
+  assert.equal(harness.gallery.addCalls.length, 1);
+});
+
+test("capture layout survives representative landscape, portrait, and tablet viewport sizes", async () => {
+  for (const [width, height] of [
+    [844, 390],
+    [915, 412],
+    [390, 844],
+    [412, 915],
+    [1024, 768]
+  ]) {
+    const harness = await createAppHarness({ viewportWidth: width, viewportHeight: height });
     await harness.app.start();
+    assert.equal(harness.document.querySelector(".app-orientation-shell") instanceof harness.window.HTMLElement, true);
+    assert.equal(harness.document.querySelector(".camera-top-plate > #viewfinder"), harness.viewfinder);
+    assert.equal(harness.document.querySelector(".camera-top-plate > #shutter"), harness.shutter);
+    assert.equal(harness.document.getElementById("fullscreen-button") instanceof harness.window.HTMLButtonElement, true);
+
     harness.clickShutter();
     await harness.waitForCaptureCount(1);
     assert.equal(harness.shutter.disabled, false);
@@ -153,9 +302,28 @@ async function createAppHarness(options = {}) {
   const { window, document } = parseHTML(html);
   window.location = { search: "" };
   window.innerWidth = options.viewportWidth ?? 390;
-  window.innerHeight = 844;
+  window.innerHeight = options.viewportHeight ?? 844;
   window.devicePixelRatio = 3;
   window.setInterval = () => 0;
+
+  let uuidCounter = 0;
+  Object.defineProperty(globalThis, "crypto", {
+    value: {
+      randomUUID: () => {
+        uuidCounter += 1;
+        return `test-job-${uuidCounter}`;
+      }
+    },
+    configurable: true
+  });
+  Object.defineProperty(window.navigator, "vibrate", {
+    value: () => true,
+    configurable: true
+  });
+  Object.defineProperty(globalThis, "navigator", {
+    value: window.navigator,
+    configurable: true
+  });
 
   globalThis.window = window;
   globalThis.document = document;
@@ -201,6 +369,7 @@ async function createAppHarness(options = {}) {
     promptBuilder: null,
     imageGenerator: null,
     gallery: null,
+    shutterSound: null,
     app: null,
     clickShutter() {
       shutter.dispatchEvent(new window.Event("click", { bubbles: true }));
@@ -214,7 +383,7 @@ async function createAppHarness(options = {}) {
       document.dispatchEvent(event);
     },
     async waitForCaptureCount(count) {
-      await waitFor(() => this.imageGenerator.calls.length >= count && !this.shutter.disabled);
+      await waitFor(() => this.gallery.addCalls.length >= count);
     },
     waitFor
   };
@@ -223,6 +392,7 @@ async function createAppHarness(options = {}) {
   harness.promptBuilder = new FakePromptBuilder();
   harness.imageGenerator = new FakeImageGenerator(options.generatorResults);
   harness.gallery = new FakeGallery();
+  harness.shutterSound = new FakeShutterSound();
 
   harness.app = new AntiCameraApp(
     viewfinder,
@@ -248,13 +418,14 @@ async function createAppHarness(options = {}) {
       context: harness.context,
       promptBuilder: harness.promptBuilder,
       imageGenerator: harness.imageGenerator,
-      shutterSound: { play: () => undefined },
+      shutterSound: harness.shutterSound,
       delay: async () => undefined,
       minimumDevelopingTime: () => 0,
       permissionTimeoutMs: 5,
       contextTimeoutMs: 50,
       generationTimeoutMs: options.generationTimeoutMs ?? 50,
-      imageLoadTimeoutMs: 5
+      imageLoadTimeoutMs: 5,
+      maxQueuedCaptures: options.maxQueuedCaptures
     }
   );
 
@@ -264,6 +435,7 @@ async function createAppHarness(options = {}) {
 class FakeContext {
   startPassiveCalls = 0;
   primeCalls = 0;
+  poseCount = 0;
   snapshots = [];
 
   constructor(settingsProvider) {
@@ -279,13 +451,15 @@ class FakeContext {
   }
 
   freezeCameraPose() {
+    const capturedAt = 2_000 + this.poseCount * 1_000;
+    this.poseCount += 1;
     return {
       azimuthDeg: 237,
       pitchDeg: 38.4,
       rollDeg: -7.2,
       screenOrientationDeg: 0,
       confidence: "high",
-      capturedAt: 2_000
+      capturedAt
     };
   }
 
@@ -308,6 +482,8 @@ class FakePromptBuilder {
 
 class FakeImageGenerator {
   calls = [];
+  activeCount = 0;
+  maxActive = 0;
 
   constructor(results = ["data:image/png;base64,first", "data:image/png;base64,second"]) {
     this.results = [...results];
@@ -325,19 +501,30 @@ class FakeImageGenerator {
 
   async generate(request) {
     this.calls.push(request);
-    const result = this.results.shift() ?? "data:image/png;base64,next";
-    if (result instanceof Error) {
-      throw result;
-    }
+    this.activeCount += 1;
+    this.maxActive = Math.max(this.maxActive, this.activeCount);
+    try {
+      const result = this.results.shift() ?? "data:image/png;base64,next";
+      if (result instanceof Error) {
+        throw result;
+      }
 
-    if (result && typeof result.then === "function") {
-      return await result;
-    }
+      const resolved = result && typeof result.then === "function" ? await result : result;
+      if (resolved instanceof Error) {
+        throw resolved;
+      }
 
-    return {
-      imageDataUrl: result,
-      provider: "mock-image-provider"
-    };
+      if (resolved && typeof resolved === "object" && "imageDataUrl" in resolved) {
+        return resolved;
+      }
+
+      return {
+        imageDataUrl: resolved,
+        provider: "mock-image-provider"
+      };
+    } finally {
+      this.activeCount -= 1;
+    }
   }
 }
 
@@ -345,26 +532,121 @@ class FakeGallery {
   loadCalls = 0;
   addCalls = [];
   failNextAdd = false;
+  retryListener = null;
+  items = [];
+  placeholders = [];
+  itemsById = new Map();
 
   async load() {
     this.loadCalls += 1;
   }
 
-  async add(frame) {
+  onRetry(listener) {
+    this.retryListener = listener;
+  }
+
+  addPlaceholder(placeholder) {
+    const copy = { ...placeholder };
+    this.placeholders.push(copy);
+    this.items.unshift({ kind: "placeholder", placeholder: copy });
+    this.reindex();
+  }
+
+  updatePlaceholder(id, patch) {
+    const item = this.items.find((candidate) => candidate.kind === "placeholder" && candidate.placeholder.id === id);
+    if (!item) {
+      return;
+    }
+
+    Object.assign(item.placeholder, patch);
+    this.reindex();
+  }
+
+  async completePlaceholder(frame) {
     this.addCalls.push(frame);
+    const index = this.items.findIndex((item) => item.kind === "placeholder" && item.placeholder.id === frame.id);
+    if (index === -1) {
+      this.items.unshift({ kind: "frame", frame });
+    } else {
+      this.items[index] = { kind: "frame", frame };
+    }
+    this.reindex();
+
     if (this.failNextAdd) {
       this.failNextAdd = false;
       throw new Error("QuotaExceededError");
+    }
+  }
+
+  failPlaceholder(id, error) {
+    this.updatePlaceholder(id, {
+      status: "error",
+      error
+    });
+  }
+
+  retry(id) {
+    this.retryListener?.(id);
+  }
+
+  frameOrder() {
+    return this.items.map((item) => item.kind === "frame" ? item.frame.id : item.placeholder.id);
+  }
+
+  visibleTextFor(id) {
+    const item = this.itemsById.get(id);
+    if (!item) {
+      return "";
+    }
+
+    if (item.kind === "frame") {
+      return "FRAME";
+    }
+
+    return item.placeholder.status === "error" ? "EXPOSURE FAILED\nTAP TO RETRY" : "DEVELOPING";
+  }
+
+  errorItems() {
+    return this.items.filter((item) => item.kind === "placeholder" && item.placeholder.status === "error");
+  }
+
+  async add(frame) {
+    this.addCalls.push(frame);
+    this.items.unshift({ kind: "frame", frame });
+    this.reindex();
+    if (this.failNextAdd) {
+      this.failNextAdd = false;
+      throw new Error("QuotaExceededError");
+    }
+  }
+
+  reindex() {
+    this.itemsById = new Map(this.items.map((item) => [
+      item.kind === "frame" ? item.frame.id : item.placeholder.id,
+      item
+    ]));
+  }
+}
+
+class FakeShutterSound {
+  plays = 0;
+  throwNext = false;
+
+  play() {
+    this.plays += 1;
+    if (this.throwNext) {
+      this.throwNext = false;
+      throw new Error("sound failed");
     }
   }
 }
 
 function contextForPrompt({ mode = "outdoor", cameraPose, manualSettings }) {
   return {
-    capturedAt: "2026-07-17T00:00:02.000Z",
+    capturedAt: new Date(cameraPose.capturedAt).toISOString(),
     mode,
     time: {
-      iso: "2026-07-17T00:00:02.000Z",
+      iso: new Date(cameraPose.capturedAt).toISOString(),
       date: "Jul 17, 2026",
       time: "07:00",
       timezone: "Asia/Jakarta",
@@ -422,7 +704,7 @@ function contextForPrompt({ mode = "outdoor", cameraPose, manualSettings }) {
         width: window.innerWidth,
         height: window.innerHeight,
         pixelRatio: window.devicePixelRatio,
-        orientation: "portrait"
+        orientation: window.innerWidth > window.innerHeight ? "landscape" : "portrait"
       },
       screen: {
         width: window.innerWidth,
@@ -470,7 +752,7 @@ function deferred() {
   return { promise, resolve, reject };
 }
 
-async function waitFor(predicate, timeoutMs = 120) {
+async function waitFor(predicate, timeoutMs = 500) {
   const startedAt = Date.now();
   while (!predicate()) {
     if (Date.now() - startedAt > timeoutMs) {

@@ -1,3 +1,4 @@
+import { CaptureQueue } from "../capture/captureQueue.js";
 import { ContextCollector } from "../context/contextCollector.js";
 import { ImageGenerator } from "../image/imageGenerator.js";
 import { PromptBuilder } from "../promptBuilder.js";
@@ -7,6 +8,8 @@ const PERMISSION_TIMEOUT_MS = 8_000;
 const CONTEXT_TIMEOUT_MS = 15_000;
 const GENERATION_TIMEOUT_MS = 120_000;
 const IMAGE_LOAD_TIMEOUT_MS = 15_000;
+const MAX_CONCURRENT_GENERATIONS = 1;
+const MAX_QUEUED_CAPTURES = 10;
 function delay(ms) {
     return new Promise((resolve) => globalThis.setTimeout(resolve, ms));
 }
@@ -50,8 +53,10 @@ export class AntiCameraApp {
     permissionTimeoutMs;
     contextTimeoutMs;
     generationTimeoutMs;
+    queue;
     debugCapture = new CaptureDebugger();
-    developing = false;
+    jobs = new Map();
+    sequence = 0;
     lastContext = null;
     constructor(viewfinder, debugPanel, readout, developingLayer, instantReveal, latestFrame, keyPanel, keyInput, keyMessage, batteryFill, batteryLabel, shutter, modeInputs, manualControls, gallery, dependencies = {}) {
         this.viewfinder = viewfinder;
@@ -79,12 +84,19 @@ export class AntiCameraApp {
         this.permissionTimeoutMs = dependencies.permissionTimeoutMs ?? PERMISSION_TIMEOUT_MS;
         this.contextTimeoutMs = dependencies.contextTimeoutMs ?? CONTEXT_TIMEOUT_MS;
         this.generationTimeoutMs = dependencies.generationTimeoutMs ?? GENERATION_TIMEOUT_MS;
+        this.queue = new CaptureQueue({
+            maxConcurrent: dependencies.maxConcurrentGenerations ?? MAX_CONCURRENT_GENERATIONS,
+            maxQueuedCaptures: dependencies.maxQueuedCaptures ?? MAX_QUEUED_CAPTURES,
+            run: (job) => this.runQueuedJob(job),
+            onStatus: (job) => this.handleJobStatus(job),
+            onChange: () => this.updateQueueStatus()
+        });
     }
     async start() {
         await this.gallery.load().catch((error) => this.debugCapture.log("capture:gallery-load-error", { error: safeError(error) }));
         await this.context.startPassiveCollection().catch((error) => this.debugCapture.log("capture:passive-context-error", { error: safeError(error) }));
         this.shutter.addEventListener("click", () => {
-            void this.capture();
+            this.capture();
         });
         this.viewfinder.addEventListener("click", () => {
             this.setDebugPanelOpen(!this.isDebugPanelOpen());
@@ -108,16 +120,18 @@ export class AntiCameraApp {
             this.saveKey();
         });
         this.manualControls.onChange(() => {
-            if (!this.developing && this.keyPanel.classList.contains("hidden")) {
+            if (this.keyPanel.classList.contains("hidden")) {
                 void this.refreshReadout();
             }
         });
+        this.gallery.onRetry((id) => this.retryJob(id));
         await this.refreshReadout();
         if (!this.imageGenerator.canGenerate()) {
             this.showKeyPanel();
         }
+        this.updateQueueStatus();
         window.setInterval(() => {
-            if (!this.developing && this.latestFrame.classList.contains("hidden") && this.keyPanel.classList.contains("hidden")) {
+            if (this.latestFrame.classList.contains("hidden") && this.keyPanel.classList.contains("hidden")) {
                 void this.refreshReadout();
             }
         }, 1_000);
@@ -132,108 +146,176 @@ export class AntiCameraApp {
             this.debugCapture.log("capture:readout-error", { error: safeError(error) });
         }
     }
-    async capture() {
-        if (this.developing) {
-            return;
-        }
+    capture() {
         if (!this.imageGenerator.canGenerate()) {
             this.showKeyPanel();
             return;
         }
-        const frozenPose = this.context.freezeCameraPose();
-        const frozenSettings = this.manualControls.freezeSettings();
-        const minimumDevelopingTime = this.minimumDevelopingTime();
-        this.developing = true;
-        this.shutter.disabled = true;
-        this.shutterSound.play();
-        this.showDeveloping();
-        try {
-            this.debugCapture.log("capture:start");
-            this.debugCapture.log("capture:permissions-start");
-            await withTimeout(this.context.primeFromUserGesture(), this.permissionTimeoutMs, "sensor permissions")
-                .catch((error) => this.debugCapture.log("capture:permissions-error", { error: safeError(error) }));
-            this.debugCapture.log("capture:permissions-complete");
-            const context = await withTimeout(this.context.snapshot(this.mode(), frozenPose, frozenSettings, { waitForReverseGeocodeMs: 900 }), this.contextTimeoutMs, "context snapshot");
-            this.debugCapture.log("capture:context-complete", { capturedAt: context.capturedAt });
-            const prompt = this.promptBuilder.build(context);
-            this.debugCapture.log("capture:prompt-complete", { promptLength: prompt.length });
-            this.debugCapture.log("capture:provider-selected", { provider: this.imageGenerator.providerId?.() ?? "unknown" });
-            this.debugCapture.log("capture:request-start");
-            const [result] = await Promise.all([
-                withTimeout(this.imageGenerator.generate({ context, prompt }), this.generationTimeoutMs, "image generation"),
-                this.captureDelay(minimumDevelopingTime)
-            ]);
-            this.debugCapture.log("capture:request-response", { provider: result.provider });
-            const frame = {
-                id: createFrameId(),
-                timestamp: context.capturedAt,
-                imageDataUrl: result.imageDataUrl,
-                provider: result.provider,
-                prompt,
-                context,
-                generationError: result.fallbackReason
-            };
-            this.debugCapture.log("capture:reveal-start");
-            await this.reveal(frame.imageDataUrl);
-            try {
-                this.debugCapture.log("capture:gallery-save-start");
-                await this.gallery.add(frame);
-                this.debugCapture.log("capture:gallery-save-complete");
-            }
-            catch (storageError) {
-                this.reportNonFatalStorageFailure(storageError);
-            }
-            await this.refreshReadout();
-            this.debugCapture.log("capture:complete");
+        if (!this.queue.hasCapacity()) {
+            this.showBufferFull();
+            return;
         }
-        catch (error) {
-            this.debugCapture.log("capture:error", { error: safeError(error) });
-            await this.captureDelay(minimumDevelopingTime).catch(() => undefined);
-            if (isAuthenticationError(error)) {
-                this.showKeyPanel(error instanceof Error ? error.message : String(error));
-            }
-            else {
-                this.showCaptureError(error);
-            }
-        }
-        finally {
-            this.shutter.disabled = false;
-            this.developing = false;
+        const job = this.createJob();
+        this.jobs.set(job.id, job);
+        this.gallery.addPlaceholder({
+            id: job.id,
+            timestamp: job.createdAt,
+            status: "queued"
+        });
+        this.playShutter();
+        if (!this.queue.enqueue(job)) {
+            this.gallery.failPlaceholder(job.id, "Film buffer full");
+            this.showBufferFull();
         }
     }
     mode() {
         const selected = [...this.modeInputs].find((input) => input.checked);
         return selected?.value === "indoor" ? "indoor" : "outdoor";
     }
-    showDeveloping() {
-        this.viewfinder.classList.add("is-developing");
-        this.viewfinder.classList.remove("needs-key");
-        this.keyPanel.classList.add("hidden");
-        this.instantReveal.classList.add("hidden");
-        this.latestFrame.classList.add("hidden");
-        this.latestFrame.classList.remove("is-developing");
-        this.developingLayer.textContent = "DEVELOPING";
+    createJob() {
+        const frozenPose = this.context.freezeCameraPose();
+        const frozenSettings = this.manualControls.freezeSettings();
+        const mode = this.mode();
+        const createdAt = new Date(frozenPose.capturedAt).toISOString();
+        const id = createFrameId();
+        const sequence = this.sequence;
+        this.sequence += 1;
+        this.debugCapture.log("capture:start", { id, sequence });
+        this.debugCapture.log("capture:permissions-start", { id });
+        const permissionReady = withTimeout(this.context.primeFromUserGesture(), this.permissionTimeoutMs, "sensor permissions")
+            .catch((error) => this.debugCapture.log("capture:permissions-error", { id, error: safeError(error) }))
+            .then(() => {
+            this.debugCapture.log("capture:permissions-complete", { id });
+        });
+        const contextReady = permissionReady.then(() => withTimeout(this.context.snapshot(mode, frozenPose, frozenSettings, { waitForReverseGeocodeMs: 900 }), this.contextTimeoutMs, "context snapshot"));
+        return {
+            id,
+            sequence,
+            createdAt,
+            status: "queued",
+            frozenPose,
+            frozenSettings,
+            mode,
+            permissionReady,
+            contextReady,
+            minimumDevelopingTime: this.minimumDevelopingTime()
+        };
+    }
+    async runQueuedJob(job) {
+        const runtimeJob = this.jobs.get(job.id);
+        if (!runtimeJob) {
+            throw new Error("Capture job was not found");
+        }
+        this.queue.setStatus(runtimeJob, "collecting-context");
+        const context = await runtimeJob.contextReady;
+        runtimeJob.context = context;
+        this.debugCapture.log("capture:context-complete", { id: runtimeJob.id, capturedAt: context.capturedAt });
+        const prompt = this.promptBuilder.build(context);
+        runtimeJob.prompt = prompt;
+        this.debugCapture.log("capture:prompt-complete", { id: runtimeJob.id, promptLength: prompt.length });
+        this.debugCapture.log("capture:provider-selected", { id: runtimeJob.id, provider: this.imageGenerator.providerId?.() ?? "unknown" });
+        this.queue.setStatus(runtimeJob, "generating");
+        this.debugCapture.log("capture:request-start", { id: runtimeJob.id });
+        const [result] = await Promise.all([
+            withTimeout(this.imageGenerator.generate({ context, prompt }), this.generationTimeoutMs, "image generation"),
+            this.captureDelay(runtimeJob.minimumDevelopingTime)
+        ]);
+        runtimeJob.imageDataUrl = result.imageDataUrl;
+        runtimeJob.provider = result.provider;
+        this.debugCapture.log("capture:request-response", { id: runtimeJob.id, provider: result.provider });
+        const frame = {
+            id: runtimeJob.id,
+            timestamp: context.capturedAt,
+            imageDataUrl: result.imageDataUrl,
+            provider: result.provider,
+            prompt,
+            context,
+            generationError: result.fallbackReason
+        };
+        this.queue.setStatus(runtimeJob, "developing");
+        this.debugCapture.log("capture:reveal-start", { id: runtimeJob.id });
+        void this.reveal(frame.imageDataUrl)
+            .catch((error) => this.debugCapture.log("capture:reveal-error", { id: runtimeJob.id, error: safeError(error) }));
+        void this.gallery.completePlaceholder(frame)
+            .then(() => this.debugCapture.log("capture:gallery-save-complete", { id: runtimeJob.id }))
+            .catch((storageError) => this.reportNonFatalStorageFailure(storageError));
+        void this.refreshReadout();
+        this.debugCapture.log("capture:complete", { id: runtimeJob.id });
+    }
+    retryJob(id) {
+        const job = this.jobs.get(id);
+        if (!job || job.status !== "error" || !this.queue.hasCapacity()) {
+            if (!this.queue.hasCapacity()) {
+                this.showBufferFull();
+            }
+            return;
+        }
+        job.error = undefined;
+        job.status = "queued";
+        job.permissionReady = Promise.resolve();
+        job.contextReady = job.context
+            ? Promise.resolve(job.context)
+            : withTimeout(this.context.snapshot(job.mode, job.frozenPose, job.frozenSettings, { waitForReverseGeocodeMs: 900 }), this.contextTimeoutMs, "context snapshot");
+        this.gallery.updatePlaceholder(id, { status: "queued", error: undefined });
+        this.playShutter();
+        this.queue.enqueue(job);
+    }
+    handleJobStatus(job) {
+        if (job.status === "error") {
+            this.gallery.failPlaceholder(job.id, job.error ?? "Exposure failed");
+            if (isAuthenticationError(job.error ?? "")) {
+                this.showKeyPanel(job.error ?? "USER KEY REQUIRED");
+            }
+        }
+        else if (job.status !== "complete") {
+            this.gallery.updatePlaceholder(job.id, { status: job.status });
+        }
+        this.updateQueueStatus();
+    }
+    updateQueueStatus() {
+        const count = this.queue.inFlightCount;
+        this.shutter.disabled = !this.queue.hasCapacity();
         this.developingLayer.classList.remove("hidden");
+        this.viewfinder.classList.toggle("is-developing", count > 0);
+        if (!this.queue.hasCapacity()) {
+            this.developingLayer.textContent = "FILM BUFFER FULL";
+        }
+        else if (count === 0) {
+            this.developingLayer.textContent = "READY";
+        }
+        else if (count === 1) {
+            this.developingLayer.textContent = "1 DEVELOPING";
+        }
+        else {
+            this.developingLayer.textContent = `${count} IN BUFFER`;
+        }
+    }
+    playShutter() {
+        try {
+            this.shutterSound.play();
+            navigator.vibrate?.(20);
+        }
+        catch (error) {
+            this.debugCapture.log("capture:shutter-sound-error", { error: safeError(error) });
+        }
+    }
+    showBufferFull() {
+        this.developingLayer.textContent = "FILM BUFFER FULL";
+        this.developingLayer.classList.remove("hidden");
+        this.shutter.disabled = true;
     }
     showKeyPanel(message = "USER KEY REQUIRED") {
         this.viewfinder.classList.remove("is-developing");
+        this.viewfinder.classList.remove("needs-key");
         this.viewfinder.classList.add("needs-key");
-        this.developingLayer.classList.add("hidden");
+        this.developingLayer.textContent = "KEY REQUIRED";
+        this.developingLayer.classList.remove("hidden");
         this.instantReveal.classList.add("hidden");
         this.latestFrame.classList.add("hidden");
         this.keyPanel.classList.remove("hidden");
         this.keyMessage.textContent = message.toUpperCase();
         this.setDebugPanelOpen(true);
         this.keyInput.focus();
-    }
-    showCaptureError(error) {
-        this.viewfinder.classList.remove("is-developing");
-        this.viewfinder.classList.remove("needs-key");
-        this.keyPanel.classList.add("hidden");
-        this.instantReveal.classList.add("hidden");
-        this.latestFrame.classList.add("hidden");
-        this.developingLayer.textContent = captureErrorMessage(error);
-        this.developingLayer.classList.remove("hidden");
     }
     reportNonFatalStorageFailure(error) {
         this.debugCapture.log("capture:gallery-save-error", { error: safeError(error) });
@@ -255,13 +337,11 @@ export class AntiCameraApp {
         this.instantReveal.classList.remove("hidden");
         this.latestFrame.classList.remove("hidden");
         this.latestFrame.classList.add("is-developing");
-        this.developingLayer.classList.add("hidden");
         await this.captureDelay(80);
         this.latestFrame.classList.remove("is-developing");
         await this.captureDelay(3600);
         this.latestFrame.classList.add("hidden");
         this.instantReveal.classList.add("hidden");
-        this.viewfinder.classList.remove("is-developing");
     }
     isDebugPanelOpen() {
         return !this.debugPanel.hidden;
@@ -306,19 +386,6 @@ export class AntiCameraApp {
 function isAuthenticationError(error) {
     const message = error instanceof Error ? error.message : String(error);
     return /secret required|api key|authentication|unauthorized|401/i.test(message);
-}
-function captureErrorMessage(error) {
-    const message = error instanceof Error ? error.message : String(error);
-    if (/timed out|timeout/i.test(message)) {
-        return "NETWORK TIMEOUT\nPRESS SHUTTER TO RETRY";
-    }
-    if (/quota|storage|indexeddb|localstorage/i.test(message)) {
-        return "FILM STORAGE FULL\nFRAME SHOWN; EXPORT OR CLEAR FILM";
-    }
-    if (/model/i.test(message)) {
-        return "MODEL ERROR\nPRESS SHUTTER TO RETRY";
-    }
-    return "EXPOSURE FAILED\nPRESS SHUTTER TO RETRY";
 }
 function safeError(error) {
     return error instanceof Error ? error.message : String(error);

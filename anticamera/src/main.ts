@@ -2,6 +2,8 @@ import { Gallery } from "./gallery/gallery.js";
 import { FrameStorage } from "./gallery/storage.js";
 import { AntiCameraApp } from "./ui/app.js";
 import { ManualControls } from "./ui/manualControls.js";
+import { FullscreenController } from "./ui/fullscreenController.js";
+import { registerPwa } from "./pwa.js";
 
 function requiredElement<T extends HTMLElement>(id: string, constructor: { new (): T }): T {
   const element = document.getElementById(id);
@@ -19,6 +21,8 @@ const gallery = new Gallery(
   storage
 );
 const manualControls = new ManualControls(requiredElement("manual-controls", HTMLElement));
+new FullscreenController(requiredElement("fullscreen-button", HTMLButtonElement));
+registerPwa();
 
 const app = new AntiCameraApp(
   requiredElement("viewfinder", HTMLElement),
