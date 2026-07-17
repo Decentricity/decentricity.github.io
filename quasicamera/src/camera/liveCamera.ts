@@ -5,17 +5,22 @@ export interface LiveCameraStatus {
   message: string;
 }
 
-const CAMERA_CONSTRAINTS: MediaStreamConstraints = {
-  video: {
-    facingMode: { ideal: "environment" },
-    width: { ideal: 1920 },
-    height: { ideal: 1080 }
-  },
-  audio: false
-};
+type CameraFacingMode = "environment" | "user";
+
+function cameraConstraints(facingMode: CameraFacingMode): MediaStreamConstraints {
+  return {
+    video: {
+      facingMode: { ideal: facingMode },
+      width: { ideal: 1920 },
+      height: { ideal: 1080 }
+    },
+    audio: false
+  };
+}
 
 export class LiveCamera {
   private stream: MediaStream | null = null;
+  private facingMode: CameraFacingMode = "environment";
   private status: LiveCameraStatus = {
     state: "idle",
     message: "CAMERA READY"
@@ -39,6 +44,21 @@ export class LiveCamera {
     return this.status;
   }
 
+  currentFacingMode(): CameraFacingMode {
+    return this.facingMode;
+  }
+
+  async toggleCamera(): Promise<CameraFacingMode> {
+    this.facingMode = this.facingMode === "environment" ? "user" : "environment";
+    this.applyPreviewFacing();
+    if (this.stream) {
+      this.stop();
+    }
+
+    await this.start();
+    return this.facingMode;
+  }
+
   async start(): Promise<void> {
     if (this.stream && this.video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
       return;
@@ -58,8 +78,9 @@ export class LiveCamera {
     };
 
     try {
-      this.stream = await navigator.mediaDevices.getUserMedia(CAMERA_CONSTRAINTS);
+      this.stream = await navigator.mediaDevices.getUserMedia(cameraConstraints(this.facingMode));
       this.video.srcObject = this.stream;
+      this.applyPreviewFacing();
       await this.video.play();
       await waitForVideoFrame(this.video);
       this.status = {
@@ -125,6 +146,10 @@ export class LiveCamera {
       capturedAt: new Date().toISOString(),
       estimatedBytes: Math.max(blob.size, Math.ceil((width * height * 4) / 4))
     };
+  }
+
+  private applyPreviewFacing(): void {
+    this.video.dataset.cameraFacing = this.facingMode;
   }
 }
 

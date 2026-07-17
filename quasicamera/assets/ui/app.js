@@ -42,6 +42,7 @@ export class AntiCameraApp {
     filmView;
     viewToggle;
     viewfinder;
+    cameraSwitch;
     debugPanel;
     readout;
     developingLayer;
@@ -79,12 +80,13 @@ export class AntiCameraApp {
     appView = "camera";
     sequence = 0;
     lastContext = null;
-    constructor(appShell, cameraView, filmView, viewToggle, viewfinder, debugPanel, readout, developingLayer, instantReveal, latestFrame, keyPanel, keyInput, keyMessage, batteryFill, batteryLabel, shutter, modeInputs, manualControls, gallery, dependencies = {}) {
+    constructor(appShell, cameraView, filmView, viewToggle, viewfinder, cameraSwitch, debugPanel, readout, developingLayer, instantReveal, latestFrame, keyPanel, keyInput, keyMessage, batteryFill, batteryLabel, shutter, modeInputs, manualControls, gallery, dependencies = {}) {
         this.appShell = appShell;
         this.cameraView = cameraView;
         this.filmView = filmView;
         this.viewToggle = viewToggle;
         this.viewfinder = viewfinder;
+        this.cameraSwitch = cameraSwitch;
         this.debugPanel = debugPanel;
         this.readout = readout;
         this.developingLayer = developingLayer;
@@ -134,6 +136,9 @@ export class AntiCameraApp {
             void this.liveCamera.start().catch((error) => this.debugCapture.log("capture:camera-start-error", { error: safeError(error) }));
             this.setDebugPanelOpen(!this.isDebugPanelOpen());
         });
+        this.cameraSwitch.addEventListener("click", () => {
+            void this.switchCamera();
+        });
         this.viewToggle.addEventListener("click", () => {
             this.setAppView(this.appView === "camera" ? "film" : "camera");
         });
@@ -163,6 +168,7 @@ export class AntiCameraApp {
         this.gallery.onRetry((id) => this.retryJob(id));
         await this.refreshReadout();
         this.setAppView("camera");
+        this.updateCameraSwitch();
         if (!this.imageGenerator.canGenerate()) {
             this.showKeyPanel();
         }
@@ -429,6 +435,30 @@ export class AntiCameraApp {
         catch (error) {
             this.debugCapture.log("capture:shutter-sound-error", { error: safeError(error) });
         }
+    }
+    async switchCamera() {
+        this.cameraSwitch.disabled = true;
+        this.cameraSwitch.classList.add("is-switching");
+        try {
+            await this.liveCamera.toggleCamera();
+            this.debugCapture.log("capture:camera-switched", { facing: this.liveCamera.currentFacingMode() });
+        }
+        catch (error) {
+            this.debugCapture.log("capture:camera-switch-error", { error: safeError(error) });
+            this.developingLayer.textContent = safeError(error).toUpperCase();
+            this.developingLayer.classList.remove("hidden");
+        }
+        finally {
+            this.cameraSwitch.disabled = false;
+            this.cameraSwitch.classList.remove("is-switching");
+            this.updateCameraSwitch();
+        }
+    }
+    updateCameraSwitch() {
+        const facing = this.liveCamera.currentFacingMode();
+        this.cameraSwitch.dataset.cameraFacing = facing;
+        this.cameraSwitch.setAttribute("aria-pressed", String(facing === "user"));
+        this.cameraSwitch.setAttribute("aria-label", facing === "environment" ? "Switch to front camera" : "Switch to rear camera");
     }
     showBufferFull() {
         this.developingLayer.textContent = "FILM BUFFER FULL";

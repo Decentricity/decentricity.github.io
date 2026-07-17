@@ -46,13 +46,14 @@ type CaptureImageGenerator = Pick<ImageGenerator, "canGenerate" | "generate" | "
 };
 type CaptureDelay = (ms: number) => Promise<void>;
 type CaptureFaceCropper = (source: SourcePhotoReference, faces: DetectedFace[]) => Promise<FaceCrop[]>;
+type CaptureLiveCamera = Pick<LiveCamera, "start" | "captureStill" | "currentStatus" | "toggleCamera" | "currentFacingMode">;
 type AppView = "camera" | "film";
 
 interface AntiCameraAppDependencies {
   context?: CaptureContext;
   promptBuilder?: CapturePromptBuilder;
   imageGenerator?: CaptureImageGenerator;
-  liveCamera?: Pick<LiveCamera, "start" | "captureStill" | "currentStatus">;
+  liveCamera?: CaptureLiveCamera;
   faceAnalyzer?: FaceAnalyzer;
   objectAnalyzer?: ObjectAnalyzer;
   faceCropper?: CaptureFaceCropper;
@@ -103,7 +104,7 @@ export class AntiCameraApp {
   private readonly context: CaptureContext;
   private readonly promptBuilder: CapturePromptBuilder;
   private readonly imageGenerator: CaptureImageGenerator;
-  private readonly liveCamera: Pick<LiveCamera, "start" | "captureStill" | "currentStatus">;
+  private readonly liveCamera: CaptureLiveCamera;
   private readonly faceAnalyzer: FaceAnalyzer;
   private readonly objectAnalyzer: ObjectAnalyzer;
   private readonly faceCropper: CaptureFaceCropper;
@@ -130,6 +131,7 @@ export class AntiCameraApp {
     private readonly filmView: HTMLElement,
     private readonly viewToggle: HTMLButtonElement,
     private readonly viewfinder: HTMLElement,
+    private readonly cameraSwitch: HTMLButtonElement,
     private readonly debugPanel: HTMLElement,
     private readonly readout: HTMLElement,
     private readonly developingLayer: HTMLElement,
@@ -182,6 +184,9 @@ export class AntiCameraApp {
       void this.liveCamera.start().catch((error) => this.debugCapture.log("capture:camera-start-error", { error: safeError(error) }));
       this.setDebugPanelOpen(!this.isDebugPanelOpen());
     });
+    this.cameraSwitch.addEventListener("click", () => {
+      void this.switchCamera();
+    });
     this.viewToggle.addEventListener("click", () => {
       this.setAppView(this.appView === "camera" ? "film" : "camera");
     });
@@ -214,6 +219,7 @@ export class AntiCameraApp {
 
     await this.refreshReadout();
     this.setAppView("camera");
+    this.updateCameraSwitch();
     if (!this.imageGenerator.canGenerate()) {
       this.showKeyPanel();
     }
@@ -523,6 +529,33 @@ export class AntiCameraApp {
     } catch (error) {
       this.debugCapture.log("capture:shutter-sound-error", { error: safeError(error) });
     }
+  }
+
+  private async switchCamera(): Promise<void> {
+    this.cameraSwitch.disabled = true;
+    this.cameraSwitch.classList.add("is-switching");
+    try {
+      await this.liveCamera.toggleCamera();
+      this.debugCapture.log("capture:camera-switched", { facing: this.liveCamera.currentFacingMode() });
+    } catch (error) {
+      this.debugCapture.log("capture:camera-switch-error", { error: safeError(error) });
+      this.developingLayer.textContent = safeError(error).toUpperCase();
+      this.developingLayer.classList.remove("hidden");
+    } finally {
+      this.cameraSwitch.disabled = false;
+      this.cameraSwitch.classList.remove("is-switching");
+      this.updateCameraSwitch();
+    }
+  }
+
+  private updateCameraSwitch(): void {
+    const facing = this.liveCamera.currentFacingMode();
+    this.cameraSwitch.dataset.cameraFacing = facing;
+    this.cameraSwitch.setAttribute("aria-pressed", String(facing === "user"));
+    this.cameraSwitch.setAttribute(
+      "aria-label",
+      facing === "environment" ? "Switch to front camera" : "Switch to rear camera"
+    );
   }
 
   private showBufferFull(): void {

@@ -104,6 +104,7 @@ test("camera shell uses a small optical viewfinder and hidden debug panel", () =
   const cameraView = document.getElementById("camera-view");
   const filmView = document.getElementById("film-view");
   const viewfinder = document.getElementById("viewfinder");
+  const cameraSwitch = document.getElementById("camera-switch");
   const debugPanel = document.getElementById("debug-panel");
   const latestFrame = document.getElementById("latest-frame");
   const instantReveal = document.getElementById("instant-reveal");
@@ -116,6 +117,11 @@ test("camera shell uses a small optical viewfinder and hidden debug panel", () =
   assert.equal(viewfinder.classList.contains("optical-viewfinder"), true);
   assert.equal(viewfinder.getAttribute("aria-expanded"), "false");
   assert.equal(viewfinder.getAttribute("aria-controls"), "debug-panel");
+  assert.equal(cameraSwitch.tagName, "BUTTON");
+  assert.equal(cameraSwitch.classList.contains("camera-switch"), true);
+  assert.equal(cameraSwitch.getAttribute("aria-label"), "Switch to front camera");
+  assert.equal(cameraSwitch.getAttribute("aria-pressed"), "false");
+  assert.equal(cameraSwitch.dataset.cameraFacing, "environment");
   assert.equal(debugPanel.hidden, true);
   assert.equal(debugPanel.classList.contains("hidden"), true);
   assert.equal(viewfinder.querySelector("#context-readout"), null);
@@ -126,6 +132,9 @@ test("camera shell uses a small optical viewfinder and hidden debug panel", () =
   assert.match(cssBlock(".optical-viewfinder"), /width:\s*clamp\(82px,\s*12vw,\s*112px\)/);
   assert.match(cssBlock(".optical-viewfinder"), /max-width:\s*none/);
   assert.match(cssBlock(".optical-viewfinder"), /height:\s*clamp\(48px,\s*12vw,\s*70px\)/);
+  assert.match(cssBlock(".camera-switch"), /width:\s*28px/);
+  assert.match(cssBlock(".camera-switch"), /height:\s*34px/);
+  assert.match(cssBlock(".camera-preview[data-camera-facing=\"user\"]"), /transform:\s*scaleX\(-1\)/);
   assert.match(css, /\.debug-panel\[hidden\]\s*\{[\s\S]*?display:\s*none/);
   assert.match(cssBlock(".debug-panel"), /position:\s*absolute/);
   assert.match(cssBlock(".queue-status"), /min-height:\s*28px/);
@@ -135,10 +144,11 @@ test("top plate keeps the optical viewfinder left and shutter right", () => {
   const topPlate = document.querySelector(".camera-top-plate");
   const children = [...topPlate.children];
   assert.equal(children[0].id, "viewfinder");
+  assert.equal(children[1].id, "camera-switch");
   assert.equal(children.at(-1).id, "shutter");
   assert.ok(children.findIndex((child) => child.id === "fullscreen-button") < children.findIndex((child) => child.id === "shutter"));
   assert.match(cssBlock(".camera-top-plate"), /display:\s*grid/);
-  assert.match(cssBlock(".camera-top-plate"), /grid-template-columns:\s*clamp\(88px,\s*13vw,\s*116px\)/);
+  assert.match(cssBlock(".camera-top-plate"), /grid-template-columns:\s*clamp\(88px,\s*13vw,\s*116px\)\s+30px/);
 });
 
 test("Camera and Film are full-viewport scenes with an isolated film scroller", () => {

@@ -116,6 +116,31 @@ test("debug panel is hidden by default and toggled from the optical viewfinder",
   assert.equal(harness.viewfinder.getAttribute("aria-expanded"), "false");
 });
 
+test("camera switch toggles the live camera facing mode", async () => {
+  const harness = await createAppHarness();
+  await harness.app.start();
+
+  assert.equal(harness.cameraSwitch.getAttribute("aria-label"), "Switch to front camera");
+  assert.equal(harness.cameraSwitch.getAttribute("aria-pressed"), "false");
+  assert.equal(harness.liveCamera.facingMode, "environment");
+
+  harness.clickCameraSwitch();
+  await harness.waitFor(() => harness.liveCamera.toggleCalls === 1);
+
+  assert.equal(harness.liveCamera.facingMode, "user");
+  assert.equal(harness.cameraSwitch.dataset.cameraFacing, "user");
+  assert.equal(harness.cameraSwitch.getAttribute("aria-label"), "Switch to rear camera");
+  assert.equal(harness.cameraSwitch.getAttribute("aria-pressed"), "true");
+
+  harness.clickCameraSwitch();
+  await harness.waitFor(() => harness.liveCamera.toggleCalls === 2);
+
+  assert.equal(harness.liveCamera.facingMode, "environment");
+  assert.equal(harness.cameraSwitch.dataset.cameraFacing, "environment");
+  assert.equal(harness.cameraSwitch.getAttribute("aria-label"), "Switch to front camera");
+  assert.equal(harness.cameraSwitch.getAttribute("aria-pressed"), "false");
+});
+
 test("capture works while debug panel is open", async () => {
   const harness = await createAppHarness();
   await harness.app.start();
@@ -544,6 +569,7 @@ async function createAppHarness(options = {}) {
   const { AntiCameraApp } = await import(`../assets/ui/app.js?cache=${Date.now()}-${Math.random()}`);
 
   const viewfinder = document.getElementById("viewfinder");
+  const cameraSwitch = document.getElementById("camera-switch");
   const appShell = document.getElementById("app-shell");
   const cameraView = document.getElementById("camera-view");
   const filmView = document.getElementById("film-view");
@@ -571,6 +597,7 @@ async function createAppHarness(options = {}) {
     filmView,
     viewToggle,
     viewfinder,
+    cameraSwitch,
     debugPanel,
     readout,
     developingLayer,
@@ -590,6 +617,9 @@ async function createAppHarness(options = {}) {
     },
     clickViewfinder() {
       viewfinder.dispatchEvent(new window.Event("click", { bubbles: true }));
+    },
+    clickCameraSwitch() {
+      cameraSwitch.dispatchEvent(new window.Event("click", { bubbles: true }));
     },
     clickViewToggle() {
       viewToggle.dispatchEvent(new window.Event("click", { bubbles: true }));
@@ -620,6 +650,7 @@ async function createAppHarness(options = {}) {
     filmView,
     viewToggle,
     viewfinder,
+    cameraSwitch,
     debugPanel,
     readout,
     developingLayer,
@@ -778,6 +809,8 @@ class FakeImageGenerator {
 class FakeLiveCamera {
   captures = [];
   starts = 0;
+  toggleCalls = 0;
+  facingMode = "environment";
 
   constructor(sourcePhotos = []) {
     this.sourcePhotos = [...sourcePhotos];
@@ -792,6 +825,16 @@ class FakeLiveCamera {
 
   async start() {
     this.starts += 1;
+  }
+
+  currentFacingMode() {
+    return this.facingMode;
+  }
+
+  async toggleCamera() {
+    this.toggleCalls += 1;
+    this.facingMode = this.facingMode === "environment" ? "user" : "environment";
+    return this.facingMode;
   }
 
   async captureStill() {

@@ -1,14 +1,17 @@
-const CAMERA_CONSTRAINTS = {
-    video: {
-        facingMode: { ideal: "environment" },
-        width: { ideal: 1920 },
-        height: { ideal: 1080 }
-    },
-    audio: false
-};
+function cameraConstraints(facingMode) {
+    return {
+        video: {
+            facingMode: { ideal: facingMode },
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
+        },
+        audio: false
+    };
+}
 export class LiveCamera {
     video;
     stream = null;
+    facingMode = "environment";
     status = {
         state: "idle",
         message: "CAMERA READY"
@@ -29,6 +32,18 @@ export class LiveCamera {
     currentStatus() {
         return this.status;
     }
+    currentFacingMode() {
+        return this.facingMode;
+    }
+    async toggleCamera() {
+        this.facingMode = this.facingMode === "environment" ? "user" : "environment";
+        this.applyPreviewFacing();
+        if (this.stream) {
+            this.stop();
+        }
+        await this.start();
+        return this.facingMode;
+    }
     async start() {
         if (this.stream && this.video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
             return;
@@ -45,8 +60,9 @@ export class LiveCamera {
             message: "CAMERA STARTING"
         };
         try {
-            this.stream = await navigator.mediaDevices.getUserMedia(CAMERA_CONSTRAINTS);
+            this.stream = await navigator.mediaDevices.getUserMedia(cameraConstraints(this.facingMode));
             this.video.srcObject = this.stream;
+            this.applyPreviewFacing();
             await this.video.play();
             await waitForVideoFrame(this.video);
             this.status = {
@@ -108,6 +124,9 @@ export class LiveCamera {
             capturedAt: new Date().toISOString(),
             estimatedBytes: Math.max(blob.size, Math.ceil((width * height * 4) / 4))
         };
+    }
+    applyPreviewFacing() {
+        this.video.dataset.cameraFacing = this.facingMode;
     }
 }
 function waitForVideoFrame(video) {

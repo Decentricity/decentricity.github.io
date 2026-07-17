@@ -37,6 +37,7 @@ const app = new AntiCameraApp(
   requiredElement("film-view", HTMLElement),
   requiredElement("view-toggle", HTMLButtonElement),
   requiredElement("viewfinder", HTMLElement),
+  requiredElement("camera-switch", HTMLButtonElement),
   requiredElement("debug-panel", HTMLElement),
   requiredElement("context-readout", HTMLElement),
   requiredElement("developing", HTMLElement),
