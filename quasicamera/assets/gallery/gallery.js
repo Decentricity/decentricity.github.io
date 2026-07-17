@@ -137,10 +137,11 @@ export class Gallery {
         const panel = placeholder.status === "error" ? document.createElement("button") : document.createElement("div");
         panel.className = "film-placeholder";
         if (placeholder.status === "error") {
+            const errorNumber = errorNumberFor(placeholder.error);
             panel.setAttribute("type", "button");
             panel.dataset.retryJob = placeholder.id;
-            panel.setAttribute("aria-label", "Exposure failed. Tap to retry.");
-            panel.textContent = "EXPOSURE FAILED\nTAP TO RETRY";
+            panel.setAttribute("aria-label", errorNumber ? `Exposure failed with error ${errorNumber}. Tap to retry.` : "Exposure failed. Tap to retry.");
+            panel.textContent = errorNumber ? `EXPOSURE FAILED\nERROR ${errorNumber}\nTAP TO RETRY` : "EXPOSURE FAILED\nTAP TO RETRY";
         }
         else {
             panel.textContent = "DEVELOPING";
@@ -227,4 +228,15 @@ function formatTimestamp(timestamp) {
         hour: "2-digit",
         minute: "2-digit"
     }).format(new Date(timestamp));
+}
+export function errorNumberFor(error) {
+    if (!error) {
+        return null;
+    }
+    const httpLike = error.match(/\b(?:HTTP|status|failed:|error)\s*#?\s*(\d{3})\b/i);
+    if (httpLike?.[1]) {
+        return httpLike[1];
+    }
+    const standalone = error.match(/\b([45]\d{2})\b/);
+    return standalone?.[1] ?? null;
 }
