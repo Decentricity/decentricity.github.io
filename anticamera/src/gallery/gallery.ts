@@ -1,6 +1,7 @@
 import type { AntiCameraFrame } from "../types.js";
 import { FrameStorage } from "./storage.js";
 import type { CaptureJobStatus } from "../capture/captureQueue.js";
+import { buildFilmDownloadFilename, composeFilmFramePng } from "./filmExport.js";
 
 export interface FilmPlaceholder {
   id: string;
@@ -18,17 +19,49 @@ type RetryListener = (id: string) => void;
 export class Gallery {
   private items: FilmItem[] = [];
   private retryListener: RetryListener | null = null;
+  private zoomFrame: AntiCameraFrame | null = null;
 
   constructor(
     private readonly strip: HTMLOListElement,
     private readonly exportButton: HTMLButtonElement,
-    private readonly storage: FrameStorage
+    private readonly storage: FrameStorage,
+    private readonly zoomPanel: HTMLElement,
+    private readonly zoomImage: HTMLImageElement,
+    private readonly zoomTime: HTMLTimeElement,
+    private readonly zoomCloseButton: HTMLButtonElement,
+    private readonly zoomSaveButton: HTMLButtonElement
   ) {
     this.exportButton.addEventListener("click", () => this.exportJson());
     this.strip.addEventListener("click", (event) => {
       const target = event.target instanceof Element ? event.target.closest("[data-retry-job]") : null;
       if (target instanceof HTMLElement) {
         this.retryListener?.(target.dataset.retryJob ?? "");
+        return;
+      }
+
+      const frameTarget = event.target instanceof Element ? event.target.closest("[data-frame-id]") : null;
+      if (frameTarget instanceof HTMLElement) {
+        this.openZoom(frameTarget.dataset.frameId ?? "");
+      }
+    });
+    this.strip.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") {
+        return;
+      }
+
+      const frameTarget = event.target instanceof Element ? event.target.closest("[data-frame-id]") : null;
+      if (frameTarget instanceof HTMLElement) {
+        event.preventDefault();
+        this.openZoom(frameTarget.dataset.frameId ?? "");
+      }
+    });
+    this.zoomCloseButton.addEventListener("click", () => this.closeZoom());
+    this.zoomSaveButton.addEventListener("click", () => {
+      void this.saveZoomFrame();
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !this.zoomPanel.hidden) {
+        this.closeZoom();
       }
     });
   }
@@ -107,6 +140,10 @@ export class Gallery {
     const item = document.createElement("li");
     item.className = `film-frame${frame.id === newId ? " new" : ""}`;
     item.title = `${frame.context.location.label} | ${frame.context.weather.description} | ${frame.context.audio.descriptor}`;
+    item.dataset.frameId = frame.id;
+    item.tabIndex = 0;
+    item.setAttribute("role", "button");
+    item.setAttribute("aria-label", `Open film frame from ${formatTimestamp(frame.timestamp)}`);
 
     const image = document.createElement("img");
     image.src = frame.imageDataUrl;
@@ -159,6 +196,65 @@ export class Gallery {
 
   private frames(): AntiCameraFrame[] {
     return this.items.flatMap((item) => item.kind === "frame" ? [item.frame] : []);
+  }
+
+  private openZoom(id: string): void {
+    const frame = this.frames().find((candidate) => candidate.id === id);
+    if (!frame) {
+      return;
+    }
+
+    this.zoomFrame = frame;
+    this.zoomImage.src = frame.imageDataUrl;
+    this.zoomImage.alt = "Enlarged Anti-Camera generated frame";
+    this.zoomTime.dateTime = frame.timestamp;
+    this.zoomTime.textContent = formatTimestamp(frame.timestamp);
+    this.zoomSaveButton.disabled = false;
+    this.zoomSaveButton.textContent = "SAVE";
+    this.zoomPanel.hidden = false;
+    this.zoomPanel.classList.remove("hidden");
+    this.zoomCloseButton.focus();
+  }
+
+  private closeZoom(): void {
+    this.zoomPanel.hidden = true;
+    this.zoomPanel.classList.add("hidden");
+    this.zoomFrame = null;
+  }
+
+  private async saveZoomFrame(): Promise<void> {
+    if (!this.zoomFrame) {
+      return;
+    }
+
+    this.zoomSaveButton.disabled = true;
+    this.zoomSaveButton.textContent = "SAVING";
+    try {
+      const blob = await composeFilmFramePng(this.zoomFrame);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = buildFilmDownloadFilename(this.zoomFrame);
+      document.body.append(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      this.zoomSaveButton.textContent = "SAVED";
+      window.setTimeout(() => {
+        if (!this.zoomSaveButton.disabled) {
+          return;
+        }
+
+        this.zoomSaveButton.disabled = false;
+        this.zoomSaveButton.textContent = "SAVE";
+      }, 900);
+    } catch {
+      this.zoomSaveButton.disabled = false;
+      this.zoomSaveButton.textContent = "SAVE FAILED";
+      window.setTimeout(() => {
+        this.zoomSaveButton.textContent = "SAVE";
+      }, 1400);
+    }
   }
 }
 

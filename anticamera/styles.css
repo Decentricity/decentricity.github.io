@@ -1015,6 +1015,12 @@ button {
   background: var(--film-edge);
   border-radius: 4px;
   color: #15130f;
+  cursor: zoom-in;
+}
+
+.film-frame:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
 }
 
 .film-frame img {
@@ -1064,6 +1070,85 @@ button.film-placeholder {
 
 .film-frame.new {
   animation: film-fade 1800ms ease both;
+}
+
+.film-zoom {
+  position: absolute;
+  inset:
+    calc(var(--safe-top) + var(--view-padding))
+    calc(var(--safe-right) + var(--view-padding))
+    calc(var(--switch-clearance) + var(--view-padding))
+    calc(var(--safe-left) + var(--view-padding));
+  z-index: 18;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 10px;
+  min-width: 0;
+  min-height: 0;
+  padding: clamp(10px, 2vmin, 16px);
+  background: #1b1d1a;
+  border: 1px solid #454842;
+  border-radius: 14px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04), 0 16px 30px rgba(0, 0, 0, 0.35);
+}
+
+.film-zoom[hidden] {
+  display: none;
+}
+
+.film-zoom-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.film-zoom-close,
+.film-zoom-save {
+  min-width: 62px;
+  min-height: 30px;
+  padding: 0 10px;
+  color: #191916;
+  background: #d2c9b7;
+  border: 1px solid #8b8578;
+  border-radius: 5px;
+  font-size: 0.68rem;
+}
+
+.film-zoom-save:disabled {
+  color: #777166;
+  background: #4d4b45;
+}
+
+.film-zoom-card {
+  align-self: center;
+  justify-self: center;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: clamp(8px, 1.6vmin, 16px);
+  width: min(92%, 580px);
+  max-height: 100%;
+  margin: 0;
+  padding: clamp(10px, 2vmin, 18px) clamp(10px, 2vmin, 18px) clamp(28px, 5vmin, 58px);
+  color: #15130f;
+  background: var(--film-edge);
+  border-radius: 5px;
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.38);
+}
+
+.film-zoom-card img {
+  display: block;
+  width: 100%;
+  min-height: 0;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  background: var(--film);
+}
+
+.film-zoom-card figcaption {
+  overflow: hidden;
+  font-size: clamp(0.72rem, 1.8vmin, 0.92rem);
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .view-toggle {

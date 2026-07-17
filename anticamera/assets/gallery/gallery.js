@@ -1,18 +1,54 @@
+import { buildFilmDownloadFilename, composeFilmFramePng } from "./filmExport.js";
 export class Gallery {
     strip;
     exportButton;
     storage;
+    zoomPanel;
+    zoomImage;
+    zoomTime;
+    zoomCloseButton;
+    zoomSaveButton;
     items = [];
     retryListener = null;
-    constructor(strip, exportButton, storage) {
+    zoomFrame = null;
+    constructor(strip, exportButton, storage, zoomPanel, zoomImage, zoomTime, zoomCloseButton, zoomSaveButton) {
         this.strip = strip;
         this.exportButton = exportButton;
         this.storage = storage;
+        this.zoomPanel = zoomPanel;
+        this.zoomImage = zoomImage;
+        this.zoomTime = zoomTime;
+        this.zoomCloseButton = zoomCloseButton;
+        this.zoomSaveButton = zoomSaveButton;
         this.exportButton.addEventListener("click", () => this.exportJson());
         this.strip.addEventListener("click", (event) => {
             const target = event.target instanceof Element ? event.target.closest("[data-retry-job]") : null;
             if (target instanceof HTMLElement) {
                 this.retryListener?.(target.dataset.retryJob ?? "");
+                return;
+            }
+            const frameTarget = event.target instanceof Element ? event.target.closest("[data-frame-id]") : null;
+            if (frameTarget instanceof HTMLElement) {
+                this.openZoom(frameTarget.dataset.frameId ?? "");
+            }
+        });
+        this.strip.addEventListener("keydown", (event) => {
+            if (event.key !== "Enter" && event.key !== " ") {
+                return;
+            }
+            const frameTarget = event.target instanceof Element ? event.target.closest("[data-frame-id]") : null;
+            if (frameTarget instanceof HTMLElement) {
+                event.preventDefault();
+                this.openZoom(frameTarget.dataset.frameId ?? "");
+            }
+        });
+        this.zoomCloseButton.addEventListener("click", () => this.closeZoom());
+        this.zoomSaveButton.addEventListener("click", () => {
+            void this.saveZoomFrame();
+        });
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape" && !this.zoomPanel.hidden) {
+                this.closeZoom();
             }
         });
     }
@@ -80,6 +116,10 @@ export class Gallery {
         const item = document.createElement("li");
         item.className = `film-frame${frame.id === newId ? " new" : ""}`;
         item.title = `${frame.context.location.label} | ${frame.context.weather.description} | ${frame.context.audio.descriptor}`;
+        item.dataset.frameId = frame.id;
+        item.tabIndex = 0;
+        item.setAttribute("role", "button");
+        item.setAttribute("aria-label", `Open film frame from ${formatTimestamp(frame.timestamp)}`);
         const image = document.createElement("img");
         image.src = frame.imageDataUrl;
         image.alt = "Anti-Camera generated frame";
@@ -124,6 +164,60 @@ export class Gallery {
     }
     frames() {
         return this.items.flatMap((item) => item.kind === "frame" ? [item.frame] : []);
+    }
+    openZoom(id) {
+        const frame = this.frames().find((candidate) => candidate.id === id);
+        if (!frame) {
+            return;
+        }
+        this.zoomFrame = frame;
+        this.zoomImage.src = frame.imageDataUrl;
+        this.zoomImage.alt = "Enlarged Anti-Camera generated frame";
+        this.zoomTime.dateTime = frame.timestamp;
+        this.zoomTime.textContent = formatTimestamp(frame.timestamp);
+        this.zoomSaveButton.disabled = false;
+        this.zoomSaveButton.textContent = "SAVE";
+        this.zoomPanel.hidden = false;
+        this.zoomPanel.classList.remove("hidden");
+        this.zoomCloseButton.focus();
+    }
+    closeZoom() {
+        this.zoomPanel.hidden = true;
+        this.zoomPanel.classList.add("hidden");
+        this.zoomFrame = null;
+    }
+    async saveZoomFrame() {
+        if (!this.zoomFrame) {
+            return;
+        }
+        this.zoomSaveButton.disabled = true;
+        this.zoomSaveButton.textContent = "SAVING";
+        try {
+            const blob = await composeFilmFramePng(this.zoomFrame);
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = buildFilmDownloadFilename(this.zoomFrame);
+            document.body.append(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(url);
+            this.zoomSaveButton.textContent = "SAVED";
+            window.setTimeout(() => {
+                if (!this.zoomSaveButton.disabled) {
+                    return;
+                }
+                this.zoomSaveButton.disabled = false;
+                this.zoomSaveButton.textContent = "SAVE";
+            }, 900);
+        }
+        catch {
+            this.zoomSaveButton.disabled = false;
+            this.zoomSaveButton.textContent = "SAVE FAILED";
+            window.setTimeout(() => {
+                this.zoomSaveButton.textContent = "SAVE";
+            }, 1400);
+        }
     }
 }
 function formatTimestamp(timestamp) {

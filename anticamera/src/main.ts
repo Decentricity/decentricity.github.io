@@ -18,7 +18,12 @@ const storage = new FrameStorage();
 const gallery = new Gallery(
   requiredElement("film-strip", HTMLOListElement),
   requiredElement("export-json", HTMLButtonElement),
-  storage
+  storage,
+  requiredElement("film-zoom", HTMLElement),
+  requiredElement("film-zoom-image", HTMLImageElement),
+  requiredElement("film-zoom-time", HTMLTimeElement),
+  requiredElement("film-zoom-close", HTMLButtonElement),
+  requiredElement("film-zoom-save", HTMLButtonElement)
 );
 const manualControls = new ManualControls(requiredElement("manual-controls", HTMLElement));
 new FullscreenController(requiredElement("fullscreen-button", HTMLButtonElement));

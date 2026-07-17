@@ -1,4 +1,4 @@
-const STATIC_CACHE = "anti-camera-static-v3";
+const STATIC_CACHE = "anti-camera-static-v4";
 const STATIC_ASSETS = [
   "./",
   "./index.html",
@@ -24,6 +24,7 @@ const STATIC_ASSETS = [
   "./assets/context/utils.js",
   "./assets/context/weather.js",
   "./assets/gallery/gallery.js",
+  "./assets/gallery/filmExport.js",
   "./assets/gallery/storage.js",
   "./assets/image/endpointImageProvider.js",
   "./assets/image/imageGenerator.js",

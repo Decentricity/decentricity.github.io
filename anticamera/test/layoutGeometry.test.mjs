@@ -188,6 +188,26 @@ test("bottom view switch is persistent and camera-like", () => {
   assert.match(cssBlock(".view-toggle"), /z-index:\s*50/);
 });
 
+test("film view includes a full-view frame zoom and save control", () => {
+  const zoom = document.getElementById("film-zoom");
+  const image = document.getElementById("film-zoom-image");
+  const time = document.getElementById("film-zoom-time");
+  const close = document.getElementById("film-zoom-close");
+  const save = document.getElementById("film-zoom-save");
+
+  assert.equal(zoom.hidden, true);
+  assert.equal(zoom.classList.contains("film-zoom"), true);
+  assert.equal(image.tagName, "IMG");
+  assert.equal(time.tagName, "TIME");
+  assert.equal(close.tagName, "BUTTON");
+  assert.equal(save.tagName, "BUTTON");
+  assert.equal(save.textContent, "SAVE");
+  assert.match(cssBlock(".film-zoom"), /position:\s*absolute/);
+  assert.match(cssBlock(".film-zoom"), /z-index:\s*18/);
+  assert.match(cssBlock(".film-zoom-card"), /background:\s*var\(--film-edge\)/);
+  assert.match(cssBlock(".film-frame"), /cursor:\s*zoom-in/);
+});
+
 test("short landscape layout keeps controls compact and non-overlapping", () => {
   const landscape = mediaLandscapeShortBlock();
   assert.match(landscape, /\.app-shell\s*\{[\s\S]*?--switch-width:\s*34px/);

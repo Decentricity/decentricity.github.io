@@ -235,6 +235,23 @@
           <ol class="film-strip" id="film-strip"></ol>
         </div>
       </section>
+      <section
+        id="film-zoom"
+        class="film-zoom hidden"
+        aria-label="Selected film frame"
+        hidden
+      >
+        <div class="film-zoom-actions">
+          <button id="film-zoom-close" class="film-zoom-close" type="button" aria-label="Close enlarged film frame">BACK</button>
+          <button id="film-zoom-save" class="film-zoom-save" type="button">SAVE</button>
+        </div>
+        <figure class="film-zoom-card">
+          <img id="film-zoom-image" alt="Enlarged Anti-Camera generated frame">
+          <figcaption>
+            <time id="film-zoom-time"></time>
+          </figcaption>
+        </figure>
+      </section>
       </section>
 
       <button

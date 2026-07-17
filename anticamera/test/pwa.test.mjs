@@ -38,7 +38,7 @@ test("page exposes PWA metadata and a discreet fullscreen control", () => {
 });
 
 test("service worker caches only same-origin static app shell files", () => {
-  assert.match(sw, /anti-camera-static-v3/);
+  assert.match(sw, /anti-camera-static-v4/);
   assert.match(sw, /\.\/index\.html/);
   assert.match(sw, /\.\/styles\.css/);
   assert.doesNotMatch(sw, /["']\.\/sw\.js["']/);
@@ -47,6 +47,7 @@ test("service worker caches only same-origin static app shell files", () => {
   assert.match(sw, /\.\/icons\/icon-512\.svg/);
   assert.match(sw, /\.\/assets\/main\.js/);
   assert.match(sw, /\.\/assets\/capture\/captureQueue\.js/);
+  assert.match(sw, /\.\/assets\/gallery\/filmExport\.js/);
   assert.match(sw, /request\.method !== "GET"/);
   assert.match(sw, /url\.origin !== self\.location\.origin/);
   assert.match(sw, /STATIC_PATHS\.has\(url\.pathname\)/);
