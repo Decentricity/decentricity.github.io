@@ -1,4 +1,4 @@
-import type { AntiCameraContext } from "./types.js";
+import type { AntiCameraContext, FocalDistance } from "./types.js";
 import {
   aimLabelForPitch,
   directionLabelForAzimuth,
@@ -7,6 +7,8 @@ import {
 import {
   evLabel,
   flashLabel,
+  focalDistanceEquivalentMm,
+  focalDistancePromptLabel,
   focusStyleLabel,
   subjectModeLabel
 } from "./context/manualSettings.js";
@@ -20,7 +22,7 @@ function value(label: string, detail: string | number | undefined | null): strin
 }
 
 export class PromptBuilder {
-  constructor(private readonly virtualLensMm = 22) {}
+  constructor(private readonly virtualLensMm = 21) {}
 
   build(context: AntiCameraContext): string {
     const location = context.location;
@@ -31,6 +33,7 @@ export class PromptBuilder {
     const pose = context.cameraPose;
     const settings = context.manualSettings;
     const illumination = illuminationContext(context);
+    const lens = lensPromptProfile(settings.focalDistance, this.virtualLensMm);
 
     const lines = [
       "You are Anti-Camera, a lensless camera that records context rather than light.",
@@ -41,7 +44,7 @@ export class PromptBuilder {
       "",
       "PROMPT PRIORITY ORDER",
       "PRIORITY 1 -- IMMUTABLE SCENE FACTS: time, timezone, daylight phase, weather, location, and indoor/outdoor state.",
-      "PRIORITY 2 -- CAMERA GEOMETRY: heading, pitch, roll, framing, and virtual lens.",
+      "PRIORITY 2 -- CAMERA GEOMETRY: heading, pitch, roll, framing, focal distance, and virtual lens.",
       "PRIORITY 3 -- SUBJECT AND COMPOSITION: landscape, one person, group, or crowd.",
       "PRIORITY 4 -- CAMERA RENDERING SETTINGS: exposure compensation, ISO, flash, and depth of field.",
       "Lower-priority settings must never rewrite, reinterpret, or contradict higher-priority facts.",
@@ -64,9 +67,9 @@ export class PromptBuilder {
       "Do not substitute an eye-level viewpoint.",
       "Do not create a generic frontal composition.",
       "Do not show scenery that would lie outside this field of view.",
-      `Simulate a ${this.virtualLensMm} mm full-frame-equivalent rectilinear lens.`,
-      "Maintain realistic wide-angle perspective.",
-      "Do not use fisheye distortion.",
+      lens.simulationLine,
+      lens.perspectiveLine,
+      lens.distortionLine,
       "",
       ...poseCompositionRules(context),
       "",
@@ -103,6 +106,7 @@ export class PromptBuilder {
       value("Camera aim", aimLabelForPitch(pose.pitchDeg)),
       value("Subject mode", subjectModeLabel(settings.subjectMode)),
       value("Depth style", focusStyleLabel(settings.focusStyle)),
+      value("Focal distance", lens.settingLabel),
       value("Exposure compensation", evLabel(settings.exposureCompensationEv)),
       value("Flash", flashLabel(settings.flashMode)),
       value("Film speed ISO", settings.iso),
@@ -119,17 +123,20 @@ export class PromptBuilder {
       "MANUAL CAMERA SETTINGS -- STRICT PHOTOGRAPHIC CONSTRAINTS",
       `Subject mode: ${subjectModeLabel(settings.subjectMode).toLowerCase()}.`,
       `Depth style: ${settings.focusStyle === "bokeh" ? "shallow depth of field / bokeh" : "broad depth of field / deep focus"}.`,
+      `Focal distance: ${lens.settingLabel}.`,
       `Exposure compensation: ${evPromptLabel(settings.exposureCompensationEv)}.`,
       `Flash: ${settings.flashMode}.`,
       `Film speed: ISO ${settings.iso}.`,
-      `Virtual lens: ${this.virtualLensMm} mm full-frame equivalent.`,
+      `Virtual lens: ${lens.settingLabel}.`,
       "Treat these as physical camera settings, not as loose aesthetic suggestions.",
       "Apply them together coherently.",
       "Do not contradict immutable scene facts or the supplied camera pitch, roll, heading, location, weather, time, or indoor/outdoor context.",
       "",
       ...subjectPriorityRules(context),
       "",
-      ...depthOfFieldRules(context, this.virtualLensMm),
+      ...focalDistanceRules(lens),
+      "",
+      ...depthOfFieldRules(context, lens.equivalentMm),
       "",
       ...flashRules(context),
       "",
@@ -137,7 +144,7 @@ export class PromptBuilder {
       "",
       ...exposureRules(context, illumination),
       "",
-      ...manualInteractionRules(context, this.virtualLensMm),
+      ...manualInteractionRules(context, lens),
       "",
       ...finalConsistencyCheck(context, illumination),
       "",
@@ -160,6 +167,126 @@ interface IlluminationContext {
   isDaylight: boolean;
   isNight: boolean;
   isTwilight: boolean;
+}
+
+interface LensPromptProfile {
+  value: FocalDistance;
+  settingLabel: string;
+  equivalentMm: number;
+  simulationLine: string;
+  perspectiveLine: string;
+  distortionLine: string;
+  fieldOfViewRule: string;
+  subjectDistanceRule: string;
+  depthReasoningRule: string;
+}
+
+function lensPromptProfile(value: FocalDistance | undefined, fallbackMm: number): LensPromptProfile {
+  const selected = value ?? "21mm";
+  const equivalentMm = focalDistanceEquivalentMm(selected);
+  const settingLabel = focalDistancePromptLabel(selected);
+
+  switch (selected) {
+    case "28mm":
+      return {
+        value: selected,
+        settingLabel,
+        equivalentMm,
+        simulationLine: "Simulate a 28 mm full-frame-equivalent rectilinear lens.",
+        perspectiveLine: "Use a wide documentary field of view with moderate perspective expansion and substantial surrounding context.",
+        distortionLine: "Keep lines rectilinear and realistic; do not use fisheye distortion.",
+        fieldOfViewRule: "A 28 mm lens should include broad environmental context without the extreme edge stretch of an ultra-wide lens.",
+        subjectDistanceRule: "Place subjects close enough or far enough to match a 28 mm point-and-shoot perspective.",
+        depthReasoningRule: "A 28 mm lens usually keeps depth of field broad unless the subject is fairly close."
+      };
+    case "35mm":
+      return {
+        value: selected,
+        settingLabel,
+        equivalentMm,
+        simulationLine: "Simulate a 35 mm full-frame-equivalent rectilinear lens.",
+        perspectiveLine: "Use a moderate wide-angle perspective that balances subject presence with visible environment.",
+        distortionLine: "Keep geometry natural and rectilinear; do not use fisheye distortion.",
+        fieldOfViewRule: "A 35 mm lens should feel natural and slightly wide, with less sweeping coverage than 21 mm or 28 mm.",
+        subjectDistanceRule: "Compose at a believable candid-camera distance rather than an exaggerated ultra-wide distance.",
+        depthReasoningRule: "A 35 mm lens can show some separation at close range but should not behave like a long portrait lens."
+      };
+    case "50mm":
+      return {
+        value: selected,
+        settingLabel,
+        equivalentMm,
+        simulationLine: "Simulate a 50 mm full-frame-equivalent rectilinear lens.",
+        perspectiveLine: "Use a normal-lens perspective with a narrower field of view and less environmental exaggeration.",
+        distortionLine: "Keep geometry natural and rectilinear; do not use fisheye distortion.",
+        fieldOfViewRule: "A 50 mm lens should not include an ultra-wide sweep of the surroundings unless the camera is physically far away.",
+        subjectDistanceRule: "Frame subjects and spatial depth with a normal photographic viewing angle.",
+        depthReasoningRule: "A 50 mm lens can produce plausible background separation with close or medium-distance subjects."
+      };
+    case "80mm":
+      return {
+        value: selected,
+        settingLabel,
+        equivalentMm,
+        simulationLine: "Simulate an 80 mm full-frame-equivalent short-telephoto rectilinear lens.",
+        perspectiveLine: "Use a compressed, narrower field of view with stronger subject isolation than a normal lens.",
+        distortionLine: "Do not use fisheye or ultra-wide perspective cues.",
+        fieldOfViewRule: "An 80 mm lens should crop the scene more tightly and reduce how much surrounding environment is visible.",
+        subjectDistanceRule: "Use believable camera-to-subject distance for a short telephoto point-and-shoot frame.",
+        depthReasoningRule: "An 80 mm lens makes shallow depth of field more plausible, especially for nearby people or objects."
+      };
+    case "telephoto":
+      return {
+        value: selected,
+        settingLabel,
+        equivalentMm,
+        simulationLine: "Simulate a telephoto rectilinear lens, approximately 135 mm full-frame equivalent.",
+        perspectiveLine: "Use a narrow field of view, compressed distance, and restrained background coverage.",
+        distortionLine: "Do not use fisheye, action-camera, or ultra-wide perspective cues.",
+        fieldOfViewRule: "Telephoto framing should isolate a smaller slice of the scene and make distant planes appear closer together.",
+        subjectDistanceRule: "Compose as if the camera is farther from the subject or aimed at a tighter distant detail.",
+        depthReasoningRule: "Telephoto selection makes background compression and stronger subject separation optically plausible."
+      };
+    case "macro":
+      return {
+        value: selected,
+        settingLabel,
+        equivalentMm,
+        simulationLine: "Simulate a macro close-focus lens, approximately 60 mm full-frame equivalent.",
+        perspectiveLine: "Use a close-up field of view where nearby textures, small objects, surfaces, or details can dominate the frame.",
+        distortionLine: "Keep the result rectilinear and photographic; do not use fisheye distortion.",
+        fieldOfViewRule: "Macro mode should favor close subject distance rather than a broad scenic view.",
+        subjectDistanceRule: "The center of the frame should plausibly be focused on a nearby surface, object, face detail, sign, plant, fabric, food, floor detail, or other close subject suggested by context.",
+        depthReasoningRule: "Macro mode makes very shallow depth of field plausible at close distances, but the focal plane must remain optically coherent."
+      };
+    case "21mm":
+    default:
+      return {
+        value: "21mm",
+        settingLabel: fallbackMm === 22 ? "21 mm full-frame equivalent" : settingLabel,
+        equivalentMm,
+        simulationLine: "Simulate a 21 mm full-frame-equivalent rectilinear lens.",
+        perspectiveLine: "Maintain realistic ultra-wide perspective with strong environmental coverage.",
+        distortionLine: "Do not use fisheye distortion.",
+        fieldOfViewRule: "A 21 mm lens should include a broad field of view and make close foreground objects feel spatially expansive.",
+        subjectDistanceRule: "Use believable ultra-wide camera distance; avoid a cropped normal-lens composition.",
+        depthReasoningRule: "A 21 mm lens naturally has deep depth of field, so strong bokeh requires close subject distance."
+      };
+  }
+}
+
+function focalDistanceRules(lens: LensPromptProfile): string[] {
+  return [
+    "FOCAL DISTANCE / VIRTUAL LENS -- STRICT OPTICAL CONSTRAINT",
+    `Selected focal distance: ${lens.settingLabel}.`,
+    lens.simulationLine,
+    lens.fieldOfViewRule,
+    lens.subjectDistanceRule,
+    lens.depthReasoningRule,
+    lens.distortionLine,
+    "Focal distance changes field of view, perspective compression, framing, and plausible subject distance.",
+    "Focal distance must not change the actual time, weather, location, subject mode, or exposure compensation."
+  ];
 }
 
 function illuminationContext(context: AntiCameraContext): IlluminationContext {
@@ -662,7 +789,7 @@ function filmSpeedRules(context: AntiCameraContext): string[] {
   ];
 }
 
-function manualInteractionRules(context: AntiCameraContext, lensMm: number): string[] {
+function manualInteractionRules(context: AntiCameraContext, lens: LensPromptProfile): string[] {
   const settings = context.manualSettings;
   const rules = [
     "SETTING INTERACTIONS AND PHYSICAL REASONING",
@@ -670,7 +797,8 @@ function manualInteractionRules(context: AntiCameraContext, lensMm: number): str
     `Exposure compensation changes brightness, not the scene's hour, weather, location, or identity.`,
     `ISO affects sensitivity and film texture, not depth of field.`,
     `Subject mode affects composition, not factual claims about who is present.`,
-    `The ${lensMm} mm rectilinear lens sets a wide field of view; use perspective and subject distance to reconcile it with depth-of-field settings.`
+    `The selected focal distance (${lens.settingLabel}) sets the field of view; use perspective and subject distance to reconcile it with depth-of-field settings.`,
+    lens.depthReasoningRule
   ];
 
   if (settings.iso <= 160 && settings.flashMode === "off" && (context.mode === "indoor" || context.time.dayPeriod === "night")) {

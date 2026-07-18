@@ -177,11 +177,11 @@ test("rapid shutter presses create ordered placeholders and process provider req
   });
   await harness.app.start();
 
-  harness.manualSettings = { ...DEFAULT_MANUAL_SETTINGS, iso: 100, exposureCompensationEv: 0 };
+  harness.manualSettings = { ...DEFAULT_MANUAL_SETTINGS, iso: 100, exposureCompensationEv: 0, focalDistance: "21mm" };
   harness.clickShutter();
-  harness.manualSettings = { ...DEFAULT_MANUAL_SETTINGS, iso: 800, exposureCompensationEv: -2 };
+  harness.manualSettings = { ...DEFAULT_MANUAL_SETTINGS, iso: 800, exposureCompensationEv: -2, focalDistance: "80mm" };
   harness.clickShutter();
-  harness.manualSettings = { ...DEFAULT_MANUAL_SETTINGS, iso: 200, exposureCompensationEv: 1 };
+  harness.manualSettings = { ...DEFAULT_MANUAL_SETTINGS, iso: 200, exposureCompensationEv: 1, focalDistance: "macro" };
   harness.clickShutter();
 
   assert.equal(harness.gallery.placeholders.length, 3);
@@ -224,12 +224,13 @@ test("rapid shutter presses create ordered placeholders and process provider req
   assert.deepEqual(
     harness.promptBuilder.calls.map((context) => ({
       iso: context.manualSettings.iso,
-      ev: context.manualSettings.exposureCompensationEv
+      ev: context.manualSettings.exposureCompensationEv,
+      focalDistance: context.manualSettings.focalDistance
     })),
     [
-      { iso: 100, ev: 0 },
-      { iso: 800, ev: -2 },
-      { iso: 200, ev: 1 }
+      { iso: 100, ev: 0, focalDistance: "21mm" },
+      { iso: 800, ev: -2, focalDistance: "80mm" },
+      { iso: 200, ev: 1, focalDistance: "macro" }
     ]
   );
 });

@@ -2,6 +2,7 @@ import type {
   ExposureCompensationEv,
   FilmIso,
   FlashMode,
+  FocalDistance,
   FocusStyle,
   ManualCameraSettings,
   SubjectMode
@@ -9,14 +10,17 @@ import type {
 import {
   DEFAULT_MANUAL_SETTINGS,
   EXPOSURE_VALUES,
+  FOCAL_DISTANCE_VALUES,
   ISO_VALUES,
   SUBJECT_MODES,
   evLabel,
   flashLabel,
+  focalDistanceLabel,
   focusStyleLabel,
   freezeManualSettings,
   loadManualSettings,
   nextExposure,
+  nextFocalDistance,
   nextIso,
   saveManualSettings,
   snapExposure,
@@ -87,11 +91,16 @@ export class ManualControls {
     this.root.querySelector<HTMLButtonElement>("[data-control='subject-cycle']")?.addEventListener("keydown", (event) => {
       this.handleSubjectKey(event);
     });
+
+    this.root.querySelectorAll<HTMLButtonElement>("[data-focal-distance]").forEach((button) => {
+      button.addEventListener("keydown", (event) => this.handleFocalKey(event));
+    });
   }
 
   private handleButton(button: HTMLButtonElement): void {
     const focusStyle = button.dataset.focusStyle as FocusStyle | undefined;
     const flashMode = button.dataset.flashMode as FlashMode | undefined;
+    const focalDistance = button.dataset.focalDistance as FocalDistance | undefined;
     const ev = button.dataset.ev;
     const iso = button.dataset.iso;
 
@@ -101,6 +110,8 @@ export class ManualControls {
       this.update({ focusStyle });
     } else if (flashMode) {
       this.update({ flashMode });
+    } else if (focalDistance) {
+      this.update({ focalDistance });
     } else if (ev !== undefined) {
       this.update({ exposureCompensationEv: snapExposure(Number(ev)) });
     } else if (iso !== undefined) {
@@ -115,6 +126,22 @@ export class ManualControls {
     } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
       event.preventDefault();
       this.cycleSubjectMode(-1);
+    }
+  }
+
+  private handleFocalKey(event: KeyboardEvent): void {
+    const handledKeys = ["ArrowLeft", "ArrowDown", "ArrowRight", "ArrowUp", "Home", "End"];
+    if (!handledKeys.includes(event.key)) {
+      return;
+    }
+
+    event.preventDefault();
+    if (event.key === "Home") {
+      this.update({ focalDistance: FOCAL_DISTANCE_VALUES[0] ?? this.settings.focalDistance });
+    } else if (event.key === "End") {
+      this.update({ focalDistance: FOCAL_DISTANCE_VALUES[FOCAL_DISTANCE_VALUES.length - 1] ?? this.settings.focalDistance });
+    } else {
+      this.update({ focalDistance: nextFocalDistance(this.settings.focalDistance, event.key === "ArrowRight" || event.key === "ArrowDown" ? 1 : -1) });
     }
   }
 
@@ -264,6 +291,7 @@ export class ManualControls {
     this.renderLever("flashMode", this.settings.flashMode);
     this.renderDial("ev", this.settings.exposureCompensationEv, EV_DIAL);
     this.renderDial("iso", this.settings.iso, ISO_DIAL);
+    this.renderFocalSelector();
   }
 
   private cycleSubjectMode(direction: -1 | 1 = 1): void {
@@ -306,6 +334,26 @@ export class ManualControls {
       button.classList.toggle("is-selected", selected);
       button.setAttribute("role", "radio");
       button.setAttribute("aria-checked", String(selected));
+    });
+  }
+
+  private renderFocalSelector(): void {
+    const control = this.root.querySelector<HTMLElement>("[data-control='focal-distance']");
+    if (!control) {
+      return;
+    }
+
+    const index = FOCAL_DISTANCE_VALUES.indexOf(this.settings.focalDistance);
+    control.dataset.selected = this.settings.focalDistance;
+    control.style.setProperty("--focal-index", String(Math.max(0, index)));
+    control.setAttribute("aria-label", `Focal distance selector, ${focalDistanceLabel(this.settings.focalDistance)}`);
+
+    this.root.querySelectorAll<HTMLButtonElement>("[data-focal-distance]").forEach((button) => {
+      const selected = button.dataset.focalDistance === this.settings.focalDistance;
+      button.classList.toggle("is-selected", selected);
+      button.setAttribute("role", "radio");
+      button.setAttribute("aria-checked", String(selected));
+      button.setAttribute("aria-label", `Set focal distance to ${focalDistanceLabel(button.dataset.focalDistance as FocalDistance)}`);
     });
   }
 

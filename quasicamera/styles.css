@@ -703,9 +703,10 @@ button {
   --selector-width: clamp(108px, 30vw, 132px);
   --selector-height: clamp(38px, 9vw, 42px);
   --control-row-height: calc(var(--dial-size) + var(--panel-title-height) + (var(--panel-padding) * 2) + 12px);
+  --focal-row-height: clamp(42px, 7vw, 52px);
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.9fr) minmax(0, 1fr) minmax(0, 1fr);
-  grid-template-rows: minmax(var(--control-row-height), auto);
+  grid-template-rows: minmax(var(--control-row-height), auto) var(--focal-row-height);
   gap: var(--control-gap);
   align-items: stretch;
   width: 100%;
@@ -928,6 +929,64 @@ button {
 .iso-dial {
   grid-column: 4;
   grid-row: 1;
+}
+
+.focal-panel {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  min-height: var(--focal-row-height);
+}
+
+.focal-track {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  align-self: center;
+  justify-self: center;
+  width: min(100%, 430px);
+  min-height: clamp(28px, 5vw, 34px);
+  padding: 4px;
+  overflow: hidden;
+  background: #151714;
+  border: 1px solid #080908;
+  border-radius: 5px;
+  box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.45);
+}
+
+.focal-track button {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: clamp(26px, 4.5vw, 32px);
+  padding: 0 2px;
+  color: #d2c9b7;
+  background: transparent;
+  border: 0;
+  font-size: clamp(0.5rem, 1.45vw, 0.62rem);
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.focal-track button.is-selected {
+  color: #151612;
+}
+
+.focal-thumb {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  z-index: 1;
+  width: calc((100% - 8px) / 7);
+  background: #d3cab5;
+  border: 1px solid #10110f;
+  border-radius: 4px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 2px 4px rgba(0, 0, 0, 0.38);
+  transform: translateX(calc(var(--focal-index, 0) * 100%));
+  transition: transform 160ms ease;
 }
 
 .analog-dial {
@@ -1485,8 +1544,9 @@ button.film-placeholder {
     --selector-width: clamp(100px, 35vw, 126px);
     --selector-height: 36px;
     --control-row-height: calc(var(--dial-size) + var(--panel-title-height) + (var(--panel-padding) * 2) + 8px);
+    --focal-row-height: 42px;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-rows: minmax(0, 0.92fr) minmax(var(--control-row-height), auto);
+    grid-template-rows: minmax(0, 0.92fr) minmax(var(--control-row-height), auto) var(--focal-row-height);
     margin: 4px 0 8px;
   }
 
@@ -1510,6 +1570,11 @@ button.film-placeholder {
   .iso-dial {
     grid-column: 2;
     grid-row: 2;
+  }
+
+  .focal-panel {
+    grid-column: 1 / -1;
+    grid-row: 3;
   }
 
   .subject-cycle-button {
@@ -1640,6 +1705,7 @@ button.film-placeholder {
     --selector-width: clamp(88px, 14vw, 112px);
     --selector-height: 28px;
     --control-row-height: calc(var(--dial-size) + var(--panel-title-height) + (var(--panel-padding) * 2) + 5px);
+    --focal-row-height: 32px;
     margin: 2px 0 5px;
   }
 
@@ -1676,6 +1742,23 @@ button.film-placeholder {
   .flash-lever .lever-track button svg {
     width: 10px;
     height: 14px;
+  }
+
+  .focal-track {
+    min-height: 24px;
+    padding: 3px;
+  }
+
+  .focal-track button {
+    min-height: 20px;
+    font-size: 0.42rem;
+  }
+
+  .focal-thumb {
+    top: 3px;
+    bottom: 3px;
+    left: 3px;
+    width: calc((100% - 6px) / 7);
   }
 
   .dial-face button {
@@ -1754,13 +1837,14 @@ button.film-placeholder {
     --panel-padding: 7px;
     --dial-size: clamp(92px, 27vw, 106px);
     --selector-width: clamp(104px, 30vw, 118px);
+    --focal-row-height: 44px;
   }
 }
 
 @media (max-width: 340px) {
   .manual-controls {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-rows: auto auto;
+    grid-template-rows: auto auto var(--focal-row-height);
   }
 
   .mode-cluster {
@@ -1781,5 +1865,10 @@ button.film-placeholder {
   .iso-dial {
     grid-column: 2;
     grid-row: 2;
+  }
+
+  .focal-panel {
+    grid-column: 1 / -1;
+    grid-row: 3;
   }
 }

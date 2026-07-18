@@ -5,6 +5,7 @@ export type SubjectMode = "landscape" | "single-person" | "group" | "crowd";
 export type FlashMode = "off" | "on";
 export type ExposureCompensationEv = -3 | -2 | -1 | 0 | 1 | 2 | 3;
 export type FilmIso = 80 | 100 | 125 | 160 | 200 | 250 | 320 | 400 | 500 | 640 | 800 | 1000;
+export type FocalDistance = "21mm" | "28mm" | "35mm" | "50mm" | "80mm" | "telephoto" | "macro";
 
 export interface ManualCameraSettings {
   focusStyle: FocusStyle;
@@ -12,6 +13,7 @@ export interface ManualCameraSettings {
   subjectMode: SubjectMode;
   flashMode: FlashMode;
   iso: FilmIso;
+  focalDistance: FocalDistance;
 }
 
 export interface TimeContext {

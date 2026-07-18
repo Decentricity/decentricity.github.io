@@ -54,7 +54,7 @@ Anti-Camera normalizes browser orientation into a camera-facing pose:
 - `rollDeg`: `0` = level horizon. Positive roll means the camera's top edge rotates clockwise as seen by the photographer looking along the optical axis.
 - `screenOrientationDeg`: the portrait/landscape device rotation used to determine the photographic frame's up edge.
 
-The prompt builder treats pose as a strict compositional constraint. It uses a fixed virtual lens of `22 mm` full-frame equivalent, modeled as rectilinear wide angle with no fisheye distortion.
+The prompt builder treats pose as a strict compositional constraint. The manual focal-distance selector defaults to a `21 mm` full-frame-equivalent rectilinear lens, with additional detents for 28 mm, 35 mm, 50 mm, 80 mm, telephoto, and macro rendering.
 
 ## Manual Controls
 

@@ -204,6 +204,43 @@ test("subject mode freezes at shutter time from the cycle button", async () => {
   assert.equal(controls.currentSettings().subjectMode, "group");
 });
 
+test("focal distance strip supports click, keyboard, persistence, and freezing", async () => {
+  const { window, root, storage } = await setupManualControlsDom();
+  storage.setItem("anticamera.manualSettings.v1", JSON.stringify({
+    ...DEFAULT_MANUAL_SETTINGS,
+    focalDistance: "35mm"
+  }));
+
+  const controls = new ManualControls(root);
+  const focalPanel = root.querySelector("[data-control='focal-distance']");
+  const fifty = root.querySelector("[data-focal-distance='50mm']");
+  const macro = root.querySelector("[data-focal-distance='macro']");
+
+  assert.equal(focalPanel.dataset.selected, "35mm");
+  assert.equal(focalPanel.style.getPropertyValue("--focal-index"), "2");
+  assert.equal(root.querySelector("[data-focal-distance='35mm']").classList.contains("is-selected"), true);
+
+  fifty.dispatchEvent(new window.Event("click", { bubbles: true }));
+  assert.equal(controls.currentSettings().focalDistance, "50mm");
+  assert.equal(focalPanel.style.getPropertyValue("--focal-index"), "3");
+  assert.equal(fifty.getAttribute("aria-checked"), "true");
+
+  key(window, fifty, "ArrowRight");
+  assert.equal(controls.currentSettings().focalDistance, "80mm");
+  key(window, fifty, "ArrowLeft");
+  assert.equal(controls.currentSettings().focalDistance, "50mm");
+  key(window, fifty, "Home");
+  assert.equal(controls.currentSettings().focalDistance, "21mm");
+  key(window, fifty, "End");
+  assert.equal(controls.currentSettings().focalDistance, "macro");
+  assert.equal(macro.classList.contains("is-selected"), true);
+
+  const frozen = controls.freezeSettings();
+  root.querySelector("[data-focal-distance='21mm']").dispatchEvent(new window.Event("click", { bubbles: true }));
+  assert.equal(frozen.focalDistance, "macro");
+  assert.equal(controls.currentSettings().focalDistance, "21mm");
+});
+
 test("old radial subject dial elements are absent from the DOM", async () => {
   const { root } = await setupManualControlsDom();
   new ManualControls(root);

@@ -4,8 +4,10 @@ import { test } from "node:test";
 import {
   DEFAULT_MANUAL_SETTINGS,
   evLabel,
+  focalDistanceLabel,
   freezeManualSettings,
   loadManualSettings,
+  nextFocalDistance,
   saveManualSettings,
   settingsReadout,
   snapExposure,
@@ -20,9 +22,10 @@ test("manual settings defaults", () => {
     exposureCompensationEv: 0,
     subjectMode: "landscape",
     flashMode: "off",
-    iso: 200
+    iso: 200,
+    focalDistance: "21mm"
   });
-  assert.equal(settingsReadout(DEFAULT_MANUAL_SETTINGS), "LAND DF 0EV FL-OFF ISO200");
+  assert.equal(settingsReadout(DEFAULT_MANUAL_SETTINGS), "LAND DF F21 0EV FL-OFF ISO200");
 });
 
 test("hard-detent snapping", () => {
@@ -32,6 +35,10 @@ test("hard-detent snapping", () => {
   assert.equal(snapIso(78), 80);
   assert.equal(snapIso(410), 400);
   assert.equal(snapIso(990), 1000);
+  assert.equal(nextFocalDistance("21mm", 1), "28mm");
+  assert.equal(nextFocalDistance("telephoto", 1), "macro");
+  assert.equal(nextFocalDistance("macro", 1), "macro");
+  assert.equal(nextFocalDistance("28mm", -1), "21mm");
 });
 
 test("manual settings persistence", () => {
@@ -41,10 +48,20 @@ test("manual settings persistence", () => {
     exposureCompensationEv: 1,
     subjectMode: "single-person",
     flashMode: "on",
-    iso: 400
+    iso: 400,
+    focalDistance: "50mm"
   };
   saveManualSettings(settings, storage);
   assert.deepEqual(loadManualSettings(storage), settings);
+
+  storage.setItem("anticamera.manualSettings.v1", JSON.stringify({
+    focusStyle: "bokeh",
+    exposureCompensationEv: 1,
+    subjectMode: "single-person",
+    flashMode: "on",
+    iso: 400
+  }));
+  assert.equal(loadManualSettings(storage).focalDistance, "21mm");
 });
 
 test("changing each control value is represented in frozen settings", () => {
@@ -53,14 +70,16 @@ test("changing each control value is represented in frozen settings", () => {
     exposureCompensationEv: -2,
     subjectMode: "crowd",
     flashMode: "on",
-    iso: 1000
+    iso: 1000,
+    focalDistance: "telephoto"
   });
   assert.deepEqual(settings, {
     focusStyle: "bokeh",
     exposureCompensationEv: -2,
     subjectMode: "crowd",
     flashMode: "on",
-    iso: 1000
+    iso: 1000,
+    focalDistance: "telephoto"
   });
 });
 
@@ -70,13 +89,16 @@ test("frozen settings at shutter time are immutable copies", () => {
     exposureCompensationEv: 3,
     subjectMode: "group",
     flashMode: "on",
-    iso: 800
+    iso: 800,
+    focalDistance: "80mm"
   };
   const frozen = freezeManualSettings(live);
   live.iso = 80;
   live.flashMode = "off";
+  live.focalDistance = "macro";
   assert.equal(frozen.iso, 800);
   assert.equal(frozen.flashMode, "on");
+  assert.equal(frozen.focalDistance, "80mm");
 });
 
 test("JSON export includes exact manual settings", async () => {
@@ -85,7 +107,8 @@ test("JSON export includes exact manual settings", async () => {
     exposureCompensationEv: 2,
     subjectMode: "single-person",
     flashMode: "on",
-    iso: 640
+    iso: 640,
+    focalDistance: "macro"
   });
   const storage = new FrameStorage();
   const blob = storage.exportMetadata([{
@@ -270,6 +293,29 @@ test("ISO 80, 400, and 1000 prompt branches", () => {
   assert.match(promptBuilder.build(contextForPrompt({ iso: 1000 })), /coarser but organic film grain/);
 });
 
+test("focal distance prompt branches contain concrete optical constraints", () => {
+  const promptBuilder = new PromptBuilder();
+  assert.equal(focalDistanceLabel("telephoto"), "TELEPHOTO");
+
+  const wide = promptBuilder.build(contextForPrompt({ focalDistance: "21mm" }));
+  assert.match(wide, /FOCAL DISTANCE \/ VIRTUAL LENS -- STRICT OPTICAL CONSTRAINT/);
+  assert.match(wide, /Selected focal distance: 21 mm full-frame equivalent/);
+  assert.match(wide, /broad field of view/);
+
+  const normal = promptBuilder.build(contextForPrompt({ focalDistance: "50mm" }));
+  assert.match(normal, /Simulate a 50 mm full-frame-equivalent rectilinear lens/);
+  assert.match(normal, /normal-lens perspective/);
+
+  const telephoto = promptBuilder.build(contextForPrompt({ focalDistance: "telephoto" }));
+  assert.match(telephoto, /approximately 135 mm full-frame equivalent/);
+  assert.match(telephoto, /compressed distance/);
+
+  const macro = promptBuilder.build(contextForPrompt({ focalDistance: "macro" }));
+  assert.match(macro, /macro close-focus lens mode/);
+  assert.match(macro, /nearby textures, small objects, surfaces, or details/);
+  assert.doesNotMatch(macro, /focalDistance: true/);
+});
+
 test("setting interactions are explicit physical reasoning", () => {
   const prompt = new PromptBuilder().build(contextForPrompt({
     mode: "indoor",
@@ -290,6 +336,8 @@ test("accessibility labels exist for manual controls", async () => {
   assert.match(html, /data-control="subject-cycle"/);
   assert.match(html, /aria-label="Depth: bokeh"/);
   assert.match(html, /aria-label="Flash on"/);
+  assert.match(html, /aria-label="Focal distance selector"/);
+  assert.match(html, /data-focal-distance="telephoto"/);
   assert.match(html, /aria-label="Exposure compensation dial"/);
   assert.match(html, /aria-label="ISO dial"/);
 });
@@ -411,6 +459,6 @@ function contextForPrompt(overrides = {}) {
 }
 
 function pickManual(overrides) {
-  const keys = ["focusStyle", "exposureCompensationEv", "subjectMode", "flashMode", "iso"];
+  const keys = ["focusStyle", "exposureCompensationEv", "subjectMode", "flashMode", "iso", "focalDistance"];
   return Object.fromEntries(keys.filter((key) => key in overrides).map((key) => [key, overrides[key]]));
 }

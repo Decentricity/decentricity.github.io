@@ -146,7 +146,7 @@ test("prompt explicitly preserves pitch and roll", () => {
   assert.match(prompt, /rolled -7\.2 degrees/);
   assert.match(prompt, /horizon tilted by approximately 7\.2 degrees/);
   assert.match(prompt, /Do not automatically straighten the image/);
-  assert.match(prompt, /22 mm full-frame-equivalent rectilinear lens/);
+  assert.match(prompt, /21 mm full-frame-equivalent rectilinear lens/);
   assert.match(prompt, /substantially more sky, ceiling, treetops, upper floors, signage, or overhead structure than ground/);
 });
 
