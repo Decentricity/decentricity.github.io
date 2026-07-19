@@ -704,6 +704,7 @@ button {
   --selector-height: clamp(38px, 9vw, 42px);
   --control-row-height: calc(var(--dial-size) + var(--panel-title-height) + (var(--panel-padding) * 2) + 12px);
   --focal-row-height: clamp(42px, 7vw, 52px);
+  --grounding-row-height: var(--focal-row-height);
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.9fr) minmax(0, 1fr) minmax(0, 1fr);
   grid-template-rows: minmax(var(--control-row-height), auto) var(--focal-row-height);
@@ -932,18 +933,23 @@ button {
 }
 
 .focal-panel {
-  grid-column: 1 / -1;
+  grid-column: 1 / 4;
   grid-row: 2;
   min-height: var(--focal-row-height);
 }
 
-.focal-track {
+.grounding-panel {
+  grid-column: 4;
+  grid-row: 2;
+  min-height: var(--grounding-row-height);
+}
+
+.focal-track,
+.grounding-track {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
   align-self: center;
   justify-self: center;
-  width: min(100%, 430px);
   min-height: clamp(28px, 5vw, 34px);
   padding: 4px;
   overflow: hidden;
@@ -953,7 +959,19 @@ button {
   box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.45);
 }
 
-.focal-track button {
+.focal-track {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  width: min(100%, 430px);
+}
+
+.grounding-track {
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+  width: min(100%, 170px);
+}
+
+.focal-track button,
+.grounding-track button {
   position: relative;
   z-index: 2;
   display: grid;
@@ -970,23 +988,36 @@ button {
   white-space: nowrap;
 }
 
-.focal-track button.is-selected {
+.focal-track button.is-selected,
+.grounding-track button.is-selected {
   color: #151612;
 }
 
-.focal-thumb {
+.focal-thumb,
+.grounding-thumb {
   position: absolute;
   top: 4px;
   bottom: 4px;
   left: 4px;
   z-index: 1;
-  width: calc((100% - 8px) / 7);
   background: #d3cab5;
   border: 1px solid #10110f;
   border-radius: 4px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 2px 4px rgba(0, 0, 0, 0.38);
-  transform: translateX(calc(var(--focal-index, 0) * 100%));
   transition: transform 160ms ease;
+}
+
+.focal-thumb {
+  width: calc((100% - 8px) / 7);
+  transform: translateX(calc(var(--focal-index, 0) * 100%));
+}
+
+.grounding-thumb {
+  width: calc(50% - 6px);
+}
+
+.grounding-panel[data-selected="free"] .grounding-thumb {
+  transform: translateX(calc(100% + 2px));
 }
 
 .analog-dial {
@@ -1545,8 +1576,9 @@ button.film-placeholder {
     --selector-height: 36px;
     --control-row-height: calc(var(--dial-size) + var(--panel-title-height) + (var(--panel-padding) * 2) + 8px);
     --focal-row-height: 42px;
+    --grounding-row-height: 42px;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-rows: minmax(0, 0.92fr) minmax(var(--control-row-height), auto) var(--focal-row-height);
+    grid-template-rows: minmax(0, 0.92fr) minmax(var(--control-row-height), auto) var(--focal-row-height) var(--grounding-row-height);
     margin: 4px 0 8px;
   }
 
@@ -1575,6 +1607,11 @@ button.film-placeholder {
   .focal-panel {
     grid-column: 1 / -1;
     grid-row: 3;
+  }
+
+  .grounding-panel {
+    grid-column: 1 / -1;
+    grid-row: 4;
   }
 
   .subject-cycle-button {
@@ -1706,6 +1743,7 @@ button.film-placeholder {
     --selector-height: 28px;
     --control-row-height: calc(var(--dial-size) + var(--panel-title-height) + (var(--panel-padding) * 2) + 5px);
     --focal-row-height: 32px;
+    --grounding-row-height: 32px;
     margin: 2px 0 5px;
   }
 
@@ -1744,21 +1782,31 @@ button.film-placeholder {
     height: 14px;
   }
 
-  .focal-track {
+  .focal-track,
+  .grounding-track {
     min-height: 24px;
     padding: 3px;
   }
 
-  .focal-track button {
+  .focal-track button,
+  .grounding-track button {
     min-height: 20px;
     font-size: 0.42rem;
   }
 
-  .focal-thumb {
+  .focal-thumb,
+  .grounding-thumb {
     top: 3px;
     bottom: 3px;
     left: 3px;
+  }
+
+  .focal-thumb {
     width: calc((100% - 6px) / 7);
+  }
+
+  .grounding-thumb {
+    width: calc(50% - 5px);
   }
 
   .dial-face button {
@@ -1838,13 +1886,14 @@ button.film-placeholder {
     --dial-size: clamp(92px, 27vw, 106px);
     --selector-width: clamp(104px, 30vw, 118px);
     --focal-row-height: 44px;
+    --grounding-row-height: 44px;
   }
 }
 
 @media (max-width: 340px) {
   .manual-controls {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-rows: auto auto var(--focal-row-height);
+    grid-template-rows: auto auto var(--focal-row-height) var(--grounding-row-height);
   }
 
   .mode-cluster {
@@ -1870,5 +1919,10 @@ button.film-placeholder {
   .focal-panel {
     grid-column: 1 / -1;
     grid-row: 3;
+  }
+
+  .grounding-panel {
+    grid-column: 1 / -1;
+    grid-row: 4;
   }
 }

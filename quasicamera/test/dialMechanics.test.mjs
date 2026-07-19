@@ -241,6 +241,44 @@ test("focal distance strip supports click, keyboard, persistence, and freezing",
   assert.equal(controls.currentSettings().focalDistance, "21mm");
 });
 
+test("grounding switch supports click, keyboard, persistence, and freezing", async () => {
+  const { window, root, storage } = await setupManualControlsDom();
+  storage.setItem("quasicamera.manualSettings.v1", JSON.stringify({
+    ...DEFAULT_MANUAL_SETTINGS,
+    groundingMode: "free"
+  }));
+
+  const controls = new ManualControls(root);
+  const groundingPanel = root.querySelector("[data-control='grounding']");
+  const grounded = root.querySelector("[data-grounding-mode='grounded']");
+  const free = root.querySelector("[data-grounding-mode='free']");
+
+  assert.equal(groundingPanel.dataset.selected, "free");
+  assert.equal(free.classList.contains("is-selected"), true);
+  assert.equal(free.getAttribute("aria-checked"), "true");
+
+  grounded.dispatchEvent(new window.Event("click", { bubbles: true }));
+  assert.equal(controls.currentSettings().groundingMode, "grounded");
+  assert.equal(groundingPanel.dataset.selected, "grounded");
+  assert.equal(grounded.getAttribute("aria-checked"), "true");
+
+  key(window, grounded, "ArrowRight");
+  assert.equal(controls.currentSettings().groundingMode, "free");
+  key(window, free, "ArrowLeft");
+  assert.equal(controls.currentSettings().groundingMode, "grounded");
+  key(window, grounded, "End");
+  assert.equal(controls.currentSettings().groundingMode, "free");
+  key(window, free, "Home");
+  assert.equal(controls.currentSettings().groundingMode, "grounded");
+  key(window, grounded, " ");
+  assert.equal(controls.currentSettings().groundingMode, "free");
+
+  const frozen = controls.freezeSettings();
+  grounded.dispatchEvent(new window.Event("click", { bubbles: true }));
+  assert.equal(frozen.groundingMode, "free");
+  assert.equal(controls.currentSettings().groundingMode, "grounded");
+});
+
 test("old radial subject dial elements are absent from the DOM", async () => {
   const { root } = await setupManualControlsDom();
   new ManualControls(root);

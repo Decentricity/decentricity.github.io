@@ -4,13 +4,15 @@ export const SUBJECT_MODES = ["landscape", "single-person", "group", "crowd"];
 export const FOCUS_STYLES = ["deep-focus", "bokeh"];
 export const FLASH_MODES = ["off", "on"];
 export const FOCAL_DISTANCE_VALUES = ["21mm", "28mm", "35mm", "50mm", "80mm", "telephoto", "macro"];
+export const GROUNDING_MODES = ["grounded", "free"];
 export const DEFAULT_MANUAL_SETTINGS = {
     focusStyle: "deep-focus",
     exposureCompensationEv: 0,
     subjectMode: "landscape",
     flashMode: "off",
     iso: 200,
-    focalDistance: "21mm"
+    focalDistance: "21mm",
+    groundingMode: "grounded"
 };
 const STORAGE_KEY = "quasicamera.manualSettings.v1";
 export function loadManualSettings(storage = localStorage) {
@@ -39,7 +41,10 @@ export function sanitizeManualSettings(candidate = {}) {
         iso: isOneOf(candidate.iso, ISO_VALUES) ? candidate.iso : DEFAULT_MANUAL_SETTINGS.iso,
         focalDistance: isOneOf(candidate.focalDistance, FOCAL_DISTANCE_VALUES)
             ? candidate.focalDistance
-            : DEFAULT_MANUAL_SETTINGS.focalDistance
+            : DEFAULT_MANUAL_SETTINGS.focalDistance,
+        groundingMode: isOneOf(candidate.groundingMode, GROUNDING_MODES)
+            ? candidate.groundingMode
+            : DEFAULT_MANUAL_SETTINGS.groundingMode
     };
 }
 export function freezeManualSettings(settings) {
@@ -59,6 +64,9 @@ export function nextIso(current, delta) {
 }
 export function nextFocalDistance(current, delta) {
     return nextDetent(current, FOCAL_DISTANCE_VALUES, delta);
+}
+export function nextGroundingMode(current, delta) {
+    return nextDetent(current, GROUNDING_MODES, delta);
 }
 export function subjectModeLabel(mode) {
     switch (mode) {
@@ -118,6 +126,12 @@ export function focalDistanceShort(value) {
             return `F${value.replace("mm", "")}`;
     }
 }
+export function groundingModeLabel(value) {
+    return value === "free" ? "FREE" : "GROUNDED";
+}
+export function groundingModeShort(value) {
+    return value === "free" ? "FREE" : "GRND";
+}
 export function focalDistanceEquivalentMm(value) {
     switch (value) {
         case "28mm":
@@ -153,6 +167,7 @@ export function settingsReadout(settings) {
         subjectModeShort(normalized.subjectMode),
         focusStyleShort(normalized.focusStyle),
         focalDistanceShort(normalized.focalDistance),
+        groundingModeShort(normalized.groundingMode),
         evLabel(normalized.exposureCompensationEv),
         `FL-${flashLabel(normalized.flashMode)}`,
         `ISO${normalized.iso}`

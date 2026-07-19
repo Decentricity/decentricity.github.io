@@ -23,7 +23,7 @@ export class OpenAIImagesProvider implements ImageGeneratorProvider {
   ) {}
 
   async generate(request: ImageGenerationRequest): Promise<ImageGenerationResult> {
-    if (request.sourceImage) {
+    if (request.sourceImage || (request.faceReferences?.length ?? 0) > 0) {
       return this.edit(request);
     }
 
@@ -97,7 +97,7 @@ export class OpenAIImagesProvider implements ImageGeneratorProvider {
     let response: Response;
 
     if (images.length === 0) {
-      throw new Error("QuasiCamera image edit requires a source image");
+      throw new Error("QuasiCamera image edit requires a source image or face reference");
     }
 
     try {

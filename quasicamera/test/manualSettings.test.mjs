@@ -6,8 +6,10 @@ import {
   evLabel,
   focalDistanceLabel,
   freezeManualSettings,
+  groundingModeLabel,
   loadManualSettings,
   nextFocalDistance,
+  nextGroundingMode,
   saveManualSettings,
   settingsReadout,
   snapExposure,
@@ -23,9 +25,10 @@ test("manual settings defaults", () => {
     subjectMode: "landscape",
     flashMode: "off",
     iso: 200,
-    focalDistance: "21mm"
+    focalDistance: "21mm",
+    groundingMode: "grounded"
   });
-  assert.equal(settingsReadout(DEFAULT_MANUAL_SETTINGS), "LAND DF F21 0EV FL-OFF ISO200");
+  assert.equal(settingsReadout(DEFAULT_MANUAL_SETTINGS), "LAND DF F21 GRND 0EV FL-OFF ISO200");
 });
 
 test("hard-detent snapping", () => {
@@ -39,6 +42,9 @@ test("hard-detent snapping", () => {
   assert.equal(nextFocalDistance("telephoto", 1), "macro");
   assert.equal(nextFocalDistance("macro", 1), "macro");
   assert.equal(nextFocalDistance("28mm", -1), "21mm");
+  assert.equal(nextGroundingMode("grounded", 1), "free");
+  assert.equal(nextGroundingMode("free", 1), "free");
+  assert.equal(nextGroundingMode("free", -1), "grounded");
 });
 
 test("manual settings persistence", () => {
@@ -49,7 +55,8 @@ test("manual settings persistence", () => {
     subjectMode: "single-person",
     flashMode: "on",
     iso: 400,
-    focalDistance: "50mm"
+    focalDistance: "50mm",
+    groundingMode: "free"
   };
   saveManualSettings(settings, storage);
   assert.deepEqual(loadManualSettings(storage), settings);
@@ -62,6 +69,7 @@ test("manual settings persistence", () => {
     iso: 400
   }));
   assert.equal(loadManualSettings(storage).focalDistance, "21mm");
+  assert.equal(loadManualSettings(storage).groundingMode, "grounded");
 });
 
 test("changing each control value is represented in frozen settings", () => {
@@ -71,7 +79,8 @@ test("changing each control value is represented in frozen settings", () => {
     subjectMode: "crowd",
     flashMode: "on",
     iso: 1000,
-    focalDistance: "telephoto"
+    focalDistance: "telephoto",
+    groundingMode: "free"
   });
   assert.deepEqual(settings, {
     focusStyle: "bokeh",
@@ -79,7 +88,8 @@ test("changing each control value is represented in frozen settings", () => {
     subjectMode: "crowd",
     flashMode: "on",
     iso: 1000,
-    focalDistance: "telephoto"
+    focalDistance: "telephoto",
+    groundingMode: "free"
   });
 });
 
@@ -90,15 +100,18 @@ test("frozen settings at shutter time are immutable copies", () => {
     subjectMode: "group",
     flashMode: "on",
     iso: 800,
-    focalDistance: "80mm"
+    focalDistance: "80mm",
+    groundingMode: "free"
   };
   const frozen = freezeManualSettings(live);
   live.iso = 80;
   live.flashMode = "off";
   live.focalDistance = "macro";
+  live.groundingMode = "grounded";
   assert.equal(frozen.iso, 800);
   assert.equal(frozen.flashMode, "on");
   assert.equal(frozen.focalDistance, "80mm");
+  assert.equal(frozen.groundingMode, "free");
 });
 
 test("JSON export includes exact manual settings", async () => {
@@ -108,7 +121,8 @@ test("JSON export includes exact manual settings", async () => {
     subjectMode: "single-person",
     flashMode: "on",
     iso: 640,
-    focalDistance: "macro"
+    focalDistance: "macro",
+    groundingMode: "free"
   });
   const storage = new FrameStorage();
   const blob = storage.exportMetadata([{
@@ -319,6 +333,26 @@ test("focal distance prompt branches contain concrete optical constraints", () =
   assert.doesNotMatch(macro, /focalDistance: true/);
 });
 
+test("grounded and free prompt branches control source-image grounding", () => {
+  const promptBuilder = new PromptBuilder();
+  assert.equal(groundingModeLabel("grounded"), "GROUNDED");
+
+  const grounded = promptBuilder.build(contextForPrompt({ groundingMode: "grounded" }));
+  assert.match(grounded, /GROUNDING MODE/);
+  assert.match(grounded, /GROUNDING: GROUNDED/);
+  assert.match(grounded, /The original captured photograph is supplied as the primary visual reference/);
+  assert.match(grounded, /Use it to preserve:\n- composition\n- camera angle\n- framing\n- approximate geometry/);
+
+  const free = promptBuilder.build(contextForPrompt({ groundingMode: "free" }));
+  assert.match(free, /GROUNDING: FREE/);
+  assert.match(free, /The original photograph is intentionally NOT supplied/);
+  assert.match(free, /preserved face references/);
+  assert.match(free, /semantic object descriptions/);
+  assert.match(free, /Do not attempt to reproduce the original composition exactly/);
+  assert.match(free, /Recognized objects are recreated from semantic understanding only/);
+  assert.doesNotMatch(free, /The original captured photograph is supplied as the primary visual reference/);
+});
+
 test("setting interactions are explicit physical reasoning", () => {
   const prompt = new PromptBuilder().build(contextForPrompt({
     mode: "indoor",
@@ -341,6 +375,9 @@ test("accessibility labels exist for manual controls", async () => {
   assert.match(html, /aria-label="Flash on"/);
   assert.match(html, /aria-label="Focal distance selector"/);
   assert.match(html, /data-focal-distance="telephoto"/);
+  assert.match(html, /aria-label="Grounding selector"/);
+  assert.match(html, /data-grounding-mode="grounded"/);
+  assert.match(html, /data-grounding-mode="free"/);
   assert.match(html, /aria-label="Exposure compensation dial"/);
   assert.match(html, /aria-label="ISO dial"/);
 });
@@ -462,6 +499,6 @@ function contextForPrompt(overrides = {}) {
 }
 
 function pickManual(overrides) {
-  const keys = ["focusStyle", "exposureCompensationEv", "subjectMode", "flashMode", "iso", "focalDistance"];
+  const keys = ["focusStyle", "exposureCompensationEv", "subjectMode", "flashMode", "iso", "focalDistance", "groundingMode"];
   return Object.fromEntries(keys.filter((key) => key in overrides).map((key) => [key, overrides[key]]));
 }

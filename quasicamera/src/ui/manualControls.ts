@@ -4,6 +4,7 @@ import type {
   FlashMode,
   FocalDistance,
   FocusStyle,
+  GenerationGroundingMode,
   ManualCameraSettings,
   SubjectMode
 } from "../types.js";
@@ -11,6 +12,7 @@ import {
   DEFAULT_MANUAL_SETTINGS,
   EXPOSURE_VALUES,
   FOCAL_DISTANCE_VALUES,
+  GROUNDING_MODES,
   ISO_VALUES,
   SUBJECT_MODES,
   evLabel,
@@ -18,9 +20,11 @@ import {
   focalDistanceLabel,
   focusStyleLabel,
   freezeManualSettings,
+  groundingModeLabel,
   loadManualSettings,
   nextExposure,
   nextFocalDistance,
+  nextGroundingMode,
   nextIso,
   saveManualSettings,
   snapExposure,
@@ -95,12 +99,17 @@ export class ManualControls {
     this.root.querySelectorAll<HTMLButtonElement>("[data-focal-distance]").forEach((button) => {
       button.addEventListener("keydown", (event) => this.handleFocalKey(event));
     });
+
+    this.root.querySelectorAll<HTMLButtonElement>("[data-grounding-mode]").forEach((button) => {
+      button.addEventListener("keydown", (event) => this.handleGroundingKey(event));
+    });
   }
 
   private handleButton(button: HTMLButtonElement): void {
     const focusStyle = button.dataset.focusStyle as FocusStyle | undefined;
     const flashMode = button.dataset.flashMode as FlashMode | undefined;
     const focalDistance = button.dataset.focalDistance as FocalDistance | undefined;
+    const groundingMode = button.dataset.groundingMode as GenerationGroundingMode | undefined;
     const ev = button.dataset.ev;
     const iso = button.dataset.iso;
 
@@ -112,6 +121,8 @@ export class ManualControls {
       this.update({ flashMode });
     } else if (focalDistance) {
       this.update({ focalDistance });
+    } else if (groundingMode) {
+      this.update({ groundingMode });
     } else if (ev !== undefined) {
       this.update({ exposureCompensationEv: snapExposure(Number(ev)) });
     } else if (iso !== undefined) {
@@ -142,6 +153,24 @@ export class ManualControls {
       this.update({ focalDistance: FOCAL_DISTANCE_VALUES[FOCAL_DISTANCE_VALUES.length - 1] ?? this.settings.focalDistance });
     } else {
       this.update({ focalDistance: nextFocalDistance(this.settings.focalDistance, event.key === "ArrowRight" || event.key === "ArrowDown" ? 1 : -1) });
+    }
+  }
+
+  private handleGroundingKey(event: KeyboardEvent): void {
+    const handledKeys = ["ArrowLeft", "ArrowDown", "ArrowRight", "ArrowUp", "Home", "End", "Enter", " "];
+    if (!handledKeys.includes(event.key)) {
+      return;
+    }
+
+    event.preventDefault();
+    if (event.key === "Home") {
+      this.update({ groundingMode: GROUNDING_MODES[0] ?? this.settings.groundingMode });
+    } else if (event.key === "End") {
+      this.update({ groundingMode: GROUNDING_MODES[GROUNDING_MODES.length - 1] ?? this.settings.groundingMode });
+    } else if (event.key === "Enter" || event.key === " ") {
+      this.update({ groundingMode: this.settings.groundingMode === "grounded" ? "free" : "grounded" });
+    } else {
+      this.update({ groundingMode: nextGroundingMode(this.settings.groundingMode, event.key === "ArrowRight" || event.key === "ArrowDown" ? 1 : -1) });
     }
   }
 
@@ -292,6 +321,7 @@ export class ManualControls {
     this.renderDial("ev", this.settings.exposureCompensationEv, EV_DIAL);
     this.renderDial("iso", this.settings.iso, ISO_DIAL);
     this.renderFocalSelector();
+    this.renderGroundingSelector();
   }
 
   private cycleSubjectMode(direction: -1 | 1 = 1): void {
@@ -354,6 +384,25 @@ export class ManualControls {
       button.setAttribute("role", "radio");
       button.setAttribute("aria-checked", String(selected));
       button.setAttribute("aria-label", `Set focal distance to ${focalDistanceLabel(button.dataset.focalDistance as FocalDistance)}`);
+    });
+  }
+
+  private renderGroundingSelector(): void {
+    const control = this.root.querySelector<HTMLElement>("[data-control='grounding']");
+    if (!control) {
+      return;
+    }
+
+    control.dataset.selected = this.settings.groundingMode;
+    control.setAttribute("aria-label", `Grounding selector, ${groundingModeLabel(this.settings.groundingMode)}`);
+
+    this.root.querySelectorAll<HTMLButtonElement>("[data-grounding-mode]").forEach((button) => {
+      const selected = button.dataset.groundingMode === this.settings.groundingMode;
+      const mode = button.dataset.groundingMode as GenerationGroundingMode;
+      button.classList.toggle("is-selected", selected);
+      button.setAttribute("role", "radio");
+      button.setAttribute("aria-checked", String(selected));
+      button.setAttribute("aria-label", `Set grounding mode to ${groundingModeLabel(mode)}`);
     });
   }
 

@@ -4,6 +4,7 @@ import type {
   FlashMode,
   FocalDistance,
   FocusStyle,
+  GenerationGroundingMode,
   ManualCameraSettings,
   SubjectMode
 } from "../types.js";
@@ -14,6 +15,7 @@ export const SUBJECT_MODES = ["landscape", "single-person", "group", "crowd"] as
 export const FOCUS_STYLES = ["deep-focus", "bokeh"] as const satisfies readonly FocusStyle[];
 export const FLASH_MODES = ["off", "on"] as const satisfies readonly FlashMode[];
 export const FOCAL_DISTANCE_VALUES = ["21mm", "28mm", "35mm", "50mm", "80mm", "telephoto", "macro"] as const satisfies readonly FocalDistance[];
+export const GROUNDING_MODES = ["grounded", "free"] as const satisfies readonly GenerationGroundingMode[];
 
 export const DEFAULT_MANUAL_SETTINGS: ManualCameraSettings = {
   focusStyle: "deep-focus",
@@ -21,7 +23,8 @@ export const DEFAULT_MANUAL_SETTINGS: ManualCameraSettings = {
   subjectMode: "landscape",
   flashMode: "off",
   iso: 200,
-  focalDistance: "21mm"
+  focalDistance: "21mm",
+  groundingMode: "grounded"
 };
 
 const STORAGE_KEY = "quasicamera.manualSettings.v1";
@@ -59,7 +62,10 @@ export function sanitizeManualSettings(candidate: Partial<ManualCameraSettings> 
     iso: isOneOf(candidate.iso, ISO_VALUES) ? candidate.iso : DEFAULT_MANUAL_SETTINGS.iso,
     focalDistance: isOneOf(candidate.focalDistance, FOCAL_DISTANCE_VALUES)
       ? candidate.focalDistance
-      : DEFAULT_MANUAL_SETTINGS.focalDistance
+      : DEFAULT_MANUAL_SETTINGS.focalDistance,
+    groundingMode: isOneOf(candidate.groundingMode, GROUNDING_MODES)
+      ? candidate.groundingMode
+      : DEFAULT_MANUAL_SETTINGS.groundingMode
   };
 }
 
@@ -85,6 +91,10 @@ export function nextIso(current: FilmIso, delta: -1 | 1): FilmIso {
 
 export function nextFocalDistance(current: FocalDistance, delta: -1 | 1): FocalDistance {
   return nextDetent(current, FOCAL_DISTANCE_VALUES, delta);
+}
+
+export function nextGroundingMode(current: GenerationGroundingMode, delta: -1 | 1): GenerationGroundingMode {
+  return nextDetent(current, GROUNDING_MODES, delta);
 }
 
 export function subjectModeLabel(mode: SubjectMode): string {
@@ -153,6 +163,14 @@ export function focalDistanceShort(value: FocalDistance): string {
   }
 }
 
+export function groundingModeLabel(value: GenerationGroundingMode): string {
+  return value === "free" ? "FREE" : "GROUNDED";
+}
+
+export function groundingModeShort(value: GenerationGroundingMode): string {
+  return value === "free" ? "FREE" : "GRND";
+}
+
 export function focalDistanceEquivalentMm(value: FocalDistance): number {
   switch (value) {
     case "28mm":
@@ -190,6 +208,7 @@ export function settingsReadout(settings: ManualCameraSettings): string {
     subjectModeShort(normalized.subjectMode),
     focusStyleShort(normalized.focusStyle),
     focalDistanceShort(normalized.focalDistance),
+    groundingModeShort(normalized.groundingMode),
     evLabel(normalized.exposureCompensationEv),
     `FL-${flashLabel(normalized.flashMode)}`,
     `ISO${normalized.iso}`

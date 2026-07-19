@@ -1,4 +1,4 @@
-import type { AntiCameraContext, FocalDistance, ObjectAnalysis, ObjectRelationshipPredicate, RecognizedObject, SubjectFaceSelection } from "./types.js";
+import type { AntiCameraContext, FocalDistance, GenerationGroundingMode, ObjectAnalysis, ObjectRelationshipPredicate, RecognizedObject, SubjectFaceSelection } from "./types.js";
 import {
   aimLabelForPitch,
   directionLabelForAzimuth,
@@ -10,6 +10,8 @@ import {
   focalDistanceEquivalentMm,
   focalDistancePromptLabel,
   focusStyleLabel,
+  groundingModeLabel,
+  sanitizeManualSettings,
   subjectModeLabel
 } from "./context/manualSettings.js";
 
@@ -63,7 +65,7 @@ function subjectFaceSelectionRules(selection: SubjectFaceSelection): string[] {
   ];
 }
 
-function objectPreservationRules(analysis: ObjectAnalysis | undefined): string[] {
+function objectPreservationRules(analysis: ObjectAnalysis | undefined, groundingMode: GenerationGroundingMode): string[] {
   if (!analysis || analysis.objects.length === 0) {
     return [
       "HUMAN AND OBJECT PRESERVATION RULES",
@@ -100,6 +102,10 @@ function objectPreservationRules(analysis: ObjectAnalysis | undefined): string[]
     "SEMANTIC OBJECTS TO PRESERVE",
     "The source photograph contains these salient non-human objects:",
     ...objectLines,
+    "",
+    "STRUCTURED SEMANTIC OBJECT DATA",
+    objectStructuredDataLine(analysis, byId),
+    "",
     "Preserve these object categories in the regenerated photograph.",
     "They do not need to be the exact same physical objects.",
     "A preserved object does not need to be the exact same physical object as the source object.",
@@ -114,12 +120,37 @@ function objectPreservationRules(analysis: ObjectAnalysis | undefined): string[]
         "Do not move relationship-critical objects into a different semantic arrangement unless the required relationship remains visibly true."
       ]
       : []),
-    "Use the source image as evidence of composition, viewpoint, selected faces, object categories, and relationships.",
+    groundingMode === "grounded"
+      ? "Use the source image as evidence of composition, viewpoint, selected faces, object categories, and relationships."
+      : "Use the structured object analysis and face reference crops as evidence; the original source image is intentionally not supplied in Free grounding mode.",
     "The new scene may radically transform the environment and visual appearance.",
     "Do not simply reproduce the source photograph.",
     "Do not remove salient preserved objects.",
     "Do not change essential relationships."
   ];
+}
+
+function objectStructuredDataLine(analysis: ObjectAnalysis, byId: Map<string, RecognizedObject>): string {
+  return JSON.stringify({
+    objects: analysis.objects.map((object) => ({
+      label: object.normalizedLabel,
+      category: object.category,
+      ...(object.count && object.count > 1 ? { count: object.count } : {})
+    })),
+    relationships: analysis.relationships.flatMap((relationship) => {
+      const subject = byId.get(relationship.subjectObjectId);
+      const object = byId.get(relationship.objectObjectId);
+      if (!subject || !object) {
+        return [];
+      }
+
+      return [{
+        subject: subject.normalizedLabel,
+        predicate: relationship.predicate,
+        object: object.normalizedLabel
+      }];
+    })
+  });
 }
 
 function objectVariationLines(objects: RecognizedObject[]): string[] {
@@ -156,6 +187,59 @@ function relationshipSentence(subject: RecognizedObject, predicate: ObjectRelati
   return [`The ${subjectLabel} is ${predicate.replaceAll("-", " ")} the ${objectLabel}.`];
 }
 
+function sourceReferenceIntro(groundingMode: GenerationGroundingMode): string[] {
+  if (groundingMode === "free") {
+    return [
+      "The original captured photograph was analyzed at shutter time, but it is intentionally not supplied as a visual reference for generation.",
+      "Selected face reference crops, semantic object descriptions, object relationships, camera settings, and camera pose supply the grounded evidence."
+    ];
+  }
+
+  return [
+    "The source photograph supplies facial likeness references, approximate human pose and framing where useful, composition, geometry, and camera viewpoint."
+  ];
+}
+
+function groundingModeRules(groundingMode: GenerationGroundingMode): string[] {
+  if (groundingMode === "free") {
+    return [
+      "GROUNDING MODE",
+      "GROUNDING: FREE",
+      "The original photograph is intentionally NOT supplied.",
+      "Reconstruct a completely new image using only:",
+      "- preserved face references",
+      "- semantic object descriptions",
+      "- object relationships",
+      "- camera settings",
+      "- camera pose",
+      "Do not attempt to reproduce the original composition exactly.",
+      "You have creative freedom provided the semantic constraints are satisfied.",
+      "Selected faces still require recognizable likeness preservation from the supplied face crops.",
+      "Recognized objects are recreated from semantic understanding only and do not need to resemble the source objects."
+    ];
+  }
+
+  return [
+    "GROUNDING MODE",
+    "GROUNDING: GROUNDED",
+    "The original captured photograph is supplied as the primary visual reference.",
+    "Use it to preserve:",
+    "- composition",
+    "- camera angle",
+    "- framing",
+    "- approximate geometry",
+    "while transforming the world."
+  ];
+}
+
+function viewpointPreservationLine(groundingMode: GenerationGroundingMode): string {
+  if (groundingMode === "free") {
+    return "Preserve approximate camera height, camera angle, pitch, roll, portrait/landscape framing, and major perspective direction from the sensor pose and structured source analysis rather than from original pixels.";
+  }
+
+  return "Preserve approximate camera height, camera angle, pitch, roll, portrait/landscape framing, and major perspective direction from the source photograph.";
+}
+
 export class PromptBuilder {
   constructor(private readonly virtualLensMm = 21) {}
 
@@ -166,7 +250,7 @@ export class PromptBuilder {
     const motion = context.motion;
     const device = context.device;
     const pose = context.cameraPose;
-    const settings = context.manualSettings;
+    const settings = sanitizeManualSettings(context.manualSettings);
     const illumination = illuminationContext(context);
     const lens = lensPromptProfile(settings.focalDistance, this.virtualLensMm);
 
@@ -174,7 +258,7 @@ export class PromptBuilder {
       "QUASICAMERA IMAGE TRANSFORMATION",
       "The source image is a real camera photograph captured at shutter time.",
       "Create a new, substantially transformed photographic scene.",
-      "The source photograph supplies facial likeness references, approximate human pose and framing where useful, and camera viewpoint.",
+      ...sourceReferenceIntro(settings.groundingMode),
       "The new image does not need to preserve the original location, exact object appearance, furniture, vehicles, signage, or background.",
       "Preserve selected people according to the face rules and preserve recognized non-human objects according to the semantic-object rules below.",
       "Do not include fantasy, surrealism, illustration, painting, CGI, or visible AI artifacts.",
@@ -183,7 +267,9 @@ export class PromptBuilder {
       "",
       ...facePreservationRules(faceSelection),
       "",
-      ...objectPreservationRules(objectAnalysis),
+      ...objectPreservationRules(objectAnalysis, settings.groundingMode),
+      "",
+      ...groundingModeRules(settings.groundingMode),
       "",
       "PROMPT PRIORITY ORDER",
       "PRIORITY 1 -- SELECTED HUMAN LIKENESS: preserve exactly the selected real face references according to subject mode.",
@@ -255,6 +341,8 @@ export class PromptBuilder {
       value("Selected source faces", context.quasiCamera?.selectedFaceCount),
       value("Subject mapping strategy", context.quasiCamera?.subjectMappingStrategy),
       value("Face analysis provider", context.quasiCamera?.faceAnalysisProvider),
+      value("Generation grounding", groundingModeLabel(settings.groundingMode)),
+      value("Source image attached", context.quasiCamera?.sourceImageAttached === undefined ? undefined : context.quasiCamera.sourceImageAttached ? "YES" : "NO"),
       value("Recognized non-human objects", context.quasiCamera?.recognizedObjects?.map((object) => object.normalizedLabel).join(", ")),
       value("Recognized object relationships", context.quasiCamera?.objectRelationships?.map((relationship) => `${relationship.subject} ${relationship.predicate} ${relationship.object}`).join("; ")),
       value("Object analysis provider", context.quasiCamera?.objectAnalysisProvider),
@@ -275,6 +363,7 @@ export class PromptBuilder {
       "",
       "MANUAL CAMERA SETTINGS -- STRICT PHOTOGRAPHIC CONSTRAINTS",
       `Subject mode: ${subjectModeLabel(settings.subjectMode).toLowerCase()}.`,
+      `Generation grounding: ${groundingModeLabel(settings.groundingMode).toLowerCase()}.`,
       `Depth style: ${settings.focusStyle === "bokeh" ? "shallow depth of field / bokeh" : "broad depth of field / deep focus"}.`,
       `Focal distance: ${lens.settingLabel}.`,
       `Exposure compensation: ${evPromptLabel(settings.exposureCompensationEv)}.`,
@@ -305,7 +394,7 @@ export class PromptBuilder {
         + `${directionLabelForAzimuth(pose.azimuthDeg)} from the supplied coordinates. `
         + "Do not invent or assert that a specific landmark is visible unless it is supplied by reliable context.",
       "",
-      "Preserve approximate camera height, camera angle, pitch, roll, portrait/landscape framing, and major perspective direction from the source photograph.",
+      viewpointPreservationLine(settings.groundingMode),
       "Do not automatically straighten a rolled source frame.",
       "Compose one plausible transformed photograph from these facts. No captions, no interface, no text overlay."
     ];

@@ -60,9 +60,12 @@ test("capture flow replaces a placeholder before gallery storage and allows repe
   assert.equal(harness.faceAnalyzer.calls.length, 2);
   assert.equal(harness.objectAnalyzer.calls.length, 2);
   assert.equal(harness.imageGenerator.calls[0].sourceImage.role, "source");
+  assert.equal(harness.imageGenerator.calls[0].generationGrounding, "grounded");
   assert.equal(harness.imageGenerator.calls[0].faceReferences.length, 1);
   assert.equal(harness.gallery.addCalls[0].context.quasiCamera.detectedFaceCount, 1);
   assert.equal(harness.gallery.addCalls[0].context.quasiCamera.selectedFaceCount, 1);
+  assert.equal(harness.gallery.addCalls[0].context.quasiCamera.groundingMode, "grounded");
+  assert.equal(harness.gallery.addCalls[0].context.quasiCamera.sourceImageAttached, true);
 });
 
 test("default view is Camera and the bottom switch opens and closes Film", async () => {
@@ -100,6 +103,8 @@ test("debug panel is hidden by default and toggled from the optical viewfinder",
   assert.equal(harness.debugPanel.classList.contains("hidden"), true);
   assert.equal(harness.viewfinder.getAttribute("aria-expanded"), "false");
   assert.match(harness.readout.textContent, /Location:/);
+  assert.match(harness.readout.textContent, /Grounding:GROUNDED/);
+  assert.match(harness.readout.textContent, /Source image attached:YES/);
 
   harness.clickViewfinder();
   assert.equal(harness.debugPanel.hidden, false);
@@ -388,11 +393,15 @@ test("semantic objects are added without changing face-preserving image input", 
 
   const request = harness.imageGenerator.calls[0];
   assert.equal(request.sourceImage.role, "source");
+  assert.equal(request.generationGrounding, "grounded");
   assert.equal(request.faceReferences.length, 1);
   assert.match(request.prompt, /PRESERVE SELECTED HUMAN LIKENESS/);
+  assert.match(request.prompt, /GROUNDING: GROUNDED/);
+  assert.match(request.prompt, /The original captured photograph is supplied as the primary visual reference/);
   assert.match(request.prompt, /There are 1 selected real face references/);
   assert.match(request.prompt, /Selected human faces require recognizable identity preservation/);
   assert.match(request.prompt, /Non-human objects require semantic preservation only/);
+  assert.match(request.prompt, /STRUCTURED SEMANTIC OBJECT DATA/);
   assert.match(request.prompt, /hedgehog plushie/);
   assert.match(request.prompt, /car/);
   assert.match(request.prompt, /on top of/);
@@ -409,7 +418,53 @@ test("semantic objects are added without changing face-preserving image input", 
     { subject: "hedgehog plushie", predicate: "on-top-of", object: "car" }
   ]);
   assert.equal(metadata.objectAnalysisProvider, "mock-object-analyzer");
+  assert.equal(metadata.groundingMode, "grounded");
+  assert.equal(metadata.sourceImageAttached, true);
   assert.doesNotMatch(JSON.stringify(metadata), /boundingBox|source-photo|data:image/);
+});
+
+test("Free grounding omits the source image while preserving face crops and object semantics", async () => {
+  const objectAnalysis = hedgehogOnCarAnalysis();
+  const harness = await createAppHarness({
+    objectAnalyses: [objectAnalysis],
+    promptBuilder: new PromptBuilder()
+  });
+  harness.manualSettings = {
+    ...DEFAULT_MANUAL_SETTINGS,
+    groundingMode: "free"
+  };
+  await harness.app.start();
+
+  harness.clickShutter();
+  await harness.waitForCaptureCount(1);
+
+  const request = harness.imageGenerator.calls[0];
+  assert.equal(request.generationGrounding, "free");
+  assert.equal(request.sourceImage, undefined);
+  assert.equal(request.faceReferences.length, 1);
+  assert.match(request.faceReferences[0].dataUrl, /crop-1200-1/);
+  assert.match(request.prompt, /GROUNDING: FREE/);
+  assert.match(request.prompt, /The original photograph is intentionally NOT supplied/);
+  assert.match(request.prompt, /preserved face references/);
+  assert.match(request.prompt, /semantic object descriptions/);
+  assert.match(request.prompt, /STRUCTURED SEMANTIC OBJECT DATA/);
+  assert.match(request.prompt, /hedgehog plushie/);
+  assert.match(request.prompt, /on top of/);
+
+  const metadata = harness.gallery.addCalls[0].context.quasiCamera;
+  assert.deepEqual(request.context.quasiCamera.recognizedObjects.map((object) => object.normalizedLabel), ["hedgehog plushie", "car"]);
+  assert.equal(metadata.groundingMode, "free");
+  assert.equal(metadata.sourceImageAttached, false);
+  assert.equal(metadata.selectedFaceCount, 1);
+  assert.deepEqual(metadata.objectRelationships, [
+    { subject: "hedgehog plushie", predicate: "on-top-of", object: "car" }
+  ]);
+
+  const metrics = JSON.parse(globalThis.localStorage.getItem("quasicamera.groundingMetrics.v1"));
+  assert.equal(metrics.free.attempts, 1);
+  assert.equal(metrics.free.successes, 1);
+  assert.equal(metrics.free.failures, 0);
+  assert.equal(metrics.grounded.attempts, 0);
 });
 
 test("object-analysis failure leaves face generation intact", async () => {

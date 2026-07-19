@@ -50,6 +50,45 @@ test("OpenAI provider sends source image and face crops to image edits with high
   }
 });
 
+test("OpenAI provider can send face references without a source image for Free grounding", async () => {
+  const originalFetch = globalThis.fetch;
+  let capturedRequest;
+  globalThis.fetch = async (url, init) => {
+    capturedRequest = { url, init };
+    return new Response(JSON.stringify({
+      data: [{ b64_json: "generated-free" }]
+    }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" }
+    });
+  };
+
+  try {
+    const provider = new OpenAIImagesProvider("sk-test", "gpt-image-1.5", 1000);
+    const result = await provider.generate({
+      context: minimalContext(),
+      prompt: "create from face references and semantic structure",
+      generationGrounding: "free",
+      faceReferences: [{
+        role: "face-reference",
+        name: "face.jpg",
+        dataUrl: "data:image/jpeg;base64,face"
+      }],
+      inputFidelity: "high"
+    });
+
+    assert.equal(capturedRequest.url, "https://api.openai.com/v1/images/edits");
+    const body = JSON.parse(capturedRequest.init.body);
+    assert.equal(body.images.length, 1);
+    assert.equal(body.images[0].image_url, "data:image/jpeg;base64,face");
+    assert.equal(body.prompt, "create from face references and semantic structure");
+    assert.equal(result.imageDataUrl, "data:image/png;base64,generated-free");
+    assert.equal(result.provider, "openai-images-edit");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 function minimalContext() {
   const now = "2026-07-17T03:03:00.000Z";
   return {
@@ -84,7 +123,9 @@ function minimalContext() {
       exposureCompensationEv: 0,
       subjectMode: "single-person",
       flashMode: "off",
-      iso: 200
+      iso: 200,
+      focalDistance: "21mm",
+      groundingMode: "grounded"
     },
     orientation: {
       status: "granted",

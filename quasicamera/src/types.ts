@@ -6,6 +6,7 @@ export type FlashMode = "off" | "on";
 export type ExposureCompensationEv = -3 | -2 | -1 | 0 | 1 | 2 | 3;
 export type FilmIso = 80 | 100 | 125 | 160 | 200 | 250 | 320 | 400 | 500 | 640 | 800 | 1000;
 export type FocalDistance = "21mm" | "28mm" | "35mm" | "50mm" | "80mm" | "telephoto" | "macro";
+export type GenerationGroundingMode = "grounded" | "free";
 
 export interface ManualCameraSettings {
   focusStyle: FocusStyle;
@@ -14,6 +15,7 @@ export interface ManualCameraSettings {
   flashMode: FlashMode;
   iso: FilmIso;
   focalDistance: FocalDistance;
+  groundingMode: GenerationGroundingMode;
 }
 
 export interface TimeContext {
@@ -309,6 +311,8 @@ export interface QuasiCameraShotAnalysis {
   subjectMappingStrategy: SubjectMappingStrategy;
   faceAnalysisProvider: string;
   faceAnalysisWarning?: string | undefined;
+  groundingMode?: GenerationGroundingMode | undefined;
+  sourceImageAttached?: boolean | undefined;
   recognizedObjects?: PersistedRecognizedObject[] | undefined;
   objectRelationships?: PersistedObjectRelationship[] | undefined;
   objectAnalysisProvider?: string | undefined;
@@ -323,6 +327,7 @@ export interface QuasiCameraShotAnalysis {
 export interface ImageGenerationRequest {
   context: AntiCameraContext;
   prompt: string;
+  generationGrounding?: GenerationGroundingMode | undefined;
   sourceImage?: ProviderImageReference | undefined;
   faceReferences?: ProviderImageReference[] | undefined;
   inputFidelity?: "high" | "low" | undefined;

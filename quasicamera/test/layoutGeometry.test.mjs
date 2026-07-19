@@ -17,7 +17,8 @@ test("manual controls use a unified landscape hardware plate at target widths", 
     "--panel-bg",
     "--panel-title-height",
     "--dial-size",
-    "--focal-row-height"
+    "--focal-row-height",
+    "--grounding-row-height"
   ]) {
     assert.match(manual, new RegExp(`${escapeRegExp(variable)}:`));
   }
@@ -58,8 +59,10 @@ test("panels share grid rows, titles, and base dimensions", () => {
   assert.match(cssBlock(".ev-dial"), /grid-row:\s*1/);
   assert.match(cssBlock(".iso-dial"), /grid-column:\s*4/);
   assert.match(cssBlock(".iso-dial"), /grid-row:\s*1/);
-  assert.match(cssBlock(".focal-panel"), /grid-column:\s*1\s*\/\s*-1/);
+  assert.match(cssBlock(".focal-panel"), /grid-column:\s*1\s*\/\s*4/);
   assert.match(cssBlock(".focal-panel"), /grid-row:\s*2/);
+  assert.match(cssBlock(".grounding-panel"), /grid-column:\s*4/);
+  assert.match(cssBlock(".grounding-panel"), /grid-row:\s*2/);
 });
 
 test("dial pointers are contained inside their panels", () => {
@@ -110,8 +113,22 @@ test("focal distance selector is a compact seven-detent hardware strip", () => {
   assert.match(html, /class="mechanical-lever focal-panel"/);
   assert.match(cssBlock(".focal-track"), /grid-template-columns:\s*repeat\(7,\s*minmax\(0,\s*1fr\)\)/);
   assert.match(cssBlock(".focal-track"), /width:\s*min\(100%,\s*430px\)/);
-  assert.match(cssBlock(".focal-track button"), /white-space:\s*nowrap/);
+  assert.match(cssBlock(".focal-track button,\n.grounding-track button"), /white-space:\s*nowrap/);
   assert.match(cssBlock(".focal-thumb"), /transform:\s*translateX\(calc\(var\(--focal-index,\s*0\) \* 100%\)\)/);
+});
+
+test("grounding selector is a compact two-position analog switch", () => {
+  const values = [...document.querySelectorAll("[data-grounding-mode]")].map((button) => button.getAttribute("data-grounding-mode"));
+  assert.deepEqual(values, ["grounded", "free"]);
+
+  assert.equal(document.querySelectorAll("[data-control='grounding']").length, 1);
+  assert.match(html, /class="mechanical-lever grounding-panel"/);
+  assert.match(html, />GROUNDED<\/button>/);
+  assert.match(html, />FREE<\/button>/);
+  assert.match(cssBlock(".grounding-track"), /grid-template-columns:\s*1fr\s+1fr/);
+  assert.match(cssBlock(".grounding-track"), /width:\s*min\(100%,\s*170px\)/);
+  assert.match(cssBlock(".focal-track button,\n.grounding-track button"), /white-space:\s*nowrap/);
+  assert.match(cssBlock('.grounding-panel[data-selected="free"] .grounding-thumb'), /transform:\s*translateX/);
 });
 
 test("camera shell uses a small optical viewfinder and hidden debug panel", () => {
@@ -200,6 +217,7 @@ test("portrait layout no longer rotates the whole app", () => {
   assert.match(portrait, /\.mode-cluster\s*\{[\s\S]*?grid-column:\s*1/);
   assert.match(portrait, /\.iso-dial\s*\{[\s\S]*?grid-column:\s*2/);
   assert.match(portrait, /\.focal-panel\s*\{[\s\S]*?grid-row:\s*3/);
+  assert.match(portrait, /\.grounding-panel\s*\{[\s\S]*?grid-row:\s*4/);
 });
 
 test("bottom view switch is persistent and camera-like", () => {

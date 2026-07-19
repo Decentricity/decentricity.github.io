@@ -1,11 +1,13 @@
 import { aimLabelForPitch, frameLabelForScreen } from "../context/cameraPose.js";
-import { settingsReadout, subjectModeLabel } from "../context/manualSettings.js";
+import { groundingModeLabel, sanitizeManualSettings, settingsReadout, subjectModeLabel } from "../context/manualSettings.js";
 import { formatDegrees, round } from "../context/utils.js";
 export function renderReadout(container, context) {
     const pose = context.cameraPose;
+    const settings = sanitizeManualSettings(context.manualSettings);
     const reverse = context.location.reverseGeocode;
     const address = reverse?.address;
     const feature = reverse?.feature;
+    const sourceImageAttached = context.quasiCamera?.sourceImageAttached ?? settings.groundingMode === "grounded";
     const rows = [
         ["Location", context.location.label],
         ...optionalRows([
@@ -24,8 +26,10 @@ export function renderReadout(container, context) {
         ["Aim", aimLabelForPitch(pose.pitchDeg)],
         ["Frame", frameLabelForScreen(pose.screenOrientationDeg)],
         ["Pose", `${capitalize(pose.confidence)} confidence`],
-        ["Mode", subjectModeLabel(context.manualSettings.subjectMode)],
-        ["Settings", settingsReadout(context.manualSettings)],
+        ["Mode", subjectModeLabel(settings.subjectMode)],
+        ["Grounding", groundingModeLabel(settings.groundingMode)],
+        ["Source image attached", sourceImageAttached ? "YES" : "NO"],
+        ["Settings", settingsReadout(settings)],
         ["Time", context.time.time],
         ["Weather", weatherLine(context)],
         ["Noise", audioLine(context)],

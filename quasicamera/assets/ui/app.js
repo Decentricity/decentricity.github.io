@@ -19,6 +19,7 @@ const RATE_LIMIT_SETTLE_DELAY_MS = 15_000;
 const GENERATION_RETRY_DELAYS_MS = [8_000, 20_000];
 const MAX_CONCURRENT_GENERATIONS = 1;
 const MAX_QUEUED_CAPTURES = 10;
+const GROUNDING_METRICS_STORAGE_KEY = "quasicamera.groundingMetrics.v1";
 function delay(ms) {
     return new Promise((resolve) => globalThis.setTimeout(resolve, ms));
 }
@@ -308,6 +309,7 @@ export class AntiCameraApp {
             });
             const objectMetadata = toPersistedObjectMetadata(objectAnalysis);
             const analysisWarning = analysis.warning ?? cropWarning;
+            const sourceImageAttached = runtimeJob.frozenSettings.groundingMode === "grounded";
             context.quasiCamera = {
                 detectedFaceCount: analysis.count,
                 selectedFaceCount: selection.selectedFaceCount,
@@ -315,6 +317,8 @@ export class AntiCameraApp {
                 subjectMappingStrategy: selection.strategy,
                 faceAnalysisProvider: analysis.provider,
                 ...(analysisWarning ? { faceAnalysisWarning: analysisWarning } : {}),
+                groundingMode: runtimeJob.frozenSettings.groundingMode,
+                sourceImageAttached,
                 ...(objectMetadata.recognizedObjects.length > 0 ? { recognizedObjects: objectMetadata.recognizedObjects } : {}),
                 ...(objectMetadata.objectRelationships.length > 0 ? { objectRelationships: objectMetadata.objectRelationships } : {}),
                 objectAnalysisProvider: objectAnalysis.provider,
@@ -331,20 +335,24 @@ export class AntiCameraApp {
                 await this.captureDelay(settleDelay);
             }
             this.queue.setStatus(runtimeJob, "generating");
-            this.debugCapture.log("capture:request-start", { id: runtimeJob.id });
-            const generationRequest = {
-                context,
-                prompt,
-                sourceImage: {
-                    dataUrl: runtimeJob.sourcePhoto.dataUrl,
-                    role: "source",
-                    name: "source-photo.jpg"
-                },
-                faceReferences: faceCrops.map((crop) => crop.image),
-                inputFidelity: "high"
-            };
+            const generationRequest = this.buildGenerationRequest(runtimeJob, context, prompt, faceCrops);
+            this.debugCapture.log("capture:request-start", {
+                id: runtimeJob.id,
+                grounding: runtimeJob.frozenSettings.groundingMode,
+                sourceImageAttached: Boolean(generationRequest.sourceImage),
+                faceReferences: generationRequest.faceReferences?.length ?? 0
+            });
+            const generationStartedAt = Date.now();
+            const generation = withTimeout(this.generateWithBackoff(generationRequest, runtimeJob.id), this.generationTimeoutMs, "image generation")
+                .then((result) => {
+                recordGroundingGenerationMetric(runtimeJob.frozenSettings.groundingMode, Date.now() - generationStartedAt, true);
+                return result;
+            }, (error) => {
+                recordGroundingGenerationMetric(runtimeJob.frozenSettings.groundingMode, Date.now() - generationStartedAt, false);
+                throw error;
+            });
             const [result] = await Promise.all([
-                withTimeout(this.generateWithBackoff(generationRequest, runtimeJob.id), this.generationTimeoutMs, "image generation"),
+                generation,
                 this.captureDelay(runtimeJob.minimumDevelopingTime)
             ]);
             runtimeJob.imageDataUrl = result.imageDataUrl;
@@ -481,6 +489,38 @@ export class AntiCameraApp {
     }
     reportNonFatalStorageFailure(error) {
         this.debugCapture.log("capture:gallery-save-error", { error: safeError(error) });
+    }
+    buildGenerationRequest(job, context, prompt, faceCrops) {
+        if (job.frozenSettings.groundingMode === "free") {
+            return this.buildFreeGenerationRequest(context, prompt, faceCrops);
+        }
+        return this.buildGroundedGenerationRequest(job, context, prompt, faceCrops);
+    }
+    buildGroundedGenerationRequest(job, context, prompt, faceCrops) {
+        if (!job.sourcePhoto) {
+            throw new Error("Grounded generation requires a captured source photo");
+        }
+        return {
+            context,
+            prompt,
+            generationGrounding: "grounded",
+            sourceImage: {
+                dataUrl: job.sourcePhoto.dataUrl,
+                role: "source",
+                name: "source-photo.jpg"
+            },
+            faceReferences: faceCrops.map((crop) => crop.image),
+            inputFidelity: "high"
+        };
+    }
+    buildFreeGenerationRequest(context, prompt, faceCrops) {
+        return {
+            context,
+            prompt,
+            generationGrounding: "free",
+            faceReferences: faceCrops.map((crop) => crop.image),
+            inputFidelity: "high"
+        };
     }
     providerSettleDelayFor(objectAnalysis) {
         const objectProvider = objectAnalysis.provider.toLowerCase();
@@ -624,4 +664,61 @@ function debugCaptureEnabled() {
         return false;
     }
     return new URLSearchParams(window.location.search).get("debugCapture") === "1";
+}
+function recordGroundingGenerationMetric(mode, latencyMs, success) {
+    if (typeof localStorage === "undefined") {
+        return;
+    }
+    try {
+        const metrics = readGroundingMetrics();
+        const stats = metrics[mode];
+        const roundedLatency = Math.max(0, Math.round(latencyMs));
+        stats.attempts += 1;
+        stats.successes += success ? 1 : 0;
+        stats.failures += success ? 0 : 1;
+        stats.totalLatencyMs += roundedLatency;
+        stats.lastLatencyMs = roundedLatency;
+        stats.updatedAt = new Date().toISOString();
+        localStorage.setItem(GROUNDING_METRICS_STORAGE_KEY, JSON.stringify(metrics));
+    }
+    catch {
+        // Metrics are advisory and must never affect capture.
+    }
+}
+function readGroundingMetrics() {
+    const raw = localStorage.getItem(GROUNDING_METRICS_STORAGE_KEY);
+    if (!raw) {
+        return defaultGroundingMetrics();
+    }
+    try {
+        const parsed = JSON.parse(raw);
+        return {
+            grounded: normalizeGroundingStats(parsed.grounded),
+            free: normalizeGroundingStats(parsed.free)
+        };
+    }
+    catch {
+        return defaultGroundingMetrics();
+    }
+}
+function defaultGroundingMetrics() {
+    return {
+        grounded: normalizeGroundingStats(),
+        free: normalizeGroundingStats()
+    };
+}
+function normalizeGroundingStats(stats = {}) {
+    return {
+        attempts: nonNegativeInteger(stats.attempts),
+        successes: nonNegativeInteger(stats.successes),
+        failures: nonNegativeInteger(stats.failures),
+        totalLatencyMs: nonNegativeInteger(stats.totalLatencyMs),
+        lastLatencyMs: typeof stats.lastLatencyMs === "number" && Number.isFinite(stats.lastLatencyMs)
+            ? Math.max(0, Math.round(stats.lastLatencyMs))
+            : null,
+        updatedAt: typeof stats.updatedAt === "string" ? stats.updatedAt : null
+    };
+}
+function nonNegativeInteger(value) {
+    return typeof value === "number" && Number.isFinite(value) ? Math.max(0, Math.round(value)) : 0;
 }

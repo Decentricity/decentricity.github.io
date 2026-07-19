@@ -10,7 +10,7 @@ export class OpenAIImagesProvider {
         this.timeoutMs = timeoutMs;
     }
     async generate(request) {
-        if (request.sourceImage) {
+        if (request.sourceImage || (request.faceReferences?.length ?? 0) > 0) {
             return this.edit(request);
         }
         return this.generateFromPrompt(request);
@@ -76,7 +76,7 @@ export class OpenAIImagesProvider {
         ].filter((image) => Boolean(image.image_url));
         let response;
         if (images.length === 0) {
-            throw new Error("QuasiCamera image edit requires a source image");
+            throw new Error("QuasiCamera image edit requires a source image or face reference");
         }
         try {
             response = await fetch("https://api.openai.com/v1/images/edits", {
