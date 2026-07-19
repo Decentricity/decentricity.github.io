@@ -1,0 +1,325 @@
+import type { ImageGenerationRequest, ImageGenerationResult, SubjectMode } from "../types.js";
+import type { ImageGeneratorProvider } from "./imageGenerator.js";
+
+export class LocalPrototypeProvider implements ImageGeneratorProvider {
+  readonly id = "local-context-imaginer";
+
+  async generate(request: ImageGenerationRequest): Promise<ImageGenerationResult> {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1024;
+    canvas.height = 1024;
+    const context = canvas.getContext("2d");
+    if (!context) {
+      throw new Error("canvas unavailable");
+    }
+
+    const random = mulberry32(hashString(JSON.stringify(request.context)));
+    const weather = request.context.weather.description.toLowerCase();
+    const isIndoor = request.context.mode === "indoor";
+    const isNight = request.context.time.dayPeriod === "night";
+    const rain = weather.includes("rain") || weather.includes("storm");
+    const pitch = request.context.cameraPose.pitchDeg ?? 0;
+    const roll = request.context.cameraPose.rollDeg ?? 0;
+    const settings = request.context.manualSettings;
+
+    context.fillStyle = isNight ? "#1b1c1b" : isIndoor ? "#716d64" : "#9ca49a";
+    context.fillRect(0, 0, 1024, 1024);
+
+    if (isIndoor) {
+      this.drawIndoor(context, random, isNight, pitch);
+    } else {
+      this.drawOutdoor(context, random, isNight, rain, pitch);
+    }
+
+    if (settings.focusStyle === "bokeh") {
+      this.applyDepthEffect(context, settings.subjectMode);
+    }
+
+    this.drawSubjectMode(context, random, settings.subjectMode, pitch, isNight);
+    this.applyFlash(context, settings.subjectMode, settings.flashMode === "on", isNight || isIndoor);
+    this.applyExposure(context, settings.exposureCompensationEv);
+    this.applyRoll(context, roll);
+    this.addWeatherAndFilm(context, random, rain, request.context.audio.descriptor, settings.iso);
+
+    return {
+      imageDataUrl: canvas.toDataURL("image/jpeg", 0.9),
+      provider: this.id
+    };
+  }
+
+  private drawOutdoor(
+    context: CanvasRenderingContext2D,
+    random: () => number,
+    isNight: boolean,
+    rain: boolean,
+    pitch: number
+  ): void {
+    const horizonY = horizonFromPitch(pitch);
+    context.fillStyle = isNight ? "#20242a" : rain ? "#7e8886" : "#a9b3ad";
+    context.fillRect(0, 0, 1024, horizonY);
+
+    context.fillStyle = isNight ? "#22251f" : "#6d7663";
+    context.fillRect(0, horizonY, 1024, 1024 - horizonY);
+
+    const blocks = 7 + Math.floor(random() * 8);
+    for (let index = 0; index < blocks; index += 1) {
+      const width = 70 + random() * 150;
+      const height = 150 + random() * 390;
+      const x = random() * 1024 - 60;
+      const y = horizonY - height + random() * 80;
+      context.fillStyle = isNight ? shade("#272b30", random()) : shade("#747d77", random());
+      context.fillRect(x, y, width, height);
+
+      if (isNight) {
+        context.fillStyle = "#d8bc76";
+        for (let row = 0; row < height / 38; row += 1) {
+          for (let col = 0; col < width / 34; col += 1) {
+            if (random() > 0.62) {
+              context.fillRect(x + 12 + col * 32, y + 18 + row * 34, 9, 7);
+            }
+          }
+        }
+      }
+    }
+
+    context.fillStyle = isNight ? "#30312b" : "#575e4f";
+    for (let index = 0; index < 18; index += 1) {
+      const x = random() * 1024;
+      const y = Math.max(60, horizonY - 20) + random() * 220;
+      context.beginPath();
+      context.arc(x, y, 28 + random() * 72, 0, Math.PI * 2);
+      context.fill();
+    }
+
+    if (rain) {
+      context.strokeStyle = "rgba(225, 231, 226, 0.38)";
+      context.lineWidth = 2;
+      for (let index = 0; index < 180; index += 1) {
+        const x = random() * 1100 - 60;
+        const y = random() * 1024;
+        context.beginPath();
+        context.moveTo(x, y);
+        context.lineTo(x - 18, y + 48);
+        context.stroke();
+      }
+    }
+  }
+
+  private drawIndoor(context: CanvasRenderingContext2D, random: () => number, isNight: boolean, pitch: number): void {
+    const wallBreak = horizonFromPitch(pitch);
+    context.fillStyle = isNight ? "#34302a" : "#8a8475";
+    context.fillRect(0, 0, 1024, 1024);
+
+    context.fillStyle = isNight ? "#201d19" : "#625d53";
+    context.fillRect(0, wallBreak, 1024, 1024 - wallBreak);
+
+    const tableY = Math.max(wallBreak + 28, 560 + random() * 150);
+    context.fillStyle = isNight ? "#493c2f" : "#76634f";
+    context.fillRect(80, tableY, 864, 94);
+
+    for (let index = 0; index < 8; index += 1) {
+      const x = 140 + random() * 740;
+      const y = tableY - 80 + random() * 70;
+      context.fillStyle = shade(isNight ? "#c6a66c" : "#d7c69f", random());
+      context.beginPath();
+      context.arc(x, y, 28 + random() * 38, 0, Math.PI * 2);
+      context.fill();
+    }
+
+    for (let index = 0; index < 5; index += 1) {
+      const x = 100 + random() * 800;
+      const y = 120 + random() * 320;
+      const width = 95 + random() * 160;
+      const height = 65 + random() * 120;
+      context.fillStyle = isNight ? "#191817" : "#36352f";
+      context.fillRect(x, y, width, height);
+      context.fillStyle = isNight ? "#7b6548" : "#b5a074";
+      context.fillRect(x + 8, y + 8, width - 16, height - 16);
+    }
+  }
+
+  private applyRoll(context: CanvasRenderingContext2D, roll: number): void {
+    if (Math.abs(roll) < 0.1) {
+      return;
+    }
+
+    const temp = document.createElement("canvas");
+    temp.width = 1024;
+    temp.height = 1024;
+    const tempContext = temp.getContext("2d");
+    if (!tempContext) {
+      return;
+    }
+
+    tempContext.drawImage(context.canvas, 0, 0);
+    context.save();
+    context.clearRect(0, 0, 1024, 1024);
+    context.translate(512, 512);
+    context.rotate((roll * Math.PI) / 180);
+    context.drawImage(temp, -612, -612, 1224, 1224);
+    context.restore();
+  }
+
+  private applyDepthEffect(context: CanvasRenderingContext2D, subjectMode: SubjectMode): void {
+    const temp = document.createElement("canvas");
+    temp.width = 1024;
+    temp.height = 1024;
+    const tempContext = temp.getContext("2d");
+    if (!tempContext) {
+      return;
+    }
+
+    tempContext.drawImage(context.canvas, 0, 0);
+    context.save();
+    context.filter = subjectMode === "crowd" || subjectMode === "group" ? "blur(3px)" : "blur(6px)";
+    context.drawImage(temp, 0, 0);
+    context.filter = "none";
+
+    if (subjectMode === "landscape") {
+      context.globalAlpha = 0.68;
+      context.drawImage(temp, 0, 560, 1024, 220, 0, 560, 1024, 220);
+      context.globalAlpha = 1;
+    }
+
+    context.restore();
+  }
+
+  private drawSubjectMode(
+    context: CanvasRenderingContext2D,
+    random: () => number,
+    subjectMode: SubjectMode,
+    pitch: number,
+    isNight: boolean
+  ): void {
+    if (subjectMode === "landscape") {
+      return;
+    }
+
+    const baseY = Math.max(510, Math.min(900, horizonFromPitch(pitch) + 230));
+    const color = isNight ? "#1f211d" : "#2f302a";
+    if (subjectMode === "single-person") {
+      this.drawPerson(context, 512, baseY, 1.65, color);
+      return;
+    }
+
+    const count = subjectMode === "group" ? 4 : 24;
+    for (let index = 0; index < count; index += 1) {
+      const spread = subjectMode === "group" ? 270 : 870;
+      const x = 512 - spread / 2 + random() * spread;
+      const y = baseY - 55 + random() * (subjectMode === "group" ? 80 : 190);
+      const scale = subjectMode === "group" ? 0.9 + random() * 0.42 : 0.36 + random() * 0.48;
+      this.drawPerson(context, x, y, scale, shade(color, random()));
+    }
+  }
+
+  private drawPerson(context: CanvasRenderingContext2D, x: number, y: number, scale: number, color: string): void {
+    context.save();
+    context.translate(x, y);
+    context.scale(scale, scale);
+    context.fillStyle = color;
+    context.beginPath();
+    context.arc(0, -54, 22, 0, Math.PI * 2);
+    context.fill();
+    context.beginPath();
+    context.moveTo(-38, 38);
+    context.quadraticCurveTo(-28, -22, 0, -22);
+    context.quadraticCurveTo(28, -22, 38, 38);
+    context.closePath();
+    context.fill();
+    context.restore();
+  }
+
+  private applyFlash(context: CanvasRenderingContext2D, subjectMode: SubjectMode, enabled: boolean, pronounced: boolean): void {
+    if (!enabled) {
+      return;
+    }
+
+    const strength = subjectMode === "landscape" ? 0.08 : pronounced ? 0.3 : 0.17;
+    const gradient = context.createRadialGradient(512, 520, 40, 512, 520, 720);
+    gradient.addColorStop(0, `rgba(255, 246, 218, ${strength})`);
+    gradient.addColorStop(0.35, `rgba(255, 246, 218, ${strength * 0.55})`);
+    gradient.addColorStop(1, "rgba(0, 0, 0, 0.24)");
+    context.fillStyle = gradient;
+    context.fillRect(0, 0, 1024, 1024);
+  }
+
+  private applyExposure(context: CanvasRenderingContext2D, ev: number): void {
+    if (ev === 0) {
+      return;
+    }
+
+    if (ev > 0) {
+      context.fillStyle = `rgba(255, 246, 220, ${Math.min(0.36, ev * 0.095)})`;
+    } else {
+      context.fillStyle = `rgba(0, 0, 0, ${Math.min(0.42, Math.abs(ev) * 0.115)})`;
+    }
+
+    context.fillRect(0, 0, 1024, 1024);
+  }
+
+  private addWeatherAndFilm(
+    context: CanvasRenderingContext2D,
+    random: () => number,
+    rain: boolean,
+    audioDescriptor: string,
+    iso: number
+  ): void {
+    const image = context.getImageData(0, 0, 1024, 1024);
+    const data = image.data;
+    const isoGrain = iso <= 160 ? 8 : iso <= 400 ? 17 : 31;
+    const grain = isoGrain + (audioDescriptor === "Loud" || audioDescriptor === "Busy street" ? 8 : 0);
+
+    for (let index = 0; index < data.length; index += 4) {
+      const noise = (random() - 0.5) * grain;
+      data[index] = clampByte((data[index] ?? 0) + noise + 4);
+      data[index + 1] = clampByte((data[index + 1] ?? 0) + noise + 2);
+      data[index + 2] = clampByte((data[index + 2] ?? 0) + noise - 3);
+    }
+
+    context.putImageData(image, 0, 0);
+    context.fillStyle = rain ? "rgba(205, 214, 209, 0.12)" : "rgba(246, 229, 192, 0.08)";
+    context.fillRect(0, 0, 1024, 1024);
+
+    context.strokeStyle = "rgba(18, 16, 14, 0.42)";
+    context.lineWidth = 38;
+    context.strokeRect(19, 19, 986, 986);
+  }
+}
+
+function hashString(input: string): number {
+  let hash = 1779033703 ^ input.length;
+  for (let index = 0; index < input.length; index += 1) {
+    hash = Math.imul(hash ^ input.charCodeAt(index), 3432918353);
+    hash = (hash << 13) | (hash >>> 19);
+  }
+
+  return hash >>> 0;
+}
+
+function mulberry32(seed: number): () => number {
+  return () => {
+    seed += 0x6d2b79f5;
+    let value = seed;
+    value = Math.imul(value ^ (value >>> 15), value | 1);
+    value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function shade(base: string, amount: number): string {
+  const value = Number.parseInt(base.slice(1), 16);
+  const shift = Math.round((amount - 0.5) * 46);
+  const r = clampByte((value >> 16) + shift);
+  const g = clampByte(((value >> 8) & 255) + shift);
+  const b = clampByte((value & 255) + shift);
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
+function clampByte(value: number): number {
+  return Math.max(0, Math.min(255, Math.round(value)));
+}
+
+function horizonFromPitch(pitch: number): number {
+  const normalized = Math.max(-90, Math.min(90, pitch));
+  return Math.round(512 + (normalized / 90) * 460);
+}

@@ -1,0 +1,16 @@
+{
+  "name": "con-camera",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local-CNN interpreted regenerated camera prototype for GitHub Pages.",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test test/*.test.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "linkedom": "^0.18.13",
+    "typescript": "^5.9.3"
+  }
+}
