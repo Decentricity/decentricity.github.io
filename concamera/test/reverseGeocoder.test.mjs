@@ -12,8 +12,8 @@ import {
   normalizeBigDataCloud,
   normalizeNominatimGeocodeJson
 } from "../assets/context/reverseGeocoder.js";
+import { DEFAULT_MANUAL_SETTINGS } from "../assets/context/manualSettings.js";
 import { FrameStorage } from "../assets/gallery/storage.js";
-import { PromptBuilder } from "../assets/promptBuilder.js";
 import { renderReadout } from "../assets/ui/readout.js";
 
 test("Haversine distance is approximately correct at building scale", () => {
@@ -208,7 +208,7 @@ test("reverse-geocoder timeout does not block snapshot indefinitely", async () =
   assert.match(snapshot.label, /-6\.372184/);
 });
 
-test("prompt and JSON export include normalized location fields and truth constraints", async () => {
+test("JSON export includes normalized location fields and semantic metadata", async () => {
   const location = {
     status: "granted",
     latitude: -6.372184,
@@ -219,24 +219,33 @@ test("prompt and JSON export include normalized location fields and truth constr
     reverseGeocode: normalizeNominatimGeocodeJson(depokFixture(), -6.372184, 106.832614)
   };
   const context = contextForPrompt(location);
-  const prompt = new PromptBuilder().build(context);
-  assert.match(prompt, /GEOGRAPHIC CONTEXT/);
-  assert.match(prompt, /Nearest mapped feature: Margo City/);
-  assert.match(prompt, /Suburb: Beji/);
-  assert.match(prompt, /They are contextual clues, not proof that the camera is physically inside that building/);
-  assert.match(prompt, /Do not place a recognizable named building prominently/);
+  context.conCamera = {
+    detectedFaceCount: 0,
+    faceAnalysisProvider: "local-face-detector",
+    overlaySettings: { ...DEFAULT_MANUAL_SETTINGS },
+    recognizedObjects: [
+      { label: "car", normalizedLabel: "car", category: "vehicle" }
+    ],
+    objectRelationships: [],
+    objectAnalysisProvider: "local-cnn:coco-ssd+mobilenet",
+    sceneSummary: "car",
+    renderVersion: "semantic-overlay-v1",
+    sourceImageTransmitted: false
+  };
 
   const storage = new FrameStorage();
   const exported = JSON.parse(await storage.exportMetadata([{
     id: "frame-location",
     timestamp: context.capturedAt,
     imageDataUrl: "data:image/jpeg;base64,test",
-    provider: "test",
-    prompt,
+    provider: "local-semantic-overlay",
+    sceneSummary: context.conCamera.sceneSummary,
     context
   }]).text());
   assert.equal(exported[0].context.location.reverseGeocode.feature.name, "Margo City");
   assert.equal(exported[0].context.location.reverseGeocode.address.suburb, "Beji");
+  assert.equal(exported[0].context.conCamera.sourceImageTransmitted, false);
+  assert.deepEqual(exported[0].recognizedObjects, context.conCamera.recognizedObjects);
 });
 
 test("viewfinder readout renders rich location label and non-empty debug rows", () => {
@@ -261,7 +270,7 @@ test("viewfinder readout renders rich location label and non-empty debug rows", 
 });
 
 test("legacy location objects without reverseGeocode remain compatible", () => {
-  const prompt = new PromptBuilder().build(contextForPrompt({
+  const context = contextForPrompt({
     status: "granted",
     latitude: -6.2,
     longitude: 106.8,
@@ -270,9 +279,9 @@ test("legacy location objects without reverseGeocode remain compatible", () => {
     region: "Jakarta",
     country: "Indonesia",
     label: "Jakarta, Indonesia"
-  }));
-  assert.match(prompt, /Location label: Jakarta, Indonesia/);
-  assert.match(prompt, /Reverse-geocoding confidence: unknown/);
+  });
+  assert.equal(context.location.label, "Jakarta, Indonesia");
+  assert.equal(context.location.reverseGeocode, undefined);
 });
 
 function depokFixture() {
@@ -475,13 +484,7 @@ function contextForPrompt(location) {
       confidence: "high",
       capturedAt: 2_000
     },
-    manualSettings: {
-      focusStyle: "deep-focus",
-      exposureCompensationEv: 0,
-      subjectMode: "landscape",
-      flashMode: "off",
-      iso: 200
-    },
+    manualSettings: { ...DEFAULT_MANUAL_SETTINGS },
     orientation: {
       status: "granted",
       alpha: 0,

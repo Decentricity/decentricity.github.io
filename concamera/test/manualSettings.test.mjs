@@ -1,481 +1,256 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import {
   DEFAULT_MANUAL_SETTINGS,
-  evLabel,
-  focalDistanceLabel,
   freezeManualSettings,
-  groundingModeLabel,
   loadManualSettings,
-  nextFocalDistance,
-  nextGroundingMode,
+  nextAnalysisMode,
+  nextConfidenceThreshold,
+  nextDomain,
+  nextOverlayDensity,
+  nextScanMode,
+  nextViewMode,
   saveManualSettings,
+  scanModeObjectLimit,
   settingsReadout,
-  snapExposure,
-  snapIso
+  snapConfidenceThreshold
 } from "../assets/context/manualSettings.js";
 import { FrameStorage } from "../assets/gallery/storage.js";
-import { PromptBuilder } from "../assets/promptBuilder.js";
 
-test("manual settings defaults", () => {
+test("ConCamera settings defaults are local semantic-overlay controls", () => {
   assert.deepEqual(DEFAULT_MANUAL_SETTINGS, {
-    focusStyle: "deep-focus",
-    exposureCompensationEv: 0,
-    subjectMode: "landscape",
-    flashMode: "off",
-    iso: 200,
-    focalDistance: "21mm",
-    groundingMode: "grounded"
+    domain: "general",
+    overlayDensity: "normal",
+    analysisMode: "taxonomy",
+    relationsVisible: true,
+    boxesVisible: true,
+    confidenceThreshold: 0.5,
+    scanMode: "balanced",
+    viewMode: "live"
   });
-  assert.equal(settingsReadout(DEFAULT_MANUAL_SETTINGS), "LAND DF F21 GRND 0EV FL-OFF ISO200");
+  assert.equal(
+    settingsReadout(DEFAULT_MANUAL_SETTINGS),
+    "LENS-GENERAL OVR-NORM MODE-TAXONOMY REL-ON BOX-ON C50 SCAN-BALANCED VIEW-LIVE"
+  );
 });
 
-test("hard-detent snapping", () => {
-  assert.equal(snapExposure(-2.7), -3);
-  assert.equal(snapExposure(0.2), 0);
-  assert.equal(snapExposure(2.8), 3);
-  assert.equal(snapIso(78), 80);
-  assert.equal(snapIso(410), 400);
-  assert.equal(snapIso(990), 1000);
-  assert.equal(nextFocalDistance("21mm", 1), "28mm");
-  assert.equal(nextFocalDistance("telephoto", 1), "macro");
-  assert.equal(nextFocalDistance("macro", 1), "macro");
-  assert.equal(nextFocalDistance("28mm", -1), "21mm");
-  assert.equal(nextGroundingMode("grounded", 1), "free");
-  assert.equal(nextGroundingMode("free", 1), "free");
-  assert.equal(nextGroundingMode("free", -1), "grounded");
+test("semantic control detents snap and cycle predictably", () => {
+  assert.equal(nextDomain("general", 1), "urban");
+  assert.equal(nextDomain("food", 1), "general");
+  assert.equal(nextDomain("general", -1), "food");
+  assert.equal(nextOverlayDensity("minimal", 1), "normal");
+  assert.equal(nextOverlayDensity("full", 1), "full");
+  assert.equal(nextAnalysisMode("taxonomy", 1), "semantic");
+  assert.equal(nextAnalysisMode("attention", 1), "taxonomy");
+  assert.equal(snapConfidenceThreshold(0.36), 0.4);
+  assert.equal(snapConfidenceThreshold(0.94), 0.9);
+  assert.equal(nextConfidenceThreshold(0.5, 1), 0.6);
+  assert.equal(nextConfidenceThreshold(0.3, -1), 0.3);
+  assert.equal(nextScanMode("focus", 1), "balanced");
+  assert.equal(nextScanMode("survey", 1), "survey");
+  assert.equal(nextViewMode("live", 1), "freeze");
+  assert.equal(nextViewMode("freeze", -1), "live");
 });
 
-test("manual settings persistence", () => {
+test("scan mode object limits match the user-facing control", () => {
+  assert.equal(scanModeObjectLimit("focus"), 4);
+  assert.equal(scanModeObjectLimit("balanced"), 8);
+  assert.equal(scanModeObjectLimit("survey"), 16);
+});
+
+test("ConCamera settings persist under independent storage key with safe legacy fallback", () => {
   const storage = fakeStorage();
   const settings = {
-    focusStyle: "bokeh",
-    exposureCompensationEv: 1,
-    subjectMode: "single-person",
-    flashMode: "on",
-    iso: 400,
-    focalDistance: "50mm",
-    groundingMode: "free"
+    domain: "tech",
+    overlayDensity: "full",
+    analysisMode: "semantic",
+    relationsVisible: false,
+    boxesVisible: false,
+    confidenceThreshold: 0.8,
+    scanMode: "survey",
+    viewMode: "freeze"
   };
+
   saveManualSettings(settings, storage);
+  assert.equal(storage.getItem("concamera.manualSettings.v1"), null);
   assert.deepEqual(loadManualSettings(storage), settings);
 
-  storage.setItem("concamera.manualSettings.v1", JSON.stringify({
-    focusStyle: "bokeh",
-    exposureCompensationEv: 1,
-    subjectMode: "single-person",
-    flashMode: "on",
-    iso: 400
+  const legacyStorage = fakeStorage();
+  legacyStorage.setItem("concamera.manualSettings.v1", JSON.stringify({
+    domain: "food",
+    overlayDensity: "minimal",
+    analysisMode: "risk",
+    relationsVisible: false,
+    boxesVisible: true,
+    confidenceThreshold: 0.7,
+    scanMode: "focus",
+    viewMode: "freeze"
   }));
-  assert.equal(loadManualSettings(storage).focalDistance, "21mm");
-  assert.equal(loadManualSettings(storage).groundingMode, "grounded");
+  assert.equal(loadManualSettings(legacyStorage).domain, "food");
+
+  legacyStorage.setItem("concamera.overlaySettings.v1", "{not-json");
+  assert.deepEqual(loadManualSettings(legacyStorage), DEFAULT_MANUAL_SETTINGS);
 });
 
-test("changing each control value is represented in frozen settings", () => {
-  const settings = freezeManualSettings({
-    focusStyle: "bokeh",
-    exposureCompensationEv: -2,
-    subjectMode: "crowd",
-    flashMode: "on",
-    iso: 1000,
-    focalDistance: "telephoto",
-    groundingMode: "free"
-  });
-  assert.deepEqual(settings, {
-    focusStyle: "bokeh",
-    exposureCompensationEv: -2,
-    subjectMode: "crowd",
-    flashMode: "on",
-    iso: 1000,
-    focalDistance: "telephoto",
-    groundingMode: "free"
-  });
+test("invalid or stale saved settings degrade to defaults", () => {
+  const storage = fakeStorage();
+  storage.setItem("concamera.overlaySettings.v1", JSON.stringify({
+    domain: "portrait",
+    overlayDensity: "diagnostic",
+    analysisMode: "generate",
+    relationsVisible: "yes",
+    boxesVisible: 1,
+    confidenceThreshold: 0.95,
+    scanMode: "everything",
+    viewMode: "record"
+  }));
+  assert.deepEqual(loadManualSettings(storage), DEFAULT_MANUAL_SETTINGS);
 });
 
-test("frozen settings at shutter time are immutable copies", () => {
+test("frozen ConCamera settings are immutable copies", () => {
   const live = {
-    focusStyle: "bokeh",
-    exposureCompensationEv: 3,
-    subjectMode: "group",
-    flashMode: "on",
-    iso: 800,
-    focalDistance: "80mm",
-    groundingMode: "free"
+    ...DEFAULT_MANUAL_SETTINGS,
+    domain: "urban",
+    overlayDensity: "full",
+    analysisMode: "attention",
+    relationsVisible: false,
+    boxesVisible: false,
+    confidenceThreshold: 0.9,
+    scanMode: "survey",
+    viewMode: "freeze"
   };
   const frozen = freezeManualSettings(live);
-  live.iso = 80;
-  live.flashMode = "off";
-  live.focalDistance = "macro";
-  live.groundingMode = "grounded";
-  assert.equal(frozen.iso, 800);
-  assert.equal(frozen.flashMode, "on");
-  assert.equal(frozen.focalDistance, "80mm");
-  assert.equal(frozen.groundingMode, "free");
+  live.domain = "nature";
+  live.confidenceThreshold = 0.3;
+  live.relationsVisible = true;
+
+  assert.equal(frozen.domain, "urban");
+  assert.equal(frozen.confidenceThreshold, 0.9);
+  assert.equal(frozen.relationsVisible, false);
 });
 
-test("JSON export includes exact manual settings", async () => {
-  const context = contextForPrompt({
-    focusStyle: "bokeh",
-    exposureCompensationEv: 2,
-    subjectMode: "single-person",
-    flashMode: "on",
-    iso: 640,
-    focalDistance: "macro",
-    groundingMode: "free"
-  });
+test("JSON export includes overlay settings and semantic metadata", async () => {
   const storage = new FrameStorage();
-  const blob = storage.exportMetadata([{
-    id: "frame-1",
+  const context = contextFixture({
+    conCamera: {
+      detectedFaceCount: 0,
+      faceAnalysisProvider: "local-face-detector",
+      overlaySettings: {
+        ...DEFAULT_MANUAL_SETTINGS,
+        domain: "vehicle",
+        analysisMode: "semantic",
+        confidenceThreshold: 0.7
+      },
+      recognizedObjects: [
+        { label: "hedgehog plushie", normalizedLabel: "hedgehog plushie", category: "toy" },
+        { label: "car", normalizedLabel: "car", category: "vehicle" }
+      ],
+      objectRelationships: [
+        { subject: "hedgehog plushie", predicate: "on-top-of", object: "car" }
+      ],
+      objectAnalysisProvider: "local-cnn:coco-ssd+mobilenet",
+      objectAnalysisMetrics: {
+        detectorInferenceMs: 20,
+        classifierInferenceMs: 3,
+        relationshipInferenceMs: 1,
+        overlayRenderMs: 8,
+        totalObjectAnalysisMs: 24,
+        backend: "webgl",
+        detectedCount: 2,
+        preservedCount: 2,
+        detector: "COCO-SSD",
+        classifier: "MobileNet",
+        modelStatus: "ready"
+      },
+      sceneSummary: "hedgehog plushie, car; hedgehog plushie on top of car",
+      renderVersion: "semantic-overlay-v1",
+      sourceImageTransmitted: false
+    }
+  });
+
+  const exported = JSON.parse(await storage.exportMetadata([{
+    id: "frame-semantic",
     timestamp: context.capturedAt,
     imageDataUrl: "data:image/jpeg;base64,test",
-    provider: "test",
-    prompt: "hidden prompt",
+    provider: "local-semantic-overlay",
+    sceneSummary: context.conCamera.sceneSummary,
     context
-  }]);
-  const exported = JSON.parse(await blob.text());
-  assert.deepEqual(exported[0].context.manualSettings, context.manualSettings);
-});
+  }]).text());
 
-test("prompt output covers every subject mode", () => {
-  const promptBuilder = new PromptBuilder();
-  const expected = {
-    landscape: /SUBJECT PRIORITY: LANDSCAPE \/ ENVIRONMENT/,
-    "single-person": /SUBJECT PRIORITY: ONE PERSON/,
-    group: /SUBJECT PRIORITY: SMALL GROUP/,
-    crowd: /SUBJECT PRIORITY: CROWD/
-  };
-
-  for (const [subjectMode, pattern] of Object.entries(expected)) {
-    assert.match(promptBuilder.build(contextForPrompt({ subjectMode })), pattern);
-  }
-});
-
-test("bokeh and deep-focus prompt branches contain concrete optics", () => {
-  const promptBuilder = new PromptBuilder();
-  assert.match(promptBuilder.build(contextForPrompt({ focusStyle: "bokeh", subjectMode: "single-person" })), /Use shallow depth of field with a clearly defined focal plane/);
-  assert.match(promptBuilder.build(contextForPrompt({ focusStyle: "bokeh", subjectMode: "single-person" })), /strong bokeh requires close subject distance/);
-  assert.match(promptBuilder.build(contextForPrompt({ focusStyle: "deep-focus" })), /Use broad depth of field/);
-  assert.doesNotMatch(promptBuilder.build(contextForPrompt({ focusStyle: "bokeh" })), /bokeh: true/);
-});
-
-test("EV prompt branches for -3, 0, and +3 are photographic", () => {
-  const promptBuilder = new PromptBuilder();
-  assert.match(promptBuilder.build(contextForPrompt({ exposureCompensationEv: -3 })), /Apply -3 EV/);
-  assert.match(promptBuilder.build(contextForPrompt({ exposureCompensationEv: -3 })), /underexposed version of the same scene/);
-  assert.match(promptBuilder.build(contextForPrompt({ exposureCompensationEv: 0 })), /Apply 0 EV/);
-  assert.match(promptBuilder.build(contextForPrompt({ exposureCompensationEv: 3 })), /Apply \+3 EV/);
-  assert.match(promptBuilder.build(contextForPrompt({ exposureCompensationEv: 3 })), /substantially overexposed/);
-});
-
-test("clear morning daylight at EV -3 cannot become dusk or night", () => {
-  const prompt = new PromptBuilder().build(contextForPrompt({
-    exposureCompensationEv: -3,
-    time: {
-      time: "10:03",
-      hour: 10,
-      dayPeriod: "morning"
-    },
-    weather: {
-      description: "Clear",
-      cloudCoverPercent: 10
-    }
-  }));
-
-  assert.match(prompt, /PRIORITY 1 -- SELECTED HUMAN LIKENESS/);
-  assert.match(prompt, /PRIORITY 2 -- OBJECT SEMANTICS/);
-  assert.match(prompt, /PRIORITY 3 -- OBJECT RELATIONSHIPS/);
-  assert.match(prompt, /PRIORITY 4 -- IMMUTABLE SCENE FACTS/);
-  assert.match(prompt, /PRIORITY 7 -- CAMERA RENDERING SETTINGS/);
-  assert.match(prompt, /morning daylight/);
-  assert.match(prompt, /underexposed version of the same scene/);
-  assert.match(prompt, /Do not convert daylight into dusk/);
-  assert.match(prompt, /Do not change the sky into a sunset sky/);
-  assert.match(prompt, /Known scene: morning daylight, clear weather/);
-  assert.match(prompt, /Required result: a severely underexposed morning daylight photograph/);
-  assert.match(prompt, /Forbidden result: dusk, sunset, twilight, evening, or nighttime/);
-});
-
-test("cloudy midday daylight at EV -3 remains daylight", () => {
-  const prompt = new PromptBuilder().build(contextForPrompt({
-    exposureCompensationEv: -3,
-    time: {
-      time: "12:15",
-      hour: 12,
-      dayPeriod: "afternoon"
-    },
-    weather: {
-      description: "Cloudy",
-      cloudCoverPercent: 88
-    }
-  }));
-
-  assert.match(prompt, /midday daylight/);
-  assert.match(prompt, /Preserve a daytime sky and daylight environmental cues/);
-  assert.match(prompt, /Do not convert daylight into dusk/);
-  assert.match(prompt, /Do not change the weather/);
-});
-
-test("afternoon rain at EV +3 preserves weather and time", () => {
-  const prompt = new PromptBuilder().build(contextForPrompt({
-    exposureCompensationEv: 3,
-    time: {
-      time: "15:30",
-      hour: 15,
-      dayPeriod: "afternoon"
-    },
-    weather: {
-      description: "Rain",
-      rainMm: 3.5,
-      cloudCoverPercent: 95
-    }
-  }));
-
-  assert.match(prompt, /afternoon daylight/);
-  assert.match(prompt, /Rain: 3\.5 mm/);
-  assert.match(prompt, /Exposure compensation increases recorded exposure only/);
-  assert.match(prompt, /Do not change cloudy weather into sunshine/);
-  assert.match(prompt, /Do not change the weather/);
-});
-
-test("actual dusk at neutral EV is preserved as dusk context", () => {
-  const prompt = new PromptBuilder().build(contextForPrompt({
-    exposureCompensationEv: 0,
-    time: {
-      time: "17:45",
-      hour: 17,
-      dayPeriod: "evening"
-    },
-    weather: {
-      description: "Partly cloudy"
-    }
-  }));
-
-  assert.match(prompt, /sunset \/ twilight/);
-  assert.match(prompt, /This twilight or dawn illumination is an immutable scene fact/);
-  assert.match(prompt, /Apply 0 EV/);
-});
-
-test("actual night at EV +3 cannot become daylight", () => {
-  const prompt = new PromptBuilder().build(contextForPrompt({
-    exposureCompensationEv: 3,
-    time: {
-      time: "22:10",
-      hour: 22,
-      dayPeriod: "night"
-    },
-    weather: {
-      description: "Clear"
-    }
-  }));
-
-  assert.match(prompt, /night/);
-  assert.match(prompt, /Do not create daylight merely because exposure compensation is positive/);
-  assert.match(prompt, /must not create daylight/);
-  assert.match(prompt, /Forbidden result: daylight or daytime/);
-});
-
-test("indoor morning EV -3 preserves morning scene facts", () => {
-  const prompt = new PromptBuilder().build(contextForPrompt({
-    mode: "indoor",
-    exposureCompensationEv: -3,
-    time: {
-      time: "09:20",
-      hour: 9,
-      dayPeriod: "morning"
-    },
-    weather: {
-      description: "Clear"
-    }
-  }));
-
-  assert.match(prompt, /This is an indoor morning-daylight scene/);
-  assert.match(prompt, /underexposed version of the same scene/);
-  assert.match(prompt, /Do not convert daylight into dusk/);
-});
-
-test("flash on and off prompt branches", () => {
-  const promptBuilder = new PromptBuilder();
-  assert.match(promptBuilder.build(contextForPrompt({ flashMode: "off" })), /FLASH: OFF/);
-  assert.match(promptBuilder.build(contextForPrompt({ flashMode: "off" })), /Use only plausible ambient illumination/);
-  assert.match(promptBuilder.build(contextForPrompt({ flashMode: "on" })), /FLASH: ON -- DIRECT COMPACT-CAMERA FLASH/);
-  assert.match(promptBuilder.build(contextForPrompt({ flashMode: "on", subjectMode: "crowd" })), /avoid lighting an entire large crowd uniformly/);
-});
-
-test("ISO 80, 400, and 1000 prompt branches", () => {
-  const promptBuilder = new PromptBuilder();
-  assert.match(promptBuilder.build(contextForPrompt({ iso: 80 })), /Simulate slow fine-grained color film/);
-  assert.match(promptBuilder.build(contextForPrompt({ iso: 400 })), /general-purpose consumer color film/);
-  assert.match(promptBuilder.build(contextForPrompt({ iso: 1000 })), /fast consumer film/);
-  assert.match(promptBuilder.build(contextForPrompt({ iso: 1000 })), /coarser but organic film grain/);
-});
-
-test("focal distance prompt branches contain concrete optical constraints", () => {
-  const promptBuilder = new PromptBuilder();
-  assert.equal(focalDistanceLabel("telephoto"), "TELEPHOTO");
-
-  const wide = promptBuilder.build(contextForPrompt({ focalDistance: "21mm" }));
-  assert.match(wide, /FOCAL DISTANCE \/ VIRTUAL LENS -- STRICT OPTICAL CONSTRAINT/);
-  assert.match(wide, /Selected focal distance: 21 mm full-frame equivalent/);
-  assert.match(wide, /broad field of view/);
-
-  const normal = promptBuilder.build(contextForPrompt({ focalDistance: "50mm" }));
-  assert.match(normal, /Simulate a 50 mm full-frame-equivalent rectilinear lens/);
-  assert.match(normal, /normal-lens perspective/);
-
-  const telephoto = promptBuilder.build(contextForPrompt({ focalDistance: "telephoto" }));
-  assert.match(telephoto, /approximately 135 mm full-frame equivalent/);
-  assert.match(telephoto, /compressed distance/);
-
-  const macro = promptBuilder.build(contextForPrompt({ focalDistance: "macro" }));
-  assert.match(macro, /macro close-focus lens mode/);
-  assert.match(macro, /nearby textures, small objects, surfaces, or details/);
-  assert.doesNotMatch(macro, /focalDistance: true/);
-});
-
-test("grounded and free prompt branches control source-image grounding", () => {
-  const promptBuilder = new PromptBuilder();
-  assert.equal(groundingModeLabel("grounded"), "GROUNDED");
-
-  const grounded = promptBuilder.build(contextForPrompt({ groundingMode: "grounded" }));
-  assert.match(grounded, /GROUNDING MODE/);
-  assert.match(grounded, /GROUNDING: GROUNDED/);
-  assert.match(grounded, /The original captured photograph is supplied as the primary visual reference/);
-  assert.match(grounded, /Use it to preserve:\n- composition\n- camera angle\n- framing\n- approximate geometry/);
-
-  const free = promptBuilder.build(contextForPrompt({ groundingMode: "free" }));
-  assert.match(free, /GROUNDING: FREE/);
-  assert.match(free, /The original photograph is intentionally NOT supplied/);
-  assert.match(free, /preserved face references/);
-  assert.match(free, /semantic object descriptions/);
-  assert.match(free, /Do not attempt to reproduce the original composition exactly/);
-  assert.match(free, /Recognized objects are recreated from semantic understanding only/);
-  assert.doesNotMatch(free, /The original captured photograph is supplied as the primary visual reference/);
-});
-
-test("setting interactions are explicit physical reasoning", () => {
-  const prompt = new PromptBuilder().build(contextForPrompt({
-    mode: "indoor",
-    time: { dayPeriod: "night" },
-    iso: 80,
-    flashMode: "off",
-    exposureCompensationEv: -1
-  }));
-  assert.match(prompt, /ISO 80-160, flash off, and dim interior\/night context/);
-  assert.match(prompt, /Exposure compensation changes brightness, not the scene's hour/);
-  assert.match(prompt, /A tiny direct flash cannot illuminate distant mountains/);
-});
-
-test("accessibility labels exist for manual controls", async () => {
-  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
-  assert.match(html, /aria-label="Manual photographic controls"/);
-  assert.match(html, /aria-label="Subject mode: LANDSCAPE\. Press to change mode\."/);
-  assert.match(html, /data-control="subject-cycle"/);
-  assert.match(html, /aria-label="Depth: bokeh"/);
-  assert.match(html, /aria-label="Flash on"/);
-  assert.match(html, /aria-label="Focal distance selector"/);
-  assert.match(html, /data-focal-distance="telephoto"/);
-  assert.match(html, /aria-label="Grounding selector"/);
-  assert.match(html, /data-grounding-mode="grounded"/);
-  assert.match(html, /data-grounding-mode="free"/);
-  assert.match(html, /aria-label="Exposure compensation dial"/);
-  assert.match(html, /aria-label="ISO dial"/);
-});
-
-test("unsupported audio or sensor context does not affect manual prompt controls", () => {
-  const prompt = new PromptBuilder().build(contextForPrompt({
-    audio: { status: "unavailable", descriptor: "Unknown" },
-    orientation: { status: "unavailable", aim: "Unknown" },
-    focusStyle: "bokeh",
-    iso: 1000,
-    flashMode: "on"
-  }));
-  assert.match(prompt, /Use shallow depth of field/);
-  assert.match(prompt, /FILM SPEED: ISO 1000/);
-  assert.match(prompt, /FLASH: ON -- DIRECT COMPACT-CAMERA FLASH/);
+  assert.equal(exported[0].provider, "local-semantic-overlay");
+  assert.equal(exported[0].sceneSummary, "hedgehog plushie, car; hedgehog plushie on top of car");
+  assert.deepEqual(exported[0].overlaySettings, context.conCamera.overlaySettings);
+  assert.deepEqual(exported[0].recognizedObjects, context.conCamera.recognizedObjects);
+  assert.deepEqual(exported[0].objectRelationships, context.conCamera.objectRelationships);
+  assert.equal(exported[0].context.conCamera.sourceImageTransmitted, false);
+  assert.equal(exported[0].prompt, undefined);
 });
 
 function fakeStorage() {
-  const data = new Map();
+  const values = new Map();
   return {
     getItem(key) {
-      return data.get(key) ?? null;
+      return values.has(key) ? values.get(key) : null;
     },
     setItem(key, value) {
-      data.set(key, value);
+      values.set(key, String(value));
     }
   };
 }
 
-function contextForPrompt(overrides = {}) {
-  const manualSettings = {
-    ...DEFAULT_MANUAL_SETTINGS,
-    ...pickManual(overrides)
-  };
-  const time = {
-    iso: "2026-07-17T00:00:02.000Z",
-    date: "Jul 17, 2026",
-    time: "07:00",
-    timezone: "Asia/Jakarta",
-    hour: 7,
-    dayPeriod: "morning",
-    ...(overrides.time || {})
-  };
-
+function contextFixture(patch = {}) {
+  const now = "2026-07-17T03:03:00.000Z";
   return {
-    capturedAt: "2026-07-17T00:00:02.000Z",
-    mode: overrides.mode || "outdoor",
-    time,
+    capturedAt: now,
+    mode: "outdoor",
+    time: {
+      iso: now,
+      date: "Jul 17, 2026",
+      time: "10:03",
+      timezone: "Asia/Jakarta",
+      hour: 10,
+      dayPeriod: "morning"
+    },
     location: {
       status: "granted",
-      latitude: -6.2,
-      longitude: 106.8,
-      accuracy: 5,
-      label: "Jakarta, Indonesia"
+      latitude: -6.372184,
+      longitude: 106.832614,
+      accuracy: 8.4,
+      label: "Depok, Indonesia"
     },
     weather: {
       status: "granted",
-      temperatureC: 28,
-      humidityPercent: 80,
-      cloudCoverPercent: 70,
+      temperatureC: 29,
+      humidityPercent: 70,
+      cloudCoverPercent: 10,
       rainMm: 0,
-      windKph: 8,
-      description: "Cloudy",
-      ...(overrides.weather || {})
+      windKph: 5,
+      description: "Clear"
     },
     cameraPose: {
       azimuthDeg: 237,
-      pitchDeg: 3,
-      rollDeg: -2,
+      pitchDeg: 0,
+      rollDeg: 0,
       screenOrientationDeg: 0,
       confidence: "high",
-      capturedAt: 2_000
+      capturedAt: Date.parse(now)
     },
-    manualSettings,
-    orientation: overrides.orientation || {
+    manualSettings: { ...DEFAULT_MANUAL_SETTINGS },
+    orientation: {
       status: "granted",
-      alpha: 0,
-      beta: 90,
-      gamma: 0,
       aim: "Near horizon"
     },
     motion: {
       status: "granted",
-      movement: "Handheld",
-      accelerationMagnitude: 0.2,
-      rotationRate: 0.1
+      movement: "Handheld"
     },
-    audio: overrides.audio || {
+    audio: {
       status: "granted",
-      averageVolume: 0.02,
-      noisiness: 0.2,
-      speechProbability: 0.1,
       descriptor: "Quiet"
     },
     battery: {
       status: "granted",
-      levelPercent: 84,
-      charging: false
+      levelPercent: 84
     },
     device: {
       language: "en-US",
@@ -487,18 +262,10 @@ function contextForPrompt(overrides = {}) {
         pixelRatio: 3,
         orientation: "portrait"
       },
-      screen: {
-        width: 390,
-        height: 844,
-        colorDepth: 24
-      },
+      screen: {},
       screenBrightness: "unavailable",
       userAgent: "test"
-    }
+    },
+    ...patch
   };
-}
-
-function pickManual(overrides) {
-  const keys = ["focusStyle", "exposureCompensationEv", "subjectMode", "flashMode", "iso", "focalDistance", "groundingMode"];
-  return Object.fromEntries(keys.filter((key) => key in overrides).map((key) => [key, overrides[key]]));
 }

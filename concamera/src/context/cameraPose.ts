@@ -318,7 +318,7 @@ function rollFromWorldVectors(cameraForward: Vec3, imageUpWorld: Vec3): number |
   }
 
   // Positive roll means the camera's top edge rotates clockwise as seen by the
-  // photographer looking along the optical axis. The generated horizon should
+  // photographer looking along the optical axis. Any rendered horizon should
   // preserve the corresponding tilt instead of being automatically leveled.
   return normalizeSignedDeg(Math.atan2(dot(cross(levelUp, imageUpWorld), cameraForward), dot(levelUp, imageUpWorld)) * RAD);
 }

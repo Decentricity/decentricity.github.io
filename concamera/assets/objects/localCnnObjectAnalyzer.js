@@ -1,3 +1,4 @@
+import { DEFAULT_MANUAL_SETTINGS, scanModeObjectLimit, sanitizeManualSettings } from "../context/manualSettings.js";
 import { isHumanObjectLabel, normalizeObjectCategory, normalizeObjectLabel, validateObjectAnalysis } from "./objectNormalization.js";
 const TFJS_URL = "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/+esm";
 const COCO_SSD_URL = "https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/+esm";
@@ -22,7 +23,8 @@ export class LocalCnnObjectAnalyzer {
         this.runtimePromise = null;
         this.modelStatus = "loading";
     }
-    async analyze(source) {
+    async analyze(source, settings = DEFAULT_MANUAL_SETTINGS) {
+        const overlaySettings = sanitizeManualSettings(settings);
         const startedAt = this.now();
         let input = null;
         try {
@@ -32,10 +34,10 @@ export class LocalCnnObjectAnalyzer {
             const detections = await withTimeout(scoped(runtime.tf, () => runtime.detector.detect(input?.image)), this.options.detectionTimeoutMs ?? DETECTION_TIMEOUT_MS, "local object detection");
             const detectorInferenceMs = this.now() - detectorStartedAt;
             const filtered = detections
-                .filter((detection) => detection.score >= (this.options.minConfidence ?? MIN_OBJECT_CONFIDENCE))
+                .filter((detection) => detection.score >= (this.options.minConfidence ?? overlaySettings.confidenceThreshold ?? MIN_OBJECT_CONFIDENCE))
                 .filter((detection) => !isHumanObjectLabel(detection.class));
             const classifierStartedAt = this.now();
-            const candidates = await this.buildObjects(input, filtered, runtime);
+            const candidates = await this.buildObjects(input, filtered, runtime, overlaySettings.domain);
             const classifierInferenceMs = this.now() - classifierStartedAt;
             const relationshipStartedAt = this.now();
             const relationships = deriveRelationships(candidates);
@@ -48,7 +50,10 @@ export class LocalCnnObjectAnalyzer {
             const ordered = {
                 ...validated,
                 objects: orderObjectsForPrompt(validated.objects, validated.relationships)
+                    .slice(0, scanModeObjectLimit(overlaySettings.scanMode))
             };
+            const retainedIds = new Set(ordered.objects.map((object) => object.id));
+            ordered.relationships = ordered.relationships.filter((relationship) => (retainedIds.has(relationship.subjectObjectId) && retainedIds.has(relationship.objectObjectId)));
             const metrics = buildMetrics({
                 modelLoadMs: runtime.modelLoadMs,
                 detectorInferenceMs,
@@ -109,7 +114,7 @@ export class LocalCnnObjectAnalyzer {
         }
         return this.runtimePromise;
     }
-    async buildObjects(input, detections, runtime) {
+    async buildObjects(input, detections, runtime, domain) {
         const objects = [];
         let classified = 0;
         for (const [index, detection] of detections.entries()) {
@@ -128,7 +133,7 @@ export class LocalCnnObjectAnalyzer {
                 continue;
             }
             const category = normalizeObjectCategory(normalizedLabel);
-            const salience = salienceScore(normalizedBox, detection.score, normalizedLabel);
+            const salience = salienceScore(normalizedBox, detection.score, normalizedLabel, category, domain);
             objects.push({
                 id: `object-${objects.length + 1}`,
                 label: fusedLabel,
@@ -235,7 +240,7 @@ function normalizeDetectorBox(bbox, width, height) {
         height: round01(normalizedHeight)
     };
 }
-export function salienceScore(box, confidence, normalizedLabel) {
+export function salienceScore(box, confidence, normalizedLabel, category = "other", domain = "general") {
     const area = box.width * box.height;
     const centerX = box.x + box.width / 2;
     const centerY = box.y + box.height / 2;
@@ -243,7 +248,30 @@ export function salienceScore(box, confidence, normalizedLabel) {
     const centerWeight = 1 - clamp01(distance);
     const areaWeight = clamp01(Math.sqrt(area) * 2.2);
     const specificity = /\b(hedgehog plushie|wheelchair|laptop|motorcycle|bicycle|plastic drink bottle)\b/.test(normalizedLabel) ? 1 : 0.45;
-    return round01((clamp01(confidence) * 0.38) + (areaWeight * 0.34) + (centerWeight * 0.2) + (specificity * 0.08));
+    const domainBoost = domainWeight(normalizedLabel, category, domain);
+    return round01((clamp01(confidence) * 0.34) + (areaWeight * 0.3) + (centerWeight * 0.18) + (specificity * 0.08) + (domainBoost * 0.1));
+}
+function domainWeight(label, category, domain) {
+    if (domain === "general") {
+        return 0.5;
+    }
+    const text = label.toLowerCase();
+    const table = {
+        general: /./,
+        urban: /\b(road|street|building|sign|car|motorcycle|bicycle|bus|traffic|bench|chair|table)\b/,
+        nature: /\b(cat|dog|bird|animal|tree|plant|flower|grass|mountain|river|lake|sky|water|terrain|hedgehog)\b/,
+        tech: /\b(laptop|computer|keyboard|mouse|phone|camera|cable|tool|screen|electronics|device)\b/,
+        vehicle: /\b(car|motorcycle|bicycle|truck|bus|vehicle|wheel|traffic)\b/,
+        food: /\b(food|bottle|cup|plate|dish|meal|ingredient|utensil|table|container)\b/
+    };
+    const categoryBoost = {
+        urban: ["vehicle", "building", "furniture"],
+        nature: ["animal", "plant", "natural-feature"],
+        tech: ["electronics", "tool"],
+        vehicle: ["vehicle"],
+        food: ["food", "container"]
+    };
+    return table[domain].test(text) || categoryBoost[domain]?.includes(category) ? 1 : 0.25;
 }
 function shouldClassifyCrop(label, box) {
     const normalized = label.toLowerCase();
@@ -262,6 +290,9 @@ function fuseDetectionLabel(detectorLabel, classifierLabels) {
     }
     if (/\b(laptop|notebook computer)\b/.test(detector)) {
         return "laptop";
+    }
+    if (/\b(mouse|computer mouse|pointing device)\b/.test(detector)) {
+        return "computer mouse";
     }
     if (/\b(teddy bear|bear)\b/.test(detector) && /\b(hedgehog|porcupine)\b/.test(evidence) && /\b(plush|toy|stuffed|stuffed animal)\b/.test(evidence)) {
         return "hedgehog stuffed animal";

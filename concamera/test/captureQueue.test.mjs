@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { CaptureQueue } from "../assets/capture/captureQueue.js";
+import { DEFAULT_MANUAL_SETTINGS } from "../assets/context/manualSettings.js";
 
 test("capture queue creates FIFO work with a concurrency limit", async () => {
   const first = deferred();
@@ -130,13 +131,7 @@ function job(id) {
       confidence: "high",
       capturedAt: 0
     },
-    frozenSettings: {
-      focusStyle: "deep-focus",
-      exposureCompensationEv: 0,
-      subjectMode: "landscape",
-      flashMode: "off",
-      iso: 200
-    },
+    frozenSettings: { ...DEFAULT_MANUAL_SETTINGS },
     mode: "outdoor"
   };
 }

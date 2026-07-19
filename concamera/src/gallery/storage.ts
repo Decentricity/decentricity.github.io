@@ -31,8 +31,14 @@ export class FrameStorage {
       id: frame.id,
       timestamp: frame.timestamp,
       provider: frame.provider,
-      generatedPrompt: frame.prompt,
-      generationError: frame.generationError,
+      sceneSummary: frame.sceneSummary ?? frame.context.conCamera?.sceneSummary,
+      analysisError: frame.analysisError,
+      renderVersion: frame.context.conCamera?.renderVersion,
+      overlaySettings: frame.context.conCamera?.overlaySettings ?? frame.context.manualSettings,
+      recognizedObjects: frame.context.conCamera?.recognizedObjects ?? [],
+      objectRelationships: frame.context.conCamera?.objectRelationships ?? [],
+      analysisProvider: frame.context.conCamera?.objectAnalysisProvider,
+      analysisMetrics: frame.context.conCamera?.objectAnalysisMetrics,
       context: frame.context
     }));
 

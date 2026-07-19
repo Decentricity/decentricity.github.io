@@ -1,4 +1,4 @@
-export const MAX_PRESERVED_OBJECTS = 8;
+export const MAX_PRESERVED_OBJECTS = 16;
 export const MAX_PRESERVED_RELATIONSHIPS = 10;
 export const SUPPORTED_OBJECT_PREDICATES = [
     "on-top-of",
@@ -73,6 +73,9 @@ export function normalizeObjectLabel(label) {
     if (/\b(macbook|laptop|notebook computer)\b/.test(text)) {
         return "laptop";
     }
+    if (/\b(computer mouse|mouse|pointing device)\b/.test(text)) {
+        return "mouse";
+    }
     if (/\b(wheelchair)\b/.test(text)) {
         return "wheelchair";
     }
@@ -111,7 +114,7 @@ export function normalizeObjectCategory(label, category) {
     if (/\b(chair|table|sofa|bed|desk|cabinet|shelf)\b/.test(text)) {
         return "furniture";
     }
-    if (/\b(laptop|phone|camera|television|computer|speaker)\b/.test(text)) {
+    if (/\b(laptop|mouse|keyboard|phone|camera|television|computer|speaker)\b/.test(text)) {
         return "electronics";
     }
     if (/\b(box|bottle|cup|bag|basket|container)\b/.test(text)) {

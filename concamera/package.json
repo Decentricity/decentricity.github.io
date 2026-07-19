@@ -2,7 +2,7 @@
   "name": "con-camera",
   "version": "0.1.0",
   "private": true,
-  "description": "Local-CNN interpreted regenerated camera prototype for GitHub Pages.",
+  "description": "Local-CNN semantic-overlay camera prototype for GitHub Pages.",
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.json",

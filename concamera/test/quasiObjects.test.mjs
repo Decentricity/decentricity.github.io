@@ -16,8 +16,6 @@ import {
   LocalCnnObjectAnalyzer,
   salienceScore
 } from "../assets/objects/localCnnObjectAnalyzer.js";
-import { PromptBuilder } from "../assets/promptBuilder.js";
-import { selectFacesForSubjectMode } from "../assets/faces/faceSelection.js";
 import { readFile } from "node:fs/promises";
 
 test("object label normalization preserves useful semantics without brands", () => {
@@ -170,56 +168,6 @@ test("persisted metadata contains concepts and relationships but no source boxes
   assert.doesNotMatch(JSON.stringify(metadata), /boundingBox|x|width|source/);
 });
 
-test("object prompt appends semantic preservation without weakening face instructions", () => {
-  const objectAnalysis = validateObjectAnalysis(hedgehogOnCarFixture(), "fixture-provider");
-  const oneFace = [fakeFace("face-a")];
-
-  for (const mode of ["landscape", "single-person", "group", "crowd"]) {
-    const selection = selectFacesForSubjectMode(oneFace, mode, `object-prompt-${mode}`);
-    const prompt = new PromptBuilder().build(contextForPrompt(mode), selection, objectAnalysis);
-
-    assert.match(prompt, /PRESERVE SELECTED HUMAN LIKENESS/);
-    assert.match(prompt, /Each selected face represents one distinct person/);
-    assert.match(prompt, /Non-human objects require semantic preservation only/);
-    assert.match(prompt, /hedgehog plushie/);
-    assert.match(prompt, /car/);
-    assert.match(prompt, /on top of/);
-    assert.match(prompt, /does not need to be the exact same physical object/);
-    assert.match(prompt, /The target car does not need to resemble the source car/);
-    assert.match(prompt, /The target hedgehog plushie does not need to resemble the source plushie/);
-    assert.match(prompt, /Do not duplicate a selected person/);
-  }
-});
-
-test("prompt covers zero, one, and multiple faces with the same object constraints", () => {
-  const objectAnalysis = validateObjectAnalysis(hedgehogOnCarFixture(), "fixture-provider");
-  const faceSets = [
-    [],
-    [fakeFace("face-a")],
-    [fakeFace("face-a"), fakeFace("face-b"), fakeFace("face-c")]
-  ];
-
-  for (const faces of faceSets) {
-    const selection = selectFacesForSubjectMode(faces, "crowd", `faces-${faces.length}`);
-    const prompt = new PromptBuilder().build(contextForPrompt("crowd"), selection, objectAnalysis);
-    assert.match(prompt, /Selected source faces:/);
-    assert.match(prompt, /hedgehog plushie/);
-    assert.match(prompt, /on top of the car/);
-    assert.match(prompt, /Object semantics/iu);
-  }
-});
-
-test("landscape object prompt forbids grotesque disembodied face handling through face rules", () => {
-  const objectAnalysis = validateObjectAnalysis(hedgehogOnCarFixture(), "fixture-provider");
-  const selection = selectFacesForSubjectMode([fakeFace("face-a")], "landscape", "landscape-object");
-  const prompt = new PromptBuilder().build(contextForPrompt("landscape"), selection, objectAnalysis);
-
-  assert.match(prompt, /Incorporate the selected facial likeness indirectly/);
-  assert.match(prompt, /must not become a grotesque biological object/);
-  assert.match(prompt, /Do not create a severed head/);
-  assert.match(prompt, /hedgehog plushie/);
-});
-
 test("local CNN analyzer filters humans, applies confidence threshold, and normalizes source coordinates", async () => {
   const detector = fakeDetector([
     { class: "person", score: 0.99, bbox: [50, 40, 100, 220] },
@@ -244,6 +192,48 @@ test("local CNN analyzer filters humans, applies confidence threshold, and norma
   assert.equal(analysis.metrics.detectedCount, 1);
   assert.equal(analysis.metrics.preservedCount, 1);
   assert.equal(analysis.metrics.modelStatus, "ready");
+});
+
+test("local CNN analyzer applies ConCamera confidence and scan settings", async () => {
+  const detections = [
+    { class: "car", score: 0.91, bbox: [100, 200, 300, 260] },
+    { class: "bottle", score: 0.89, bbox: [450, 300, 90, 160] },
+    { class: "cup", score: 0.7, bbox: [540, 310, 70, 100] },
+    { class: "chair", score: 0.69, bbox: [620, 320, 120, 180] },
+    { class: "book", score: 0.68, bbox: [720, 360, 110, 70] },
+    { class: "keyboard", score: 0.49, bbox: [100, 680, 300, 120] }
+  ];
+  const analyzer = new LocalCnnObjectAnalyzer({
+    detector: fakeDetector(detections),
+    classifier: null,
+    createAnalysisInput: testAnalysisInput(1000, 1000)
+  });
+
+  const focused = await analyzer.analyze(sourcePhoto(), {
+    domain: "vehicle",
+    overlayDensity: "normal",
+    analysisMode: "taxonomy",
+    relationsVisible: true,
+    boxesVisible: true,
+    confidenceThreshold: 0.5,
+    scanMode: "focus",
+    viewMode: "live"
+  });
+  assert.equal(focused.objects.length, 4);
+  assert.equal(focused.objects[0].normalizedLabel, "car");
+  assert.equal(focused.objects.some((object) => object.normalizedLabel === "keyboard"), false);
+
+  const strict = await analyzer.analyze(sourcePhoto(), {
+    domain: "general",
+    overlayDensity: "full",
+    analysisMode: "taxonomy",
+    relationsVisible: true,
+    boxesVisible: true,
+    confidenceThreshold: 0.9,
+    scanMode: "survey",
+    viewMode: "live"
+  });
+  assert.deepEqual(strict.objects.map((object) => object.normalizedLabel), ["car"]);
 });
 
 test("local CNN analyzer fuses teddy-bear detection with hedgehog classifier evidence", async () => {
@@ -323,16 +313,18 @@ test("local CNN analyzer degrades nonfatally on model-load or inference failure 
   assert.equal(disposed, 1);
 });
 
-test("ConCamera object recognition contains no remote OpenAI object-analysis endpoint", async () => {
+test("ConCamera object recognition contains no remote OpenAI object-analysis or generation endpoint", async () => {
   const files = await Promise.all([
     readFile(new URL("../assets/objects/objectAnalyzer.js", import.meta.url), "utf8"),
     readFile(new URL("../assets/objects/localCnnObjectAnalyzer.js", import.meta.url), "utf8"),
-    readFile(new URL("../assets/ui/app.js", import.meta.url), "utf8")
+    readFile(new URL("../assets/ui/app.js", import.meta.url), "utf8"),
+    readFile(new URL("../sw.js", import.meta.url), "utf8")
   ]);
   const combined = files.join("\n");
 
   assert.doesNotMatch(combined, /\/v1\/responses/);
-  assert.doesNotMatch(combined, /OpenAIObjectAnalyzer/);
+  assert.doesNotMatch(combined, /\/v1\/images/);
+  assert.doesNotMatch(combined, /OpenAIObjectAnalyzer|ImageGenerator|api\.openai\.com/i);
 });
 
 function hedgehogOnCarFixture() {
@@ -384,93 +376,6 @@ function objectRecord(id, label, category, salience) {
     salience,
     attributes: [],
     count: null
-  };
-}
-
-function fakeFace(id) {
-  return {
-    id,
-    boundingBox: { x: 200, y: 120, width: 160, height: 180 },
-    confidence: 0.9,
-    areaRatio: 0.04,
-    centerDistance: 0.1
-  };
-}
-
-function contextForPrompt(subjectMode) {
-  const now = "2026-07-17T03:03:00.000Z";
-  return {
-    capturedAt: now,
-    mode: "outdoor",
-    time: {
-      iso: now,
-      date: "Jul 17, 2026",
-      time: "10:03",
-      timezone: "Asia/Jakarta",
-      hour: 10,
-      dayPeriod: "morning"
-    },
-    location: {
-      status: "granted",
-      latitude: -6.372184,
-      longitude: 106.832614,
-      accuracy: 8.4,
-      label: "Margo City, Beji, Depok, Indonesia"
-    },
-    weather: {
-      status: "granted",
-      temperatureC: 29,
-      humidityPercent: 70,
-      cloudCoverPercent: 10,
-      rainMm: 0,
-      windKph: 5,
-      description: "Clear"
-    },
-    cameraPose: {
-      azimuthDeg: 237,
-      pitchDeg: 38.4,
-      rollDeg: -7.2,
-      screenOrientationDeg: 0,
-      confidence: "high",
-      capturedAt: Date.parse(now)
-    },
-    manualSettings: {
-      focusStyle: "deep-focus",
-      exposureCompensationEv: 0,
-      subjectMode,
-      flashMode: "off",
-      iso: 200
-    },
-    orientation: {
-      status: "granted",
-      aim: "Steeply upward"
-    },
-    motion: {
-      status: "granted",
-      movement: "Handheld"
-    },
-    audio: {
-      status: "granted",
-      descriptor: "Quiet"
-    },
-    battery: {
-      status: "granted",
-      levelPercent: 84
-    },
-    device: {
-      language: "en-US",
-      languages: ["en-US"],
-      deviceType: "phone",
-      viewport: {
-        width: 390,
-        height: 844,
-        pixelRatio: 3,
-        orientation: "portrait"
-      },
-      screen: {},
-      screenBrightness: "unavailable",
-      userAgent: "test"
-    }
   };
 }
 

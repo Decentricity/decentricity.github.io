@@ -1,22 +1,26 @@
 export type PermissionStateName = "pending" | "granted" | "denied" | "unavailable" | "error";
 export type IndoorOutdoor = "indoor" | "outdoor";
-export type FocusStyle = "deep-focus" | "bokeh";
-export type SubjectMode = "landscape" | "single-person" | "group" | "crowd";
-export type FlashMode = "off" | "on";
-export type ExposureCompensationEv = -3 | -2 | -1 | 0 | 1 | 2 | 3;
-export type FilmIso = 80 | 100 | 125 | 160 | 200 | 250 | 320 | 400 | 500 | 640 | 800 | 1000;
-export type FocalDistance = "21mm" | "28mm" | "35mm" | "50mm" | "80mm" | "telephoto" | "macro";
-export type GenerationGroundingMode = "grounded" | "free";
 
-export interface ManualCameraSettings {
-  focusStyle: FocusStyle;
-  exposureCompensationEv: ExposureCompensationEv;
-  subjectMode: SubjectMode;
-  flashMode: FlashMode;
-  iso: FilmIso;
-  focalDistance: FocalDistance;
-  groundingMode: GenerationGroundingMode;
+export type ConCameraDomain = "general" | "urban" | "nature" | "tech" | "vehicle" | "food";
+export type OverlayDensity = "minimal" | "normal" | "full";
+export type AnalysisMode = "taxonomy" | "semantic" | "affordance" | "risk" | "attention";
+export type ScanMode = "focus" | "balanced" | "survey";
+export type ViewMode = "live" | "freeze";
+export type ConfidenceThreshold = 0.3 | 0.4 | 0.5 | 0.6 | 0.7 | 0.8 | 0.9;
+export type SubjectMode = "landscape" | "single-person" | "group" | "crowd";
+
+export interface ConCameraSettings {
+  domain: ConCameraDomain;
+  overlayDensity: OverlayDensity;
+  analysisMode: AnalysisMode;
+  relationsVisible: boolean;
+  boxesVisible: boolean;
+  confidenceThreshold: ConfidenceThreshold;
+  scanMode: ScanMode;
+  viewMode: ViewMode;
 }
+
+export type ManualCameraSettings = ConCameraSettings;
 
 export interface TimeContext {
   iso: string;
@@ -276,7 +280,10 @@ export interface ObjectAnalysisMetrics {
   detectorInferenceMs: number;
   classifierInferenceMs?: number | undefined;
   relationshipInferenceMs: number;
+  overlayRenderMs?: number | undefined;
+  captureMs?: number | undefined;
   totalObjectAnalysisMs: number;
+  totalMs?: number | undefined;
   backend: string;
   detectedCount: number;
   preservedCount: number;
@@ -321,18 +328,17 @@ export interface SubjectFaceSelection {
 
 export interface ConCameraShotAnalysis {
   detectedFaceCount: number;
-  selectedFaceCount: number;
-  selectedFaceIds: string[];
-  subjectMappingStrategy: SubjectMappingStrategy;
   faceAnalysisProvider: string;
   faceAnalysisWarning?: string | undefined;
-  groundingMode?: GenerationGroundingMode | undefined;
-  sourceImageAttached?: boolean | undefined;
+  overlaySettings?: ConCameraSettings | undefined;
   recognizedObjects?: PersistedRecognizedObject[] | undefined;
   objectRelationships?: PersistedObjectRelationship[] | undefined;
   objectAnalysisProvider?: string | undefined;
   objectAnalysisWarnings?: string[] | undefined;
   objectAnalysisMetrics?: ObjectAnalysisMetrics | undefined;
+  sceneSummary?: string | undefined;
+  renderVersion?: string | undefined;
+  sourceImageTransmitted?: boolean | undefined;
   omittedObjects?: Array<{
     label: string;
     normalizedLabel: string;
@@ -340,27 +346,14 @@ export interface ConCameraShotAnalysis {
   }> | undefined;
 }
 
-export interface ImageGenerationRequest {
-  context: AntiCameraContext;
-  prompt: string;
-  generationGrounding?: GenerationGroundingMode | undefined;
-  sourceImage?: ProviderImageReference | undefined;
-  faceReferences?: ProviderImageReference[] | undefined;
-  inputFidelity?: "high" | "low" | undefined;
-}
-
-export interface ImageGenerationResult {
-  imageDataUrl: string;
-  provider: string;
-  fallbackReason?: string | undefined;
-}
-
 export interface AntiCameraFrame {
   id: string;
   timestamp: string;
   imageDataUrl: string;
   provider: string;
-  prompt: string;
+  prompt?: string | undefined;
+  sceneSummary?: string | undefined;
   context: AntiCameraContext;
   generationError?: string | undefined;
+  analysisError?: string | undefined;
 }

@@ -7,8 +7,6 @@ import {
   freezeCameraPose,
   smoothCameraPose
 } from "../assets/context/cameraPose.js";
-import { DEFAULT_MANUAL_SETTINGS } from "../assets/context/manualSettings.js";
-import { PromptBuilder } from "../assets/promptBuilder.js";
 
 function sample(alpha, beta, gamma, screenOrientationDeg = 0) {
   return {
@@ -129,99 +127,3 @@ test("stale sensor sample lowers confidence", () => {
   };
   assert.equal(cameraPoseWithFreshness(pose, 5_000).confidence, "low");
 });
-
-test("prompt explicitly preserves pitch and roll", () => {
-  const prompt = new PromptBuilder().build(contextForPrompt({
-    azimuthDeg: 237,
-    pitchDeg: 38.4,
-    rollDeg: -7.2,
-    screenOrientationDeg: 0,
-    confidence: "high",
-    capturedAt: 2_000
-  }));
-
-  assert.match(prompt, /CAMERA POSE -- STRICT COMPOSITIONAL CONSTRAINT/);
-  assert.match(prompt, /azimuth 237\.0 degrees southwest/);
-  assert.match(prompt, /pitched \+38\.4 degrees/);
-  assert.match(prompt, /rolled -7\.2 degrees/);
-  assert.match(prompt, /horizon tilted by approximately 7\.2 degrees/);
-  assert.match(prompt, /Do not automatically straighten the image/);
-  assert.match(prompt, /21 mm full-frame-equivalent rectilinear lens/);
-  assert.match(prompt, /substantially more sky, ceiling, treetops, upper floors, signage, or overhead structure than ground/);
-});
-
-function contextForPrompt(cameraPose) {
-  return {
-    capturedAt: "2026-07-17T00:00:02.000Z",
-    mode: "outdoor",
-    time: {
-      iso: "2026-07-17T00:00:02.000Z",
-      date: "Jul 17, 2026",
-      time: "07:00",
-      timezone: "Asia/Jakarta",
-      hour: 7,
-      dayPeriod: "morning"
-    },
-    location: {
-      status: "granted",
-      latitude: -6.2,
-      longitude: 106.8,
-      accuracy: 5,
-      label: "Jakarta, Indonesia"
-    },
-    weather: {
-      status: "granted",
-      temperatureC: 28,
-      humidityPercent: 80,
-      cloudCoverPercent: 70,
-      rainMm: 0,
-      windKph: 8,
-      description: "Cloudy"
-    },
-    cameraPose,
-    manualSettings: { ...DEFAULT_MANUAL_SETTINGS },
-    orientation: {
-      status: "granted",
-      alpha: 0,
-      beta: 90,
-      gamma: 0,
-      aim: "Steeply upward"
-    },
-    motion: {
-      status: "granted",
-      movement: "Handheld",
-      accelerationMagnitude: 0.2,
-      rotationRate: 0.1
-    },
-    audio: {
-      status: "granted",
-      averageVolume: 0.02,
-      noisiness: 0.2,
-      speechProbability: 0.1,
-      descriptor: "Quiet"
-    },
-    battery: {
-      status: "granted",
-      levelPercent: 84,
-      charging: false
-    },
-    device: {
-      language: "en-US",
-      languages: ["en-US"],
-      deviceType: "phone",
-      viewport: {
-        width: 390,
-        height: 844,
-        pixelRatio: 3,
-        orientation: "portrait"
-      },
-      screen: {
-        width: 390,
-        height: 844,
-        colorDepth: 24
-      },
-      screenBrightness: "unavailable",
-      userAgent: "test"
-    }
-  };
-}

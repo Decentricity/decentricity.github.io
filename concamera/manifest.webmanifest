@@ -1,7 +1,7 @@
 {
   "name": "ConCamera",
   "short_name": "ConCam",
-  "description": "A locally interpreted camera that regenerates photographed scenes.",
+  "description": "A local semantic-overlay camera that displays machine perception.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

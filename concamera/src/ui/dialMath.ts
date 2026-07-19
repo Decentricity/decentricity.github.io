@@ -1,4 +1,4 @@
-export interface DialDefinition<T extends number> {
+export interface DialDefinition<T extends string | number> {
   values: readonly T[];
   minAngle: number;
   maxAngle: number;
@@ -55,12 +55,12 @@ export function angleToNearestIndex(angle: number, count: number, minAngle: numb
   return Math.max(0, Math.min(count - 1, Math.round(ratio * (count - 1))));
 }
 
-export function valueToAngle<T extends number>(value: T, values: readonly T[], minAngle: number, maxAngle: number): number {
+export function valueToAngle<T extends string | number>(value: T, values: readonly T[], minAngle: number, maxAngle: number): number {
   const index = Math.max(0, values.indexOf(value));
   return valueIndexToAngle(index, values.length, minAngle, maxAngle);
 }
 
-export function angleToNearestValue<T extends number>(angle: number, definition: DialDefinition<T>): T {
+export function angleToNearestValue<T extends string | number>(angle: number, definition: DialDefinition<T>): T {
   const index = angleToNearestIndex(angle, definition.values.length, definition.minAngle, definition.maxAngle);
   return definition.values[index] ?? definition.values[0] as T;
 }
@@ -72,7 +72,7 @@ export function beginDialDrag(currentAngle: number, pointerAngle: number): DialD
   };
 }
 
-export function advanceDialDrag<T extends number>(
+export function advanceDialDrag<T extends string | number>(
   state: DialDragState,
   pointerAngle: number,
   definition: DialDefinition<T>

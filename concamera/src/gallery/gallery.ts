@@ -147,7 +147,7 @@ export class Gallery {
 
     const image = document.createElement("img");
     image.src = frame.imageDataUrl;
-    image.alt = "ConCamera generated frame";
+    image.alt = "ConCamera semantic overlay frame";
     image.loading = "lazy";
 
     const timestamp = document.createElement("time");
@@ -161,7 +161,7 @@ export class Gallery {
   private renderPlaceholder(placeholder: FilmPlaceholder, newId?: string): HTMLLIElement {
     const item = document.createElement("li");
     item.className = `film-frame film-frame-pending${placeholder.status === "error" ? " error" : ""}${placeholder.id === newId ? " new" : ""}`;
-    item.title = placeholder.status === "error" ? placeholder.error ?? "Exposure failed" : "Developing";
+    item.title = placeholder.status === "error" ? placeholder.error ?? "Exposure failed" : "Analyzing";
 
     const panel = placeholder.status === "error" ? document.createElement("button") : document.createElement("div");
     panel.className = "film-placeholder";
@@ -175,7 +175,7 @@ export class Gallery {
       );
       panel.textContent = `EXPOSURE FAILED\nERROR ${errorNumber}\nTAP TO RETRY`;
     } else {
-      panel.textContent = "DEVELOPING";
+      panel.textContent = "ANALYZING";
     }
 
     const timestamp = document.createElement("time");
@@ -210,7 +210,7 @@ export class Gallery {
 
     this.zoomFrame = frame;
     this.zoomImage.src = frame.imageDataUrl;
-    this.zoomImage.alt = "Enlarged ConCamera generated frame";
+    this.zoomImage.alt = "Enlarged ConCamera semantic overlay frame";
     this.zoomTime.dateTime = frame.timestamp;
     this.zoomTime.textContent = formatTimestamp(frame.timestamp);
     this.zoomSaveButton.disabled = false;

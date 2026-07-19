@@ -5,10 +5,8 @@ export type CaptureJobStatus =
   | "capturing-source"
   | "collecting-context"
   | "detecting-faces"
-  | "selecting-faces"
   | "analyzing-objects"
-  | "generating"
-  | "developing"
+  | "rendering-overlay"
   | "complete"
   | "error";
 
@@ -21,7 +19,6 @@ export interface CaptureJob {
   frozenSettings: ManualCameraSettings;
   mode: IndoorOutdoor;
   context?: AntiCameraContext | undefined;
-  prompt?: string | undefined;
   imageDataUrl?: string | undefined;
   provider?: string | undefined;
   error?: string | undefined;

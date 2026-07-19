@@ -4,10 +4,10 @@ import { parseHTML } from "linkedom";
 import { Gallery, errorNumberFor } from "../assets/gallery/gallery.js";
 
 test("errorNumberFor extracts visible HTTP-style error numbers", () => {
-  assert.equal(errorNumberFor("OpenAI image edit request failed: 429 rate limit"), "429");
-  assert.equal(errorNumberFor("Object analysis provider failed with HTTP 504: gateway timeout"), "504");
-  assert.equal(errorNumberFor("image endpoint failed: 500 server busy"), "500");
-  assert.equal(errorNumberFor("image generation timed out"), "408");
+  assert.equal(errorNumberFor("local model request failed: 429 resource busy"), "429");
+  assert.equal(errorNumberFor("object analysis failed with HTTP 504: asset timeout"), "504");
+  assert.equal(errorNumberFor("overlay renderer failed: 500 canvas unavailable"), "500");
+  assert.equal(errorNumberFor("object analysis timed out"), "408");
   assert.equal(errorNumberFor("Source photo released; take a new exposure"), "410");
   assert.equal(errorNumberFor("provider exploded"), "000");
 });
@@ -20,7 +20,7 @@ test("failed film frame displays exact error number when available", () => {
     status: "queued"
   });
 
-  harness.gallery.failPlaceholder("job-429", "OpenAI image edit request failed: 429 rate limit");
+  harness.gallery.failPlaceholder("job-429", "local model request failed: 429 resource busy");
 
   const button = harness.document.querySelector("[data-retry-job='job-429']");
   assert.ok(button);
@@ -52,7 +52,7 @@ test("failed film frame maps timeout failures to 408", () => {
     status: "queued"
   });
 
-  harness.gallery.failPlaceholder("job-timeout", "image generation timed out");
+  harness.gallery.failPlaceholder("job-timeout", "object analysis timed out");
 
   const button = harness.document.querySelector("[data-retry-job='job-timeout']");
   assert.ok(button);

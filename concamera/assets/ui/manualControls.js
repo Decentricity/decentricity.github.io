@@ -1,14 +1,14 @@
-import { DEFAULT_MANUAL_SETTINGS, EXPOSURE_VALUES, FOCAL_DISTANCE_VALUES, GROUNDING_MODES, ISO_VALUES, SUBJECT_MODES, evLabel, flashLabel, focalDistanceLabel, focusStyleLabel, freezeManualSettings, groundingModeLabel, loadManualSettings, nextExposure, nextFocalDistance, nextGroundingMode, nextIso, saveManualSettings, snapExposure, snapIso, subjectModeLabel } from "../context/manualSettings.js";
+import { CONFIDENCE_VALUES, DOMAIN_VALUES, OVERLAY_DENSITY_VALUES, SCAN_MODE_VALUES, VIEW_MODE_VALUES, analysisModeLabel, confidenceLabel, domainLabel, freezeManualSettings, loadManualSettings, nextAnalysisMode, nextConfidenceThreshold, nextDomain, overlayDensityLabel, saveManualSettings, scanModeLabel, snapConfidenceThreshold, viewModeLabel } from "../context/manualSettings.js";
 import { advanceDialDrag, beginDialDrag as createDialDragState, pointerAngleDeg, valueToAngle } from "./dialMath.js";
-export const EV_DIAL = {
-    values: EXPOSURE_VALUES,
+export const DOMAIN_DIAL = {
+    values: DOMAIN_VALUES,
+    minAngle: -125,
+    maxAngle: 125
+};
+export const CONFIDENCE_DIAL = {
+    values: CONFIDENCE_VALUES,
     minAngle: -120,
     maxAngle: 120
-};
-export const ISO_DIAL = {
-    values: ISO_VALUES,
-    minAngle: -132,
-    maxAngle: 132
 };
 export class ManualControls {
     root;
@@ -32,102 +32,105 @@ export class ManualControls {
     bind() {
         this.root.addEventListener("click", (event) => {
             const target = event.target instanceof Element ? event.target.closest("button") : null;
-            if (!(target instanceof HTMLButtonElement)) {
-                return;
+            if (target instanceof HTMLButtonElement) {
+                this.handleButton(target);
             }
-            this.handleButton(target);
         });
         this.root.querySelectorAll("[data-dial]").forEach((dial) => {
             dial.addEventListener("keydown", (event) => this.handleDialKey(event, dial));
             dial.addEventListener("pointerdown", (event) => this.beginDialDrag(event, dial));
         });
-        this.root.querySelector("[data-control='subject-cycle']")?.addEventListener("keydown", (event) => {
-            this.handleSubjectKey(event);
+        this.root.querySelector("[data-control='analysis-mode-cycle']")?.addEventListener("keydown", (event) => {
+            this.handleModeKey(event);
         });
-        this.root.querySelectorAll("[data-focal-distance]").forEach((button) => {
-            button.addEventListener("keydown", (event) => this.handleFocalKey(event));
+        this.root.querySelectorAll("[data-overlay-density]").forEach((button) => {
+            button.addEventListener("keydown", (event) => this.handleOverlayKey(event));
         });
-        this.root.querySelectorAll("[data-grounding-mode]").forEach((button) => {
-            button.addEventListener("keydown", (event) => this.handleGroundingKey(event));
+        this.root.querySelectorAll("[data-scan-mode]").forEach((button) => {
+            button.addEventListener("keydown", (event) => this.handleScanKey(event));
+        });
+        this.root.querySelectorAll("[data-view-mode]").forEach((button) => {
+            button.addEventListener("keydown", (event) => this.handleViewKey(event));
         });
     }
     handleButton(button) {
-        const focusStyle = button.dataset.focusStyle;
-        const flashMode = button.dataset.flashMode;
-        const focalDistance = button.dataset.focalDistance;
-        const groundingMode = button.dataset.groundingMode;
-        const ev = button.dataset.ev;
-        const iso = button.dataset.iso;
-        if (button.dataset.control === "subject-cycle") {
-            this.cycleSubjectMode(1);
+        const domain = button.dataset.domain;
+        const overlayDensity = button.dataset.overlayDensity;
+        const scanMode = button.dataset.scanMode;
+        const viewMode = button.dataset.viewMode;
+        const confidence = button.dataset.confidence;
+        if (button.dataset.control === "analysis-mode-cycle") {
+            this.cycleAnalysisMode(1);
         }
-        else if (focusStyle) {
-            this.update({ focusStyle });
+        else if (domain) {
+            this.update({ domain });
         }
-        else if (flashMode) {
-            this.update({ flashMode });
+        else if (overlayDensity) {
+            this.update({ overlayDensity });
         }
-        else if (focalDistance) {
-            this.update({ focalDistance });
+        else if (scanMode) {
+            this.update({ scanMode });
         }
-        else if (groundingMode) {
-            this.update({ groundingMode });
+        else if (viewMode) {
+            this.update({ viewMode });
         }
-        else if (ev !== undefined) {
-            this.update({ exposureCompensationEv: snapExposure(Number(ev)) });
+        else if (button.dataset.relationsVisible !== undefined) {
+            this.update({ relationsVisible: button.dataset.relationsVisible === "true" });
         }
-        else if (iso !== undefined) {
-            this.update({ iso: snapIso(Number(iso)) });
+        else if (button.dataset.boxesVisible !== undefined) {
+            this.update({ boxesVisible: button.dataset.boxesVisible === "true" });
+        }
+        else if (confidence !== undefined) {
+            this.update({ confidenceThreshold: snapConfidenceThreshold(Number(confidence) / 100) });
         }
     }
-    handleSubjectKey(event) {
+    handleModeKey(event) {
         if (event.key === "Enter" || event.key === " " || event.key === "ArrowRight" || event.key === "ArrowDown") {
             event.preventDefault();
-            this.cycleSubjectMode(1);
+            this.cycleAnalysisMode(1);
         }
         else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
             event.preventDefault();
-            this.cycleSubjectMode(-1);
+            this.cycleAnalysisMode(-1);
         }
     }
-    handleFocalKey(event) {
-        const handledKeys = ["ArrowLeft", "ArrowDown", "ArrowRight", "ArrowUp", "Home", "End"];
-        if (!handledKeys.includes(event.key)) {
+    handleOverlayKey(event) {
+        if (!this.handleLinearKey(event, OVERLAY_DENSITY_VALUES, this.settings.overlayDensity, (overlayDensity) => this.update({ overlayDensity }))) {
             return;
         }
-        event.preventDefault();
-        if (event.key === "Home") {
-            this.update({ focalDistance: FOCAL_DISTANCE_VALUES[0] ?? this.settings.focalDistance });
-        }
-        else if (event.key === "End") {
-            this.update({ focalDistance: FOCAL_DISTANCE_VALUES[FOCAL_DISTANCE_VALUES.length - 1] ?? this.settings.focalDistance });
-        }
-        else {
-            this.update({ focalDistance: nextFocalDistance(this.settings.focalDistance, event.key === "ArrowRight" || event.key === "ArrowDown" ? 1 : -1) });
-        }
     }
-    handleGroundingKey(event) {
+    handleScanKey(event) {
+        this.handleLinearKey(event, SCAN_MODE_VALUES, this.settings.scanMode, (scanMode) => this.update({ scanMode }));
+    }
+    handleViewKey(event) {
+        this.handleLinearKey(event, VIEW_MODE_VALUES, this.settings.viewMode, (viewMode) => this.update({ viewMode }));
+    }
+    handleLinearKey(event, values, current, update) {
         const handledKeys = ["ArrowLeft", "ArrowDown", "ArrowRight", "ArrowUp", "Home", "End", "Enter", " "];
         if (!handledKeys.includes(event.key)) {
-            return;
+            return false;
         }
         event.preventDefault();
         if (event.key === "Home") {
-            this.update({ groundingMode: GROUNDING_MODES[0] ?? this.settings.groundingMode });
+            update(values[0] ?? current);
         }
         else if (event.key === "End") {
-            this.update({ groundingMode: GROUNDING_MODES[GROUNDING_MODES.length - 1] ?? this.settings.groundingMode });
+            update(values[values.length - 1] ?? current);
         }
         else if (event.key === "Enter" || event.key === " ") {
-            this.update({ groundingMode: this.settings.groundingMode === "grounded" ? "free" : "grounded" });
+            const index = values.indexOf(current);
+            update(values[(index + 1) % values.length] ?? current);
         }
         else {
-            this.update({ groundingMode: nextGroundingMode(this.settings.groundingMode, event.key === "ArrowRight" || event.key === "ArrowDown" ? 1 : -1) });
+            const index = values.indexOf(current);
+            const direction = event.key === "ArrowRight" || event.key === "ArrowDown" ? 1 : -1;
+            update(values[Math.max(0, Math.min(values.length - 1, index + direction))] ?? current);
         }
+        return true;
     }
     handleDialKey(event, dial) {
         const kind = dial.dataset.dial;
-        if (kind !== "ev" && kind !== "iso") {
+        if (kind !== "domain" && kind !== "confidence") {
             return;
         }
         const handledKeys = ["ArrowLeft", "ArrowDown", "ArrowRight", "ArrowUp", "Home", "End"];
@@ -135,11 +138,25 @@ export class ManualControls {
             return;
         }
         event.preventDefault();
-        if (kind === "ev") {
-            this.handleEvKey(event.key);
+        if (kind === "domain") {
+            if (event.key === "Home") {
+                this.update({ domain: DOMAIN_VALUES[0] ?? this.settings.domain });
+            }
+            else if (event.key === "End") {
+                this.update({ domain: DOMAIN_VALUES[DOMAIN_VALUES.length - 1] ?? this.settings.domain });
+            }
+            else {
+                this.update({ domain: nextDomain(this.settings.domain, event.key === "ArrowRight" || event.key === "ArrowUp" ? 1 : -1) });
+            }
+        }
+        else if (event.key === "Home") {
+            this.update({ confidenceThreshold: CONFIDENCE_VALUES[0] ?? this.settings.confidenceThreshold });
+        }
+        else if (event.key === "End") {
+            this.update({ confidenceThreshold: CONFIDENCE_VALUES[CONFIDENCE_VALUES.length - 1] ?? this.settings.confidenceThreshold });
         }
         else {
-            this.handleIsoKey(event.key);
+            this.update({ confidenceThreshold: nextConfidenceThreshold(this.settings.confidenceThreshold, event.key === "ArrowRight" || event.key === "ArrowUp" ? 1 : -1) });
         }
     }
     beginDialDrag(event, dial) {
@@ -147,7 +164,7 @@ export class ManualControls {
             return;
         }
         const kind = dial.dataset.dial;
-        if (kind !== "ev" && kind !== "iso") {
+        if (kind !== "domain" && kind !== "confidence") {
             return;
         }
         const face = dial.querySelector("[data-dial-face]");
@@ -157,15 +174,11 @@ export class ManualControls {
         event.preventDefault();
         this.endActiveDrag();
         const definition = dialDefinition(kind);
-        const currentAngle = valueToAngle(kind === "ev" ? this.settings.exposureCompensationEv : this.settings.iso, definition.values, definition.minAngle, definition.maxAngle);
+        const currentAngle = valueToAngle(kind === "domain" ? this.settings.domain : this.settings.confidenceThreshold, definition.values, definition.minAngle, definition.maxAngle);
         const pointerAngle = pointerAngleDeg(event.clientX, event.clientY, face.getBoundingClientRect());
         let dragState = createDialDragState(currentAngle, pointerAngle);
         dial.setPointerCapture(event.pointerId);
-        this.activeDrag = {
-            pointerId: event.pointerId,
-            dial,
-            state: dragState
-        };
+        this.activeDrag = { pointerId: event.pointerId, dial, state: dragState };
         const move = (moveEvent) => {
             if (!this.activeDrag || moveEvent.pointerId !== event.pointerId) {
                 return;
@@ -175,17 +188,11 @@ export class ManualControls {
             const next = advanceDialDrag(dragState, nextPointerAngle, definition);
             dragState = next.state;
             this.activeDrag.state = dragState;
-            if (kind === "ev") {
-                const exposureCompensationEv = next.value;
-                if (exposureCompensationEv !== this.settings.exposureCompensationEv) {
-                    this.update({ exposureCompensationEv });
-                }
+            if (kind === "domain" && next.value !== this.settings.domain) {
+                this.update({ domain: next.value });
             }
-            else {
-                const iso = next.value;
-                if (iso !== this.settings.iso) {
-                    this.update({ iso });
-                }
+            else if (kind === "confidence" && next.value !== this.settings.confidenceThreshold) {
+                this.update({ confidenceThreshold: next.value });
             }
         };
         const up = (upEvent) => {
@@ -214,33 +221,8 @@ export class ManualControls {
         }
         this.activeDrag = null;
     }
-    handleEvKey(key) {
-        if (key === "Home") {
-            this.update({ exposureCompensationEv: EXPOSURE_VALUES[0] ?? this.settings.exposureCompensationEv });
-        }
-        else if (key === "End") {
-            this.update({ exposureCompensationEv: EXPOSURE_VALUES[EXPOSURE_VALUES.length - 1] ?? this.settings.exposureCompensationEv });
-        }
-        else {
-            this.update({ exposureCompensationEv: nextExposure(this.settings.exposureCompensationEv, key === "ArrowRight" || key === "ArrowUp" ? 1 : -1) });
-        }
-    }
-    handleIsoKey(key) {
-        if (key === "Home") {
-            this.update({ iso: ISO_VALUES[0] ?? this.settings.iso });
-        }
-        else if (key === "End") {
-            this.update({ iso: ISO_VALUES[ISO_VALUES.length - 1] ?? this.settings.iso });
-        }
-        else {
-            this.update({ iso: nextIso(this.settings.iso, key === "ArrowRight" || key === "ArrowUp" ? 1 : -1) });
-        }
-    }
     update(patch) {
-        this.settings = freezeManualSettings({
-            ...this.settings,
-            ...patch
-        });
+        this.settings = freezeManualSettings({ ...this.settings, ...patch });
         saveManualSettings(this.settings);
         this.render();
         for (const listener of this.listeners) {
@@ -248,79 +230,56 @@ export class ManualControls {
         }
     }
     render() {
-        this.renderSubjectButton();
-        this.renderLever("focusStyle", this.settings.focusStyle);
-        this.renderLever("flashMode", this.settings.flashMode);
-        this.renderDial("ev", this.settings.exposureCompensationEv, EV_DIAL);
-        this.renderDial("iso", this.settings.iso, ISO_DIAL);
-        this.renderFocalSelector();
-        this.renderGroundingSelector();
+        this.renderDial("domain", this.settings.domain, DOMAIN_DIAL);
+        this.renderDial("confidence", this.settings.confidenceThreshold, CONFIDENCE_DIAL);
+        this.renderSelector("overlayDensity", this.settings.overlayDensity, "overlay-density", overlayDensityLabel);
+        this.renderSelector("scanMode", this.settings.scanMode, "scan-mode", scanModeLabel);
+        this.renderSelector("viewMode", this.settings.viewMode, "view-mode", viewModeLabel);
+        this.renderSwitch("relationsVisible", this.settings.relationsVisible, "relations-visible", "REL");
+        this.renderSwitch("boxesVisible", this.settings.boxesVisible, "boxes-visible", "BOX");
+        this.renderAnalysisButton();
     }
-    cycleSubjectMode(direction = 1) {
-        const currentIndex = SUBJECT_MODES.indexOf(this.settings.subjectMode);
-        const index = currentIndex >= 0 ? currentIndex : 0;
-        const nextIndex = (index + direction + SUBJECT_MODES.length) % SUBJECT_MODES.length;
-        this.update({ subjectMode: SUBJECT_MODES[nextIndex] ?? DEFAULT_MANUAL_SETTINGS.subjectMode });
+    cycleAnalysisMode(direction = 1) {
+        this.update({ analysisMode: nextAnalysisMode(this.settings.analysisMode, direction) });
     }
-    renderSubjectButton() {
-        const button = this.root.querySelector("[data-control='subject-cycle']");
+    renderAnalysisButton() {
+        const button = this.root.querySelector("[data-control='analysis-mode-cycle']");
         if (!button) {
             return;
         }
-        button.dataset.selected = this.settings.subjectMode;
-        button.setAttribute("aria-label", `Subject mode: ${subjectModeLabel(this.settings.subjectMode)}. Press to change mode.`);
-        button.querySelector("[data-subject-label]")?.replaceChildren(subjectButtonLabel(this.settings.subjectMode));
-        this.root.querySelectorAll("[data-subject-icon]").forEach((icon) => {
-            const active = icon.dataset.subjectIcon === this.settings.subjectMode;
+        button.dataset.selected = this.settings.analysisMode;
+        button.setAttribute("aria-label", `Analysis mode: ${analysisModeLabel(this.settings.analysisMode)}. Press to change mode.`);
+        button.querySelector("[data-analysis-label]")?.replaceChildren(analysisModeButtonLabel(this.settings.analysisMode));
+        this.root.querySelectorAll("[data-analysis-icon]").forEach((icon) => {
+            const active = icon.dataset.analysisIcon === this.settings.analysisMode;
             icon.hidden = !active;
             icon.classList.toggle("is-active", active);
         });
     }
-    renderLever(key, selectedValue) {
-        const attr = key === "focusStyle" ? "data-focus-style" : "data-flash-mode";
-        const control = this.root.querySelector(key === "focusStyle" ? "[data-control='depth']" : "[data-control='flash']");
+    renderSelector(key, selectedValue, dataName, label) {
+        const control = this.root.querySelector(`[data-control='${dataName}']`);
         control?.setAttribute("data-selected", selectedValue);
-        control?.setAttribute("aria-label", key === "focusStyle"
-            ? `Depth selector, ${focusStyleLabel(selectedValue)}`
-            : `Flash selector, ${flashLabel(selectedValue)}`);
-        this.root.querySelectorAll(`[${attr}]`).forEach((button) => {
-            const selected = button.getAttribute(attr) === selectedValue;
+        control?.style.setProperty(`--${dataName}-index`, String([...control.querySelectorAll("button")].findIndex((button) => button.getAttribute(`data-${dataName}`) === selectedValue)));
+        control?.setAttribute("aria-label", `${dataName.replace("-", " ")} selector, ${label(selectedValue)}`);
+        this.root.querySelectorAll(`[data-${dataName}]`).forEach((button) => {
+            const value = button.getAttribute(`data-${dataName}`);
+            const selected = value === selectedValue;
             button.classList.toggle("is-selected", selected);
             button.setAttribute("role", "radio");
             button.setAttribute("aria-checked", String(selected));
+            button.setAttribute("aria-label", `Set ${String(key)} to ${label(value)}`);
         });
     }
-    renderFocalSelector() {
-        const control = this.root.querySelector("[data-control='focal-distance']");
-        if (!control) {
-            return;
-        }
-        const index = FOCAL_DISTANCE_VALUES.indexOf(this.settings.focalDistance);
-        control.dataset.selected = this.settings.focalDistance;
-        control.style.setProperty("--focal-index", String(Math.max(0, index)));
-        control.setAttribute("aria-label", `Focal distance selector, ${focalDistanceLabel(this.settings.focalDistance)}`);
-        this.root.querySelectorAll("[data-focal-distance]").forEach((button) => {
-            const selected = button.dataset.focalDistance === this.settings.focalDistance;
+    renderSwitch(key, selectedValue, dataName, label) {
+        const control = this.root.querySelector(`[data-control='${dataName}']`);
+        control?.setAttribute("data-selected", selectedValue ? "on" : "off");
+        control?.setAttribute("aria-label", `${label} switch, ${selectedValue ? "ON" : "OFF"}`);
+        this.root.querySelectorAll(`[data-${dataName}]`).forEach((button) => {
+            const selected = button.getAttribute(`data-${dataName}`) === String(selectedValue);
             button.classList.toggle("is-selected", selected);
             button.setAttribute("role", "radio");
             button.setAttribute("aria-checked", String(selected));
-            button.setAttribute("aria-label", `Set focal distance to ${focalDistanceLabel(button.dataset.focalDistance)}`);
-        });
-    }
-    renderGroundingSelector() {
-        const control = this.root.querySelector("[data-control='grounding']");
-        if (!control) {
-            return;
-        }
-        control.dataset.selected = this.settings.groundingMode;
-        control.setAttribute("aria-label", `Grounding selector, ${groundingModeLabel(this.settings.groundingMode)}`);
-        this.root.querySelectorAll("[data-grounding-mode]").forEach((button) => {
-            const selected = button.dataset.groundingMode === this.settings.groundingMode;
-            const mode = button.dataset.groundingMode;
-            button.classList.toggle("is-selected", selected);
-            button.setAttribute("role", "radio");
-            button.setAttribute("aria-checked", String(selected));
-            button.setAttribute("aria-label", `Set grounding mode to ${groundingModeLabel(mode)}`);
+            button.setAttribute("aria-label", `Set ${label} ${button.textContent?.trim() ?? ""}`);
         });
     }
     renderDial(kind, selectedValue, definition) {
@@ -331,32 +290,23 @@ export class ManualControls {
         const angle = valueToAngle(selectedValue, definition.values, definition.minAngle, definition.maxAngle);
         dial.style.setProperty("--rotor-angle", `${angle}deg`);
         dial.setAttribute("aria-valuenow", String(selectedValue));
-        dial.setAttribute("aria-valuetext", kind === "ev" ? evLabel(selectedValue) : `ISO ${selectedValue}`);
-        dial.setAttribute("aria-label", kind === "ev"
-            ? `Exposure compensation dial, ${evLabel(selectedValue)}`
-            : `ISO dial, ISO ${selectedValue}`);
-        const attr = kind === "ev" ? "data-ev" : "data-iso";
+        dial.setAttribute("aria-valuetext", kind === "domain" ? domainLabel(selectedValue) : `${confidenceLabel(selectedValue)} percent`);
+        dial.setAttribute("aria-label", kind === "domain"
+            ? `Lens domain dial, ${domainLabel(selectedValue)}`
+            : `Confidence threshold dial, ${confidenceLabel(selectedValue)} percent`);
+        const attr = kind === "domain" ? "data-domain" : "data-confidence";
         for (const button of dial.querySelectorAll(`[${attr}]`)) {
-            const value = Number(button.getAttribute(attr));
-            const selected = definition.values.includes(value) && value === selectedValue;
+            const raw = button.getAttribute(attr);
+            const value = kind === "confidence" ? snapConfidenceThreshold(Number(raw) / 100) : raw;
+            const selected = value === selectedValue;
             button.classList.toggle("is-selected", selected);
             button.setAttribute("aria-pressed", String(selected));
         }
     }
 }
 function dialDefinition(kind) {
-    return kind === "ev" ? EV_DIAL : ISO_DIAL;
+    return kind === "domain" ? DOMAIN_DIAL : CONFIDENCE_DIAL;
 }
-function subjectButtonLabel(mode) {
-    switch (mode) {
-        case "single-person":
-            return "PERSON";
-        case "group":
-            return "GROUP";
-        case "crowd":
-            return "CROWD";
-        case "landscape":
-        default:
-            return "LANDSCAPE";
-    }
+function analysisModeButtonLabel(mode) {
+    return mode.toUpperCase();
 }

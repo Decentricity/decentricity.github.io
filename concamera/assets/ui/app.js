@@ -2,24 +2,16 @@ import { CaptureQueue } from "../capture/captureQueue.js";
 import { LiveCamera } from "../camera/liveCamera.js";
 import { ContextCollector } from "../context/contextCollector.js";
 import { BrowserFaceAnalyzer } from "../faces/faceAnalyzer.js";
-import { createFaceCrops } from "../faces/faceCrops.js";
-import { selectFacesForSubjectMode } from "../faces/faceSelection.js";
 import { LocalCnnObjectAnalyzer } from "../objects/localCnnObjectAnalyzer.js";
 import { toPersistedObjectMetadata } from "../objects/objectNormalization.js";
-import { ImageGenerator } from "../image/imageGenerator.js";
-import { PromptBuilder } from "../promptBuilder.js";
+import { SemanticOverlayRenderer } from "../overlay/overlayRenderer.js";
 import { renderBattery, renderReadout } from "./readout.js";
 import { ShutterSound } from "./shutterSound.js";
 const PERMISSION_TIMEOUT_MS = 8_000;
 const CONTEXT_TIMEOUT_MS = 15_000;
-const GENERATION_TIMEOUT_MS = 300_000;
 const IMAGE_LOAD_TIMEOUT_MS = 15_000;
-const OPENAI_PROVIDER_SETTLE_DELAY_MS = 4_000;
-const RATE_LIMIT_SETTLE_DELAY_MS = 15_000;
-const GENERATION_RETRY_DELAYS_MS = [8_000, 20_000];
-const MAX_CONCURRENT_GENERATIONS = 1;
+const MAX_CONCURRENT_ANALYSES = 1;
 const MAX_QUEUED_CAPTURES = 10;
-const GROUNDING_METRICS_STORAGE_KEY = "concamera.groundingMetrics.v1";
 function delay(ms) {
     return new Promise((resolve) => globalThis.setTimeout(resolve, ms));
 }
@@ -46,12 +38,9 @@ export class AntiCameraApp {
     cameraSwitch;
     debugPanel;
     readout;
-    developingLayer;
+    analyzingLayer;
     instantReveal;
     latestFrame;
-    keyPanel;
-    keyInput;
-    keyMessage;
     batteryFill;
     batteryLabel;
     shutter;
@@ -59,29 +48,24 @@ export class AntiCameraApp {
     manualControls;
     gallery;
     context;
-    promptBuilder;
-    imageGenerator;
     liveCamera;
     faceAnalyzer;
     objectAnalyzer;
-    faceCropper;
+    overlayRenderer;
     shutterSound;
     captureDelay;
-    minimumDevelopingTime;
+    minimumAnalyzingTime;
     imageLoadTimeoutMs;
     permissionTimeoutMs;
     contextTimeoutMs;
-    generationTimeoutMs;
-    providerSettleDelayMs;
-    rateLimitSettleDelayMs;
-    generationRetryDelaysMs;
     queue;
     debugCapture = new CaptureDebugger();
     jobs = new Map();
     appView = "camera";
     sequence = 0;
     lastContext = null;
-    constructor(appShell, cameraView, filmView, viewToggle, viewfinder, cameraSwitch, debugPanel, readout, developingLayer, instantReveal, latestFrame, keyPanel, keyInput, keyMessage, batteryFill, batteryLabel, shutter, modeInputs, manualControls, gallery, dependencies = {}) {
+    sourceCaptureReservations = 0;
+    constructor(appShell, cameraView, filmView, viewToggle, viewfinder, cameraSwitch, debugPanel, readout, analyzingLayer, instantReveal, latestFrame, batteryFill, batteryLabel, shutter, modeInputs, manualControls, gallery, dependencies = {}) {
         this.appShell = appShell;
         this.cameraView = cameraView;
         this.filmView = filmView;
@@ -90,12 +74,9 @@ export class AntiCameraApp {
         this.cameraSwitch = cameraSwitch;
         this.debugPanel = debugPanel;
         this.readout = readout;
-        this.developingLayer = developingLayer;
+        this.analyzingLayer = analyzingLayer;
         this.instantReveal = instantReveal;
         this.latestFrame = latestFrame;
-        this.keyPanel = keyPanel;
-        this.keyInput = keyInput;
-        this.keyMessage = keyMessage;
         this.batteryFill = batteryFill;
         this.batteryLabel = batteryLabel;
         this.shutter = shutter;
@@ -103,24 +84,18 @@ export class AntiCameraApp {
         this.manualControls = manualControls;
         this.gallery = gallery;
         this.context = dependencies.context ?? new ContextCollector();
-        this.promptBuilder = dependencies.promptBuilder ?? new PromptBuilder();
-        this.imageGenerator = dependencies.imageGenerator ?? new ImageGenerator();
         this.liveCamera = dependencies.liveCamera ?? new LiveCamera(document.getElementById("camera-preview"));
         this.faceAnalyzer = dependencies.faceAnalyzer ?? new BrowserFaceAnalyzer();
         this.objectAnalyzer = dependencies.objectAnalyzer ?? new LocalCnnObjectAnalyzer();
-        this.faceCropper = dependencies.faceCropper ?? createFaceCrops;
+        this.overlayRenderer = dependencies.overlayRenderer ?? new SemanticOverlayRenderer();
         this.shutterSound = dependencies.shutterSound ?? new ShutterSound();
         this.captureDelay = dependencies.delay ?? delay;
-        this.minimumDevelopingTime = dependencies.minimumDevelopingTime ?? (() => 2600 + Math.round(Math.random() * 1800));
+        this.minimumAnalyzingTime = dependencies.minimumAnalyzingTime ?? (() => 650 + Math.round(Math.random() * 550));
         this.imageLoadTimeoutMs = dependencies.imageLoadTimeoutMs ?? IMAGE_LOAD_TIMEOUT_MS;
         this.permissionTimeoutMs = dependencies.permissionTimeoutMs ?? PERMISSION_TIMEOUT_MS;
         this.contextTimeoutMs = dependencies.contextTimeoutMs ?? CONTEXT_TIMEOUT_MS;
-        this.generationTimeoutMs = dependencies.generationTimeoutMs ?? GENERATION_TIMEOUT_MS;
-        this.providerSettleDelayMs = dependencies.providerSettleDelayMs ?? OPENAI_PROVIDER_SETTLE_DELAY_MS;
-        this.rateLimitSettleDelayMs = dependencies.rateLimitSettleDelayMs ?? RATE_LIMIT_SETTLE_DELAY_MS;
-        this.generationRetryDelaysMs = dependencies.generationRetryDelaysMs ?? GENERATION_RETRY_DELAYS_MS;
         this.queue = new CaptureQueue({
-            maxConcurrent: dependencies.maxConcurrentGenerations ?? MAX_CONCURRENT_GENERATIONS,
+            maxConcurrent: dependencies.maxConcurrentAnalyses ?? MAX_CONCURRENT_ANALYSES,
             maxQueuedCaptures: dependencies.maxQueuedCaptures ?? MAX_QUEUED_CAPTURES,
             run: (job) => this.runQueuedJob(job),
             onStatus: (job) => this.handleJobStatus(job),
@@ -157,28 +132,17 @@ export class AntiCameraApp {
                 this.setDebugPanelOpen(false);
             }
         });
-        this.keyPanel.addEventListener("submit", (event) => {
-            event.preventDefault();
-            this.saveKey();
-        });
         this.manualControls.onChange(() => {
-            if (this.keyPanel.classList.contains("hidden")) {
-                void this.refreshReadout();
-            }
+            void this.refreshReadout();
         });
         this.gallery.onRetry((id) => this.retryJob(id));
         await this.refreshReadout();
         this.setAppView("camera");
         this.updateCameraSwitch();
-        if (!this.imageGenerator.canGenerate()) {
-            this.showKeyPanel();
-        }
         this.updateQueueStatus();
         window.setInterval(() => {
-            if (this.latestFrame.classList.contains("hidden") && this.keyPanel.classList.contains("hidden")) {
-                void this.refreshReadout();
-            }
-        }, 1_000);
+            void this.refreshReadout();
+        }, 1_500);
     }
     async refreshReadout() {
         try {
@@ -194,11 +158,7 @@ export class AntiCameraApp {
         void this.captureFromShutter();
     }
     async captureFromShutter() {
-        if (!this.imageGenerator.canGenerate()) {
-            this.showKeyPanel();
-            return;
-        }
-        if (!this.queue.hasCapacity()) {
+        if (!this.hasCaptureCapacity()) {
             this.showBufferFull();
             return;
         }
@@ -208,27 +168,34 @@ export class AntiCameraApp {
         const id = createFrameId();
         const sequence = this.sequence;
         this.sequence += 1;
+        const createdAt = new Date(frozenPose.capturedAt).toISOString();
         this.playShutter();
+        this.sourceCaptureReservations += 1;
+        this.gallery.addPlaceholder({
+            id,
+            timestamp: createdAt,
+            status: "capturing-source"
+        });
+        this.updateQueueStatus();
         let sourcePhoto;
         try {
             sourcePhoto = await this.liveCamera.captureStill();
         }
         catch (error) {
-            this.developingLayer.textContent = safeError(error).toUpperCase();
-            this.developingLayer.classList.remove("hidden");
+            this.sourceCaptureReservations = Math.max(0, this.sourceCaptureReservations - 1);
+            this.gallery.failPlaceholder(id, safeError(error));
+            this.updateQueueStatus();
             return;
         }
+        this.sourceCaptureReservations = Math.max(0, this.sourceCaptureReservations - 1);
         if (!this.queue.hasCapacity()) {
             this.showBufferFull();
+            this.gallery.failPlaceholder(id, "Film buffer full");
             return;
         }
         const job = this.createJob(id, sequence, frozenPose, frozenSettings, mode, sourcePhoto);
         this.jobs.set(job.id, job);
-        this.gallery.addPlaceholder({
-            id: job.id,
-            timestamp: job.createdAt,
-            status: "queued"
-        });
+        this.gallery.updatePlaceholder(job.id, { status: "queued" });
         if (!this.queue.enqueue(job)) {
             this.gallery.failPlaceholder(job.id, "Film buffer full");
             this.showBufferFull();
@@ -241,12 +208,9 @@ export class AntiCameraApp {
     createJob(id, sequence, frozenPose, frozenSettings, mode, sourcePhoto) {
         const createdAt = new Date(frozenPose.capturedAt).toISOString();
         this.debugCapture.log("capture:start", { id, sequence });
-        this.debugCapture.log("capture:permissions-start", { id });
         const permissionReady = withTimeout(this.context.primeFromUserGesture(), this.permissionTimeoutMs, "sensor permissions")
             .catch((error) => this.debugCapture.log("capture:permissions-error", { id, error: safeError(error) }))
-            .then(() => {
-            this.debugCapture.log("capture:permissions-complete", { id });
-        });
+            .then(() => this.debugCapture.log("capture:permissions-complete", { id }));
         const contextReady = permissionReady.then(() => withTimeout(this.context.snapshot(mode, frozenPose, frozenSettings, { waitForReverseGeocodeMs: 900 }), this.contextTimeoutMs, "context snapshot"));
         return {
             id,
@@ -258,7 +222,7 @@ export class AntiCameraApp {
             mode,
             permissionReady,
             contextReady,
-            minimumDevelopingTime: this.minimumDevelopingTime(),
+            minimumAnalyzingTime: this.minimumAnalyzingTime(),
             sourcePhoto
         };
     }
@@ -271,105 +235,81 @@ export class AntiCameraApp {
             if (!runtimeJob.sourcePhoto || runtimeJob.sourceReleased) {
                 throw new Error("Source photo was released; take a new exposure");
             }
+            const captureStartedAt = Date.now();
             this.queue.setStatus(runtimeJob, "collecting-context");
             const context = await runtimeJob.contextReady;
             runtimeJob.context = context;
             this.debugCapture.log("capture:context-complete", { id: runtimeJob.id, capturedAt: context.capturedAt });
             this.queue.setStatus(runtimeJob, "detecting-faces");
-            const analysis = await this.faceAnalyzer.analyze(runtimeJob.sourcePhoto);
-            runtimeJob.faceAnalysis = analysis;
-            this.debugCapture.log("capture:faces-complete", { id: runtimeJob.id, count: analysis.count, provider: analysis.provider });
-            this.queue.setStatus(runtimeJob, "selecting-faces");
-            const selection = selectFacesForSubjectMode(analysis.faces, runtimeJob.frozenSettings.subjectMode, runtimeJob.id);
-            runtimeJob.faceSelection = selection;
-            let faceCrops = [];
-            let cropWarning;
-            try {
-                faceCrops = await this.faceCropper(runtimeJob.sourcePhoto, selection.selectedFaces);
-            }
-            catch (error) {
-                cropWarning = safeError(error);
-                this.debugCapture.log("capture:face-crop-error", { id: runtimeJob.id, error: cropWarning });
-            }
-            runtimeJob.faceCrops = faceCrops;
+            const faceAnalysis = await this.faceAnalyzer.analyze(runtimeJob.sourcePhoto).catch((error) => ({
+                faces: [],
+                count: 0,
+                provider: "face-analysis-fallback",
+                warning: `Face analysis failed: ${safeError(error)}`
+            }));
+            runtimeJob.faceAnalysis = faceAnalysis;
             this.queue.setStatus(runtimeJob, "analyzing-objects");
-            const objectAnalysis = await this.objectAnalyzer.analyze(runtimeJob.sourcePhoto)
+            const objectAnalysis = await this.objectAnalyzer.analyze(runtimeJob.sourcePhoto, runtimeJob.frozenSettings)
                 .catch((error) => ({
                 objects: [],
                 relationships: [],
-                provider: "object-analysis-fallback",
+                provider: "local-object-analysis-fallback",
                 warnings: [`Object analysis failed: ${safeError(error)}`]
             }));
             runtimeJob.objectAnalysis = objectAnalysis;
-            this.debugCapture.log("capture:objects-complete", {
-                id: runtimeJob.id,
-                count: objectAnalysis.objects.length,
-                relationships: objectAnalysis.relationships.length,
-                provider: objectAnalysis.provider,
-                metrics: objectAnalysis.metrics
-            });
             const objectMetadata = toPersistedObjectMetadata(objectAnalysis);
-            const analysisWarning = analysis.warning ?? cropWarning;
-            const sourceImageAttached = runtimeJob.frozenSettings.groundingMode === "grounded";
             context.conCamera = {
-                detectedFaceCount: analysis.count,
-                selectedFaceCount: selection.selectedFaceCount,
-                selectedFaceIds: selection.selectedFaceIds,
-                subjectMappingStrategy: selection.strategy,
-                faceAnalysisProvider: analysis.provider,
-                ...(analysisWarning ? { faceAnalysisWarning: analysisWarning } : {}),
-                groundingMode: runtimeJob.frozenSettings.groundingMode,
-                sourceImageAttached,
+                detectedFaceCount: faceAnalysis.count,
+                faceAnalysisProvider: faceAnalysis.provider,
+                ...(faceAnalysis.warning ? { faceAnalysisWarning: faceAnalysis.warning } : {}),
+                overlaySettings: runtimeJob.frozenSettings,
                 ...(objectMetadata.recognizedObjects.length > 0 ? { recognizedObjects: objectMetadata.recognizedObjects } : {}),
                 ...(objectMetadata.objectRelationships.length > 0 ? { objectRelationships: objectMetadata.objectRelationships } : {}),
                 objectAnalysisProvider: objectAnalysis.provider,
                 ...(objectAnalysis.metrics ? { objectAnalysisMetrics: objectAnalysis.metrics } : {}),
                 ...(objectMetadata.warnings.length > 0 ? { objectAnalysisWarnings: objectMetadata.warnings } : {}),
-                ...(objectMetadata.omittedObjects && objectMetadata.omittedObjects.length > 0 ? { omittedObjects: objectMetadata.omittedObjects } : {})
+                ...(objectMetadata.omittedObjects && objectMetadata.omittedObjects.length > 0 ? { omittedObjects: objectMetadata.omittedObjects } : {}),
+                sourceImageTransmitted: false
             };
-            const prompt = this.promptBuilder.build(context, selection, objectAnalysis);
-            runtimeJob.prompt = prompt;
-            this.debugCapture.log("capture:prompt-complete", { id: runtimeJob.id, promptLength: prompt.length });
-            this.debugCapture.log("capture:provider-selected", { id: runtimeJob.id, provider: this.imageGenerator.providerId?.() ?? "unknown" });
-            const settleDelay = this.providerSettleDelayFor(objectAnalysis);
-            if (settleDelay > 0) {
-                this.debugCapture.log("capture:provider-cooldown", { id: runtimeJob.id, delayMs: settleDelay });
-                await this.captureDelay(settleDelay);
+            this.queue.setStatus(runtimeJob, "rendering-overlay");
+            const renderStartedAt = Date.now();
+            const rendered = await this.overlayRenderer.render({
+                source: runtimeJob.sourcePhoto,
+                analysis: objectAnalysis,
+                settings: runtimeJob.frozenSettings,
+                timestamp: context.capturedAt
+            }).catch(async (error) => {
+                this.debugCapture.log("capture:overlay-render-error", { id: runtimeJob.id, error: safeError(error) });
+                return {
+                    imageDataUrl: runtimeJob.sourcePhoto?.dataUrl ?? "",
+                    sceneSummary: `Analysis unavailable: ${safeError(error)}`,
+                    renderVersion: "source-photo-fallback",
+                    overlayRenderMs: Math.max(0, Math.round(Date.now() - renderStartedAt)),
+                    renderedObjects: [],
+                    renderedRelationships: []
+                };
+            });
+            runtimeJob.renderedFrame = rendered;
+            const metrics = context.conCamera.objectAnalysisMetrics;
+            if (metrics) {
+                metrics.overlayRenderMs = rendered.overlayRenderMs;
+                metrics.captureMs = Math.max(0, Math.round(Date.now() - captureStartedAt));
+                metrics.totalMs = metrics.captureMs;
             }
-            this.queue.setStatus(runtimeJob, "generating");
-            const generationRequest = this.buildGenerationRequest(runtimeJob, context, prompt, faceCrops);
-            this.debugCapture.log("capture:request-start", {
-                id: runtimeJob.id,
-                grounding: runtimeJob.frozenSettings.groundingMode,
-                sourceImageAttached: Boolean(generationRequest.sourceImage),
-                faceReferences: generationRequest.faceReferences?.length ?? 0
-            });
-            const generationStartedAt = Date.now();
-            const generation = withTimeout(this.generateWithBackoff(generationRequest, runtimeJob.id), this.generationTimeoutMs, "image generation")
-                .then((result) => {
-                recordGroundingGenerationMetric(runtimeJob.frozenSettings.groundingMode, Date.now() - generationStartedAt, true);
-                return result;
-            }, (error) => {
-                recordGroundingGenerationMetric(runtimeJob.frozenSettings.groundingMode, Date.now() - generationStartedAt, false);
-                throw error;
-            });
-            const [result] = await Promise.all([
-                generation,
-                this.captureDelay(runtimeJob.minimumDevelopingTime)
-            ]);
-            runtimeJob.imageDataUrl = result.imageDataUrl;
-            runtimeJob.provider = result.provider;
-            this.debugCapture.log("capture:request-response", { id: runtimeJob.id, provider: result.provider });
+            context.conCamera.sceneSummary = rendered.sceneSummary;
+            context.conCamera.renderVersion = rendered.renderVersion;
+            await this.captureDelay(runtimeJob.minimumAnalyzingTime);
+            runtimeJob.imageDataUrl = rendered.imageDataUrl;
+            runtimeJob.provider = "local-semantic-overlay";
             const frame = {
                 id: runtimeJob.id,
                 timestamp: context.capturedAt,
-                imageDataUrl: result.imageDataUrl,
-                provider: result.provider,
-                prompt,
+                imageDataUrl: rendered.imageDataUrl,
+                provider: "local-semantic-overlay",
+                sceneSummary: rendered.sceneSummary,
                 context,
-                generationError: result.fallbackReason
+                ...(rendered.renderVersion === "source-photo-fallback" ? { analysisError: rendered.sceneSummary } : {})
             };
-            this.queue.setStatus(runtimeJob, "developing");
             this.debugCapture.log("capture:reveal-start", { id: runtimeJob.id });
             void this.reveal(frame.imageDataUrl)
                 .catch((error) => this.debugCapture.log("capture:reveal-error", { id: runtimeJob.id, error: safeError(error) }));
@@ -410,9 +350,6 @@ export class AntiCameraApp {
     handleJobStatus(job) {
         if (job.status === "error") {
             this.gallery.failPlaceholder(job.id, job.error ?? "Exposure failed");
-            if (isAuthenticationError(job.error ?? "")) {
-                this.showKeyPanel(job.error ?? "USER KEY REQUIRED");
-            }
         }
         else if (job.status !== "complete") {
             this.gallery.updatePlaceholder(job.id, { status: job.status });
@@ -420,21 +357,21 @@ export class AntiCameraApp {
         this.updateQueueStatus();
     }
     updateQueueStatus() {
-        const count = this.queue.inFlightCount;
-        this.shutter.disabled = !this.queue.hasCapacity();
-        this.developingLayer.classList.remove("hidden");
+        const count = this.queue.inFlightCount + this.sourceCaptureReservations;
+        this.shutter.disabled = !this.hasCaptureCapacity();
+        this.analyzingLayer.classList.remove("hidden");
         this.viewfinder.classList.toggle("is-developing", count > 0);
-        if (!this.queue.hasCapacity()) {
-            this.developingLayer.textContent = "FILM BUFFER FULL";
+        if (!this.hasCaptureCapacity()) {
+            this.analyzingLayer.textContent = "FILM BUFFER FULL";
         }
         else if (count === 0) {
-            this.developingLayer.textContent = "READY";
+            this.analyzingLayer.textContent = "READY";
         }
         else if (count === 1) {
-            this.developingLayer.textContent = "1 DEVELOPING";
+            this.analyzingLayer.textContent = "1 ANALYZING";
         }
         else {
-            this.developingLayer.textContent = `${count} IN BUFFER`;
+            this.analyzingLayer.textContent = `${count} IN BUFFER`;
         }
     }
     playShutter() {
@@ -455,8 +392,8 @@ export class AntiCameraApp {
         }
         catch (error) {
             this.debugCapture.log("capture:camera-switch-error", { error: safeError(error) });
-            this.developingLayer.textContent = safeError(error).toUpperCase();
-            this.developingLayer.classList.remove("hidden");
+            this.analyzingLayer.textContent = safeError(error).toUpperCase();
+            this.analyzingLayer.classList.remove("hidden");
         }
         finally {
             this.cameraSwitch.disabled = false;
@@ -471,107 +408,19 @@ export class AntiCameraApp {
         this.cameraSwitch.setAttribute("aria-label", facing === "environment" ? "Switch to front camera" : "Switch to rear camera");
     }
     showBufferFull() {
-        this.developingLayer.textContent = "FILM BUFFER FULL";
-        this.developingLayer.classList.remove("hidden");
+        this.analyzingLayer.textContent = "FILM BUFFER FULL";
+        this.analyzingLayer.classList.remove("hidden");
         this.shutter.disabled = true;
     }
-    showKeyPanel(message = "USER KEY REQUIRED") {
-        this.setAppView("camera");
-        this.viewfinder.classList.remove("is-developing");
-        this.viewfinder.classList.remove("needs-key");
-        this.viewfinder.classList.add("needs-key");
-        this.developingLayer.textContent = "KEY REQUIRED";
-        this.developingLayer.classList.remove("hidden");
-        this.instantReveal.classList.add("hidden");
-        this.latestFrame.classList.add("hidden");
-        this.keyPanel.classList.remove("hidden");
-        this.keyMessage.textContent = message.toUpperCase();
-        this.setDebugPanelOpen(true);
-        this.keyInput.focus();
+    hasCaptureCapacity() {
+        return this.queue.inFlightCount + this.sourceCaptureReservations < this.queue.maxQueuedCaptures;
     }
     reportNonFatalStorageFailure(error) {
         this.debugCapture.log("capture:gallery-save-error", { error: safeError(error) });
     }
-    buildGenerationRequest(job, context, prompt, faceCrops) {
-        if (job.frozenSettings.groundingMode === "free") {
-            return this.buildFreeGenerationRequest(context, prompt, faceCrops);
-        }
-        return this.buildGroundedGenerationRequest(job, context, prompt, faceCrops);
-    }
-    buildGroundedGenerationRequest(job, context, prompt, faceCrops) {
-        if (!job.sourcePhoto) {
-            throw new Error("Grounded generation requires a captured source photo");
-        }
-        return {
-            context,
-            prompt,
-            generationGrounding: "grounded",
-            sourceImage: {
-                dataUrl: job.sourcePhoto.dataUrl,
-                role: "source",
-                name: "source-photo.jpg"
-            },
-            faceReferences: faceCrops.map((crop) => crop.image),
-            inputFidelity: "high"
-        };
-    }
-    buildFreeGenerationRequest(context, prompt, faceCrops) {
-        return {
-            context,
-            prompt,
-            generationGrounding: "free",
-            faceReferences: faceCrops.map((crop) => crop.image),
-            inputFidelity: "high"
-        };
-    }
-    providerSettleDelayFor(objectAnalysis) {
-        const objectProvider = objectAnalysis.provider.toLowerCase();
-        const imageProvider = (this.imageGenerator.providerId?.() ?? "").toLowerCase();
-        const objectWasRateLimited = objectAnalysis.warnings.some((warning) => isRateLimitOrContentionError(warning));
-        if (objectWasRateLimited) {
-            return this.rateLimitSettleDelayMs;
-        }
-        if (objectProvider.startsWith("openai-") && imageProvider.includes("openai")) {
-            return this.providerSettleDelayMs;
-        }
-        return 0;
-    }
-    async generateWithBackoff(request, jobId) {
-        for (let attempt = 0;; attempt += 1) {
-            try {
-                return await this.imageGenerator.generate(request);
-            }
-            catch (error) {
-                const retryDelay = this.generationRetryDelaysMs[attempt];
-                if (retryDelay === undefined || !isRateLimitOrContentionError(error)) {
-                    throw error;
-                }
-                this.debugCapture.log("capture:generation-backoff", {
-                    id: jobId,
-                    attempt: attempt + 1,
-                    delayMs: retryDelay,
-                    error: safeError(error)
-                });
-                await this.captureDelay(retryDelay);
-            }
-        }
-    }
     releaseSource(job) {
         job.sourcePhoto = undefined;
-        job.faceCrops = undefined;
         job.sourceReleased = true;
-    }
-    saveKey() {
-        const value = this.keyInput.value.trim();
-        if (!value) {
-            this.keyMessage.textContent = "USER KEY REQUIRED";
-            return;
-        }
-        this.imageGenerator.saveUserKey(value);
-        this.keyInput.value = "";
-        this.keyPanel.classList.add("hidden");
-        this.viewfinder.classList.remove("needs-key");
-        void this.refreshReadout();
     }
     async reveal(imageDataUrl) {
         await this.loadLatestFrame(imageDataUrl);
@@ -586,10 +435,8 @@ export class AntiCameraApp {
         this.viewToggle.setAttribute("aria-label", view === "camera" ? "Open film roll" : "Return to camera");
         this.viewToggle.setAttribute("aria-pressed", String(view === "film"));
         this.viewToggle.classList.toggle("is-film-view", view === "film");
-        const cameraInert = view !== "camera";
-        const filmInert = view !== "film";
-        setInert(this.cameraView, cameraInert);
-        setInert(this.filmView, filmInert);
+        setInert(this.cameraView, view !== "camera");
+        setInert(this.filmView, view !== "film");
         if (view === "film") {
             this.setDebugPanelOpen(false);
         }
@@ -619,13 +466,13 @@ export class AntiCameraApp {
             };
             const fail = () => {
                 cleanup();
-                reject(new Error("Generated image failed to load"));
+                reject(new Error("Rendered overlay image failed to load"));
             };
             this.latestFrame.onload = complete;
             this.latestFrame.onerror = fail;
             timeoutId = globalThis.setTimeout(() => {
                 cleanup();
-                reject(new Error("Generated image load timed out"));
+                reject(new Error("Rendered overlay image load timed out"));
             }, this.imageLoadTimeoutMs);
             this.latestFrame.src = imageDataUrl;
             if (this.latestFrame.complete && this.latestFrame.naturalWidth > 0) {
@@ -634,16 +481,8 @@ export class AntiCameraApp {
         });
     }
 }
-function isAuthenticationError(error) {
-    const message = error instanceof Error ? error.message : String(error);
-    return /secret required|api key|authentication|unauthorized|401/i.test(message);
-}
 function safeError(error) {
     return error instanceof Error ? error.message : String(error);
-}
-function isRateLimitOrContentionError(error) {
-    const message = safeError(error).toLowerCase();
-    return /\b429\b|rate limit|too many requests|quota exceeded|temporarily unavailable|overloaded|server busy|contention|\b5(?:00|02|03|04)\b/.test(message);
 }
 function setInert(element, inert) {
     element.inert = inert;
@@ -666,61 +505,4 @@ function debugCaptureEnabled() {
         return false;
     }
     return new URLSearchParams(window.location.search).get("debugCapture") === "1";
-}
-function recordGroundingGenerationMetric(mode, latencyMs, success) {
-    if (typeof localStorage === "undefined") {
-        return;
-    }
-    try {
-        const metrics = readGroundingMetrics();
-        const stats = metrics[mode];
-        const roundedLatency = Math.max(0, Math.round(latencyMs));
-        stats.attempts += 1;
-        stats.successes += success ? 1 : 0;
-        stats.failures += success ? 0 : 1;
-        stats.totalLatencyMs += roundedLatency;
-        stats.lastLatencyMs = roundedLatency;
-        stats.updatedAt = new Date().toISOString();
-        localStorage.setItem(GROUNDING_METRICS_STORAGE_KEY, JSON.stringify(metrics));
-    }
-    catch {
-        // Metrics are advisory and must never affect capture.
-    }
-}
-function readGroundingMetrics() {
-    const raw = localStorage.getItem(GROUNDING_METRICS_STORAGE_KEY);
-    if (!raw) {
-        return defaultGroundingMetrics();
-    }
-    try {
-        const parsed = JSON.parse(raw);
-        return {
-            grounded: normalizeGroundingStats(parsed.grounded),
-            free: normalizeGroundingStats(parsed.free)
-        };
-    }
-    catch {
-        return defaultGroundingMetrics();
-    }
-}
-function defaultGroundingMetrics() {
-    return {
-        grounded: normalizeGroundingStats(),
-        free: normalizeGroundingStats()
-    };
-}
-function normalizeGroundingStats(stats = {}) {
-    return {
-        attempts: nonNegativeInteger(stats.attempts),
-        successes: nonNegativeInteger(stats.successes),
-        failures: nonNegativeInteger(stats.failures),
-        totalLatencyMs: nonNegativeInteger(stats.totalLatencyMs),
-        lastLatencyMs: typeof stats.lastLatencyMs === "number" && Number.isFinite(stats.lastLatencyMs)
-            ? Math.max(0, Math.round(stats.lastLatencyMs))
-            : null,
-        updatedAt: typeof stats.updatedAt === "string" ? stats.updatedAt : null
-    };
-}
-function nonNegativeInteger(value) {
-    return typeof value === "number" && Number.isFinite(value) ? Math.max(0, Math.round(value)) : 0;
 }

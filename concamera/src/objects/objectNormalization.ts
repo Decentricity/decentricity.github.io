@@ -8,7 +8,7 @@ import type {
   RecognizedObject
 } from "../types.js";
 
-export const MAX_PRESERVED_OBJECTS = 8;
+export const MAX_PRESERVED_OBJECTS = 16;
 export const MAX_PRESERVED_RELATIONSHIPS = 10;
 
 export const SUPPORTED_OBJECT_PREDICATES: readonly ObjectRelationshipPredicate[] = [
@@ -119,6 +119,10 @@ export function normalizeObjectLabel(label: string): string | null {
     return "laptop";
   }
 
+  if (/\b(computer mouse|mouse|pointing device)\b/.test(text)) {
+    return "mouse";
+  }
+
   if (/\b(wheelchair)\b/.test(text)) {
     return "wheelchair";
   }
@@ -165,7 +169,7 @@ export function normalizeObjectCategory(label: string, category?: unknown): Obje
   if (/\b(chair|table|sofa|bed|desk|cabinet|shelf)\b/.test(text)) {
     return "furniture";
   }
-  if (/\b(laptop|phone|camera|television|computer|speaker)\b/.test(text)) {
+  if (/\b(laptop|mouse|keyboard|phone|camera|television|computer|speaker)\b/.test(text)) {
     return "electronics";
   }
   if (/\b(box|bottle|cup|bag|basket|container)\b/.test(text)) {

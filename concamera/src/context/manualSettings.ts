@@ -1,217 +1,168 @@
 import type {
-  ExposureCompensationEv,
-  FilmIso,
-  FlashMode,
-  FocalDistance,
-  FocusStyle,
-  GenerationGroundingMode,
-  ManualCameraSettings,
-  SubjectMode
+  AnalysisMode,
+  ConfidenceThreshold,
+  ConCameraDomain,
+  ConCameraSettings,
+  OverlayDensity,
+  ScanMode,
+  ViewMode
 } from "../types.js";
 
-export const EXPOSURE_VALUES = [-3, -2, -1, 0, 1, 2, 3] as const satisfies readonly ExposureCompensationEv[];
-export const ISO_VALUES = [80, 100, 125, 160, 200, 250, 320, 400, 500, 640, 800, 1000] as const satisfies readonly FilmIso[];
-export const SUBJECT_MODES = ["landscape", "single-person", "group", "crowd"] as const satisfies readonly SubjectMode[];
-export const FOCUS_STYLES = ["deep-focus", "bokeh"] as const satisfies readonly FocusStyle[];
-export const FLASH_MODES = ["off", "on"] as const satisfies readonly FlashMode[];
-export const FOCAL_DISTANCE_VALUES = ["21mm", "28mm", "35mm", "50mm", "80mm", "telephoto", "macro"] as const satisfies readonly FocalDistance[];
-export const GROUNDING_MODES = ["grounded", "free"] as const satisfies readonly GenerationGroundingMode[];
+export const DOMAIN_VALUES = ["general", "urban", "nature", "tech", "vehicle", "food"] as const satisfies readonly ConCameraDomain[];
+export const OVERLAY_DENSITY_VALUES = ["minimal", "normal", "full"] as const satisfies readonly OverlayDensity[];
+export const ANALYSIS_MODE_VALUES = ["taxonomy", "semantic", "affordance", "risk", "attention"] as const satisfies readonly AnalysisMode[];
+export const CONFIDENCE_VALUES = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9] as const satisfies readonly ConfidenceThreshold[];
+export const SCAN_MODE_VALUES = ["focus", "balanced", "survey"] as const satisfies readonly ScanMode[];
+export const VIEW_MODE_VALUES = ["live", "freeze"] as const satisfies readonly ViewMode[];
 
-export const DEFAULT_MANUAL_SETTINGS: ManualCameraSettings = {
-  focusStyle: "deep-focus",
-  exposureCompensationEv: 0,
-  subjectMode: "landscape",
-  flashMode: "off",
-  iso: 200,
-  focalDistance: "21mm",
-  groundingMode: "grounded"
+export const DEFAULT_MANUAL_SETTINGS: ConCameraSettings = {
+  domain: "general",
+  overlayDensity: "normal",
+  analysisMode: "taxonomy",
+  relationsVisible: true,
+  boxesVisible: true,
+  confidenceThreshold: 0.5,
+  scanMode: "balanced",
+  viewMode: "live"
 };
 
-const STORAGE_KEY = "concamera.manualSettings.v1";
+const STORAGE_KEY = "concamera.overlaySettings.v1";
+const LEGACY_STORAGE_KEY = "concamera.manualSettings.v1";
 
 export interface StorageLike {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
 }
 
-export function loadManualSettings(storage: StorageLike = localStorage): ManualCameraSettings {
-  const raw = storage.getItem(STORAGE_KEY);
+export function loadManualSettings(storage: StorageLike = localStorage): ConCameraSettings {
+  const raw = storage.getItem(STORAGE_KEY) ?? storage.getItem(LEGACY_STORAGE_KEY);
   if (!raw) {
     return { ...DEFAULT_MANUAL_SETTINGS };
   }
 
   try {
-    return sanitizeManualSettings(JSON.parse(raw) as Partial<ManualCameraSettings>);
+    return sanitizeManualSettings(JSON.parse(raw) as Partial<ConCameraSettings>);
   } catch {
     return { ...DEFAULT_MANUAL_SETTINGS };
   }
 }
 
-export function saveManualSettings(settings: ManualCameraSettings, storage: StorageLike = localStorage): void {
+export function saveManualSettings(settings: ConCameraSettings, storage: StorageLike = localStorage): void {
   storage.setItem(STORAGE_KEY, JSON.stringify(sanitizeManualSettings(settings)));
 }
 
-export function sanitizeManualSettings(candidate: Partial<ManualCameraSettings> = {}): ManualCameraSettings {
+export function sanitizeManualSettings(candidate: Partial<ConCameraSettings> = {}): ConCameraSettings {
   return {
-    focusStyle: isOneOf(candidate.focusStyle, FOCUS_STYLES) ? candidate.focusStyle : DEFAULT_MANUAL_SETTINGS.focusStyle,
-    exposureCompensationEv: isOneOf(candidate.exposureCompensationEv, EXPOSURE_VALUES)
-      ? candidate.exposureCompensationEv
-      : DEFAULT_MANUAL_SETTINGS.exposureCompensationEv,
-    subjectMode: isOneOf(candidate.subjectMode, SUBJECT_MODES) ? candidate.subjectMode : DEFAULT_MANUAL_SETTINGS.subjectMode,
-    flashMode: isOneOf(candidate.flashMode, FLASH_MODES) ? candidate.flashMode : DEFAULT_MANUAL_SETTINGS.flashMode,
-    iso: isOneOf(candidate.iso, ISO_VALUES) ? candidate.iso : DEFAULT_MANUAL_SETTINGS.iso,
-    focalDistance: isOneOf(candidate.focalDistance, FOCAL_DISTANCE_VALUES)
-      ? candidate.focalDistance
-      : DEFAULT_MANUAL_SETTINGS.focalDistance,
-    groundingMode: isOneOf(candidate.groundingMode, GROUNDING_MODES)
-      ? candidate.groundingMode
-      : DEFAULT_MANUAL_SETTINGS.groundingMode
+    domain: isOneOf(candidate.domain, DOMAIN_VALUES) ? candidate.domain : DEFAULT_MANUAL_SETTINGS.domain,
+    overlayDensity: isOneOf(candidate.overlayDensity, OVERLAY_DENSITY_VALUES) ? candidate.overlayDensity : DEFAULT_MANUAL_SETTINGS.overlayDensity,
+    analysisMode: isOneOf(candidate.analysisMode, ANALYSIS_MODE_VALUES) ? candidate.analysisMode : DEFAULT_MANUAL_SETTINGS.analysisMode,
+    relationsVisible: typeof candidate.relationsVisible === "boolean" ? candidate.relationsVisible : DEFAULT_MANUAL_SETTINGS.relationsVisible,
+    boxesVisible: typeof candidate.boxesVisible === "boolean" ? candidate.boxesVisible : DEFAULT_MANUAL_SETTINGS.boxesVisible,
+    confidenceThreshold: isOneOf(candidate.confidenceThreshold, CONFIDENCE_VALUES) ? candidate.confidenceThreshold : DEFAULT_MANUAL_SETTINGS.confidenceThreshold,
+    scanMode: isOneOf(candidate.scanMode, SCAN_MODE_VALUES) ? candidate.scanMode : DEFAULT_MANUAL_SETTINGS.scanMode,
+    viewMode: isOneOf(candidate.viewMode, VIEW_MODE_VALUES) ? candidate.viewMode : DEFAULT_MANUAL_SETTINGS.viewMode
   };
 }
 
-export function freezeManualSettings(settings: ManualCameraSettings): ManualCameraSettings {
+export function freezeManualSettings(settings: ConCameraSettings): ConCameraSettings {
   return { ...sanitizeManualSettings(settings) };
 }
 
-export function snapExposure(value: number): ExposureCompensationEv {
-  return nearestDetent(value, EXPOSURE_VALUES);
+export function nextDomain(current: ConCameraDomain, delta: -1 | 1): ConCameraDomain {
+  return nextCircularDetent(current, DOMAIN_VALUES, delta);
 }
 
-export function snapIso(value: number): FilmIso {
-  return nearestDetent(value, ISO_VALUES);
+export function nextOverlayDensity(current: OverlayDensity, delta: -1 | 1): OverlayDensity {
+  return nextDetent(current, OVERLAY_DENSITY_VALUES, delta);
 }
 
-export function nextExposure(current: ExposureCompensationEv, delta: -1 | 1): ExposureCompensationEv {
-  return nextDetent(current, EXPOSURE_VALUES, delta);
+export function nextAnalysisMode(current: AnalysisMode, delta: -1 | 1): AnalysisMode {
+  return nextCircularDetent(current, ANALYSIS_MODE_VALUES, delta);
 }
 
-export function nextIso(current: FilmIso, delta: -1 | 1): FilmIso {
-  return nextDetent(current, ISO_VALUES, delta);
+export function nextConfidenceThreshold(current: ConfidenceThreshold, delta: -1 | 1): ConfidenceThreshold {
+  return nextDetent(current, CONFIDENCE_VALUES, delta);
 }
 
-export function nextFocalDistance(current: FocalDistance, delta: -1 | 1): FocalDistance {
-  return nextDetent(current, FOCAL_DISTANCE_VALUES, delta);
+export function nextScanMode(current: ScanMode, delta: -1 | 1): ScanMode {
+  return nextDetent(current, SCAN_MODE_VALUES, delta);
 }
 
-export function nextGroundingMode(current: GenerationGroundingMode, delta: -1 | 1): GenerationGroundingMode {
-  return nextDetent(current, GROUNDING_MODES, delta);
+export function nextViewMode(current: ViewMode, delta: -1 | 1): ViewMode {
+  return nextDetent(current, VIEW_MODE_VALUES, delta);
 }
 
-export function subjectModeLabel(mode: SubjectMode): string {
-  switch (mode) {
-    case "single-person":
-      return "1 PERSON";
-    case "group":
-      return "GROUP";
-    case "crowd":
-      return "CROWD";
-    case "landscape":
-    default:
-      return "LANDSCAPE";
-  }
+export function snapConfidenceThreshold(value: number): ConfidenceThreshold {
+  return nearestDetent(value, CONFIDENCE_VALUES);
 }
 
-export function subjectModeShort(mode: SubjectMode): string {
-  switch (mode) {
-    case "single-person":
-      return "P1";
-    case "group":
-      return "P3";
-    case "crowd":
-      return "CRWD";
-    case "landscape":
-    default:
-      return "LAND";
-  }
+export function domainLabel(value: ConCameraDomain): string {
+  return value.toUpperCase();
 }
 
-export function focusStyleLabel(style: FocusStyle): string {
-  return style === "bokeh" ? "BOKEH" : "DEEP";
-}
-
-export function focusStyleShort(style: FocusStyle): string {
-  return style === "bokeh" ? "BKH" : "DF";
-}
-
-export function evLabel(value: ExposureCompensationEv): string {
-  return `${value > 0 ? "+" : ""}${value}EV`;
-}
-
-export function flashLabel(value: FlashMode): string {
-  return value === "on" ? "ON" : "OFF";
-}
-
-export function focalDistanceLabel(value: FocalDistance): string {
+export function overlayDensityLabel(value: OverlayDensity): string {
   switch (value) {
-    case "telephoto":
-      return "TELEPHOTO";
-    case "macro":
-      return "MACRO";
+    case "minimal":
+      return "MIN";
+    case "full":
+      return "FULL";
+    case "normal":
     default:
-      return value.toUpperCase();
+      return "NORM";
   }
 }
 
-export function focalDistanceShort(value: FocalDistance): string {
+export function analysisModeLabel(value: AnalysisMode): string {
+  return value.toUpperCase();
+}
+
+export function confidenceLabel(value: ConfidenceThreshold): string {
+  return `${Math.round(value * 100)}`;
+}
+
+export function scanModeLabel(value: ScanMode): string {
+  return value.toUpperCase();
+}
+
+export function viewModeLabel(value: ViewMode): string {
+  return value.toUpperCase();
+}
+
+export function scanModeObjectLimit(value: ScanMode): number {
   switch (value) {
-    case "telephoto":
-      return "TEL";
-    case "macro":
-      return "MAC";
+    case "focus":
+      return 4;
+    case "survey":
+      return 16;
+    case "balanced":
     default:
-      return `F${value.replace("mm", "")}`;
+      return 8;
   }
 }
 
-export function groundingModeLabel(value: GenerationGroundingMode): string {
-  return value === "free" ? "FREE" : "GROUNDED";
-}
-
-export function groundingModeShort(value: GenerationGroundingMode): string {
-  return value === "free" ? "FREE" : "GRND";
-}
-
-export function focalDistanceEquivalentMm(value: FocalDistance): number {
+export function densityObjectLimit(value: OverlayDensity): number {
   switch (value) {
-    case "28mm":
-      return 28;
-    case "35mm":
-      return 35;
-    case "50mm":
-      return 50;
-    case "80mm":
-      return 80;
-    case "telephoto":
-      return 135;
-    case "macro":
-      return 60;
-    case "21mm":
+    case "minimal":
+      return 5;
+    case "full":
+      return 16;
+    case "normal":
     default:
-      return 21;
+      return 8;
   }
 }
 
-export function focalDistancePromptLabel(value: FocalDistance): string {
-  switch (value) {
-    case "telephoto":
-      return "telephoto equivalent, approximately 135 mm full-frame equivalent";
-    case "macro":
-      return "macro close-focus lens mode, approximately 60 mm full-frame equivalent";
-    default:
-      return `${focalDistanceEquivalentMm(value)} mm full-frame equivalent`;
-  }
-}
-
-export function settingsReadout(settings: ManualCameraSettings): string {
+export function settingsReadout(settings: ConCameraSettings): string {
   const normalized = sanitizeManualSettings(settings);
   return [
-    subjectModeShort(normalized.subjectMode),
-    focusStyleShort(normalized.focusStyle),
-    focalDistanceShort(normalized.focalDistance),
-    groundingModeShort(normalized.groundingMode),
-    evLabel(normalized.exposureCompensationEv),
-    `FL-${flashLabel(normalized.flashMode)}`,
-    `ISO${normalized.iso}`
+    `LENS-${domainLabel(normalized.domain)}`,
+    `OVR-${overlayDensityLabel(normalized.overlayDensity)}`,
+    `MODE-${analysisModeLabel(normalized.analysisMode)}`,
+    `REL-${normalized.relationsVisible ? "ON" : "OFF"}`,
+    `BOX-${normalized.boxesVisible ? "ON" : "OFF"}`,
+    `C${confidenceLabel(normalized.confidenceThreshold)}`,
+    `SCAN-${scanModeLabel(normalized.scanMode)}`,
+    `VIEW-${viewModeLabel(normalized.viewMode)}`
   ].join(" ");
 }
 
@@ -232,6 +183,12 @@ function nearestDetent<T extends number>(value: number, detents: readonly T[]): 
 function nextDetent<T extends string | number>(current: T, detents: readonly T[], delta: -1 | 1): T {
   const index = detents.indexOf(current);
   const nextIndex = Math.max(0, Math.min(detents.length - 1, index + delta));
+  return detents[nextIndex] ?? current;
+}
+
+function nextCircularDetent<T extends string | number>(current: T, detents: readonly T[], delta: -1 | 1): T {
+  const index = Math.max(0, detents.indexOf(current));
+  const nextIndex = (index + delta + detents.length) % detents.length;
   return detents[nextIndex] ?? current;
 }
 

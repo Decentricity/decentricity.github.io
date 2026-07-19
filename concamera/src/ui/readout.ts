@@ -1,6 +1,6 @@
 import type { AntiCameraContext } from "../types.js";
 import { aimLabelForPitch, frameLabelForScreen } from "../context/cameraPose.js";
-import { groundingModeLabel, sanitizeManualSettings, settingsReadout, subjectModeLabel } from "../context/manualSettings.js";
+import { analysisModeLabel, domainLabel, overlayDensityLabel, sanitizeManualSettings, settingsReadout } from "../context/manualSettings.js";
 import { formatDegrees, round } from "../context/utils.js";
 
 export function renderReadout(container: HTMLElement, context: AntiCameraContext): void {
@@ -9,7 +9,6 @@ export function renderReadout(container: HTMLElement, context: AntiCameraContext
   const reverse = context.location.reverseGeocode;
   const address = reverse?.address;
   const feature = reverse?.feature;
-  const sourceImageAttached = context.conCamera?.sourceImageAttached ?? settings.groundingMode === "grounded";
   const objectMetrics = context.conCamera?.objectAnalysisMetrics;
   const rows: Array<[string, string]> = [
     ["Location", context.location.label],
@@ -29,9 +28,15 @@ export function renderReadout(container: HTMLElement, context: AntiCameraContext
     ["Aim", aimLabelForPitch(pose.pitchDeg)],
     ["Frame", frameLabelForScreen(pose.screenOrientationDeg)],
     ["Pose", `${capitalize(pose.confidence)} confidence`],
-    ["Mode", subjectModeLabel(settings.subjectMode)],
-    ["Grounding", groundingModeLabel(settings.groundingMode)],
-    ["Source image attached", sourceImageAttached ? "YES" : "NO"],
+    ["Lens", domainLabel(settings.domain)],
+    ["Overlay", overlayDensityLabel(settings.overlayDensity)],
+    ["Analysis mode", analysisModeLabel(settings.analysisMode)],
+    ["Relations", settings.relationsVisible ? "ON" : "OFF"],
+    ["Boxes", settings.boxesVisible ? "ON" : "OFF"],
+    ["Confidence", `${Math.round(settings.confidenceThreshold * 100)}%`],
+    ["Scan", settings.scanMode.toUpperCase()],
+    ["View", settings.viewMode.toUpperCase()],
+    ["Source transmitted", context.conCamera?.sourceImageTransmitted ? "YES" : "NO"],
     ["Settings", settingsReadout(settings)],
     ...optionalRows([
       ["Object analyzer", context.conCamera?.objectAnalysisProvider?.startsWith("local-cnn") ? "LOCAL CNN" : context.conCamera?.objectAnalysisProvider],

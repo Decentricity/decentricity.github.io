@@ -55,6 +55,7 @@ test("service worker caches the app shell and local CNN model assets without cac
   assert.match(sw, /\.\/assets\/objects\/objectAnalyzer\.js/);
   assert.match(sw, /\.\/assets\/objects\/localCnnObjectAnalyzer\.js/);
   assert.match(sw, /\.\/assets\/objects\/objectNormalization\.js/);
+  assert.match(sw, /\.\/assets\/overlay\/overlayRenderer\.js/);
   assert.match(sw, /\.\/assets\/gallery\/filmExport\.js/);
   assert.match(sw, /key\.startsWith\("con-camera-static-"\)/);
   assert.match(sw, /key\.startsWith\("con-camera-models-"\)/);
@@ -64,5 +65,5 @@ test("service worker caches the app shell and local CNN model assets without cac
   assert.match(sw, /STATIC_PATHS\.has\(url\.pathname\)/);
   assert.match(sw, /fetch\(request,\s*\{\s*cache:\s*"no-cache"\s*\}\)/);
   assert.match(sw, /request\.mode === "navigate"/);
-  assert.doesNotMatch(sw, /api\.openai\.com|nominatim|bigdatacloud|Authorization|sk-/i);
+  assert.doesNotMatch(sw, /api\.openai\.com|\/v1\/images|\/v1\/responses|nominatim|bigdatacloud|Authorization|sk-/i);
 });
