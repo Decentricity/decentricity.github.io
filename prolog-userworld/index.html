@@ -1,0 +1,600 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>prolog userworld: executable memory for long-running ai conversations</title>
+  <meta name="description" content="a layman-friendly writeup on prolog userworld, a prolog-based memory architecture for long-running llm conversations.">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #050507;
+      --ink: #f3f6ff;
+      --muted: #aab5c6;
+      --line: #2c3144;
+      --panel: #10131b;
+      --panel2: #171b25;
+      --pink: #ff40ff;
+      --red: #ff5252;
+      --green: #41f5a6;
+      --gold: #ffd166;
+      --cyan: #71e7ff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.65;
+    }
+
+    a {
+      color: var(--cyan);
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+    }
+
+    header,
+    main,
+    footer {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    header {
+      padding: 36px 0 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    nav {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 34px;
+      font-size: 14px;
+    }
+
+    nav a {
+      color: var(--muted);
+      text-decoration: none;
+    }
+
+    nav a:hover {
+      color: var(--ink);
+    }
+
+    .eyebrow {
+      color: var(--green);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 14px;
+      letter-spacing: 0;
+      margin: 0 0 12px;
+    }
+
+    h1 {
+      margin: 0;
+      max-width: 980px;
+      color: var(--ink);
+      font-size: 56px;
+      line-height: 1.02;
+      letter-spacing: 0;
+    }
+
+    .dek {
+      max-width: 850px;
+      margin: 22px 0 0;
+      color: var(--muted);
+      font-size: 20px;
+      line-height: 1.5;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 28px;
+      color: var(--muted);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 13px;
+    }
+
+    .meta span {
+      border: 1px solid var(--line);
+      padding: 7px 9px;
+      border-radius: 6px;
+      background: #0b0d12;
+    }
+
+    main {
+      padding: 34px 0 70px;
+    }
+
+    .toc {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1px;
+      margin: 0 0 44px;
+      border: 1px solid var(--line);
+      background: var(--line);
+    }
+
+    .toc a {
+      display: block;
+      padding: 14px;
+      color: var(--ink);
+      background: #0c0e14;
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    .toc a:hover {
+      background: #151824;
+      color: var(--green);
+    }
+
+    section {
+      padding: 32px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    h2 {
+      margin: 0 0 18px;
+      color: var(--pink);
+      font-size: 30px;
+      letter-spacing: 0;
+      line-height: 1.15;
+    }
+
+    h3 {
+      margin: 30px 0 10px;
+      color: var(--gold);
+      font-size: 20px;
+      letter-spacing: 0;
+    }
+
+    p,
+    li {
+      color: var(--ink);
+      font-size: 18px;
+    }
+
+    p {
+      max-width: 820px;
+      margin: 0 0 18px;
+    }
+
+    ul,
+    ol {
+      max-width: 840px;
+      padding-left: 24px;
+    }
+
+    li + li {
+      margin-top: 8px;
+    }
+
+    .note {
+      max-width: 900px;
+      border-left: 4px solid var(--pink);
+      background: var(--panel);
+      padding: 16px 18px;
+      margin: 22px 0;
+      color: var(--muted);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      margin: 22px 0;
+    }
+
+    .block {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 18px;
+    }
+
+    .block p {
+      font-size: 16px;
+      color: var(--muted);
+      margin-bottom: 0;
+    }
+
+    .block strong {
+      color: var(--ink);
+    }
+
+    pre {
+      max-width: 100%;
+      overflow-x: auto;
+      margin: 18px 0 24px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #0a0c12;
+      color: #dff7ff;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    p code,
+    li code {
+      color: var(--green);
+      background: #10151c;
+      border: 1px solid #243140;
+      border-radius: 4px;
+      padding: 1px 5px;
+    }
+
+    figure {
+      margin: 28px 0 36px;
+    }
+
+    figure img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #08090f;
+    }
+
+    figcaption {
+      color: var(--muted);
+      margin-top: 9px;
+      font-size: 14px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 22px 0;
+      font-size: 15px;
+    }
+
+    th,
+    td {
+      border: 1px solid var(--line);
+      padding: 12px;
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--gold);
+      background: var(--panel2);
+      text-align: left;
+    }
+
+    td {
+      background: #0c0f16;
+      color: var(--ink);
+    }
+
+    footer {
+      padding: 30px 0 50px;
+      color: var(--muted);
+      border-top: 1px solid var(--line);
+    }
+
+    @media (max-width: 820px) {
+      h1 {
+        font-size: 38px;
+      }
+
+      .dek {
+        font-size: 18px;
+      }
+
+      .toc,
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      p,
+      li {
+        font-size: 17px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <nav aria-label="site links">
+      <a href="/">decentricity</a>
+      <a href="https://github.com/Decentricity/prolog-userworld">github repo</a>
+      <a href="#screenshots">screenshots</a>
+      <a href="#thesis">thesis seed</a>
+    </nav>
+    <p class="eyebrow">notes from the edge of old ai and new ai</p>
+    <h1>prolog userworld: giving an ai conversation a real memory</h1>
+    <p class="dek">i built a small proof of concept around an old idea that suddenly feels new again: instead of letting a language model remember by vibes, put its memory inside a rule system that can explain itself.</p>
+    <div class="meta">
+      <span>published july 2026</span>
+      <span>python + swi-prolog</span>
+      <span>debian proot on android</span>
+      <span>apache-2.0</span>
+    </div>
+  </header>
+
+  <main>
+    <div class="toc">
+      <a href="#why">why this exists</a>
+      <a href="#prolog">what prolog is</a>
+      <a href="#architecture">how userworld works</a>
+      <a href="#screenshots">use cases</a>
+      <a href="#memory-harnesses">memory harnesses</a>
+      <a href="#benchmark">benchmark</a>
+      <a href="#thesis">thesis seed</a>
+      <a href="#sources">sources</a>
+    </div>
+
+    <section id="why">
+      <h2>why this exists</h2>
+      <p>my first serious ai work was not a neural network. it was prolog-era, rule-based expert-system work. in 2008 i published an itb thesis on a computer program for expert-system-based environmental impact analysis for cement industry projects. the archive still has the old title, the pdf chapters, and the keywords: amdal, program komputer, sistem pakar.</p>
+      <p>that era of ai was unfashionable. we wrote rules, asked structured questions, and tried to make machines reason through a domain the way a human expert would. then the industry ran through big data, cloud, blockchain, crypto, and finally language models. now we have the opposite problem: a model can speak beautifully, but it forgets why it said something, mixes old topics into new ones, and often cannot tell you why one memory entered the prompt while another stayed out.</p>
+      <p>prolog userworld is my attempt to bring a little of that old expert-system discipline into long-running llm conversations. the name is literal: a userworld is the world the system has built around one user, one set of projects, one running life of facts, goals, procedures, and half-finished threads.</p>
+      <p class="note">the point is not nostalgia. the point is control. memory should not be a pile of chat logs plus vector search. memory should have rules, provenance, contradiction handling, scope, and the ability to explain itself.</p>
+    </section>
+
+    <section id="prolog">
+      <h2>what prolog is, in normal human language</h2>
+      <p>prolog is a programming language from the old ai world. most languages tell the computer exactly what to do step by step. prolog lets you describe facts and rules, then ask questions.</p>
+      <p>instead of writing "loop through this list and check every item", you write something closer to "a memory is relevant if it belongs to the current topic, or if it is global and matches the entity we are talking about, and it has not been revoked or superseded." then prolog searches for the answers.</p>
+
+      <pre><code>% tiny prolog example
+person(danny).
+project(danny, glasses).
+project(danny, prolog_userworld).
+
+same_person(X, Y) :-
+    person(X),
+    person(Y),
+    X = Y.
+
+% query:
+% ?- project(danny, What).
+% What = glasses ;
+% What = prolog_userworld.</code></pre>
+
+      <p>that makes prolog useful for things like expert systems, planning, legal-ish rules, medical triage, symbolic reasoning, and now, maybe, memory governance for ai agents. it is not magic. it is brittle if your facts are bad. but it is wonderfully explicit.</p>
+    </section>
+
+    <section id="architecture">
+      <h2>the architecture</h2>
+      <p>the prototype is small: python receives the user turn, extracts candidate memories, then asks swi-prolog to make the actual decisions. prolog is the control plane. python is the plumbing.</p>
+
+      <figure>
+        <img src="assets/architecture-map.png" alt="diagram showing user turn, extraction, prolog rules, append-only log, context selector, and prompt">
+        <figcaption>the important shift: memory is not just retrieved. it is ruled on.</figcaption>
+      </figure>
+
+      <p>the system stores:</p>
+      <ul>
+        <li><strong>episodic memory</strong>: what happened in the conversation.</li>
+        <li><strong>semantic memory</strong>: facts about people, projects, preferences, and relationships.</li>
+        <li><strong>procedural memory</strong>: reusable workflows, triggers, steps, and completion conditions.</li>
+        <li><strong>working memory</strong>: the active topic, goal, entities, and constraints.</li>
+        <li><strong>temporal state</strong>: when a fact became valid, expired, or got superseded.</li>
+        <li><strong>provenance</strong>: where a memory came from.</li>
+        <li><strong>epistemic status</strong>: explicit user statement, observation, inference, hypothesis, or suggestion.</li>
+      </ul>
+
+      <p>the memory file is an append-only event log. old facts are not deleted when they become wrong. they are superseded. that sounds boring until you need to answer, "what did i believe at the time?"</p>
+
+      <pre><code>python -m userworld chat
+python -m userworld demo
+python -m userworld eval
+python -m userworld inspect
+python -m userworld explain --text "back to danny's glasses" --entity danny --entity glasses
+python -m userworld reset</code></pre>
+
+      <p>the prolog side has fixed predicates for the dangerous decisions. untrusted model output never becomes an arbitrary prolog goal. it becomes validated data.</p>
+
+      <pre><code>% simplified from the prototype
+memory_active(Id) :-
+    memory(Id, _, _, _, _, _, _, _, _, _, _, ValidUntil, SupersededBy, Revoked, _, _, _),
+    Revoked \== true,
+    noneish(SupersededBy),
+    noneish(ValidUntil).
+
+memory_visible_for_topic(Id, CurrentTopic, QueryEntities, QueryText, include, Reason) :-
+    memory(Id, _, Subject, Predicate, Object, Topic, Scope, _, _, _, _, _, _, _, _, _, Text),
+    memory_active(Id),
+    Scope == topic,
+    Topic == CurrentTopic,
+    ( token_overlap(QueryText, Text)
+    ; token_overlap(QueryText, Subject)
+    ; token_overlap(QueryText, Predicate)
+    ; token_overlap(QueryText, Object)
+    ),
+    Reason = 'topic-local memory belongs to the current topic'.</code></pre>
+    </section>
+
+    <section id="screenshots">
+      <h2>six use cases</h2>
+      <p>the demo uses a deliberately weird conversation because weird conversations expose memory bugs quickly. it starts with infrared anti-photography glasses, switches into llm memory architecture, learns a research workflow, then returns to the glasses and changes a technical fact.</p>
+
+      <h3>1. learn topic-scoped facts</h3>
+      <p>danny is building infrared anti-photography glasses. the system records the project and the technical details as topic-local facts, not universal truth.</p>
+      <figure>
+        <img src="assets/usecase-01-learn-facts.png" alt="terminal screenshot showing prolog userworld learning topic-scoped glasses facts">
+        <figcaption>facts about the glasses are selected while the glasses topic is active.</figcaption>
+      </figure>
+
+      <h3>2. switch topics without losing identity</h3>
+      <p>when the conversation moves to prolog memory architecture, danny remains the same person, but the infrared details do not pollute the new prompt.</p>
+      <figure>
+        <img src="assets/usecase-02-topic-switch.png" alt="terminal screenshot showing topic switch and excluded infrared facts">
+        <figcaption>the global identity memory stays in; the old topic's infrared facts are explicitly excluded.</figcaption>
+      </figure>
+
+      <h3>3. learn a reusable workflow</h3>
+      <p>the user can teach a procedure: collect primary sources, build a comparison matrix, run evaluation, document limitations. later, a research request triggers that workflow.</p>
+      <figure>
+        <img src="assets/usecase-03-procedure-recall.png" alt="terminal screenshot showing procedural memory recall">
+        <figcaption>procedural memory is not just a note; it has triggers and steps.</figcaption>
+      </figure>
+
+      <h3>4. resume an old topic and supersede a fact</h3>
+      <p>"back to danny's glasses" resumes the glasses topic. the old 940nm led fact is not erased, but the new 850nm fact supersedes it.</p>
+      <figure>
+        <img src="assets/usecase-04-resume-supersede.png" alt="terminal screenshot showing topic resume and supersession from 940nm to 850nm">
+        <figcaption>historical provenance survives; active context uses the newer fact.</figcaption>
+      </figure>
+
+      <h3>5. inspect and explain</h3>
+      <p>the system can report its current counts, active topic, selected memories, and excluded memories with reasons. this is the part i care about most: explainability should be a core feature, not a debug afterthought.</p>
+      <figure>
+        <img src="assets/usecase-05-explain-inspect.png" alt="terminal screenshot showing inspect and explain output">
+        <figcaption>every selected and excluded memory carries a reason.</figcaption>
+      </figure>
+
+      <h3>6. compare against simple memory baselines</h3>
+      <p>the benchmark compares full history, last-n turns, lexical retrieval, and prolog userworld. this is a synthetic benchmark, so i treat it as a smoke test, not a victory lap.</p>
+      <figure>
+        <img src="assets/usecase-06-benchmark.png" alt="terminal screenshot showing benchmark metrics for full history, last-n, lexical, and prolog userworld">
+        <figcaption>the point is not that a tiny benchmark proves superiority. the point is that the architecture can be evaluated deterministically.</figcaption>
+      </figure>
+    </section>
+
+    <section id="memory-harnesses">
+      <h2>how it compares with other memory harnesses</h2>
+      <p>there is already a wave of memory systems for agents. i do not think prolog userworld replaces them all. i think it sits in a different corner: explicit rules over mutable personal reality.</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>approach</th>
+            <th>what it is good at</th>
+            <th>where prolog userworld is different</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>full chat history</td>
+            <td>simple, complete, no retrieval logic.</td>
+            <td>bloats the prompt and drags irrelevant old topics into new work.</td>
+          </tr>
+          <tr>
+            <td>sliding window</td>
+            <td>cheap and predictable.</td>
+            <td>forgets old but important facts, especially after interruptions.</td>
+          </tr>
+          <tr>
+            <td>vector search / bm25</td>
+            <td>good at semantic similarity and fast retrieval.</td>
+            <td>similarity is not the same as relevance, validity, scope, or authority.</td>
+          </tr>
+          <tr>
+            <td>langgraph memory</td>
+            <td>short-term state via checkpoints and long-term stores across sessions.</td>
+            <td>userworld focuses on a declarative rule layer that decides context inclusion and exclusion.</td>
+          </tr>
+          <tr>
+            <td>memgpt / letta</td>
+            <td>stateful agents that manage growing context and persistent memory.</td>
+            <td>userworld is smaller and more rigid: prolog predicates decide mutation, routing, and selection.</td>
+          </tr>
+          <tr>
+            <td>mem0</td>
+            <td>developer-friendly persistent memory layer for apps and agents.</td>
+            <td>userworld is less productized, but more explicit about proof traces and contradiction rules.</td>
+          </tr>
+          <tr>
+            <td>zep / graphiti</td>
+            <td>temporal knowledge graphs with evolving entities and relationships.</td>
+            <td>userworld borrows the temporal instinct, but expresses control rules in prolog instead of graph retrieval alone.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>the closest philosophical cousin is probably a temporal knowledge graph plus a rule engine. the difference is that in prolog userworld, the rule engine is not glued on afterward. it is the main memory surface.</p>
+    </section>
+
+    <section id="benchmark">
+      <h2>the benchmark, and why i do not overclaim it</h2>
+      <p>the current benchmark has 30 synthetic scenarios covering abrupt topic switches, nested digressions, resuming old topics, shared entities, ambiguous references, contradictions, superseded facts, temporary instructions, procedural recall, multi-step goals, revoked information, topic-local facts, and globally available facts.</p>
+
+      <pre><code>{
+  "scenario_count": 30,
+  "prolog_userworld": {
+    "precision": 1.000,
+    "recall": 1.000,
+    "leakage": 0.000
+  },
+  "topic_routing_accuracy": 1.000,
+  "topic_resumption_accuracy": 1.000,
+  "procedural_retrieval_accuracy": 1.000
+}</code></pre>
+
+      <p>that looks clean because the scenarios were written to test the rule semantics directly. it proves the machine is doing what the rules say. it does not prove that the rules are perfect, or that this beats embeddings in the wild. the next step is a larger held-out benchmark with messy conversations written by someone other than me.</p>
+    </section>
+
+    <section id="thesis">
+      <h2>why this may become a thesis</h2>
+      <p>the thesis question is simple: can a symbolic memory layer make long-running ai conversations more trustworthy?</p>
+      <p>to answer that properly, i would need to compare not just retrieval scores, but behavior: does the system avoid leaking stale topic details? does it preserve provenance? does it explain itself well enough for a human to audit? can it manage durable procedures without turning guesses into facts?</p>
+      <p>this prototype is a first brick. it runs on a phone, inside debian proot, with python and swi-prolog. that matters to me because powerful systems should not require a cloud stack just to think clearly.</p>
+
+      <div class="grid">
+        <div class="block">
+          <strong>next experiment</strong>
+          <p>replace the deterministic extractor with model-assisted extraction while keeping explicit status: user statement, observation, inference, hypothesis, suggestion.</p>
+        </div>
+        <div class="block">
+          <strong>next benchmark</strong>
+          <p>build a messy, human-authored set of conversations with topic switches, reversals, privacy traps, and long interruptions.</p>
+        </div>
+        <div class="block">
+          <strong>next architecture</strong>
+          <p>try a resident prolog process so selection latency is no longer dominated by subprocess startup.</p>
+        </div>
+        <div class="block">
+          <strong>next paper</strong>
+          <p>frame prolog userworld as executable declarative memory, not just retrieval, not just summarization, not just a tool call.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="try">
+      <h2>try it</h2>
+      <p>the code is public. it installs with a normal python virtual environment and swi-prolog. no api key is needed for the offline demo or benchmark.</p>
+
+      <pre><code>git clone https://github.com/Decentricity/prolog-userworld.git
+cd prolog-userworld
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install -e ".[dev]"
+python -m userworld demo
+python -m userworld eval</code></pre>
+    </section>
+
+    <section id="sources">
+      <h2>sources and adjacent work</h2>
+      <p>personal background: <a href="https://decentricity.github.io/">decentricity homepage</a> and <a href="https://digilib.itb.ac.id/gdl/view/8902/">itb digital library record for the 2008 expert-system work</a>.</p>
+      <p>prolog reference: <a href="https://www.swi-prolog.org/pldoc/refman/">swi-prolog manual</a>.</p>
+      <p>memory systems and related work: <a href="https://docs.letta.com/guides/core-concepts/stateful-agents/">letta stateful agents</a>, <a href="https://docs.langchain.com/oss/python/concepts/memory">langgraph memory concepts</a>, <a href="https://docs.mem0.ai/introduction">mem0</a>, <a href="https://github.com/getzep/graphiti">graphiti</a>, <a href="https://arxiv.org/abs/2310.08560">memgpt</a>, <a href="https://arxiv.org/abs/2306.03901">chatdb</a>, <a href="https://arxiv.org/abs/2606.14935">prologmcp</a>, <a href="https://aclanthology.org/2023.findings-emnlp.248/">logic-lm</a>, and <a href="https://aclanthology.org/2023.emnlp-main.313/">linc</a>.</p>
+    </section>
+  </main>
+
+  <footer>
+    <p>built for people who still believe the future should be understandable.</p>
+  </footer>
+</body>
+</html>
