@@ -323,7 +323,7 @@
     </nav>
     <p class="eyebrow">notes from the edge of old ai and new ai</p>
     <h1>prolog userworld: giving an ai conversation a real memory</h1>
-    <p class="dek">i built a small proof of concept around an old idea that suddenly feels new again: instead of letting a language model remember by vibes, put its memory inside a rule system that can explain itself.</p>
+    <p class="dek">i built a small proof of concept around a very old ai habit: write the facts down, write the rules down, and make the machine show its work before it answers.</p>
     <div class="meta">
       <span>published july 2026</span>
       <span>python + swi-prolog</span>
@@ -346,16 +346,16 @@
 
     <section id="why">
       <h2>why this exists</h2>
-      <p>my first serious ai work was not a neural network. it was prolog-era, rule-based expert-system work. in 2008 i published an itb thesis on a computer program for expert-system-based environmental impact analysis for cement industry projects. the archive still has the old title, the pdf chapters, and the keywords: amdal, program komputer, sistem pakar.</p>
-      <p>that era of ai was unfashionable. we wrote rules, asked structured questions, and tried to make machines reason through a domain the way a human expert would. then the industry ran through big data, cloud, blockchain, crypto, and finally language models. now we have the opposite problem: a model can speak beautifully, but it forgets why it said something, mixes old topics into new ones, and often cannot tell you why one memory entered the prompt while another stayed out.</p>
-      <p>prolog userworld is my attempt to bring a little of that old expert-system discipline into long-running llm conversations. the name is literal: a userworld is the world the system has built around one user, one set of projects, one running life of facts, goals, procedures, and half-finished threads.</p>
-      <p class="note">the point is not nostalgia. the point is control. memory should not be a pile of chat logs plus vector search. memory should have rules, provenance, contradiction handling, scope, and the ability to explain itself.</p>
+      <p>my first serious ai work was prolog-era, rule-based expert-system work. in 2008 i published an itb thesis on a computer program for expert-system-based environmental impact analysis for cement industry projects. the archive still has the old title, the pdf chapters, and the keywords: amdal, program komputer, sistem pakar.</p>
+      <p>that ai scene was small. we wrote rules, asked structured questions, and made the program walk through a domain the way a human expert might. after that came big data, cloud, blockchain, crypto, and the current language-model wave. the current wave has a different failure mode: the model can produce fluent paragraphs while losing track of where a fact came from, which topic it belongs to, and whether a newer statement has replaced it.</p>
+      <p>prolog userworld is my attempt to reuse that expert-system discipline for long-running llm conversations. the name is literal. a userworld is the world the system has built around one user: projects, people, preferences, procedures, active topics, stale facts, and unfinished threads.</p>
+      <p class="note">i do not want memory to mean "dump the chat log into the prompt" or "search for similar text and hope." i want rules, provenance, contradiction handling, scope, and an explanation for each piece of context.</p>
     </section>
 
     <section id="prolog">
       <h2>what prolog is, in normal human language</h2>
       <p>prolog is a programming language from the old ai world. most languages tell the computer exactly what to do step by step. prolog lets you describe facts and rules, then ask questions.</p>
-      <p>instead of writing "loop through this list and check every item", you write something closer to "a memory is relevant if it belongs to the current topic, or if it is global and matches the entity we are talking about, and it has not been revoked or superseded." then prolog searches for the answers.</p>
+      <p>instead of writing "loop through this list and check every item", you can write a rule like this: "a memory is relevant if it belongs to the current topic, or if it is global and matches the person we are discussing, and it has not been revoked or superseded." then prolog searches for the answers.</p>
 
       <pre><code>% tiny prolog example
 person(danny).
@@ -372,16 +372,16 @@ same_person(X, Y) :-
 % What = glasses ;
 % What = prolog_userworld.</code></pre>
 
-      <p>that makes prolog useful for things like expert systems, planning, legal-ish rules, medical triage, symbolic reasoning, and now, maybe, memory governance for ai agents. it is not magic. it is brittle if your facts are bad. but it is wonderfully explicit.</p>
+      <p>that is why prolog showed up in expert systems, planning, legal-ish rules, medical triage, and symbolic reasoning. bad facts still produce bad answers. the advantage is that the mistake is often visible in the facts or the rule that fired.</p>
     </section>
 
     <section id="architecture">
       <h2>the architecture</h2>
-      <p>the prototype is small: python receives the user turn, extracts candidate memories, then asks swi-prolog to make the actual decisions. prolog is the control plane. python is the plumbing.</p>
+      <p>the prototype is small. python receives the user turn, extracts candidate memories, then asks swi-prolog to make the actual decisions. prolog is the control plane. python is the plumbing.</p>
 
       <figure>
         <img src="assets/architecture-map.png" alt="diagram showing user turn, extraction, prolog rules, append-only log, context selector, and prompt">
-        <figcaption>the important shift: memory is not just retrieved. it is ruled on.</figcaption>
+        <figcaption>memory is retrieved only after the rule system decides what is still valid and in scope.</figcaption>
       </figure>
 
       <p>the system stores:</p>
@@ -395,7 +395,7 @@ same_person(X, Y) :-
         <li><strong>epistemic status</strong>: explicit user statement, observation, inference, hypothesis, or suggestion.</li>
       </ul>
 
-      <p>the memory file is an append-only event log. old facts are not deleted when they become wrong. they are superseded. that sounds boring until you need to answer, "what did i believe at the time?"</p>
+      <p>the memory file is an append-only event log. old facts are not deleted when they become wrong. they are superseded. that lets the system answer a question normal chat memory usually cannot answer: "what did i believe at the time?"</p>
 
       <pre><code>python -m userworld chat
 python -m userworld demo
@@ -428,7 +428,7 @@ memory_visible_for_topic(Id, CurrentTopic, QueryEntities, QueryText, include, Re
 
     <section id="screenshots">
       <h2>six use cases</h2>
-      <p>the demo uses a deliberately weird conversation because weird conversations expose memory bugs quickly. it starts with infrared anti-photography glasses, switches into llm memory architecture, learns a research workflow, then returns to the glasses and changes a technical fact.</p>
+      <p>the demo uses a weird conversation because weird conversations expose memory bugs quickly. it starts with infrared anti-photography glasses, switches into llm memory architecture, learns a research workflow, then returns to the glasses and changes a technical fact.</p>
 
       <h3>1. learn topic-scoped facts</h3>
       <p>danny is building infrared anti-photography glasses. the system records the project and the technical details as topic-local facts, not universal truth.</p>
@@ -441,14 +441,14 @@ memory_visible_for_topic(Id, CurrentTopic, QueryEntities, QueryText, include, Re
       <p>when the conversation moves to prolog memory architecture, danny remains the same person, but the infrared details do not pollute the new prompt.</p>
       <figure>
         <img src="assets/usecase-02-topic-switch.png" alt="terminal screenshot showing topic switch and excluded infrared facts">
-        <figcaption>the global identity memory stays in; the old topic's infrared facts are explicitly excluded.</figcaption>
+        <figcaption>the global identity memory stays in. the old topic's infrared facts are explicitly excluded.</figcaption>
       </figure>
 
       <h3>3. learn a reusable workflow</h3>
       <p>the user can teach a procedure: collect primary sources, build a comparison matrix, run evaluation, document limitations. later, a research request triggers that workflow.</p>
       <figure>
         <img src="assets/usecase-03-procedure-recall.png" alt="terminal screenshot showing procedural memory recall">
-        <figcaption>procedural memory is not just a note; it has triggers and steps.</figcaption>
+        <figcaption>procedural memory has triggers and steps, so it can be recalled when a similar job appears later.</figcaption>
       </figure>
 
       <h3>4. resume an old topic and supersede a fact</h3>
@@ -459,23 +459,23 @@ memory_visible_for_topic(Id, CurrentTopic, QueryEntities, QueryText, include, Re
       </figure>
 
       <h3>5. inspect and explain</h3>
-      <p>the system can report its current counts, active topic, selected memories, and excluded memories with reasons. this is the part i care about most: explainability should be a core feature, not a debug afterthought.</p>
+      <p>the system can report its current counts, active topic, selected memories, and excluded memories with reasons. this is the part i care about most: the explanation belongs in normal use, not hidden in a log file.</p>
       <figure>
         <img src="assets/usecase-05-explain-inspect.png" alt="terminal screenshot showing inspect and explain output">
         <figcaption>every selected and excluded memory carries a reason.</figcaption>
       </figure>
 
       <h3>6. compare against simple memory baselines</h3>
-      <p>the benchmark compares full history, last-n turns, lexical retrieval, and prolog userworld. this is a synthetic benchmark, so i treat it as a smoke test, not a victory lap.</p>
+      <p>the benchmark compares full history, last-n turns, lexical retrieval, and prolog userworld. this is a synthetic benchmark, so i treat it as a smoke test for the rule set.</p>
       <figure>
         <img src="assets/usecase-06-benchmark.png" alt="terminal screenshot showing benchmark metrics for full history, last-n, lexical, and prolog userworld">
-        <figcaption>the point is not that a tiny benchmark proves superiority. the point is that the architecture can be evaluated deterministically.</figcaption>
+        <figcaption>a tiny benchmark cannot prove superiority. it can prove whether this implementation obeys its own rules.</figcaption>
       </figure>
     </section>
 
     <section id="memory-harnesses">
       <h2>how it compares with other memory harnesses</h2>
-      <p>there is already a wave of memory systems for agents. i do not think prolog userworld replaces them all. i think it sits in a different corner: explicit rules over mutable personal reality.</p>
+      <p>there is already a wave of memory systems for agents. prolog userworld is not trying to replace all of them. it handles a narrower problem: explicit rules over a personal memory file that changes over time.</p>
 
       <table>
         <thead>
@@ -499,36 +499,36 @@ memory_visible_for_topic(Id, CurrentTopic, QueryEntities, QueryText, include, Re
           <tr>
             <td>vector search / bm25</td>
             <td>good at semantic similarity and fast retrieval.</td>
-            <td>similarity is not the same as relevance, validity, scope, or authority.</td>
+            <td>similar text can still be out of date, out of scope, or based on the wrong authority.</td>
           </tr>
           <tr>
             <td>langgraph memory</td>
             <td>short-term state via checkpoints and long-term stores across sessions.</td>
-            <td>userworld focuses on a declarative rule layer that decides context inclusion and exclusion.</td>
+            <td>userworld puts declarative rules in charge of context inclusion and exclusion.</td>
           </tr>
           <tr>
             <td>memgpt / letta</td>
             <td>stateful agents that manage growing context and persistent memory.</td>
-            <td>userworld is smaller and more rigid: prolog predicates decide mutation, routing, and selection.</td>
+            <td>userworld is smaller and stricter: prolog predicates decide mutation, routing, and selection.</td>
           </tr>
           <tr>
             <td>mem0</td>
             <td>developer-friendly persistent memory layer for apps and agents.</td>
-            <td>userworld is less productized, but more explicit about proof traces and contradiction rules.</td>
+            <td>userworld is less productized. its bet is proof traces and contradiction rules.</td>
           </tr>
           <tr>
             <td>zep / graphiti</td>
             <td>temporal knowledge graphs with evolving entities and relationships.</td>
-            <td>userworld borrows the temporal instinct, but expresses control rules in prolog instead of graph retrieval alone.</td>
+            <td>userworld keeps the time-aware instinct, then writes the control rules in prolog.</td>
           </tr>
         </tbody>
       </table>
 
-      <p>the closest philosophical cousin is probably a temporal knowledge graph plus a rule engine. the difference is that in prolog userworld, the rule engine is not glued on afterward. it is the main memory surface.</p>
+      <p>the closest cousin is probably a temporal knowledge graph plus a rule engine. in prolog userworld, the rule engine is the main memory surface.</p>
     </section>
 
     <section id="benchmark">
-      <h2>the benchmark, and why i do not overclaim it</h2>
+      <h2>the benchmark, with the caveats up front</h2>
       <p>the current benchmark has 30 synthetic scenarios covering abrupt topic switches, nested digressions, resuming old topics, shared entities, ambiguous references, contradictions, superseded facts, temporary instructions, procedural recall, multi-step goals, revoked information, topic-local facts, and globally available facts.</p>
 
       <pre><code>{
@@ -543,19 +543,19 @@ memory_visible_for_topic(Id, CurrentTopic, QueryEntities, QueryText, include, Re
   "procedural_retrieval_accuracy": 1.000
 }</code></pre>
 
-      <p>that looks clean because the scenarios were written to test the rule semantics directly. it proves the machine is doing what the rules say. it does not prove that the rules are perfect, or that this beats embeddings in the wild. the next step is a larger held-out benchmark with messy conversations written by someone other than me.</p>
+      <p>the numbers are clean because the scenarios test the rule semantics directly. they show that the program follows the rules that were written for it. they do not show that the rules are complete, or that this will beat embeddings on a messy external dataset. the next step is a held-out benchmark with conversations written by someone else.</p>
     </section>
 
     <section id="thesis">
       <h2>why this may become a thesis</h2>
-      <p>the thesis question is simple: can a symbolic memory layer make long-running ai conversations more trustworthy?</p>
-      <p>to answer that properly, i would need to compare not just retrieval scores, but behavior: does the system avoid leaking stale topic details? does it preserve provenance? does it explain itself well enough for a human to audit? can it manage durable procedures without turning guesses into facts?</p>
-      <p>this prototype is a first brick. it runs on a phone, inside debian proot, with python and swi-prolog. that matters to me because powerful systems should not require a cloud stack just to think clearly.</p>
+      <p>the thesis question is plain: can a symbolic memory layer make long-running ai conversations easier to audit?</p>
+      <p>to answer that properly, i would compare behavior, not only retrieval scores. does the system avoid leaking stale topic details? does it preserve provenance? can a human inspect why a memory was selected? can it manage durable procedures without turning guesses into facts?</p>
+      <p>this prototype runs on a phone, inside debian proot, with python and swi-prolog. i like that constraint. it keeps the architecture small enough to read.</p>
 
       <div class="grid">
         <div class="block">
           <strong>next experiment</strong>
-          <p>replace the deterministic extractor with model-assisted extraction while keeping explicit status: user statement, observation, inference, hypothesis, suggestion.</p>
+          <p>replace the deterministic extractor with model-assisted extraction, while still labeling each memory as user statement, observation, inference, hypothesis, or suggestion.</p>
         </div>
         <div class="block">
           <strong>next benchmark</strong>
@@ -567,14 +567,14 @@ memory_visible_for_topic(Id, CurrentTopic, QueryEntities, QueryText, include, Re
         </div>
         <div class="block">
           <strong>next paper</strong>
-          <p>frame prolog userworld as executable declarative memory, not just retrieval, not just summarization, not just a tool call.</p>
+          <p>frame prolog userworld as executable declarative memory: different from retrieval, summarization, or a one-off tool call.</p>
         </div>
       </div>
     </section>
 
     <section id="try">
       <h2>try it</h2>
-      <p>the code is public. it installs with a normal python virtual environment and swi-prolog. no api key is needed for the offline demo or benchmark.</p>
+      <p>the code is public. it installs with a normal python virtual environment and swi-prolog. the offline demo and benchmark do not need an api key.</p>
 
       <pre><code>git clone https://github.com/Decentricity/prolog-userworld.git
 cd prolog-userworld
@@ -594,7 +594,7 @@ python -m userworld eval</code></pre>
   </main>
 
   <footer>
-    <p>built for people who still believe the future should be understandable.</p>
+    <p>built for people who still want systems they can inspect.</p>
   </footer>
 </body>
 </html>
