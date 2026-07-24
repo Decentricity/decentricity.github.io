@@ -1,252 +1,295 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>agent1c.me</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="./styles.css" />
-  </head>
-  <body class="hedgeyOS">
-    <main id="wmDesktop" class="wm-desktop">
-      <section id="heroWindow" class="wm-wallpaper-header">
-        <p class="kicker">agent1c.me local-first</p>
-        <h1>Hitomi Control Desk</h1>
-        <p>BYOK stays encrypted in your browser. No app server. Calls go directly to your API providers.</p>
-      </section>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agent1c | An Operating System Built for Humans and Their Agents</title>
+  <meta name="description" content="Agent1c is a web-based agentic computing environment where Hitomi can work across HedgeyOS windows, files, apps, tools, behavior documents, events, and explicit integrations.">
+  <meta name="theme-color" content="#f6f0e3">
+  <meta property="og:title" content="Agent1c | Agentic Computing Ecosystem">
+  <meta property="og:description" content="A web-based workspace where an AI companion can inhabit windows, files, apps, tools, and explicit integrations instead of staying inside a chat box.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://decentricity.github.io/agent1c/">
+  <meta property="og:image" content="https://decentricity.github.io/agent1c/assets/screenshots/agent1c-og.webp">
+  <link rel="icon" type="image/png" href="assets/icons/hitomi.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
 
-      <section id="chatShell" class="wm-window" data-win-id="chat" data-win-title="Chat" data-x="38" data-y="96" data-w="620" data-h="360">
-        <div class="wm-titlebar" data-drag-handle>
-          <div class="wm-controls">
-            <button class="wm-box" type="button" data-win-action="close" aria-label="Close"></button>
-            <button class="wm-box" type="button" data-win-action="min" aria-label="Minimize"></button>
-          </div>
-          <div class="wm-title">Chat</div>
-          <div class="wm-controls right"><button class="wm-box" type="button" data-win-action="focus" aria-label="Focus"></button></div>
+  <header class="site-header" id="top">
+    <a class="brand" href="#top" aria-label="Agent1c home">
+      <img src="assets/icons/hitomi.png" width="36" height="36" alt="">
+      <span>Agent1c</span>
+    </a>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="siteNav">
+      <span></span>
+      <span></span>
+      <span class="sr-only">Menu</span>
+    </button>
+    <nav class="site-nav" id="siteNav" aria-label="Primary">
+      <a href="#environment">Environment</a>
+      <a href="#ecosystem">Ecosystem</a>
+      <a href="#cloud-local">Cloud or Local</a>
+      <a href="#hitomi">Hitomi</a>
+      <a href="#inspectable">Inspectable</a>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="hero section-grid">
+      <div class="hero-copy">
+        <p class="kicker">Agentic computing, not another chat tab</p>
+        <h1>An operating system built for humans and their agents.</h1>
+        <p class="lede">Agent1c is a web-based workspace where your AI companion can work across windows, files, apps, tools, and devices - not merely answer inside a chat box.</p>
+        <div class="cta-row" aria-label="Primary actions">
+          <a class="button primary" href="https://agent1c.ai">Launch Agent1c</a>
+          <a class="button" href="#hitomi">Meet Hitomi</a>
         </div>
-        <div class="wm-body">
-          <div class="row gap chat-toolbar">
-            <button id="chatClearBtn" type="button">Clear Chat</button>
-            <button id="chatToggleBtn" class="chat-toggle" type="button">Maximize</button>
-          </div>
-          <div id="chatLog" class="chat-log"></div>
-          <form id="chatForm" class="row gap chat-form">
-            <input id="chatInput" placeholder="Unlock vault to chat" disabled />
-            <button id="chatSendBtn" type="submit" disabled>Send</button>
-          </form>
+        <div class="secondary-links" aria-label="Secondary actions">
+          <a href="https://agent1c.me">Explore the local-first version</a>
+          <a href="https://github.com/agent1c-ai/agent1c-ai.github.io">View the source on GitHub</a>
         </div>
-      </section>
-
-      <section id="setupSection" class="wm-window" data-win-id="setup" data-win-title="Create Vault" data-x="690" data-y="96" data-w="420" data-h="250">
-        <div class="wm-titlebar" data-drag-handle>
-          <div class="wm-controls">
-            <button class="wm-box" type="button" data-win-action="close" aria-label="Close"></button>
-            <button class="wm-box" type="button" data-win-action="min" aria-label="Minimize"></button>
-          </div>
-          <div class="wm-title">Create Local Vault</div>
-          <div class="wm-controls right"><button class="wm-box" type="button" data-win-action="focus" aria-label="Focus"></button></div>
-        </div>
-        <div class="wm-body">
-          <form id="setupForm" class="stack">
-            <label>
-              Passphrase
-              <input id="setupPassphrase" type="password" minlength="8" required />
-            </label>
-            <label>
-              Confirm passphrase
-              <input id="setupConfirm" type="password" minlength="8" required />
-            </label>
-            <button type="submit">Initialize Vault</button>
-          </form>
-        </div>
-      </section>
-
-      <section id="unlockSection" class="wm-window hidden" data-win-id="unlock" data-win-title="Unlock Vault" data-x="720" data-y="96" data-w="380" data-h="190">
-        <div class="wm-titlebar" data-drag-handle>
-          <div class="wm-controls">
-            <button class="wm-box" type="button" data-win-action="close" aria-label="Close"></button>
-            <button class="wm-box" type="button" data-win-action="min" aria-label="Minimize"></button>
-          </div>
-          <div class="wm-title">Unlock Vault</div>
-          <div class="wm-controls right"><button class="wm-box" type="button" data-win-action="focus" aria-label="Focus"></button></div>
-        </div>
-        <div class="wm-body">
-          <form id="unlockForm" class="stack">
-            <label>
-              Passphrase
-              <input id="unlockPassphrase" type="password" required />
-            </label>
-            <button type="submit">Unlock</button>
-          </form>
-        </div>
-      </section>
-
-      <div id="authedSections" class="hidden">
-        <section id="openaiWindow" class="wm-window" data-win-id="openai" data-win-title="OpenAI Key" data-x="690" data-y="96" data-w="430" data-h="220">
-          <div class="wm-titlebar" data-drag-handle>
-            <div class="wm-controls">
-              <button class="wm-box" type="button" data-win-action="close" aria-label="Close"></button>
-              <button class="wm-box" type="button" data-win-action="min" aria-label="Minimize"></button>
-            </div>
-            <div class="wm-title">OpenAI Key</div>
-            <div class="wm-controls right"><button class="wm-box" type="button" data-win-action="focus" aria-label="Focus"></button></div>
-          </div>
-          <div class="wm-body">
-            <p class="small window-note">Status: <span id="openaiBadge" class="badge warn">Missing key</span></p>
-            <form id="openaiForm" class="stack">
-              <label>
-                API key
-                <input id="openaiKeyInput" type="password" placeholder="sk-..." required />
-              </label>
-              <div class="row gap">
-                <button type="submit">Save Encrypted Key</button>
-                <button id="openaiTestBtn" type="button">Test Connection</button>
-                <button id="lockBtn" type="button">Lock Vault</button>
-              </div>
-            </form>
-          </div>
-        </section>
-
-        <section id="telegramWindow" class="wm-window" data-win-id="telegram" data-win-title="Telegram" data-x="690" data-y="258" data-w="430" data-h="220">
-          <div class="wm-titlebar" data-drag-handle>
-            <div class="wm-controls">
-              <button class="wm-box" type="button" data-win-action="close" aria-label="Close"></button>
-              <button class="wm-box" type="button" data-win-action="min" aria-label="Minimize"></button>
-            </div>
-            <div class="wm-title">Telegram Bot Token</div>
-            <div class="wm-controls right"><button class="wm-box" type="button" data-win-action="focus" aria-label="Focus"></button></div>
-          </div>
-          <div class="wm-body">
-            <p class="small window-note">Status: <span id="telegramBadge" class="badge warn">Missing token</span></p>
-            <form id="telegramForm" class="stack">
-              <label>
-                Bot token
-                <input id="telegramTokenInput" type="password" placeholder="123456:AA..." required />
-              </label>
-              <div class="row gap">
-                <button type="submit">Save Encrypted Token</button>
-                <button id="telegramTestBtn" type="button">Test Telegram Token</button>
-              </div>
-            </form>
-          </div>
-        </section>
-
-        <section id="configWindow" class="wm-window" data-win-id="config" data-win-title="Config" data-x="690" data-y="492" data-w="430" data-h="330">
-          <div class="wm-titlebar" data-drag-handle>
-            <div class="wm-controls">
-              <button class="wm-box" type="button" data-win-action="close" aria-label="Close"></button>
-              <button class="wm-box" type="button" data-win-action="min" aria-label="Minimize"></button>
-            </div>
-            <div class="wm-title">Runtime Config</div>
-            <div class="wm-controls right"><button class="wm-box" type="button" data-win-action="focus" aria-label="Focus"></button></div>
-          </div>
-          <div class="wm-body grid-2">
-            <label>
-              Model
-              <select id="modelInput"></select>
-            </label>
-            <label>
-              Heartbeat interval (ms)
-              <input id="heartbeatInput" type="number" min="5000" step="1000" value="60000" />
-            </label>
-            <label>
-              Rolling context max messages
-              <input id="contextInput" type="number" min="4" step="1" value="16" />
-            </label>
-            <label>
-              Temperature
-              <input id="temperatureInput" type="number" min="0" max="2" step="0.1" value="0.4" />
-            </label>
-            <label>
-              Telegram poll interval (ms)
-              <input id="telegramPollInput" type="number" min="5000" step="1000" value="15000" />
-            </label>
-            <label>
-              Telegram bridge
-              <select id="telegramEnabledSelect">
-                <option value="on">Enabled</option>
-                <option value="off">Disabled</option>
-              </select>
-            </label>
-            <div class="grid-span-2 row gap">
-              <button id="saveSettingsBtn" type="button">Save Settings</button>
-              <button id="startLoopBtn" type="button">Start Agent Loop</button>
-              <button id="stopLoopBtn" type="button" disabled>Stop Loop</button>
-            </div>
-            <p class="small grid-span-2">
-              Loop status: <strong id="loopStatus">idle</strong> | Last tick: <strong id="lastTick">Never</strong>
-            </p>
-            <p class="small grid-span-2">
-              Telegram bridge is <strong id="telegramBridgeState">enabled</strong>. When enabled, Hitomi polls and replies while the vault is unlocked.
-            </p>
-          </div>
-        </section>
-
-        <section id="docsWindow" class="wm-window" data-win-id="docs" data-win-title="SOUL + heartbeat" data-x="38" data-y="560" data-w="620" data-h="330">
-          <div class="wm-titlebar" data-drag-handle>
-            <div class="wm-controls">
-              <button class="wm-box" type="button" data-win-action="close" aria-label="Close"></button>
-              <button class="wm-box" type="button" data-win-action="min" aria-label="Minimize"></button>
-            </div>
-            <div class="wm-title">SOUL + Heartbeat</div>
-            <div class="wm-controls right"><button class="wm-box" type="button" data-win-action="focus" aria-label="Focus"></button></div>
-          </div>
-          <div class="wm-body stack">
-            <label>
-              SOUL.md
-              <textarea id="soulInput" rows="7"></textarea>
-            </label>
-            <label>
-              heartbeat.md
-              <textarea id="heartbeatDocInput" rows="7"></textarea>
-            </label>
-          </div>
-        </section>
-
-        <section id="eventsWindow" class="wm-window" data-win-id="events" data-win-title="Event Timeline" data-x="38" data-y="908" data-w="620" data-h="270">
-          <div class="wm-titlebar" data-drag-handle>
-            <div class="wm-controls">
-              <button class="wm-box" type="button" data-win-action="close" aria-label="Close"></button>
-              <button class="wm-box" type="button" data-win-action="min" aria-label="Minimize"></button>
-            </div>
-            <div class="wm-title">Event Timeline</div>
-            <div class="wm-controls right"><button class="wm-box" type="button" data-win-action="focus" aria-label="Focus"></button></div>
-          </div>
-          <div class="wm-body">
-            <div id="eventLog" class="events"></div>
-          </div>
-        </section>
       </div>
 
-      <footer id="statusBar" class="wm-window wm-status hidden" data-win-id="status" data-win-title="Status" data-x="18" data-y="1188" data-w="1102" data-h="80">
-        <div class="wm-titlebar" data-drag-handle>
-          <div class="wm-controls">
-            <button class="wm-box" type="button" data-win-action="close" aria-label="Close"></button>
-            <button class="wm-box" type="button" data-win-action="min" aria-label="Minimize"></button>
-          </div>
-          <div class="wm-title">Status</div>
-          <div class="wm-controls right"><button class="wm-box" type="button" data-win-action="focus" aria-label="Focus"></button></div>
+      <figure class="hero-media product-frame">
+        <video class="motion-media" autoplay muted loop playsinline preload="metadata" poster="assets/screenshots/agent1c-desktop-hero.webp" aria-label="Local Agent1c desktop capture with Hitomi, chat, behavior documents, events, and relay setup windows.">
+          <source src="assets/video/agent1c-desktop-loop.webm" type="video/webm">
+          <source src="assets/video/agent1c-desktop-loop.mp4" type="video/mp4">
+        </video>
+        <img src="assets/screenshots/agent1c-desktop-hero.webp" width="1440" height="960" alt="Agent1c HedgeyOS desktop with Hitomi, chat, SOUL.md, TOOLS.md, Events, AI APIs, and Shell Relay windows." loading="eager">
+        <figcaption>
+          Genuine local capture. Staged sample text was inserted locally; no production account, live model call, real wallet, or secret was used.
+        </figcaption>
+      </figure>
+    </section>
+
+    <section class="manifesto" id="environment" aria-labelledby="environment-title">
+      <div class="section-label">01 / Not Another Chat Window</div>
+      <div class="manifesto-grid">
+        <div>
+          <h2 id="environment-title">A companion needs somewhere to work.</h2>
+          <p>Agent1c gives Hitomi a visible workspace: HedgeyOS windows, app launchers, local notes, browser surfaces, file lists, behavior documents, and an event log. The assistant can be framed as a resident of the computer instead of a blank prompt field.</p>
         </div>
-        <div class="wm-body" id="statusBody"></div>
-      </footer>
-
-      <div id="wmMenubar" class="wm-menubar">
-        <button id="menuFileBtn" class="wm-menu-btn" type="button">File</button>
-        <button id="menuWinBtn" class="wm-menu-btn" type="button">Windows</button>
-        <button id="menuArrangeBtn" class="wm-menu-btn" type="button">Arrange</button>
-        <button id="menuTileBtn" class="wm-menu-btn" type="button">Tile</button>
-        <div id="wmDock" class="wm-window-list"></div>
-        <div class="wm-menubar-spacer"></div>
-        <span class="wm-brand">HitomiOS</span>
-        <span id="wmClock" class="wm-clock"></span>
+        <ul class="work-list">
+          <li><span>Windows</span><strong>Chat, config, files, notes, docs, events, relays.</strong></li>
+          <li><span>Applications</span><strong>Saved apps and built-in browser/app windows.</strong></li>
+          <li><span>Memory documents</span><strong>SOUL.md, TOOLS.md, and heartbeat.md are editable surfaces.</strong></li>
+          <li><span>Events</span><strong>Chat, loop, system, and tool-related history appears visibly.</strong></li>
+        </ul>
       </div>
-    </main>
+    </section>
 
-    <script src="./app.js"></script>
-  </body>
+    <section class="section split" aria-labelledby="actual-title">
+      <div class="copy-block">
+        <div class="section-label">02 / What Works Now</div>
+        <h2 id="actual-title">Current capabilities, with the edges left visible.</h2>
+        <p>The current Agent1c codebase is a static web runtime with a HedgeyOS desktop shell, a Hitomi agent runtime, cloud auth integration for Agent1c.ai, local-first BYOK operation for Agent1c.me, explicit relay setup windows, optional voice recognition, event history, and read-only Solana wallet context when authenticated wallet state is available.</p>
+        <p>Some browser and relay behavior remains experimental. The project documents future work for broader proxy compatibility, Chrome extension based page context, and cloud relay hardening.</p>
+      </div>
+      <div class="feature-ledger" aria-label="Capability status">
+        <article>
+          <span class="stamp now">Works now</span>
+          <h3>Windowed HedgeyOS workspace</h3>
+          <p>Draggable windows, app launcher, files, notes, themes, browser window, desktop shortcuts, and Hitomi as a floating desktop actor.</p>
+        </article>
+        <article>
+          <span class="stamp now">Works now</span>
+          <h3>Editable agent contracts</h3>
+          <p>SOUL.md, TOOLS.md, and heartbeat.md are surfaced as editable runtime documents for behavior, tools, and loop cadence.</p>
+        </article>
+        <article>
+          <span class="stamp optional">Optional</span>
+          <h3>Shell, Tor, voice, wallet context</h3>
+          <p>Relays require explicit local setup. Voice depends on browser support. Wallet tooling is read-only and must not imply signing or moving funds.</p>
+        </article>
+        <article>
+          <span class="stamp planned">Planned</span>
+          <h3>Broader browsing and sync work</h3>
+          <p>The repository describes next-phase proxy compatibility, anti-bot handling, Cloudflare Worker relay work, browser extension context, and privacy-oriented sync plans.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="media-band" aria-labelledby="media-title">
+      <div class="section-label">03 / Captured Product Surfaces</div>
+      <h2 id="media-title">Real windows, real constraints, local demo state.</h2>
+      <div class="media-grid">
+        <figure class="product-frame tall">
+          <video class="motion-media" autoplay muted loop playsinline preload="metadata" poster="assets/screenshots/agent1c-behavior-docs.webp" aria-label="Agent1c behavior document windows loop.">
+            <source src="assets/video/agent1c-docs-loop.webm" type="video/webm">
+            <source src="assets/video/agent1c-docs-loop.mp4" type="video/mp4">
+          </video>
+          <img src="assets/screenshots/agent1c-behavior-docs.webp" width="1440" height="960" alt="Agent1c SOUL.md, TOOLS.md, heartbeat.md, Events, Chat, and Shell Relay windows arranged on the desktop." loading="lazy">
+          <figcaption>Behavior documents and event history.</figcaption>
+        </figure>
+        <figure class="product-frame">
+          <video class="motion-media" autoplay muted loop playsinline preload="metadata" poster="assets/screenshots/agent1c-browser-relays.webp" aria-label="Agent1c browser and relay windows loop.">
+            <source src="assets/video/agent1c-relay-loop.webm" type="video/webm">
+            <source src="assets/video/agent1c-relay-loop.mp4" type="video/mp4">
+          </video>
+          <img src="assets/screenshots/agent1c-browser-relays.webp" width="1440" height="960" alt="Agent1c Browser, Shell Relay, Tor Relay, Chat, and Events windows showing explicit relay setup." loading="lazy">
+          <figcaption>Browser surface with explicit Shell and Tor Relay setup.</figcaption>
+        </figure>
+        <figure class="product-frame">
+          <img src="assets/screenshots/agent1c-theme-greenscreen.webp" width="1440" height="960" alt="Agent1c desktop shown in a green-screen theme with browser, relays, docs, events, and Hitomi visible." loading="lazy">
+          <figcaption>Theme variation from the same local runtime.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="ecosystem" id="ecosystem" aria-labelledby="ecosystem-title">
+      <div class="section-label">04 / The Ecosystem</div>
+      <div class="ecosystem-head">
+        <h2 id="ecosystem-title">One ecosystem, several surfaces.</h2>
+        <p>Agent1c is the overall agentic-computing idea. HedgeyOS is the web desktop shell. Hitomi is the persistent companion who inhabits it. Agent1c.ai and Agent1c.me are different operating modes.</p>
+      </div>
+      <div class="map" aria-label="Agent1c ecosystem map">
+        <article>
+          <span>01</span>
+          <h3>Agent1c</h3>
+          <p>The umbrella ecosystem for agentic computing across workspace, runtime, docs, tools, events, and companion interfaces.</p>
+        </article>
+        <article>
+          <span>02</span>
+          <h3>HedgeyOS</h3>
+          <p>The web desktop shell: windows, menus, apps, files, notes, themes, browser surfaces, and workspace actions.</p>
+        </article>
+        <article>
+          <span>03</span>
+          <h3>Hitomi</h3>
+          <p>The hedgehog AI companion, visible as a resident of the desktop and guided by editable behavior documents.</p>
+        </article>
+        <article>
+          <span>04</span>
+          <h3><a href="https://agent1c.ai">Agent1c.ai</a></h3>
+          <p>Managed cloud access with account-based auth and a cloud provider path for easier onboarding.</p>
+        </article>
+        <article>
+          <span>05</span>
+          <h3><a href="https://agent1c.me">Agent1c.me</a></h3>
+          <p>Local-first and BYOK-oriented operation for users who prefer more direct control of models, keys, relays, and persistence.</p>
+        </article>
+        <article>
+          <span>06</span>
+          <h3><a href="https://hitomi.love">Hitomi for Android</a></h3>
+          <p>A floating Android companion with overlay UI, compact browser surface, optional advanced Termux bridge, wallet-aware contexts, and current install links.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section comparison" id="cloud-local" aria-labelledby="cloud-title">
+      <div>
+        <div class="section-label">05 / Cloud or Local</div>
+        <h2 id="cloud-title">Choose convenience or control.</h2>
+        <p>The two paths are not ranked. They serve different operating styles, and some future privacy/sync work is explicitly still in development.</p>
+      </div>
+      <div class="compare-table" role="table" aria-label="Agent1c.ai and Agent1c.me comparison">
+        <div role="row" class="compare-head">
+          <div role="columnheader">Question</div>
+          <div role="columnheader">Agent1c.ai</div>
+          <div role="columnheader">Agent1c.me</div>
+        </div>
+        <div role="row">
+          <div role="cell">Default path</div>
+          <div role="cell">Managed cloud runtime with account-based access.</div>
+          <div role="cell">Local-first BYOK runtime in the browser.</div>
+        </div>
+        <div role="row">
+          <div role="cell">Setup style</div>
+          <div role="cell">Cloud auth flow, managed provider path, credits window.</div>
+          <div role="cell">No blocking cloud account path; users bring provider keys or local models.</div>
+        </div>
+        <div role="row">
+          <div role="cell">Technical control</div>
+          <div role="cell">Simpler start, less local plumbing required.</div>
+          <div role="cell">More control over local relays, keys, persistence, and model selection.</div>
+        </div>
+        <div role="row">
+          <div role="cell">Caveat</div>
+          <div role="cell">Cloud browsing/proxy expansion is still documented as future work.</div>
+          <div role="cell">Local relay and proxy paths require explicit setup and browser compatibility.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="hitomi-section" id="hitomi" aria-labelledby="hitomi-title">
+      <div class="hitomi-card">
+        <div class="hitomi-copy">
+          <div class="section-label">06 / Meet Hitomi</div>
+          <h2 id="hitomi-title">A tiny resident of the computer.</h2>
+          <p>Hitomi is the approachable face of Agent1c: part guide, part desktop actor, part persistent agent persona. The current default SOUL.md describes her as an uploaded hedgehog consciousness who should be useful, warm, and honest about tool results.</p>
+          <p>On Android, Hitomi becomes a floating companion above other apps. The Android landing page maintains current installation links and details for the overlay, mini browser, local Ollama route, Termux bridge, and wallet-aware features.</p>
+          <a class="button" href="https://hitomi.love">Visit hitomi.love</a>
+        </div>
+        <div class="hitomi-media">
+          <img src="assets/screenshots/hitomi-docs-detail.webp" width="760" height="489" alt="Cropped local Agent1c capture with Hitomi beside the SOUL.md behavior document." loading="lazy">
+        </div>
+      </div>
+    </section>
+
+    <section class="inspectable" id="inspectable" aria-labelledby="inspectable-title">
+      <div class="section-label">07 / Built to Be Inspectable</div>
+      <div class="inspectable-grid">
+        <div>
+          <h2 id="inspectable-title">Important behavior is represented as documents and contracts.</h2>
+          <p>Agent1c is not a promise that the agent can do anything. The interesting part is the opposite: behavior, tool surfaces, relays, and events are made visible enough to inspect.</p>
+        </div>
+        <div class="doc-stack" aria-label="Inspectable architecture notes">
+          <article>
+            <h3>SOUL.md</h3>
+            <p>Persona, tone, identity, wallet safety, and behavior rules.</p>
+          </article>
+          <article>
+            <h3>TOOLS.md</h3>
+            <p>Explicit tool call format and available contracts such as files, window actions, relays, public GitHub reads, and read-only wallet summaries.</p>
+          </article>
+          <article>
+            <h3>heartbeat.md</h3>
+            <p>Loop intent and cadence. It is a prompt surface, not a hidden background permission grant.</p>
+          </article>
+          <article>
+            <h3>Events</h3>
+            <p>Visible log entries for chat, loop, system, and tool-related activity.</p>
+          </article>
+        </div>
+      </div>
+      <figure class="product-frame inspect-shot">
+        <img src="assets/screenshots/behavior-docs-detail.webp" width="960" height="531" alt="Close crop of Agent1c SOUL.md and TOOLS.md editable behavior-document windows." loading="lazy">
+      </figure>
+    </section>
+
+    <section class="section plates" aria-labelledby="plates-title">
+      <div class="section-label">08 / Field Notes</div>
+      <h2 id="plates-title">Claims kept deliberately narrow.</h2>
+      <div class="plate-grid">
+        <article>
+          <span>Now</span>
+          <p>Hitomi can operate inside the HedgeyOS workspace through visible windows, files, docs, events, browser surfaces, and configured tools.</p>
+        </article>
+        <article>
+          <span>Optional</span>
+          <p>Shell/Tor relays, voice, local models, and wallet context require explicit setup, compatible browsers, or authenticated state.</p>
+        </article>
+        <article>
+          <span>Not claimed</span>
+          <p>No fake download counts, fake pricing, fake testimonials, unrestricted browsing, device control, fund movement, or unverified privacy guarantees.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="final-cta" aria-labelledby="final-title">
+      <p class="kicker">Your computer already has applications.</p>
+      <h2 id="final-title">Agent1c gives an AI somewhere to live and work among them.</h2>
+      <div class="cta-row">
+        <a class="button primary" href="https://agent1c.ai">Launch Agent1c.ai</a>
+        <a class="button" href="https://agent1c.me">Run Agent1c.me</a>
+        <a class="button" href="https://hitomi.love">Install or learn about Hitomi</a>
+        <a class="button" href="https://github.com/agent1c-ai/agent1c-ai.github.io">Inspect the source</a>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
 </html>
