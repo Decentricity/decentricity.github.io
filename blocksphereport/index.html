@@ -21,8 +21,8 @@
       href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Syne:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <script type="module" crossorigin src="/blocksphereport/assets/index-BEyLWzFg.js"></script>
-    <link rel="stylesheet" crossorigin href="/blocksphereport/assets/index-S2C3FQiU.css">
+    <script type="module" crossorigin src="/blocksphereport/assets/index-BHxtbgTx.js"></script>
+    <link rel="stylesheet" crossorigin href="/blocksphereport/assets/index-Dixm3vSz.css">
   </head>
   <body>
     <div class="noise" aria-hidden="true"></div>
@@ -84,9 +84,8 @@
           <h2>Featured work</h2>
           <p class="featured-hint">
             Three projects spotlight each visit.
-            Share a curated cut with URL switches —
-            e.g. <code>?tag=tokenization</code> or
-            <code>?featured=pegadaian,digiland,debio</code>.
+            Prefer a theme? Build your own view below in the archive, or try
+            <code>?tag=tokenization</code>.
           </p>
         </div>
         <div id="featured-root"></div>
@@ -108,31 +107,31 @@
 
         <aside class="generator" id="featured-generator" aria-labelledby="generator-title">
           <div class="generator__head">
-            <p class="eyebrow">Share toolkit</p>
-            <h3 id="generator-title">Featured Work Generator</h3>
+            <p class="eyebrow">Explore by theme</p>
+            <h3 id="generator-title">Build your featured view</h3>
             <p>
-              Pick projects from the featured pool, arrange the order, and copy a
-              client-ready link. Employees can paste this into proposals or WhatsApp.
+              Choose the projects most relevant to you, set the order, and open a
+              personal portfolio link you can bookmark or share with your team.
             </p>
           </div>
           <div class="generator__presets" id="generator-presets"></div>
           <div class="generator__pool" id="generator-pool" role="listbox" aria-multiselectable="true"></div>
           <div class="generator__selected">
             <div class="generator__selected-head">
-              <strong>Selected order</strong>
+              <strong>Your selection</strong>
               <span id="generator-selected-count">0 selected</span>
             </div>
             <ol class="generator__order" id="generator-order"></ol>
           </div>
           <div class="generator__output">
-            <label class="sr-only" for="generator-url">Generated link</label>
+            <label class="sr-only" for="generator-url">Your portfolio link</label>
             <input id="generator-url" type="text" readonly value="" />
             <div class="generator__actions">
               <button type="button" class="btn btn--primary" id="generator-copy">Copy link</button>
-              <a class="btn btn--ghost" id="generator-open" href="#" target="_blank" rel="noopener">Open preview</a>
+              <a class="btn btn--ghost" id="generator-open" href="#" target="_blank" rel="noopener">View selection</a>
               <button type="button" class="btn btn--ghost" id="generator-clear">Clear</button>
             </div>
-            <p class="generator__hint" id="generator-hint">Select at least one project to build a link.</p>
+            <p class="generator__hint" id="generator-hint">Select one or more projects to create your link.</p>
           </div>
         </aside>
       </section>
