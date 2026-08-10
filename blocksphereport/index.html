@@ -21,8 +21,8 @@
       href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Syne:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <script type="module" crossorigin src="/blocksphereport/assets/index-DLRpCuQO.js"></script>
-    <link rel="stylesheet" crossorigin href="/blocksphereport/assets/index-xWT4jGbX.css">
+    <script type="module" crossorigin src="/blocksphereport/assets/index-BEyLWzFg.js"></script>
+    <link rel="stylesheet" crossorigin href="/blocksphereport/assets/index-S2C3FQiU.css">
   </head>
   <body>
     <div class="noise" aria-hidden="true"></div>
@@ -105,6 +105,36 @@
         </div>
         <div class="archive__meta"><span id="archive-count"></span></div>
         <div class="archive__list" id="archive-list" role="list"></div>
+
+        <aside class="generator" id="featured-generator" aria-labelledby="generator-title">
+          <div class="generator__head">
+            <p class="eyebrow">Share toolkit</p>
+            <h3 id="generator-title">Featured Work Generator</h3>
+            <p>
+              Pick projects from the featured pool, arrange the order, and copy a
+              client-ready link. Employees can paste this into proposals or WhatsApp.
+            </p>
+          </div>
+          <div class="generator__presets" id="generator-presets"></div>
+          <div class="generator__pool" id="generator-pool" role="listbox" aria-multiselectable="true"></div>
+          <div class="generator__selected">
+            <div class="generator__selected-head">
+              <strong>Selected order</strong>
+              <span id="generator-selected-count">0 selected</span>
+            </div>
+            <ol class="generator__order" id="generator-order"></ol>
+          </div>
+          <div class="generator__output">
+            <label class="sr-only" for="generator-url">Generated link</label>
+            <input id="generator-url" type="text" readonly value="" />
+            <div class="generator__actions">
+              <button type="button" class="btn btn--primary" id="generator-copy">Copy link</button>
+              <a class="btn btn--ghost" id="generator-open" href="#" target="_blank" rel="noopener">Open preview</a>
+              <button type="button" class="btn btn--ghost" id="generator-clear">Clear</button>
+            </div>
+            <p class="generator__hint" id="generator-hint">Select at least one project to build a link.</p>
+          </div>
+        </aside>
       </section>
 
       <section class="contact" id="contact">
