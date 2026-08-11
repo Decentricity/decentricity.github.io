@@ -24,7 +24,7 @@
   var floorMesh = new THREE.Mesh(floorGeo, floorMat);
   scene.add(floorMesh);
 
-  // NEON OBSTACLES: each a proper Mesh with unique position
+  // NEON OBSTACLES: proper Meshes with unique positions
   for(var i=0;i<14;i++){
     var geo=new THREE.BoxGeometry(3+Math.random()*2,5+Math.random()*6,2);
     var mesh = new THREE.Mesh(geo);
@@ -33,13 +33,12 @@
     mesh.material = new THREE.MeshBasicMaterial({color:0x77ffaa});
   }
 
-  // ENEMIES: proper Meshes with positions stored and applied immediately
+  // ENEMIES: proper Meshes with positions applied immediately at creation
   var enemies = [];
   for(var i=0;i<8;i++){
     var geo=new THREE.SphereGeometry(1.2,16);
     var mesh = new THREE.Mesh(geo);
     scene.add(mesh);
-    // APPLY POSITION NOW — not later
     var ex=Math.cos(i*75)*40+3;
     var ey=i%2?3:1;
     var ez=(i|0)*8-12;
@@ -67,7 +66,7 @@
   var gameOn = false;
   document.addEventListener('click', function(){ if(!gameOn){document.getElementById('start').style.display='none'; gameOn=true;} },false);
 
-  // LOOP: only starts after tap — renders each frame, always advances loop even if gameOn=false (so it never stalls)
+  // LOOP: runs every frame — renders and loops regardless of gameOn state
   requestAnimationFrame(function(){ 
     renderer.render(scene, scene.camera);
     requestAnimationFrame(arguments.callee); 
