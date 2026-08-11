@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>KODOK — Neon Doom</title>
+<style>
+  html, body { margin:0; padding:0; background:#050510; overflow:hidden; font-family:'Press Start 2P',monospace; }
+  canvas { display:block; image-rendering:auto; }
+  #hud { position:absolute; top:16px; left:24px; color:#0f0; text-shadow:0 0 6px #0f0,0 0 12px #0f0; font-size:13px; line-height:22px; pointer-events:none; z-index:5; }
+  #hud div { margin-bottom:4px; }
+  .label { color:#fff; text-shadow:none; }
+  .bar-wrap { display:inline-block; width:160px; height:14px; background:#222; border:1px solid #333; vertical-align:middle; margin-right:8px; position:relative; }
+  .bar-fill { height:100%; transition:width 0.15s; }
+  .hp-bar .bar-fill { background:linear-gradient(90deg,#ff2a2a,#ff6b35); box-shadow:0 0 6px #f44; }
+  .armor-bar .bar-fill { background:linear-gradient(90deg,#1faaff,#4dffff); box-shadow:0 0 6px #8cf; }
+  .score-box { position:absolute; top:20px; right:24px; color:#ff0; text-shadow:0 0 6px #f80,0 0 12px #f80; font-size:13px; line-height:22px; pointer-events:none; z-index:5; }
+  .start-screen { position:absolute; top:0;left:0;width:100%;height:100%;background:#050510;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;z-index:20; cursor:pointer;}
+  .start-screen h1 { font-size:48px; margin-bottom:16px; text-shadow:0 0 20px #0ff,0 0 30px #0ff; letter-spacing:4px; }
+  .start-screen p { font-size:14px; color:#8cf; margin:4px 0; animation:pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:.5} 50%{opacity:1} }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<link href="https://fonts.googleapis.com/css?family=Press+Start+2P&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="start-screen" id="startScreen">
+  <h1>KODOK</h1>
+  <p>CYBER DOOM — NEON FIRST-PERSON SURVIVAL</p>
+  <p style="margin-top:24px;font-size:16px;color:#0f0">CLICK TO START</p>
+</div>
+
+<div id="hud">
+  <div><span class="label">HEALTH:</span><span id="hpVal">100%</span></div>
+  <div style="margin-top:2px"><span class="label">ARMOR:</span><span class="bar-wrap"><span id="armorBar" class="bar-fill" style="width:30%"></span></span></div>
+  <div><span class="label">AMMO:</span><span id="ammoVal">20</span></div>
+  <div><span class="label">ENEMIES:</span><span id="enemiesVal">0</span></div>
+  <div style="margin-top:8px"><span class="label" id="waveLabel">WAVE 1</span></div>
+</div>
+
+<div class="score-box">
+  SCORE:<span id="scoreVal">0</span><br/>KILLS:<span id="killsVal">0</span><br/>FRAGS:<span id="fragsVal">0</span>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+// ===== CONSTANTS =====
+let HP_MAX = 100, ARMOR_MAX = 30, AMAX = 20;
+const BULLET_SPEED = 24, FIRE_RATE = 28, RELOAD_TIME = 900;
+let lastFire = -FIRE_RATE, ammo = AMAX, reloading = false;
+let hp = HP_MAX, armor = ARMOR_MAX, wave = 1, kills = 0, frags = 0, score = 0;
+const waves = [4, 6, 8, 10, 12];
+
+// ===== STATE =====
+const player = { x: 0, y: 1.75, z: 0 };
+let yaw = Math.PI / 3, pitch = -Math.PI / 6;
+let bullets = [], enemies = [];
+let particles = [], fxCount = 0;
+const cam = { x: 0, z: 5 };
+let keys = { w: false, s: false, a: false, d: false, space: false, mouseDown: false };
+let gameActive = false, lastFrame = 0;
+
+// ===== THREE SETUP =====
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x0a0a1f, 0.045);
+scene.background = new THREE.Color(0x070718);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+document.body.appendChild(renderer.domElement);
+
+// ===== LIGHTS =====
+scene.add(new THREE.HemisphereLight(0x44aaff, 0x113355, 0.4));
+const dirL = new THREE.DirectionalLight(0xffffff, 0.9);
+dirL.position.set(-5, 20, -5); scene.add(dirL);
+
+// ===== HUD DOM =====
+function updateHUD() {
+  if (!gameActive) return;
+  document.getElementById('hpVal').textContent = Math.round(hp) + '%';
+  document.getElementById('armorBar').style.width = (armor / ARMOR_MAX * 100) + '%';
+  document.getElementById('ammoVal').textContent = ammo > 2 ? ammo : 'RELOAD...';
+  document.getElementById('enemiesVal').textContent = enemies.length;
+  document.getElementById('scoreVal').textContent = score;
+  document.getElementById('killsVal').textContent = kills;
+  document.getElementById('fragsVal').textContent = frags;
+}
+
+// ===== START SCREEN CLICK =====
+function gameStart() {
+  document.getElementById('startScreen').style.display = 'none';
+}
+
+renderer.domElement.addEventListener('click', () => { if (!gameActive) gameStart(); });
+
+// ===== GAME LOOP =====
+let cameraObj = null;
+cameraObj = scene.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 200);
+
+function initGame() {
+  player.x = player.z = 0; yaw = Math.PI / 3; pitch = -Math.PI / 6;
+  cam.x = cam.z = 5;
+  enemies = []; bullets = []; particles = []; fxCount = 0; ammo = AMAX; hp = HP_MAX; armor = ARMOR_MAX; score = kills = frags = 0; wave = 1; lastFrame = Date.now();
+
+  // floor (plane)
+  const floorGeo = new THREE.PlaneGeometry(80, 80);
+  scene.add(floorGeo as any);
+
+  // pillar walls for atmosphere
+  let wallCount = 6 + Math.min(wave * 2, 4);
+  for (let i = 0; i < wallCount; i++) {
+    const g = new THREE.BoxGeometry(3.5, 4.5, 1.8);
+    const m = new THREE.MeshStandardMaterial({ color: 0x332244 });
+    scene.add(new THREE.Mesh(g, m));
+    const a = Math.random() * Math.PI * 2;
+    const r = Math.max(6, 14 + wave);
+    const x = (Math.cos(a) * r), z = (Math.sin(a) * r);
+  }
+
+  // enemies (red glowing eyes)
+  let eCount = waves[wave - 1] || wave * 4;
+  for (let i = 0; i < eCount; i++) {
+    const e = { id: i, pos: { x: Math.cos(i * 1.2) * r, y: 1.75, z: player.z + cam.z - 5 } };
+    enemies.push(e);
+    // enemy body (small sphere)
+    const g = new THREE.Mesh(new THREE.SphereGeometry(0.45, 8, 6), new THREE.MeshStandardMaterial({ color: 0x221133 }));
+    scene.add(g as any); e.mesh = g;
+    // eye glow ring
+    const rg = new THREE.RingGeometry(0.95, 1.15, 24);
+    const rm = new THREE.MeshBasicMaterial({ color: 0xff3366, side: THREE.DoubleSide });
+    scene.add(new THREE.Mesh(rg as any, rm)); e.glow = rg;
+  }
+
+  document.getElementById('startScreen').style.display = 'flex';
+}
+
+function run() {
+  if (!gameActive) { initGame(); requestAnimationFrame(run); return; }
+  update(); renderer.render(scene, cameraObj); window.requestAnimationFrame(run, renderer.domElement);
+}
+cameraObj = scene.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 200); run();
+
+// ===== UPDATE =====
+function update() {
+  const t = Math.min((Date.now() - lastFrame) / 16, 1); // clamp dt
+  if (t <= 0) return;
+  const s = waves[wave - 1] || wave * 4;
+
+  // ---- movement input ----
+  let mx = 0, mz = 0;
+  if (keys.w) { mx += Math.sin(yaw); mz -= Math.cos(yaw); }
+  else if (keys.s) { mx -= Math.sin(yaw); mz += Math.cos(yaw); }
+  else if (keys.d) { mx += 1; } // D: strafe right
+  else if (keys.a) { mx -= 1; }
+
+  const spd = 5 + wave * 0.3;
+  player.x += mx * spd * t;
+  player.z += mz * spd * t;
+
+  // clamp bounds
+  const r2 = s / 3;
+  if (Math.abs(player.x) > r2 - 1.5) {
+    player.x -= Math.sign(player.x) * Math.max(0, player.x - (r2 - 1.5));
+  }
+  if (player.z < 4 || player.z > s + 8) player.z = Math.min(Math.max(player.z, 3), s);
+
+  // ---- bullets ----
+  let now = Date.now();
+  if (keys.mouseDown && now - lastFire > FIRE_RATE * t) {
+    lastFire = now; ammo--; reloading = true;
+    const b = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffffaa }));
+    scene.add(b); bullets.push({ mesh: b as any, hit: false });
+  }
+
+  // ---- enemy AI (chase) ----
+  for (let i = enemies.length - 1; i >= 0; i--) {
+    const e = enemies[i]; if (!e.mesh) { enemies.splice(i, 1); continue; }
+    const dx = player.x - e.pos.x, dz = player.z - e.pos.z;
+    const d2 = dx * dx + dz * dz;
+
+    // shoot on collision with bullet
+    for (let j = bullets.length - 1; j >= 0; j--) {
+      const b = bullets[j]; if (!b) continue;
+      if (Math.sqrt((player.x - b.posX)**2 + (player.z - b.posZ)**2) < 3.5 && d2 < 400) {
+        hp -= 15; armor = Math.max(0, armor - 5);
+        e.mesh.material.color.setHex(0x882222);
+        explode(e.pos.x, e.pos.y, e.pos.z, '#f44');
+        enemies.splice(i, 1); kills++; frags += score / 10 | 0; score += 300 + wave * 100; break;
+      }
+    }
+
+    // chase player (when ahead)
+    if (d2 < 50 && dx > 1.5 || dx < -4.5) {
+      const nx = Math.sign(dx), nz = Math.sin(Date.now() / 1200 + i) * 3;
+      e.pos.x += nx * ENEMY_SPEED * t;
+      e.mesh.position.set(e.pos.x, Math.min(4.8, 1.6 + (d2 < 5 ? d2 : 0)), e.pos.z);
+
+      // bullet collision: sphere check vs player position
+    } else if (e.glow) {
+      const dx2 = player.x - e.pos.x;
+      e.mesh.rotation.y += Math.PI / 6 * t;
+      e.pos.x += dx2 < 0 ? 0.1 : -0.1;
+    }
+
+    // shoot on collision with bullet (already done above)
+    for (let j = bullets.length - 1; j >= 0; j--) {
+      const b = bullets[j]; if (!b || !b.hit) continue;
+      const dx2 = player.x - b.posX, dz2 = player.z - b.posZ;
+      if (Math.sqrt(dx2*dx2 + dz2*dz2) < 3.5 && d2 > 400) {
+        hp -= 10; armor = Math.max(0, armor - 3);
+        explode(b.posX, b.posY, b.posZ, '#ff8'); bullets.splice(j, 1); lastFire = Date.now(); ammo++; break;
+      }
+    }
+
+    e.mesh.position.x += (dx / d2) * 6.5 * t;
+    e.mesh.position.z += (dz / d2) * 6.5 * t;
+  }
+
+  // ---- enemy shooting at player (simple hit-scan via bullet pool) ----
+  let nowBullet = Date.now();
+  if (now - lastFire > FIRE_RATE && !reloading && ammo > 0) {
+    lastFire = now; ammo--; reloading = true;
+    const b = new THREE.Mesh(new THREE.SphereGeometry(0.15, 6), new THREE.MeshBasicMaterial({ color: 0xffff44 }));
+    scene.add(b); bullets.push({ mesh: b as any });
+  }
+
+  // ---- enemies shooting back (simple) ----
+  const eBullet = [] as any[];
+  for (let i = 0; i < enemies.length; i++) {
+    if (Date.now() - lastFire > FIRE_RATE && !reloading) {
+      lastFire = Date.now(); ammo--; reloading = true;
+      const b = new THREE.Mesh(new THREE.SphereGeometry(0.15, 6), new THREE.MeshBasicMaterial({ color: 0xff3344 }));
+      scene.add(b); bullets.push({ mesh: b as any });
+    }
+  }
+
+  // ---- particles (simple) ----
+  if (now - lastFire > FIRE_RATE * t && ammo > 1) {
+    const p = new THREE.Mesh(new THREE.SphereGeometry(0.2), new THREE.MeshBasicMaterial({ color: 0xff44ff }));
+    scene.add(p); particles.push({ mesh: p as any });
+  }
+
+  renderer.render(scene, cameraObj);
+}
+</script>
+</body>
+</html>
