@@ -18,46 +18,55 @@
   var dl = new THREE.DirectionalLight(0xffffff, 0.9);
   dl.position.set(-6,20,-5); scene.add(dl);
 
-  // floor plane with wireframe material so it's visible
+  // floor — MESH with material
   var floorGeo = new THREE.PlaneGeometry(80,80).rotateX(Math.PI/2);
-  var floorMat = new THREE.MeshBasicMaterial({color:0x114477, wireframe:true});
-  scene.add(floorGeo);
+  var floorMat = new THREE.MeshBasicMaterial({color:0x114477});
+  var floorMesh = new THREE.Mesh(floorGeo, floorMat);
+  scene.add(floorMesh);
 
-  // neon obstacle meshes (each gets a unique position)
+  // neon obstacle meshes — each with unique position
   for(var i=0;i<14;i++){
     var geo=new THREE.BoxGeometry(3+Math.random()*2,5+Math.random()*6,2);
     var mesh = new THREE.Mesh(geo);
     scene.add(mesh);
-    mesh.position.set((i%3-1)*8 + (i%3)*0.5, 4+Math.random()*6, ((i/3)|0)-2).addScalar(Math.random()-0.5);
+    mesh.position.set((i%3-1)*8+(i%3)*0.5, 4+Math.random()*6, ((i/3)|0)-2).addScalar(Math.random()-0.5);
     mesh.material = new THREE.MeshBasicMaterial({color:0x77ffaa});
   }
 
-  // enemy meshes at scattered positions
+  // enemy meshes — stored positions applied immediately
   var enemies = [];
   for(var i=0;i<8;i++){
     var geo=new THREE.SphereGeometry(1.2,16);
     var mesh = new THREE.Mesh(geo);
     scene.add(mesh);
-    enemies.push({mesh:mesh, x:Math.cos(i*75)*40+3, y:i%2?3:1, z:(i|0)*8-12});
+    var ex=Math.cos(i*75)*40+3;
+    var ey=i%2?3:1;
+    var ez=(i|0)*8-12;
+    mesh.position.set(ex,ey,ez).addScalar(Math.random()-0.5);
+    enemies.push({mesh:mesh, x:ex, y:ey, z:ez});
   }
 
-  // particle meshes scattered around
+  // particle meshes — scattered positions applied immediately
   for(var i=0;i<60;i++){
     var geo=new THREE.SphereGeometry(0.3,8);
     var mesh = new THREE.Mesh(geo);
     scene.add(mesh);
     mesh.material = new THREE.MeshBasicMaterial({color:0xff77ff});
-    mesh.position.set(Math.cos(i)*25+1, 1+Math.sin(i), ((i/6)|0)-3).addScalar(Math.random()-0.5);
+    var px=Math.cos(i)*25+1;
+    var py=1+Math.sin(i);
+    var pz=((i/6)|0)-3;
+    mesh.position.set(px,py,pz).addScalar(Math.random()-0.5);
   }
 
-  // camera aimed at origin area
+  // camera — positioned and looking at origin
   var cam = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 200);
+  cam.position.set(-6,3.5,-4);
   scene.camera = cam;
 
   var gameOn = false;
   document.addEventListener('click', function(){ if(!gameOn){document.getElementById('start').style.display='none'; gameOn=true;} },false);
 
-  // start loop once tapped
+  // loop: only starts after tap
   requestAnimationFrame(function(){ if(!gameOn) return; renderer.render(scene, scene.camera); requestAnimationFrame(arguments.callee); });
 })();
 </script>
