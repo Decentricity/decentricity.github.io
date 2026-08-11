@@ -2,79 +2,61 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/>
-<title>KODOK — Neon Doom</title>
-<style>html,body{margin:0;padding:0;background:#050510;overflow:hidden;font-family:'Press Start 2P',monospace}</style>
+<title>KODOK</title>
+<style>html,body{margin:0;padding:0;background:#1a0534;color:#ff0;font-family:sans-serif}</style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<link href="https://fonts.googleapis.com/css?family=Press+Start+2P&display=swap" rel="stylesheet">
 </head>
 <body>
-<div id="start-screen">
-  <h1>KODOK</h1>
-  <p>TAP TO START</p>
-</div>
+<div id="overlay">KODOK — tap to play</div>
 
 <script>
-// ── scene + renderer (built once) ──────────────────────────────
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x060718);
-const renderer = new THREE.WebGLRenderer({antialias:true});
-renderer.setSize(window.innerWidth, window.innerHeight);
-document.body.appendChild(renderer.domElement);
+(function(){
+  // minimal canvas fallback if WebGL fails
+  var canvas = document.createElement('canvas');
+  canvas.style.display='none';
+  document.body.appendChild(canvas);
+  try{
+    // three.js setup
+    var scene = new THREE.Scene();
+    var renderer = new THREE.WebGLRenderer({antialias:true});
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
 
-// ── lights & floor ────────────────────────────────────────────
-scene.add(new THREE.HemisphereLight(0x44aaff, 0x113355, 0.2));
-const dl = new THREE.DirectionalLight(0xffffff, 0.8);
-dl.position.set(-6, 18, -4); scene.add(dl);
+    // lights + floor
+    scene.add(new THREE.HemisphereLight(0x4488ff, 0x113355));
+    var dl = new THREE.DirectionalLight(0xffffff, 0.9);
+    dl.position.set(-6,20,-5); scene.add(dl);
 
-// neon grid floor
-const floorGeo = new THREE.PlaneGeometry(90, 90);
-const floorMat = new THREE.MeshBasicMaterial({color:0x221a3d});
-scene.add(floorGeo.rotateX(-Math.PI/2));
+    // floor grid plane
+    var floor = new THREE.PlaneGeometry(80,80).rotateX(Math.PI/2);
+    scene.add(floor);
 
-// ── obstacles (wireframe cubes for neon look) ────────────────
-for(let i=0;i<14;i++){
-  const g = new THREE.BoxGeometry(3.5,5+Math.random()*6,2);
-  scene.add(g);
-}
+    // neon cubes
+    for(var i=0;i<16;i++){
+      var g = new THREE.BoxGeometry(3+Math.random()*2, 4+Math.random()*5, 2+Math.random()*2);
+      scene.add(g);
+    }
 
-// ── enemy + particle meshes (created once) ───────────────────
-const enemies = [];
-for(let i=0;i<8;i++){
-  const e = new THREE.Mesh(new THREE.BoxGeometry(1.5,3,1.5));
-  scene.add(e);
-}
+    // enemies (small boxes)
+    for(var i=0;i<8;i++) scene.children.push(new THREE.Mesh());
 
-// ── game state ────────────────────────────────────────────────
-let gameActive = false;
-const keys = {w:false,s:false,a:false,d:false};
+    var gameOn = false;
+    document.addEventListener('click', function(){ if(!gameOn){ document.getElementById('overlay').style.display='none'; gameOn=true; } }, false);
 
-function startGame(){
-  document.getElementById('start-screen').style.display='none';
-  gameActive = true;
-}
+    var cam = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 200);
+    cam.position.set(-6,3.5,-4); scene.camera = cam;
 
-// mobile-first: tap anywhere to launch the game loop
-document.addEventListener('click', function(e){ e.preventDefault(); if(!gameActive) startGame(); }, false);
-
-let yawAxis=0, dx=0, dy=0;
-
-function loop(){
-  if (!gameActive) return;
-  // rotate enemies & particles for "alive" feel
-  for(let i=0;i<8;i++) scene.children[i+3].rotation.x += 0.15;
-  renderer.render(scene, scene.camera);
-  requestAnimationFrame(loop);
-}
-
-// camera setup after a tiny delay to ensure Three.js is ready
-setTimeout(function(){
-  const cam = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 200);
-  cam.position.set(-6,3.5,-4);
-  scene.camera = cam;
-
-  if (!gameActive) startGame();
-}, 500);
+    requestAnimationFrame(function(){
+      renderer.render(scene, scene.camera);
+      if(!gameOn) gameOn=true;
+      requestAnimationFrame(arguments.callee);
+    });
+  }catch(e){
+    document.getElementById('overlay').textContent = 'FAIL: '+e.message;
+  }
+})();
 </script>
+
+<script>document.getElementById('overlay').style.display='none';</script>
 </body>
 </html>
