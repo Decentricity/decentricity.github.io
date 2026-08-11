@@ -2,8 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/>
 <title>KODOK — Neon Doom</title>
-<style>html, body { margin:0; padding:0; background:#050510; overflow:hidden; font-family:'Press Start 2P',monospace; }</style>
+<style>html,body{margin:0;padding:0;background:#050510;overflow:hidden;font-family:'Press Start 2P',monospace}</style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <link href="https://fonts.googleapis.com/css?family=Press+Start+2P&display=swap" rel="stylesheet">
 </head>
@@ -18,49 +19,81 @@
 (() => {
 'use strict';
 const scene = new THREE.Scene();
-scene.fog = new THREE.FogExp2(0x0a051f, 0.03);
+scene.fog = new THREE.FogExp2(0x0a051f, 0.04);
 scene.background = new THREE.Color(0x060718);
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+
+const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(devicePixelRatio||1, 2));
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
 document.body.appendChild(renderer.domElement);
+
 scene.add(new THREE.HemisphereLight(0x44aaff, 0x113355, 0.3));
 const dirL = new THREE.DirectionalLight(0xffffff, 0.7);
-dirL.position.set(-8, 25, -6); scene.add(dirL);
-scene.add(new THREE.PlaneGeometry(90, 90).rotateX(-Math.PI/2) as any);
-for (let i = 0; i < 14; i++) { const g=new THREE.BoxGeometry(3.5,5,2); scene.add(new THREE.Mesh(g)); }
+dirL.position.set(-8,25,-6); scene.add(dirL);
 
-// enemies + particles
-const enemies=[], particles=[];
-for (let i = 0; i < 8; i++) enemies.push({x:Math.cos(i*1.3)*25,z:i*2});
-for (let i = 0; i < 40; i++) particles.push(new THREE.Mesh(new THREE.SphereGeometry(0.2,6)));
+// grid floor
+scene.add(new THREE.PlaneGeometry(90,90).rotateX(-Math.PI/2));
 
-// click handler — always works on mobile
-document.addEventListener('click', function(e) {
-  const ss = document.getElementById('start-screen');
-  if (ss && gameActive === false) { e.preventDefault(); e.stopPropagation(); startGame(); }
-}, false);
-
-function startGame() {
-  const s = document.getElementById('start-screen');
-  if (s) s.style.display='none';
-  gameActive = true; lastFrame = Date.now(); keys={w:false,s:false,a:false,d:false};
+// neon obstacles
+for (let i=0;i<14;i++){
+  const g = new THREE.BoxGeometry(3.5,5,2);
+  scene.add(g);
 }
-let yawAxis=0, dz=1, cam_z=-5, lastFrame=0, keys={}, dx=0, dy=0, gameActive=false;
 
-// document click listener (mobile-friendly)
-document.addEventListener('click', function() { startGame(); }, false);
+// enemies
+const enemies = [];
+for (let i=0;i<8;i++) enemies.push({x:Math.cos(i*1.3)*25,z:i*2});
 
-function update() {
-  if (!gameActive || !scene.camera.position) return;
-  const dt = Math.min((Date.now()-lastFrame)/16, 1); lastFrame = Date.now();
-  scene.camera.position.x += dx * dt;
+// particles
+const particles = [];
+for (let i=0;i<40;i++){
+  const m = new THREE.Mesh(new THREE.SphereGeometry(0.2,6));
+  particles.push(m);
+}
+
+let gameActive = false;
+const keys = {w:false,s:false,a:false,d:false};
+
+function startGame(){
+  document.getElementById('start-screen').style.display='none';
+  gameActive = true;
+  requestAnimationFrame(loop);
+}
+
+// mobile-first: click anywhere starts the game
+document.addEventListener('click', function(e){ e.preventDefault(); if(!gameActive) startGame(); }, false);
+
+let yawAxis=0, cam_z=-5, lastFrame=Date.now(), dx=0, dy=0;
+
+function loop(){
+  if (!gameActive) return;
+  const dt = Math.min((Date.now()-lastFrame)/16, 1);
+  lastFrame = Date.now();
+
+  // yaw from mouse-like pointer movement (works on touch)
+  if (scene.pointerLockElement){
+    yawAxis += dx * dt;
+    scene.camera.position.x += dy * dt;
+  } else {
+    yawAxis -= dx * dt;
+    scene.camera.position.x -= dy * dt;
+  }
+
   scene.camera.position.y = 3.5;
-  scene.camera.position.z -= dz * dt;
+  scene.camera.position.z = -cam_z;
+
+  // move obstacles
+  for (const p of particles) p.rotation.y += dt * 0.15;
+
+  renderer.render(scene, scene.camera);
+  requestAnimationFrame(loop);
 }
 
-function run() { if (!gameActive) startGame(); update(); renderer.render(scene, scene.camera); requestAnimationFrame(run); }
-run();
+// initial camera setup
+scene.camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 200);
+scene.camera.position.set(-cam_z+2,3.5,-cam_z);
+
+requestAnimationFrame(() => { if(!gameActive) startGame(); });
 })();
 </script>
 </body>
