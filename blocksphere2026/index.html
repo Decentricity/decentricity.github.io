@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Blocksphere | Blockchain Consulting</title>
-    <meta name="bsp-build" content="1786436373096" />
+    <meta name="bsp-build" content="1786436822415" />
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta
       name="description"
@@ -16,15 +16,15 @@
       content="Enterprise blockchain consulting and development — shipping blockchain since 2017."
     />
     <meta property="og:type" content="website" />
-    <link rel="icon" type="image/png" href="./assets/logo/favicon.png?v=1786436373096" />
+    <link rel="icon" type="image/png" href="./assets/logo/favicon.png?v=1786436822415" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Syne:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <script type="module" crossorigin src="/blocksphere2026/assets/index-D0UGeaXr-1786436373096.js?v=1786436373096"></script>
-    <link rel="stylesheet" crossorigin href="/blocksphere2026/assets/index-JSv1R1Xk-1786436373096.css?v=1786436373096">
+    <script type="module" crossorigin src="/blocksphere2026/assets/index-BsKoNWJJ-1786436822415.js?v=1786436822415"></script>
+    <link rel="stylesheet" crossorigin href="/blocksphere2026/assets/index-Dxe8seaW-1786436822415.css?v=1786436822415">
   </head>
   <body>
     <div class="noise" aria-hidden="true"></div>
@@ -34,12 +34,16 @@
 
     <header class="nav">
       <a class="nav__brand" href="#top" aria-label="Blocksphere home">
-        <img src="./assets/logo/blocksphere.png?v=1786436373096" alt="Blocksphere logo" width="36" height="36" />
+        <img src="./assets/logo/blocksphere.png?v=1786436822415" alt="Blocksphere logo" width="36" height="36" />
         <span>Blocksphere</span>
       </a>
-      <nav class="nav__links" aria-label="Primary">
+      <button class="nav__menu" id="nav-menu" type="button" aria-label="Open menu" aria-expanded="false">
+        Menu
+      </button>
+      <nav class="nav__links" id="nav-links" aria-label="Primary">
         <a href="#awards">Awards</a>
         <a href="#services">Services</a>
+        <a href="#media">Media</a>
         <a href="#team">Team</a>
         <a href="#testimonials">Clients</a>
         <a href="#contact">Contact</a>
@@ -55,7 +59,7 @@
           <img id="hero-bg-img" src="" alt="" />
           <div class="hero__veil"></div>
         </div>
-        <div class="hero__content reveal">
+        <div class="hero__content animate-in">
           <p class="eyebrow" id="hero-eyebrow"></p>
           <h1 class="hero__title">
             <span class="hero__brand" id="hero-title"></span>
@@ -68,7 +72,7 @@
             <a class="btn btn--ghost" id="hero-cta-secondary" href="mailto:hello@blocksphere.id"></a>
           </div>
         </div>
-        <div class="hero__visual reveal" aria-hidden="true">
+        <div class="hero__visual animate-in" aria-hidden="true">
           <img id="hero-visual-img" src="" alt="" />
         </div>
         <div class="hero__columns" aria-hidden="true">
@@ -103,7 +107,7 @@
         </div>
         <div class="services__highlight" id="services-highlight"></div>
         <div class="services__layout">
-          <div class="services__visual reveal">
+          <div class="services__visual animate-in">
             <img id="services-img" src="" alt="" loading="lazy" />
             <img id="services-robot" class="services__robot" src="" alt="" loading="lazy" />
           </div>
@@ -129,6 +133,35 @@
         <div class="impact__grid" id="impact-grid"></div>
       </section>
 
+      <section class="media" id="media">
+        <div class="media__layout">
+          <div class="media__copy animate-in">
+            <p class="eyebrow" id="media-eyebrow"></p>
+            <h2 class="media__title">
+              <span id="media-title"></span>
+              <span class="media__accent" id="media-accent"></span>
+              <span id="media-suffix"></span>
+            </h2>
+            <p class="media__lead" id="media-lead"></p>
+            <p class="media__sub" id="media-sub"></p>
+            <ul class="media__tags" id="media-tags"></ul>
+          </div>
+          <div class="media__video-wrap animate-in">
+            <div class="media__video">
+              <iframe
+                id="media-iframe"
+                title="Bloomberg Technoz — Blocksphere CEO Interview"
+                src=""
+                loading="lazy"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowfullscreen
+              ></iframe>
+            </div>
+            <img class="media__badge" id="media-badge" src="" alt="Bloomberg Technoz" loading="lazy" />
+          </div>
+        </div>
+      </section>
+
       <section class="testimonials" id="testimonials">
         <div class="section-head">
           <p class="eyebrow">Client voices</p>
@@ -147,7 +180,7 @@
       </section>
 
       <section class="contact" id="contact">
-        <div class="contact__panel reveal">
+        <div class="contact__panel animate-in">
           <div class="contact__copy">
             <p class="eyebrow">Get in touch</p>
             <h2 id="contact-title"></h2>
