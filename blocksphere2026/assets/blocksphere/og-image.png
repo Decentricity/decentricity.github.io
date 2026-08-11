@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Blocksphere | Blockchain Consulting</title>
+    <meta name="description" content="Blocksphere is a blockchain consulting company delivering enterprise-grade solutions with crypto-native precision." />
+    <meta name="author" content="Blocksphere" />
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/img/favicon.png" />
+    <link rel="shortcut icon" type="image/png" href="/img/favicon.png" />
+
+    <meta property="og:title" content="Blocksphere | Blockchain Consulting" />
+    <meta property="og:description" content="Enterprise blockchain consulting, tokenomics, audits, and MVPs." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://blocksphere.id/" />
+    <meta property="og:image" content="https://blocksphere.id/img/og-image.png" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@blocksphere" />
+    <meta name="twitter:image" content="https://blocksphere.id/img/og-image.png" />
+
+    <!-- Google Analytics 4 — Replace GA_MEASUREMENT_ID with your actual ID -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'GA_MEASUREMENT_ID');
+    </script>
+    <script type="module" crossorigin src="/assets/index-B5Gfr__e.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-BIc4MxkA.css">
+  </head>
+
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
