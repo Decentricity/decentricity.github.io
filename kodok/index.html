@@ -13,38 +13,53 @@
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
 
+  // lights
   scene.add(new THREE.HemisphereLight(0x44aaff, 0x113355));
   var dl = new THREE.DirectionalLight(0xffffff, 0.9);
   dl.position.set(-6,20,-5); scene.add(dl);
 
-  scene.add(new THREE.PlaneGeometry(80,80).rotateX(Math.PI/2));
+  // floor plane with wireframe material so it's visible
+  var floorGeo = new THREE.PlaneGeometry(80,80).rotateX(Math.PI/2);
+  var floorMat = new THREE.MeshBasicMaterial({color:0x114477, wireframe:true});
+  scene.add(floorGeo);
 
+  // neon obstacle meshes (each gets a unique position)
   for(var i=0;i<14;i++){
-    var g=new THREE.BoxGeometry(3+Math.random()*2, 5+Math.random()*6, 2);
-    scene.add(g);
+    var geo=new THREE.BoxGeometry(3+Math.random()*2,5+Math.random()*6,2);
+    var mesh = new THREE.Mesh(geo);
+    scene.add(mesh);
+    mesh.position.set((i%3-1)*8 + (i%3)*0.5, 4+Math.random()*6, ((i/3)|0)-2).addScalar(Math.random()-0.5);
+    mesh.material = new THREE.MeshBasicMaterial({color:0x77ffaa});
   }
 
+  // enemy meshes at scattered positions
   var enemies = [];
   for(var i=0;i<8;i++){
-    var s=new THREE.Mesh(new THREE.SphereGeometry(1.2));
-    scene.add(s);
-    enemies.push({x:Math.cos(i)*25,z:i*2});
+    var geo=new THREE.SphereGeometry(1.2,16);
+    var mesh = new THREE.Mesh(geo);
+    scene.add(mesh);
+    enemies.push({mesh:mesh, x:Math.cos(i*75)*40+3, y:i%2?3:1, z:(i|0)*8-12});
   }
 
+  // particle meshes scattered around
   for(var i=0;i<60;i++){
-    var p=new THREE.Mesh(new THREE.SphereGeometry(0.3,8));
-    scene.add(p);
+    var geo=new THREE.SphereGeometry(0.3,8);
+    var mesh = new THREE.Mesh(geo);
+    scene.add(mesh);
+    mesh.material = new THREE.MeshBasicMaterial({color:0xff77ff});
+    mesh.position.set(Math.cos(i)*25+1, 1+Math.sin(i), ((i/6)|0)-3).addScalar(Math.random()-0.5);
   }
+
+  // camera aimed at origin area
+  var cam = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 200);
+  scene.camera = cam;
 
   var gameOn = false;
   document.addEventListener('click', function(){ if(!gameOn){document.getElementById('start').style.display='none'; gameOn=true;} },false);
 
-  var cam = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 200);
-  cam.position.set(-6,3.5,-4); scene.camera = cam;
-
+  // start loop once tapped
   requestAnimationFrame(function(){ if(!gameOn) return; renderer.render(scene, scene.camera); requestAnimationFrame(arguments.callee); });
 })();
 </script>
-
 </body>
 </html>
