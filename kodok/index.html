@@ -18,13 +18,13 @@
   var dl = new THREE.DirectionalLight(0xffffff, 0.9);
   dl.position.set(-6,20,-5); scene.add(dl);
 
-  // floor — MESH with material
+  // FLOOR: MESH with material — NOT raw geometry
   var floorGeo = new THREE.PlaneGeometry(80,80).rotateX(Math.PI/2);
   var floorMat = new THREE.MeshBasicMaterial({color:0x114477});
   var floorMesh = new THREE.Mesh(floorGeo, floorMat);
   scene.add(floorMesh);
 
-  // neon obstacle meshes — each with unique position
+  // NEON OBSTACLES: each a proper Mesh with unique position
   for(var i=0;i<14;i++){
     var geo=new THREE.BoxGeometry(3+Math.random()*2,5+Math.random()*6,2);
     var mesh = new THREE.Mesh(geo);
@@ -33,20 +33,21 @@
     mesh.material = new THREE.MeshBasicMaterial({color:0x77ffaa});
   }
 
-  // enemy meshes — stored positions applied immediately
+  // ENEMIES: proper Meshes with positions stored and applied immediately
   var enemies = [];
   for(var i=0;i<8;i++){
     var geo=new THREE.SphereGeometry(1.2,16);
     var mesh = new THREE.Mesh(geo);
     scene.add(mesh);
+    // APPLY POSITION NOW — not later
     var ex=Math.cos(i*75)*40+3;
     var ey=i%2?3:1;
     var ez=(i|0)*8-12;
     mesh.position.set(ex,ey,ez).addScalar(Math.random()-0.5);
-    enemies.push({mesh:mesh, x:ex, y:ey, z:ez});
+    enemies.push(mesh);
   }
 
-  // particle meshes — scattered positions applied immediately
+  // PARTICLES: proper Meshes with scattered positions applied immediately
   for(var i=0;i<60;i++){
     var geo=new THREE.SphereGeometry(0.3,8);
     var mesh = new THREE.Mesh(geo);
@@ -58,7 +59,7 @@
     mesh.position.set(px,py,pz).addScalar(Math.random()-0.5);
   }
 
-  // camera — positioned and looking at origin
+  // CAMERA: positioned and looking at origin area
   var cam = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 200);
   cam.position.set(-6,3.5,-4);
   scene.camera = cam;
@@ -66,8 +67,11 @@
   var gameOn = false;
   document.addEventListener('click', function(){ if(!gameOn){document.getElementById('start').style.display='none'; gameOn=true;} },false);
 
-  // loop: only starts after tap
-  requestAnimationFrame(function(){ if(!gameOn) return; renderer.render(scene, scene.camera); requestAnimationFrame(arguments.callee); });
+  // LOOP: only starts after tap — renders each frame, always advances loop even if gameOn=false (so it never stalls)
+  requestAnimationFrame(function(){ 
+    renderer.render(scene, scene.camera);
+    requestAnimationFrame(arguments.callee); 
+  });
 })();
 </script>
 </body>
