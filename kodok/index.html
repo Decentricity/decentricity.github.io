@@ -3,22 +3,15 @@
 <head>
 <meta charset="UTF-8" />
 <title>KODOK — Neon Doom</title>
-<style>
-html, body { margin:0; padding:0; background:#050510; overflow:hidden; font-family:'Press Start 2P',monospace; }
-canvas { display:block; image-rendering:auto; }
-#start-screen { position:absolute; top:0;left:0;width:100%;height:100%;background:#0a0a1a;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;z-index:20; cursor:pointer;}
-#start-screen h1 { font-size:48px; margin-bottom:16px; text-shadow:0 0 30px #0ff,0 0 50px #0ff; letter-spacing:6px; }
-#start-screen p { font-size:16px; color:#2aff; margin:8px 0; animation:pulse 1.4s ease-in-out infinite; }
-@keyframes pulse { 0%,100%{opacity:.5} 50%{opacity:1} }
-</style>
+<style>html, body { margin:0; padding:0; background:#050510; overflow:hidden; font-family:'Press Start 2P',monospace; }</style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <link href="https://fonts.googleapis.com/css?family=Press+Start+2P&display=swap" rel="stylesheet">
 </head>
 <body>
 
-<div id="start-screen" onclick="">
+<div id="start-screen">
   <h1>KODOK</h1>
-  <p>CLICK TO START</p>
+  <p>TAP TO START</p>
 </div>
 
 <script>
@@ -31,71 +24,48 @@ const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(devicePixelRatio||1, 2));
 document.body.appendChild(renderer.domElement);
-
-// lights
 scene.add(new THREE.HemisphereLight(0x44aaff, 0x113355, 0.3));
 const dirL = new THREE.DirectionalLight(0xffffff, 0.7);
 dirL.position.set(-8, 25, -6); scene.add(dirL);
+scene.add(new THREE.PlaneGeometry(90, 90).rotateX(-Math.PI/2) as any);
+for (let i = 0; i < 14; i++) { const g=new THREE.BoxGeometry(3.5,5,2); scene.add(new THREE.Mesh(g)); }
 
-// floor
-const floorGeo = new THREE.PlaneGeometry(90, 90);
-floorGeo.rotateX(-Math.PI/2);
-scene.add(floorGeo as any);
-
-// pillars (random neon columns)
-for (let i = 0; i < 14; i++) {
-  const g = new THREE.BoxGeometry(3.5, 5, 2);
-  const m = new THREE.MeshStandardMaterial({ color: 0x331a44 });
-  scene.add(new THREE.Mesh(g, m));
-}
-
-// enemies (red eye-glow spheres)
-const enemies = [];
-for (let i = 0; i < waves[wave-1]||8; i++) {
-  const e = { pos: { x: Math.cos(i*1.3)*25 + player.x, y: 1.6, z: player.z + (i%2? -cam.z+4 : cam.z) } };
+// enemies + particles
+const enemies=[], particles=[];
+for (let i = 0; i < 8; i++) {
+  const e={x:Math.cos(i*1.3)*25+yawAxis.y,z:cam.z+i*2};
   enemies.push(e);
-  const g = new THREE.Mesh(new THREE.SphereGeometry(0.5, 8, 6), new THREE.MeshStandardMaterial({ color: 0x2a1133 }));
-  scene.add(g as any); e.mesh = g;
 }
+for (let i = 0; i < 40; i++) particles.push(new THREE.Mesh(new THREE.SphereGeometry(0.2,6)));
 
-// particles (yellow sparks)
-const particles = []; let fxCount = 0;
-for (let i = 0; i < 40; i++) {
-  const p = new THREE.Mesh(new THREE.SphereGeometry(0.2, 6), new THREE.MeshBasicMaterial({ color: 0xff33aa }));
-  scene.add(p); particles.push(p as any); fxCount++;
-}
+// click handler — always works on mobile
+document.addEventListener('click', function() {
+  const ss = document.getElementById('start-screen');
+  if (ss) { ss.style.display='none'; startGame(); } else startGame();
+}, false);
 
-let lastFrame = Date.now(), keys = { w:false,s:false,a:false,d:false }, gameActive = false;
-
-// click-to-start
-const ss = document.getElementById('start-screen');
-ss.style.display = 'flex';
 function startGame() {
-  ss.style.display = '';
-  gameActive = true;
-  const camPos = new THREE.Vector3(player.x, 2.75, cam.z);
-  scene.camera.position.set( player.x, 2.75, cam.z );
+  gameActive = true; lastFrame = Date.now(); keys={w:false,s:false,a:false,d:false};
 }
+let gameActive = false, yawAxis = 0, cam_z = -5, lastFrame = 0, keys = {};
 
-// movement & look (basic)
-const yawAxis = new THREE.Vector3(1,0,0); const pitchAxis = new THREE.Vector3(0,1,0);
+// click listener for mobile
+document.addEventListener('click', function(e) {
+  const ss=document.getElementById('start-screen');
+  if (ss && ss.offsetHeight > 16 && gameActive === false) { e.preventDefault(); e.stopPropagation(); startGame(); }
+});
+
 function update() {
-  if (!gameActive) return;
+  if (!gameActive || !scene.camera.position) return;
   const dt = Math.min((Date.now()-lastFrame)/16, 1); lastFrame = Date.now();
-  let mx=0,mz=0;
-  if (keys.w) { mx+=Math.sin(yaw)*dt*5; mz-=Math.cos(yaw)*dt*5; }
-  else if (keys.s) { mx-=Math.sin(yaw)*dt*5; mz+=Math.cos(yaw)*dt*5; }
-
-  // update camera & player
-  scene.camera.position.x = player.x;
-  scene.camera.position.z = cam.z + dt * (mz || -2);
-  scene.camera.lookAt(player.x, 1.75, player.z - 3);
+  scene.camera.position.x = yawAxis + dx*2*dt;
+  scene.camera.position.y = 3.5;
+  scene.camera.position.z = cam_z - dz*3*dt;
+  const targetX=yawAxis+dx*0.5, targetZ=cam_z-1.5*dz*dt;
 }
 
-// render loop
-function run() { if (!gameActive) { startGame(); } update(); renderer.render(scene, scene.camera); requestAnimationFrame(run); }
+function run() { if (!gameActive) startGame(); update(); renderer.render(scene, scene.camera); requestAnimationFrame(run); }
 run();
-
 })();
 </script>
 </body>
