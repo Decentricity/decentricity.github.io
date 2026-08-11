@@ -1,62 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="UTF-8"/>
-<title>KODOK</title>
-<style>html,body{margin:0;padding:0;background:#1a0534;color:#ff0;font-family:sans-serif}</style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-</head>
-<body>
-<div id="overlay">KODOK — tap to play</div>
-
-<script>
-(function(){
-  // minimal canvas fallback if WebGL fails
-  var canvas = document.createElement('canvas');
-  canvas.style.display='none';
-  document.body.appendChild(canvas);
-  try{
-    // three.js setup
-    var scene = new THREE.Scene();
-    var renderer = new THREE.WebGLRenderer({antialias:true});
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
-
-    // lights + floor
-    scene.add(new THREE.HemisphereLight(0x4488ff, 0x113355));
-    var dl = new THREE.DirectionalLight(0xffffff, 0.9);
-    dl.position.set(-6,20,-5); scene.add(dl);
-
-    // floor grid plane
-    var floor = new THREE.PlaneGeometry(80,80).rotateX(Math.PI/2);
-    scene.add(floor);
-
-    // neon cubes
-    for(var i=0;i<16;i++){
-      var g = new THREE.BoxGeometry(3+Math.random()*2, 4+Math.random()*5, 2+Math.random()*2);
-      scene.add(g);
-    }
-
-    // enemies (small boxes)
-    for(var i=0;i<8;i++) scene.children.push(new THREE.Mesh());
-
-    var gameOn = false;
-    document.addEventListener('click', function(){ if(!gameOn){ document.getElementById('overlay').style.display='none'; gameOn=true; } }, false);
-
-    var cam = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 200);
-    cam.position.set(-6,3.5,-4); scene.camera = cam;
-
-    requestAnimationFrame(function(){
-      renderer.render(scene, scene.camera);
-      if(!gameOn) gameOn=true;
-      requestAnimationFrame(arguments.callee);
-    });
-  }catch(e){
-    document.getElementById('overlay').textContent = 'FAIL: '+e.message;
-  }
-})();
-</script>
-
-<script>document.getElementById('overlay').style.display='none';</script>
+<head><meta charset="UTF-8"><title>KODOK</title></head>
+<body style="margin:0;padding:20px;background:#1a0534;color:#ff0;font-family:sans-serif;text-align:center;">
+KODOK<br>tap anywhere to play
+<div id="overlay" onclick="" style="position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,20,0.95);display:flex;flex-direction:column;justify-content:center;align-items:center;color:#ff0;font-size:24px;text-align:center;padding:20px;">
+KODOK<br>tap to play
+</div>
 </body>
 </html>
