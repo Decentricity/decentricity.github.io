@@ -9,6 +9,25 @@ export function resolveInputLanguage(value) {
   return "en";
 }
 
+export function filterTranscription(payload, requestedLanguage = "en") {
+  const text = String(payload?.text || "").trim();
+  if (!text) return "";
+  const segments = Array.isArray(payload?.segments) ? payload.segments : [];
+  if (segments.length) {
+    const allLikelySilence = segments.every((segment) => Number(segment.no_speech_prob) >= 0.6);
+    const allLowConfidence = segments.every((segment) => Number(segment.avg_logprob) < -1);
+    const repetitive = segments.some((segment) => Number(segment.compression_ratio) > 2.4);
+    if (allLikelySilence || allLowConfidence || repetitive) return "";
+  }
+
+  if (requestedLanguage === "en") {
+    const icelandicLetters = (text.match(/[ÞþÐð]/g) || []).length;
+    const icelandicWords = (text.match(/\b(?:það|ég|ekki|hann|hún|þú|við|sem|fyrir|með|hér|svo|hljóðið)\b/giu) || []).length;
+    if (icelandicLetters >= 2 || icelandicWords >= 2) return "";
+  }
+  return text;
+}
+
 export class VadGate {
   constructor({ minThreshold = 0.012, multiplier = 3, startMs = 150, endMs = 1100 } = {}) {
     this.minThreshold = minThreshold;

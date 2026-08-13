@@ -4,6 +4,7 @@ import {
   REASONING_MODEL,
   TTS_MODEL,
   resolveInputLanguage,
+  filterTranscription,
   VadGate,
   BoundedQueue,
   trimContext,
@@ -12,7 +13,7 @@ import {
   isRepeatedGloss,
   classifyApiError,
   encodeWav,
-} from "./core.mjs";
+} from "./core.mjs?v=20260813-4";
 
 const $ = (selector) => document.querySelector(selector);
 const elements = {
@@ -23,6 +24,7 @@ const elements = {
   mute: $("#muteButton"), explain: $("#explainButton"), stop: $("#stopButton"),
   clear: $("#clearButton"), forget: $("#forgetButton"), feed: $("#feedList"),
   emptyFeed: $("#emptyFeed"), install: $("#installButton"),
+  sessionMode: $("#sessionModeLabel"),
 };
 
 const state = {
@@ -45,6 +47,7 @@ const state = {
   queue: new BoundedQueue(3, 30_000),
   context: [],
   recentGlosses: [],
+  inputLanguage: "en",
   lastTranscript: "",
   controllers: new Set(),
   installPrompt: null,
@@ -206,12 +209,15 @@ async function beginSession() {
     state.processorNode.connect(state.silentGain);
     state.silentGain.connect(state.audioContext.destination);
     state.active = true;
+    state.inputLanguage = elements.inputLanguage.value;
     state.gate = new VadGate();
     sessionStorage.setItem("exocortex.groqKey", state.key);
     sessionStorage.setItem("exocortex.voice", elements.voice.value);
     sessionStorage.setItem("exocortex.inputLanguage", elements.inputLanguage.value);
     elements.setupPanel.hidden = true;
     elements.sessionPanel.hidden = false;
+    const inputLabel = state.inputLanguage === "auto" ? "Auto input" : state.inputLanguage === "ja" ? "Japanese input" : "English input";
+    elements.sessionMode.textContent = `Ambient microphone · ${inputLabel} · English voice`;
     setStatus("listening", "Listening", "I’ll stay quiet until context would help.");
     await requestWakeLock();
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -228,13 +234,19 @@ async function transcribe(blob) {
   const form = new FormData();
   form.append("file", blob, "utterance.wav");
   form.append("model", STT_MODEL);
-  form.append("response_format", "json");
+  form.append("response_format", "verbose_json");
   form.append("temperature", "0");
-  const language = resolveInputLanguage(elements.inputLanguage.value);
+  const language = resolveInputLanguage(state.inputLanguage);
   if (language) form.append("language", language);
+  const transcriptionPrompt = language === "ja"
+    ? "Japanese television dialogue. Transcribe only clear Japanese speech. Return nothing for silence, music, or unclear audio."
+    : language === "en"
+      ? "English television dialogue. Transcribe only clear English speech. Return nothing for silence, music, or unclear audio."
+      : "Television dialogue. Transcribe only clear speech in its original language. Return nothing for silence, music, or unclear audio.";
+  form.append("prompt", transcriptionPrompt);
   const response = await groqFetch("/audio/transcriptions", { method: "POST", body: form }, 35_000);
   const payload = await response.json();
-  return String(payload.text || "").trim();
+  return filterTranscription(payload, state.inputLanguage);
 }
 
 const SYSTEM_PROMPT = `You are Exocortex, a selective listening companion. The user is hearing a lecture, conversation, film, or other ambient speech. Decide whether a tiny context gloss would materially improve understanding.

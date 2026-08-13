@@ -1,12 +1,19 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { VadGate, BoundedQueue, resolveInputLanguage, trimContext, buildInterpretationInput, parseDecision, compactGloss, isRepeatedGloss, classifyApiError, encodeWav } from "../core.mjs";
+import { VadGate, BoundedQueue, resolveInputLanguage, filterTranscription, trimContext, buildInterpretationInput, parseDecision, compactGloss, isRepeatedGloss, classifyApiError, encodeWav } from "../core.mjs";
 
 test("transcription language defaults to English and only auto mode omits it", () => {
   assert.equal(resolveInputLanguage(undefined), "en");
   assert.equal(resolveInputLanguage("en"), "en");
   assert.equal(resolveInputLanguage("ja"), "ja");
   assert.equal(resolveInputLanguage("auto"), null);
+});
+
+test("transcription filter rejects low-confidence and Icelandic hallucinations in English mode", () => {
+  assert.equal(filterTranscription({ text: "Clear English dialogue.", segments: [{ no_speech_prob: 0.02, avg_logprob: -0.2, compression_ratio: 1.1 }] }, "en"), "Clear English dialogue.");
+  assert.equal(filterTranscription({ text: "Það er það. Það er svo í þessu.", segments: [{ no_speech_prob: 0.03, avg_logprob: -0.2, compression_ratio: 1.1 }] }, "en"), "");
+  assert.equal(filterTranscription({ text: "Hallucinated speech", segments: [{ no_speech_prob: 0.91, avg_logprob: -1.4, compression_ratio: 1.2 }] }, "en"), "");
+  assert.equal(filterTranscription({ text: "Thank you.", segments: [{ no_speech_prob: 0.01, avg_logprob: -0.1, compression_ratio: 1.05 }] }, "en"), "Thank you.");
 });
 
 test("VAD starts after sustained speech and ends after silence", () => {

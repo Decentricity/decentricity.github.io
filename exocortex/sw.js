@@ -1,5 +1,5 @@
-const CACHE = "exocortex-shell-v3";
-const SHELL = ["./", "./index.html", "./styles.css", "./app.js", "./core.mjs", "./manifest.webmanifest", "./icon.svg", "./icon-192.png", "./icon-512.png"];
+const CACHE = "exocortex-shell-v4";
+const SHELL = ["./", "./index.html", "./styles.css", "./app.js?v=20260813-4", "./core.mjs?v=20260813-4", "./manifest.webmanifest", "./icon.svg", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)).then(() => self.skipWaiting()));
