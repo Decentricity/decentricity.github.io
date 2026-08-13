@@ -1,7 +1,17 @@
 export const API_BASE = "https://api.groq.com/openai/v1";
 export const STT_MODEL = "whisper-large-v3-turbo";
 export const REASONING_MODEL = "openai/gpt-oss-20b";
-export const TTS_MODEL = "canopylabs/orpheus-v1-english";
+export const SPEECH_RATE = 1.35;
+
+export function chooseEnglishVoice(voices, preferredUri = "") {
+  const english = voices.filter((voice) => /^en(?:-|_)/i.test(voice.lang || ""));
+  if (!english.length) return null;
+  return english.find((voice) => voice.voiceURI === preferredUri)
+    || english.find((voice) => voice.localService && voice.default)
+    || english.find((voice) => voice.localService)
+    || english.find((voice) => voice.default)
+    || english[0];
+}
 
 export function resolveInputLanguage(value) {
   if (value === "auto") return null;

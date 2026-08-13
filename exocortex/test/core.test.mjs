@@ -1,6 +1,17 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { VadGate, BoundedQueue, resolveInputLanguage, filterTranscription, trimContext, buildInterpretationInput, parseDecision, compactGloss, isRepeatedGloss, classifyApiError, encodeWav } from "../core.mjs";
+import { SPEECH_RATE, chooseEnglishVoice, VadGate, BoundedQueue, resolveInputLanguage, filterTranscription, trimContext, buildInterpretationInput, parseDecision, compactGloss, isRepeatedGloss, classifyApiError, encodeWav } from "../core.mjs";
+
+test("local speech uses a fast rate and prefers the selected English voice", () => {
+  const voices = [
+    { voiceURI: "remote", lang: "en-US", localService: false, default: true },
+    { voiceURI: "local", lang: "en-GB", localService: true, default: false },
+    { voiceURI: "other", lang: "ja-JP", localService: true, default: true },
+  ];
+  assert.equal(SPEECH_RATE, 1.35);
+  assert.equal(chooseEnglishVoice(voices, "local").voiceURI, "local");
+  assert.equal(chooseEnglishVoice(voices).voiceURI, "local");
+});
 
 test("transcription language defaults to English and only auto mode omits it", () => {
   assert.equal(resolveInputLanguage(undefined), "en");

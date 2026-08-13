@@ -2,7 +2,8 @@ import {
   API_BASE,
   STT_MODEL,
   REASONING_MODEL,
-  TTS_MODEL,
+  SPEECH_RATE,
+  chooseEnglishVoice,
   resolveInputLanguage,
   filterTranscription,
   VadGate,
@@ -13,7 +14,7 @@ import {
   isRepeatedGloss,
   classifyApiError,
   encodeWav,
-} from "./core.mjs?v=20260813-4";
+} from "./core.mjs?v=20260813-5";
 
 const $ = (selector) => document.querySelector(selector);
 const elements = {
@@ -54,8 +55,31 @@ const state = {
 };
 
 elements.apiKey.value = state.key;
-elements.voice.value = sessionStorage.getItem("exocortex.voice") || "hannah";
 elements.inputLanguage.value = sessionStorage.getItem("exocortex.inputLanguage") || "en";
+
+function populateDeviceVoices() {
+  if (!("speechSynthesis" in window)) return;
+  const stored = sessionStorage.getItem("exocortex.voice") || "";
+  const voices = speechSynthesis.getVoices()
+    .filter((voice) => /^en(?:-|_)/i.test(voice.lang || ""))
+    .sort((left, right) => Number(right.localService) - Number(left.localService) || left.name.localeCompare(right.name));
+  const fragment = document.createDocumentFragment();
+  const defaultOption = document.createElement("option");
+  defaultOption.value = "";
+  defaultOption.textContent = "Device default English voice";
+  fragment.append(defaultOption);
+  voices.forEach((voice) => {
+    const option = document.createElement("option");
+    option.value = voice.voiceURI;
+    option.textContent = `${voice.name} · ${voice.lang}${voice.localService ? " · local" : ""}`;
+    fragment.append(option);
+  });
+  elements.voice.replaceChildren(fragment);
+  elements.voice.value = voices.some((voice) => voice.voiceURI === stored) ? stored : "";
+}
+
+populateDeviceVoices();
+if ("speechSynthesis" in window) speechSynthesis.addEventListener("voiceschanged", populateDeviceVoices);
 
 function setStatus(name, title, detail, kicker = "MICROPHONE LIVE") {
   elements.orb.dataset.state = name;
@@ -217,7 +241,7 @@ async function beginSession() {
     elements.setupPanel.hidden = true;
     elements.sessionPanel.hidden = false;
     const inputLabel = state.inputLanguage === "auto" ? "Auto input" : state.inputLanguage === "ja" ? "Japanese input" : "English input";
-    elements.sessionMode.textContent = `Ambient microphone · ${inputLabel} · English voice`;
+    elements.sessionMode.textContent = `Ambient microphone · ${inputLabel} · Local voice ${SPEECH_RATE}×`;
     setStatus("listening", "Listening", "I’ll stay quiet until context would help.");
     await requestWakeLock();
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -301,22 +325,25 @@ async function interpret(transcript, force = false) {
 }
 
 async function speak(text) {
-  const response = await groqFetch("/audio/speech", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ model: TTS_MODEL, voice: elements.voice.value, input: text, response_format: "wav", speed: 1.08 }),
-  }, 35_000);
-  const bytes = await response.arrayBuffer();
-  const audioBuffer = await state.audioContext.decodeAudioData(bytes.slice(0));
   if (!state.active || state.muted) return;
+  if (!("speechSynthesis" in window) || !("SpeechSynthesisUtterance" in window)) {
+    throw new Error("This browser has no local speech engine.");
+  }
   setStatus("speaking", "Speaking", text, "CONTEXT FOUND");
   await new Promise((resolve) => {
-    const source = state.audioContext.createBufferSource();
-    state.playback = source;
-    source.buffer = audioBuffer;
-    source.connect(state.audioContext.destination);
-    source.onended = () => { if (state.playback === source) state.playback = null; resolve(); };
-    source.start();
+    speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    const voice = chooseEnglishVoice(speechSynthesis.getVoices(), elements.voice.value);
+    if (voice) utterance.voice = voice;
+    utterance.lang = voice?.lang || "en-US";
+    utterance.rate = SPEECH_RATE;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+    state.playback = utterance;
+    const finish = () => { if (state.playback === utterance) state.playback = null; resolve(); };
+    utterance.onend = finish;
+    utterance.onerror = finish;
+    speechSynthesis.speak(utterance);
   });
 }
 
@@ -368,7 +395,7 @@ async function stopSession(showSetup = true) {
   state.queue.clear();
   state.controllers.forEach((controller) => controller.abort());
   state.controllers.clear();
-  if (state.playback) { try { state.playback.stop(); } catch {} state.playback = null; }
+  if (state.playback && "speechSynthesis" in window) { speechSynthesis.cancel(); state.playback = null; }
   if (state.processorNode) { state.processorNode.onaudioprocess = null; state.processorNode.disconnect(); }
   if (state.sourceNode) state.sourceNode.disconnect();
   if (state.silentGain) state.silentGain.disconnect();
@@ -396,7 +423,7 @@ elements.mute.addEventListener("click", () => {
   state.muted = !state.muted;
   elements.mute.setAttribute("aria-pressed", String(state.muted));
   elements.mute.lastElementChild.textContent = state.muted ? "Unmute voice" : "Mute voice";
-  if (state.muted && state.playback) { try { state.playback.stop(); } catch {} }
+  if (state.muted && state.playback && "speechSynthesis" in window) { speechSynthesis.cancel(); state.playback = null; }
   setStatus(state.muted ? "paused" : "listening", state.muted ? "Voice muted" : "Listening", state.muted ? "Explanations will still appear in the feed." : "I’ll stay quiet until context would help.", state.muted ? "SILENT MODE" : "MICROPHONE LIVE");
 });
 elements.explain.addEventListener("click", () => {

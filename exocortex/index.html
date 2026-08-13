@@ -43,15 +43,11 @@
       </div>
       <p id="keyHelp" class="field-help">Kept in this tab's session storage. It is sent directly to Groq and nowhere else. <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer">Get a key</a></p>
 
-      <label class="field-label" for="voiceSelect">Voice</label>
+      <label class="field-label" for="voiceSelect">Device voice · fast 1.35×</label>
       <select id="voiceSelect" name="voice">
-        <option value="hannah">Hannah</option>
-        <option value="autumn">Autumn</option>
-        <option value="diana">Diana</option>
-        <option value="austin">Austin</option>
-        <option value="daniel">Daniel</option>
-        <option value="troy">Troy</option>
+        <option value="">Device default English voice</option>
       </select>
+      <p class="field-help">Uses your phone's speech engine. No Groq voice quota or character charges.</p>
 
       <label class="field-label" for="inputLanguageSelect">Input language</label>
       <select id="inputLanguageSelect" name="inputLanguage" aria-describedby="languageHelp">
@@ -116,7 +112,7 @@
 
       <div class="session-footer">
         <button id="forgetButton" class="text-button danger-text" type="button">Forget API key</button>
-        <p id="sessionModeLabel">Ambient microphone · English input · English voice</p>
+        <p id="sessionModeLabel">Ambient microphone · English input · Local voice 1.35×</p>
       </div>
     </section>
 
@@ -136,6 +132,6 @@
   </main>
 
   <noscript>Exocortex needs JavaScript to capture and interpret audio.</noscript>
-  <script type="module" src="app.js?v=20260813-4"></script>
+  <script type="module" src="app.js?v=20260813-5"></script>
 </body>
 </html>
