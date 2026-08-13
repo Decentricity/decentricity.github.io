@@ -42,7 +42,7 @@ test("spoken glosses lose filler and stay under 12 words", () => {
 test("API errors are classified for actionable UI", () => {
   assert.match(classifyApiError(401), /key was rejected/i);
   assert.match(classifyApiError(429), /rate limit/i);
-  assert.match(classifyApiError(0, "Failed to fetch"), /network/i);
+  assert.match(classifyApiError(0, "Failed to fetch"), /disable any VPN/i);
 });
 
 test("WAV encoder emits a valid mono 16-bit header", async () => {

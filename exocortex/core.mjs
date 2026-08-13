@@ -125,7 +125,7 @@ export function classifyApiError(status, message = "") {
   if (status === 403) return "This Groq project does not permit one of the required models.";
   if (status === 429) return "Groq’s rate limit was reached. Listening continues; try again after the limit resets.";
   if (status >= 500) return "Groq is temporarily unavailable. Listening continues and Exocortex will retry with the next utterance.";
-  if (/network|fetch|offline/i.test(message)) return "The network is unavailable. Check your connection and keep this page open.";
+  if (/network|fetch|offline/i.test(message)) return "Groq blocked or could not reach this network route. Disable any VPN or proxy, switch networks, then try again.";
   return message || "The request could not be completed.";
 }
 
