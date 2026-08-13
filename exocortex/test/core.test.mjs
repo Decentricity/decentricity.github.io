@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { VadGate, BoundedQueue, trimContext, parseDecision, compactGloss, classifyApiError, encodeWav } from "../core.mjs";
+import { VadGate, BoundedQueue, trimContext, buildInterpretationInput, parseDecision, compactGloss, isRepeatedGloss, classifyApiError, encodeWav } from "../core.mjs";
 
 test("VAD starts after sustained speech and ends after silence", () => {
   const gate = new VadGate({ startMs: 100, endMs: 200 });
@@ -26,6 +26,18 @@ test("context trimming keeps the most recent useful entries", () => {
   assert.deepEqual(result.map((entry) => entry.text), ["two", "three"]);
 });
 
+test("interpretation input labels current speech and excludes old assistant glosses", () => {
+  const input = buildInterpretationInput([
+    { role: "heard", text: "Older ambient sentence." },
+    { role: "exocortex", text: "Never inject this old gloss." },
+    { role: "heard", text: "Brand new phrase." },
+  ], "Brand new phrase.");
+  assert.match(input, /<ambient>Older ambient sentence\.<\/ambient>/);
+  assert.match(input, /<current_utterance>Brand new phrase\.<\/current_utterance>/);
+  assert.doesNotMatch(input, /Never inject/);
+  assert.equal(input.match(/Brand new phrase\./g)?.length, 1);
+});
+
 test("decision parsing validates and normalizes model JSON", () => {
   const result = parseDecision('```json\n{"should_speak":true,"explanation":"A short note.","reason":"jargon"}\n```');
   assert.deepEqual(result, { should_speak: true, explanation: "A short note.", reason: "jargon" });
@@ -37,6 +49,14 @@ test("spoken glosses lose filler and stay under 12 words", () => {
   const longGloss = compactGloss("Certainly, one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty twenty-one twenty-two twenty-three");
   assert.equal(longGloss.split(/\s+/).length, 12);
   assert.match(longGloss, /…$/);
+});
+
+test("identical recent glosses are suppressed but expire", () => {
+  const recent = [{ text: "Icelandic phrase: And he will become yours.", at: 10_000 }];
+  assert.equal(isRepeatedGloss("Icelandic phrase — ‘And he will become yours.’", recent, 20_000), true);
+  assert.equal(isRepeatedGloss("Icelandic: And he will become yours.", recent, 20_000), true);
+  assert.equal(isRepeatedGloss("BIP 110: small blocks.", recent, 20_000), false);
+  assert.equal(isRepeatedGloss("Icelandic phrase: And he will become yours.", recent, 200_000), false);
 });
 
 test("API errors are classified for actionable UI", () => {
