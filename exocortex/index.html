@@ -53,6 +53,14 @@
         <option value="troy">Troy</option>
       </select>
 
+      <label class="field-label" for="inputLanguageSelect">Input language</label>
+      <select id="inputLanguageSelect" name="inputLanguage" aria-describedby="languageHelp">
+        <option value="en">English (recommended)</option>
+        <option value="ja">Japanese</option>
+        <option value="auto">Auto-detect</option>
+      </select>
+      <p id="languageHelp" class="field-help">Choose the language being spoken. Auto-detect is less reliable for short or noisy audio.</p>
+
       <label class="earphone-check">
         <input id="earphoneCheck" type="checkbox">
         <span class="check-box" aria-hidden="true"></span>

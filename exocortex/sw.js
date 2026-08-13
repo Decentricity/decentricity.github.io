@@ -1,4 +1,4 @@
-const CACHE = "exocortex-shell-v2";
+const CACHE = "exocortex-shell-v3";
 const SHELL = ["./", "./index.html", "./styles.css", "./app.js", "./core.mjs", "./manifest.webmanifest", "./icon.svg", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", (event) => {

@@ -3,6 +3,12 @@ export const STT_MODEL = "whisper-large-v3-turbo";
 export const REASONING_MODEL = "openai/gpt-oss-20b";
 export const TTS_MODEL = "canopylabs/orpheus-v1-english";
 
+export function resolveInputLanguage(value) {
+  if (value === "auto") return null;
+  if (value === "ja") return "ja";
+  return "en";
+}
+
 export class VadGate {
   constructor({ minThreshold = 0.012, multiplier = 3, startMs = 150, endMs = 1100 } = {}) {
     this.minThreshold = minThreshold;

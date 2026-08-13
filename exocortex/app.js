@@ -3,6 +3,7 @@ import {
   STT_MODEL,
   REASONING_MODEL,
   TTS_MODEL,
+  resolveInputLanguage,
   VadGate,
   BoundedQueue,
   trimContext,
@@ -16,7 +17,7 @@ import {
 const $ = (selector) => document.querySelector(selector);
 const elements = {
   setupPanel: $("#setupPanel"), sessionPanel: $("#sessionPanel"), apiKey: $("#apiKey"),
-  voice: $("#voiceSelect"), earphones: $("#earphoneCheck"), start: $("#startButton"),
+  voice: $("#voiceSelect"), inputLanguage: $("#inputLanguageSelect"), earphones: $("#earphoneCheck"), start: $("#startButton"),
   reveal: $("#revealKeyButton"), error: $("#setupError"), orb: $("#orb"),
   sessionTitle: $("#sessionTitle"), statusKicker: $("#statusKicker"), statusDetail: $("#statusDetail"),
   mute: $("#muteButton"), explain: $("#explainButton"), stop: $("#stopButton"),
@@ -51,6 +52,7 @@ const state = {
 
 elements.apiKey.value = state.key;
 elements.voice.value = sessionStorage.getItem("exocortex.voice") || "hannah";
+elements.inputLanguage.value = sessionStorage.getItem("exocortex.inputLanguage") || "en";
 
 function setStatus(name, title, detail, kicker = "MICROPHONE LIVE") {
   elements.orb.dataset.state = name;
@@ -207,6 +209,7 @@ async function beginSession() {
     state.gate = new VadGate();
     sessionStorage.setItem("exocortex.groqKey", state.key);
     sessionStorage.setItem("exocortex.voice", elements.voice.value);
+    sessionStorage.setItem("exocortex.inputLanguage", elements.inputLanguage.value);
     elements.setupPanel.hidden = true;
     elements.sessionPanel.hidden = false;
     setStatus("listening", "Listening", "I’ll stay quiet until context would help.");
@@ -227,6 +230,8 @@ async function transcribe(blob) {
   form.append("model", STT_MODEL);
   form.append("response_format", "json");
   form.append("temperature", "0");
+  const language = resolveInputLanguage(elements.inputLanguage.value);
+  if (language) form.append("language", language);
   const response = await groqFetch("/audio/transcriptions", { method: "POST", body: form }, 35_000);
   const payload = await response.json();
   return String(payload.text || "").trim();
@@ -402,6 +407,7 @@ elements.forget.addEventListener("click", async () => {
   await stopSession(true);
 });
 elements.voice.addEventListener("change", () => sessionStorage.setItem("exocortex.voice", elements.voice.value));
+elements.inputLanguage.addEventListener("change", () => sessionStorage.setItem("exocortex.inputLanguage", elements.inputLanguage.value));
 
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible" && state.active) void requestWakeLock();

@@ -1,6 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { VadGate, BoundedQueue, trimContext, buildInterpretationInput, parseDecision, compactGloss, isRepeatedGloss, classifyApiError, encodeWav } from "../core.mjs";
+import { VadGate, BoundedQueue, resolveInputLanguage, trimContext, buildInterpretationInput, parseDecision, compactGloss, isRepeatedGloss, classifyApiError, encodeWav } from "../core.mjs";
+
+test("transcription language defaults to English and only auto mode omits it", () => {
+  assert.equal(resolveInputLanguage(undefined), "en");
+  assert.equal(resolveInputLanguage("en"), "en");
+  assert.equal(resolveInputLanguage("ja"), "ja");
+  assert.equal(resolveInputLanguage("auto"), null);
+});
 
 test("VAD starts after sustained speech and ends after silence", () => {
   const gate = new VadGate({ startMs: 100, endMs: 200 });
