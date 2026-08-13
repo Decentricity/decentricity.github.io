@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#090d16">
+  <meta name="description" content="A selective ambient voice assistant that adds context when it matters.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://api.groq.com; media-src 'self' blob:; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests">
+  <title>Exocortex — Context, quietly</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="./" aria-label="Exocortex home">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span>EXOCORTEX</span>
+      </a>
+      <button id="installButton" class="quiet-button" type="button" hidden>Install</button>
+    </header>
+
+    <section class="hero" aria-labelledby="heroTitle">
+      <p class="eyebrow">AMBIENT INTELLIGENCE / 01</p>
+      <h1 id="heroTitle">Context,<br><em>quietly.</em></h1>
+      <p class="lede">A voice in your ear that listens with you—and only speaks when an idea needs a little more light.</p>
+    </section>
+
+    <section id="setupPanel" class="panel setup-panel" aria-labelledby="setupTitle">
+      <div class="panel-heading">
+        <div>
+          <p class="section-number">SETUP</p>
+          <h2 id="setupTitle">Connect your own Groq key</h2>
+        </div>
+        <span class="privacy-pill">SESSION ONLY</span>
+      </div>
+
+      <label class="field-label" for="apiKey">Groq API key</label>
+      <div class="key-field">
+        <input id="apiKey" name="apiKey" type="password" inputmode="text" autocomplete="off" spellcheck="false" placeholder="gsk_…" aria-describedby="keyHelp">
+        <button id="revealKeyButton" class="field-action" type="button" aria-label="Show API key">Show</button>
+      </div>
+      <p id="keyHelp" class="field-help">Kept in this tab's session storage. It is sent directly to Groq and nowhere else. <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer">Get a key</a></p>
+
+      <label class="field-label" for="voiceSelect">Voice</label>
+      <select id="voiceSelect" name="voice">
+        <option value="hannah">Hannah</option>
+        <option value="autumn">Autumn</option>
+        <option value="diana">Diana</option>
+        <option value="austin">Austin</option>
+        <option value="daniel">Daniel</option>
+        <option value="troy">Troy</option>
+      </select>
+
+      <label class="earphone-check">
+        <input id="earphoneCheck" type="checkbox">
+        <span class="check-box" aria-hidden="true"></span>
+        <span><strong>Earphones are connected</strong><small>Required to keep Exocortex from hearing itself.</small></span>
+      </label>
+
+      <button id="startButton" class="primary-button" type="button">
+        <span>Begin listening</span>
+        <span aria-hidden="true">→</span>
+      </button>
+      <p id="setupError" class="inline-error" role="alert" hidden></p>
+    </section>
+
+    <section id="sessionPanel" class="session-panel" aria-labelledby="sessionTitle" hidden>
+      <div class="orb-stage">
+        <div id="orb" class="orb" data-state="listening" aria-hidden="true">
+          <div class="orb-ring orb-ring-one"></div>
+          <div class="orb-ring orb-ring-two"></div>
+          <div class="orb-core"></div>
+        </div>
+        <p id="statusKicker" class="status-kicker">MICROPHONE LIVE</p>
+        <h2 id="sessionTitle">Listening</h2>
+        <p id="statusDetail" class="status-detail" aria-live="polite">I’ll stay quiet until context would help.</p>
+      </div>
+
+      <div class="session-controls" aria-label="Session controls">
+        <button id="muteButton" class="control-button" type="button" aria-pressed="false">
+          <span class="control-icon" aria-hidden="true">◒</span>
+          <span>Mute voice</span>
+        </button>
+        <button id="explainButton" class="control-button control-button-accent" type="button" disabled>
+          <span class="control-icon" aria-hidden="true">?</span>
+          <span>Explain last</span>
+        </button>
+        <button id="stopButton" class="control-button" type="button">
+          <span class="control-icon" aria-hidden="true">□</span>
+          <span>End session</span>
+        </button>
+      </div>
+
+      <section class="feed" aria-labelledby="feedTitle">
+        <div class="feed-heading">
+          <div>
+            <p class="section-number">EPHEMERAL FEED</p>
+            <h2 id="feedTitle">What we heard</h2>
+          </div>
+          <button id="clearButton" class="text-button" type="button">Clear</button>
+        </div>
+        <ol id="feedList" class="feed-list" aria-live="polite">
+          <li id="emptyFeed" class="empty-feed">Nothing yet. Your transcript stays in memory and disappears when this page closes.</li>
+        </ol>
+      </section>
+
+      <div class="session-footer">
+        <button id="forgetButton" class="text-button danger-text" type="button">Forget API key</button>
+        <p>Ambient microphone only · English voice output</p>
+      </div>
+    </section>
+
+    <section class="how-it-works" aria-labelledby="howTitle">
+      <p class="section-number">HOW IT WORKS</p>
+      <h2 id="howTitle">Always present.<br>Rarely interrupting.</h2>
+      <ol class="steps">
+        <li><span>01</span><div><h3>Hear</h3><p>Ambient speech is detected locally, then sent in short utterances for transcription.</p></div></li>
+        <li><span>02</span><div><h3>Understand</h3><p>Recent context is checked for jargon, ambiguity, corrections, or missing background.</p></div></li>
+        <li><span>03</span><div><h3>Whisper</h3><p>Only useful explanations become short English voice notes in your ear.</p></div></li>
+      </ol>
+      <aside class="limits-note">
+        <strong>Designed for foreground listening.</strong>
+        <p>Keep this screen open. Exocortex hears the room through your microphone; it cannot hear media routed internally to earphones on the same phone.</p>
+      </aside>
+    </section>
+  </main>
+
+  <noscript>Exocortex needs JavaScript to capture and interpret audio.</noscript>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
