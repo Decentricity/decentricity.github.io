@@ -1,0 +1,97 @@
+Dua hari yang lalu, pada 1 September 2026, lima orang eksekutif senior dari sebuah perusahaan asuransi kesehatan di Indonesia berkumpul di ruang rapat utama pada pukul 15.00 untuk menjalani apa yang awalnya diperkirakan hanya akan menjadi rapat operasional rutin. Rapat itu dijadwalkan berlangsung selama sembilan puluh menit. Namun pada pukul 16.35, tidak ada lagi yang terlalu peduli melihat jam.
+
+Rapat dipimpin oleh **Rizky Aditya Pranoto**, Chief Operating Officer. Alasan utama rapat tersebut adalah membahas penumpukan klaim rumah sakit yang terus bertambah, meskipun ada tiga topik lain yang juga masuk dalam agenda: peluncuran aplikasi mobile baru, perpanjangan kontrak dengan sejumlah rumah sakit rekanan, serta program retensi nasabah untuk kuartal keempat.
+
+Turut hadir **Dr. Maya Kartikasari**, Medical Director; **Fajar Nugroho Santoso**, Chief Financial Officer; **Nadia Putri Wibowo**, Head of Customer Experience; dan **Bima Arya Kurniawan**, Chief Technology Officer.
+
+Rizky membuka rapat dengan masalah backlog klaim. Sekitar 8.400 klaim reimbursement dan cashless masih menunggu penyelesaian akhir, jauh di atas jumlah yang menurut tim operasional masih dapat ditangani secara wajar. Rizky menjelaskan bahwa timnya sudah memindahkan sementara enam belas karyawan dari bagian administrasi polis untuk membantu proses verifikasi klaim, tetapi hasilnya hanya sedikit mengurangi antrean.
+
+Maya segera menanggapi bahwa tim medical review terlalu sering dijadikan pihak yang paling mudah disalahkan.
+
+Tim yang dipimpinnya bertanggung jawab memeriksa klaim yang membutuhkan penilaian medis, terutama kasus rawat inap bernilai tinggi, prosedur medis yang tidak lazim, dugaan duplikasi tindakan, dan kasus-kasus yang membutuhkan klarifikasi tambahan dari rumah sakit.
+
+Menurut Maya, salah satu penyebab utama keterlambatan justru berasal dari dokumen yang tidak lengkap.
+
+“Separuh keterlambatan terjadi karena kami harus meminta dokumen yang sama dua kali kepada rumah sakit,” katanya. “Dokter-dokter saya tidak bisa menyetujui sesuatu yang belum bisa diverifikasi.”
+
+Fajar, yang bertanggung jawab atas keuangan, cadangan klaim, otorisasi pembayaran, dan perencanaan arus kas, mengakui bahwa masalah dokumentasi memang nyata. Namun ia lebih khawatir terhadap konsekuensi finansial apabila proses persetujuan klaim dipercepat terlalu agresif.
+
+Pengeluaran klaim pada Agustus tercatat sekitar enam persen di atas proyeksi. Karena itu, Fajar mengusulkan adanya lapisan pemeriksaan tambahan untuk setiap klaim dengan nilai di atas Rp100 juta sebelum pembayaran dapat dilepas.
+
+Usulan tersebut langsung membuat Nadia keberatan.
+
+Tim Customer Experience yang dipimpinnya bertanggung jawab menangani keluhan, eskalasi dari call centre, dan retensi pelanggan. Menurut Nadia, keluhan mengenai lambatnya persetujuan klaim meningkat cukup tajam selama enam minggu terakhir. Beberapa klien korporasi bahkan sudah mulai mengancam akan mengevaluasi kembali kontrak mereka saat masa perpanjangan.
+
+“Kalau kita tambah satu tahap persetujuan lagi, pelanggan pasti merasakannya,” katanya. “Mereka tidak peduli keterlambatannya datang dari Medical, Finance, atau Operations. Di mata mereka, kita satu perusahaan.”
+
+Bima sejak awal lebih banyak diam sampai pembahasan masuk ke topik otomatisasi.
+
+Tim teknologi yang dipimpinnya sedang mengembangkan modul penyaringan klaim berbasis aturan. Sistem tersebut dirancang agar klaim sederhana dan berisiko rendah dapat disetujui secara otomatis, sementara kasus yang tidak biasa akan diteruskan ke pemeriksaan manusia.
+
+Pilot internal pertama dijadwalkan dimulai pada 14 September.
+
+Bima mengatakan sistem tersebut nantinya bisa mengeluarkan ribuan kasus rutin dari antrean manual. Namun ia memperingatkan bahwa tim Operations masih belum menyelesaikan beberapa business rule yang dibutuhkan sistem.
+
+Di titik itulah suasana rapat berubah.
+
+Rizky mencondongkan tubuh ke depan.
+
+“Kami sudah memberikan dokumentasi proses ke Technology tiga minggu lalu. Tim kamu terus saja menanyakan hal-hal yang sebenarnya sudah dijawab.”
+
+Bima menggeleng.
+
+“Yang kalian berikan itu slide PowerPoint. Itu bukan hal yang sama dengan business rule yang bisa diterjemahkan ke sistem.”
+
+Ekspresi Rizky langsung berubah.
+
+“Jangan mulai lagi dengan omong kosong itu. Setiap kali tim kamu terlambat, tiba-tiba masalahnya selalu karena kami yang tidak menjelaskan dengan benar.”
+
+Bima memandang Rizky selama beberapa detik.
+
+“Sistem tidak bisa menebak sendiri apa yang kamu maksud, Rizky.”
+
+Rizky kemudian meninggikan suaranya.
+
+> “Sudahlah. Jagan bodoh terus dan terus berlindung di balik omong kosong teknis. Tim kamu sudah punya waktu tiga bulan. Kalau orang-orang kamu benar-benar paham bisnis daripada cuma duduk membahas API dan arsitektur seharian, mungkin sekarang kita sudah punya sesuatu yang benar-benar bisa dipakai.”
+
+Ruangan mendadak sunyi.
+
+Bima menutup laptopnya.
+
+> “Kalau memang itu cara kamu melihat kerja Technology, mungkin sebaiknya kamu bangun sendiri sistemnya.”
+
+Maya segera masuk sebelum Rizky sempat menjawab.
+
+“Ini sudah mulai jadi persoalan pribadi. Kita tidak akan menyelesaikan masalah antrean klaim dengan cara seperti ini.”
+
+Ketegangan tidak benar-benar hilang.
+
+Mereka akhirnya berpindah, sedikit canggung, ke pembahasan mengenai kontrak rumah sakit.
+
+Maya melaporkan bahwa dua grup rumah sakit swasta besar meminta kenaikan tarif untuk kontrak 2027. Ia menyarankan agar perusahaan menerima kenaikan terbatas untuk beberapa tindakan spesialis, tetapi menolak sejumlah kenaikan tarif kamar yang dianggap terlalu tinggi.
+
+Fajar meminta tim Maya menyiapkan estimasi dampak finansial sebelum negosiasi dengan rumah sakit dilanjutkan pada minggu berikutnya.
+
+Nadia kemudian membahas program retensi pelanggan.
+
+Ia mengusulkan agar perusahaan secara proaktif menghubungi klien korporasi dengan tingkat keluhan tinggi sebelum masa perpanjangan kontrak, daripada menunggu broker atau bagian HR perusahaan tersebut melakukan eskalasi terlebih dahulu.
+
+Rizky mendukung usulan itu dan meminta Nadia berkoordinasi dengan Sales untuk menyusun daftar akun prioritas, meskipun tidak ada perwakilan Sales dalam rapat tersebut.
+
+Pembahasan aplikasi mobile memunculkan perbedaan pendapat lain, meskipun tidak sepanas sebelumnya.
+
+Bima ingin menunda peluncuran publik dari Oktober menjadi November karena sistem verifikasi identitas dan sinkronisasi direktori rumah sakit masih belum stabil.
+
+Nadia keberatan jika penundaannya terlalu lama karena materi pemasaran untuk peluncuran Oktober sudah disiapkan.
+
+Mereka sempat membahas kemungkinan melakukan peluncuran terbatas terlebih dahulu kepada karyawan dan broker. Namun tidak ada tanggal peluncuran final yang disepakati.
+
+Pada pukul 16.35, Rizky mencoba merangkum hasil rapat.
+
+Maya akan memberikan analisis mengenai kenaikan tarif rumah sakit kepada tim Finance. Fajar akan menghitung dampak finansial apabila diberlakukan kontrol tambahan untuk klaim bernilai besar. Nadia akan menyusun daftar klien korporasi yang paling berisiko tidak memperpanjang kontrak. Bima dan tim Technology akan tetap melanjutkan persiapan pilot otomatisasi klaim, sementara Operations harus menyelesaikan dan memperjelas business rule yang masih belum final.
+
+Namun persoalan utama tetap belum terjawab: bagaimana mengurangi backlog klaim tanpa memperlemah kontrol finansial dan tanpa membuat nasabah menunggu lebih lama.
+
+Begitu pula dengan konflik antara Rizky dan Bima.
+
+Kelima eksekutif meninggalkan ruang rapat dengan beberapa pekerjaan lanjutan, dua keputusan operasional yang masih terbuka, dan masalah klaim yang tetap sama mendesaknya seperti ketika rapat dimulai pada pukul 15.00.
