@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="theme-color" content="#02030a">
+  <title>DECENTRICITY // WORLD</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <canvas id="webgl" aria-label="Decentricity project world"></canvas>
+
+  <div id="gate" class="gate">
+    <div class="gate-card">
+      <div class="gate-kicker">DECENTRICITY PERSONAL MACHINE // DISPLAY:WORLD</div>
+      <h1>WORLD PROCESS</h1>
+      <p id="gate-copy">Checking WebGPU capability…</p>
+      <div class="gate-actions">
+        <button id="enter-world" type="button" disabled>ENTER WORLD</button>
+        <button id="back-to-shell" type="button">BACK TO DISPLAYS</button>
+      </div>
+      <div id="gate-status" class="gate-status">PROBE navigator.gpu…</div>
+    </div>
+  </div>
+
+  <header id="hud" class="hud hidden">
+    <div class="hud-block hud-title">
+      <strong>DECENTRICITY // WORLD</strong>
+      <span>NFTMASSACRE-derived spatial renderer</span>
+    </div>
+    <div class="hud-block hud-help" id="hud-help">WASD move · mouse look · SPACE jump · E inspect · ESC release</div>
+    <button id="display-button" class="hud-button" type="button">▣ DISPLAYS</button>
+  </header>
+
+  <div id="crosshair" class="crosshair hidden" aria-hidden="true"></div>
+  <div id="prompt" class="prompt hidden"></div>
+
+  <aside id="district-panel" class="district-panel hidden">
+    <div class="district-label">DISTRICT</div>
+    <strong id="district-name">HOME</strong>
+    <span id="district-detail">DECENTRICITY</span>
+  </aside>
+
+  <section id="dossier" class="dossier hidden" aria-live="polite">
+    <button id="dossier-close" class="dossier-close" type="button" aria-label="Close dossier">×</button>
+    <div class="dossier-kicker" id="dossier-kicker"></div>
+    <h2 id="dossier-title"></h2>
+    <p class="dossier-summary" id="dossier-summary"></p>
+    <p class="dossier-notes" id="dossier-notes"></p>
+    <div id="dossier-tech" class="chips"></div>
+    <div id="dossier-links" class="dossier-links"></div>
+  </section>
+
+  <div id="mobile-controls" class="mobile-controls hidden" aria-hidden="true">
+    <div id="move-zone" class="move-zone">
+      <div class="pad-ring"><div id="move-knob" class="pad-knob"></div></div>
+      <span>MOVE</span>
+    </div>
+    <div id="look-zone" class="look-zone"><span>LOOK</span></div>
+    <button id="mobile-interact" class="mobile-interact" type="button">E</button>
+  </div>
+
+  <div class="scanlines" aria-hidden="true"></div>
+
+  <script src="../projects.js"></script>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.183.2/build/three.module.js"
+      }
+    }
+  </script>
+  <script type="module" src="world.js"></script>
+</body>
+</html>
