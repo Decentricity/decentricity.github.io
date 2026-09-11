@@ -1,0 +1,240 @@
+name: integrate-2026-world
+
+on:
+  push:
+    branches: [2026revamp-world-dev]
+    paths: [.github/workflows/integrate-2026-world.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 2026revamp-world-dev
+      - name: Patch world into existing display integration
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path('2026revamp/hedgeyos.js')
+          s = path.read_text()
+
+          old = """  function showWorldReserved() {
+              glitch(() => {
+                hideAllScreens();
+                document.body.classList.remove('hedgeyos-active');
+                $('#message-code').textContent = 'DISPLAY:WORLD';
+                $('#message-title').textContent = 'WORLD RENDERER STAGED';
+                $('#message-copy').textContent = navigator.gpu
+                  ? 'WebGPU is available. The NFTMassacre-style world renderer is the next interface to be mounted here.'
+                  : 'This browser does not expose WebGPU. The world renderer will remain unavailable here; Shell and HedgeyOS stay online.';
+                $('#message-screen').classList.remove('hidden');
+              });
+            }
+          """
+          new = """  let worldHost = null;
+            let worldFrame = null;
+
+            function showWorldReserved() {
+              glitch(() => {
+                hideAllScreens();
+                document.body.classList.remove('hedgeyos-active', 'world-active');
+                $('#message-code').textContent = 'DISPLAY:WORLD';
+                $('#message-title').textContent = 'WORLD REQUIRES WEBGPU';
+                $('#message-copy').textContent = 'This browser does not expose WebGPU. Shell and HedgeyOS remain available.';
+                $('#message-screen').classList.remove('hidden');
+              });
+            }
+
+            function ensureWorldHost() {
+              if (worldHost && worldFrame) return { host: worldHost, frame: worldFrame };
+              worldHost = document.createElement('section');
+              worldHost.id = 'world-host-screen';
+              worldHost.className = 'screen hidden';
+              worldHost.setAttribute('aria-label', 'Decentricity 3D world');
+              worldHost.style.cssText = 'position:fixed;inset:0;z-index:30;background:#02030a;';
+              worldFrame = document.createElement('iframe');
+              worldFrame.id = 'world-frame';
+              worldFrame.title = 'Decentricity World';
+              worldFrame.src = 'world/?v=20260911a';
+              worldFrame.setAttribute('allow', 'fullscreen');
+              worldFrame.style.cssText = 'display:block;width:100%;height:100%;border:0;background:#02030a;';
+              worldHost.appendChild(worldFrame);
+              document.querySelector('#machine')?.appendChild(worldHost);
+              return { host: worldHost, frame: worldFrame };
+            }
+
+            function openWorld() {
+              if (!navigator.gpu) return showWorldReserved();
+              const { host, frame } = ensureWorldHost();
+              glitch(() => {
+                hideAllScreens();
+                document.body.classList.remove('hedgeyos-active');
+                document.body.classList.add('world-active');
+                host.classList.remove('hidden');
+                frame.focus();
+              });
+            }
+
+            function leaveWorld(target = 'selector') {
+              glitch(() => {
+                worldHost?.classList.add('hidden');
+                document.body.classList.remove('world-active');
+                const dest = target === 'shell' ? $('#terminal-screen') : $('#selector-screen');
+                dest?.classList.remove('hidden');
+                if (target === 'shell') window.setTimeout(() => $('#command-input')?.focus(), 80);
+              });
+            }
+          """
+          if old not in s:
+              raise SystemExit('expected showWorldReserved block not found')
+          s = s.replace(old, new, 1)
+
+          old = "    if (action === 'world') return showWorldReserved();"
+          new = "    if (action === 'world') return openWorld();"
+          if old not in s: raise SystemExit('world action line not found')
+          s = s.replace(old, new, 1)
+
+          old = """    const help = $('.selector-help');
+            const helpHtml = 'Use ← → and ENTER, press <kbd>2</kbd>/<kbd>3</kbd>, or click a display. HEDGEYOS and SHELL are online; WORLD remains staged for the WebGPU build.';
+            if (help && help.innerHTML !== helpHtml) help.innerHTML = helpHtml;
+          """
+          new = """    const worldCard = $('[data-interface=\"world\"]');
+            if (worldCard) {
+              const em = $('em', worldCard);
+              if (navigator.gpu) {
+                worldCard.classList.remove('pending');
+                worldCard.classList.add('ready');
+                if (em && em.textContent !== 'online') em.textContent = 'online';
+              } else {
+                worldCard.classList.add('pending');
+                worldCard.classList.remove('ready');
+                if (em && em.textContent !== 'WebGPU required') em.textContent = 'WebGPU required';
+              }
+            }
+            const help = $('.selector-help');
+            const helpHtml = navigator.gpu
+              ? 'Use ← → and ENTER, press <kbd>1</kbd>/<kbd>2</kbd>/<kbd>3</kbd>, or click a display. WORLD, HEDGEYOS and SHELL are online.'
+              : 'Use ← → and ENTER, press <kbd>2</kbd>/<kbd>3</kbd>, or click a display. HEDGEYOS and SHELL are online; WORLD requires WebGPU.';
+            if (help && help.innerHTML !== helpHtml) help.innerHTML = helpHtml;
+          """
+          if old not in s: raise SystemExit('selector help block not found')
+          s = s.replace(old, new, 1)
+
+          old = """      if (small && small.textContent !== 'Shell + HedgeyOS online; World renderer next') small.textContent = 'Shell + HedgeyOS online; World renderer next';
+              if (meta && meta.textContent !== '2 online') meta.textContent = '2 online';
+          """
+          new = """      const displayCopy = navigator.gpu ? 'Shell + HedgeyOS + World online' : 'Shell + HedgeyOS online; World requires WebGPU';
+              const displayMeta = navigator.gpu ? '3 online' : '2 online';
+              if (small && small.textContent !== displayCopy) small.textContent = displayCopy;
+              if (meta && meta.textContent !== displayMeta) meta.textContent = displayMeta;
+          """
+          if old not in s: raise SystemExit('home display block not found')
+          s = s.replace(old, new, 1)
+
+          old = """      t = t.replace(/SPAWN hedgeyos-display\\.service[^\\n]*STAGED/g, 'SPAWN hedgeyos-display.service ................................. OK');
+              t = t.replace('NOTE graphical renderers are reserved for a later build', 'MOUNT HedgeyOS project desktop ................................. OK');
+          """
+          new = """      t = t.replace(/SPAWN hedgeyos-display\\.service[^\\n]*STAGED/g, 'SPAWN hedgeyos-display.service ................................. OK');
+              if (navigator.gpu) t = t.replace(/SPAWN nftworld\\.service[^\\n]*STAGED/g, 'SPAWN nftworld.service ......................................... OK');
+              t = t.replace('NOTE graphical renderers are reserved for a later build', navigator.gpu ? 'MOUNT HedgeyOS + World displays ............................... OK' : 'MOUNT HedgeyOS project desktop ................................. OK');
+          """
+          if old not in s: raise SystemExit('boot label block not found')
+          s = s.replace(old, new, 1)
+
+          old = """  function intercept(e) {
+              const target = e.target.closest?.('[data-interface=\"desktop\"], [data-display=\"desktop\"]');
+              if (!target) return;
+              e.preventDefault();
+              e.stopImmediatePropagation();
+              openHedgey();
+            }
+          """
+          new = """  function intercept(e) {
+              const worldTarget = e.target.closest?.('[data-interface=\"world\"], [data-display=\"world\"], [data-hos-action=\"world\"]');
+              if (worldTarget) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                openWorld();
+                return;
+              }
+              const target = e.target.closest?.('[data-interface=\"desktop\"], [data-display=\"desktop\"]');
+              if (!target) return;
+              e.preventDefault();
+              e.stopImmediatePropagation();
+              openHedgey();
+            }
+          """
+          if old not in s: raise SystemExit('intercept block not found')
+          s = s.replace(old, new, 1)
+
+          old = """    const value = ($('#command-input')?.value || '').trim().toLowerCase();
+              if (value !== 'desktop' && value !== 'hedgeyos') return;
+              e.preventDefault();
+              e.stopImmediatePropagation();
+              if ($('#command-input')) $('#command-input').value = '';
+              openHedgey();
+          """
+          new = """    const value = ($('#command-input')?.value || '').trim().toLowerCase();
+              if (value !== 'desktop' && value !== 'hedgeyos' && value !== 'world') return;
+              e.preventDefault();
+              e.stopImmediatePropagation();
+              if ($('#command-input')) $('#command-input').value = '';
+              if (value === 'world') openWorld();
+              else openHedgey();
+          """
+          if old not in s: raise SystemExit('command block not found')
+          s = s.replace(old, new, 1)
+
+          old = """    const selectorVisible = !$('#selector-screen')?.classList.contains('hidden');
+              if (selectorVisible && (e.key === '2' || (e.key === 'Enter' && $('[data-interface=\"desktop\"]')?.classList.contains('selected')))) {
+                e.preventDefault(); e.stopImmediatePropagation(); openHedgey(); return;
+              }
+          """
+          new = """    const selectorVisible = !$('#selector-screen')?.classList.contains('hidden');
+              if (selectorVisible && (e.key === '1' || (e.key === 'Enter' && $('[data-interface=\"world\"]')?.classList.contains('selected')))) {
+                e.preventDefault(); e.stopImmediatePropagation(); openWorld(); return;
+              }
+              if (selectorVisible && (e.key === '2' || (e.key === 'Enter' && $('[data-interface=\"desktop\"]')?.classList.contains('selected')))) {
+                e.preventDefault(); e.stopImmediatePropagation(); openHedgey(); return;
+              }
+          """
+          if old not in s: raise SystemExit('selector key block not found')
+          s = s.replace(old, new, 1)
+
+          marker = "  const observer = new MutationObserver(syncIntegrationLabels);"
+          insert = """  window.addEventListener('message', e => {
+              if (!worldFrame || e.source !== worldFrame.contentWindow) return;
+              const msg = e.data;
+              if (!msg || msg.type !== 'decentricity:switch') return;
+              if (msg.target === 'shell') leaveWorld('shell');
+              else if (msg.target === 'desktop') openHedgey();
+              else leaveWorld('selector');
+            });
+
+          """
+          if marker not in s: raise SystemExit('observer marker not found')
+          s = s.replace(marker, insert + marker, 1)
+
+          path.write_text(s)
+
+          # Remove this one-shot workflow from the resulting tree.
+          wf = Path('.github/workflows/integrate-2026-world.yml')
+          if wf.exists(): wf.unlink()
+      - name: Verify syntax and expected integration points
+        run: |
+          node --check 2026revamp/hedgeyos.js
+          node --check 2026revamp/world/world.js
+          grep -q "function openWorld" 2026revamp/hedgeyos.js
+          grep -q "world/?v=20260911a" 2026revamp/hedgeyos.js
+      - name: Commit integrated world
+        run: |
+          git config user.name "Decentricity World Integrator"
+          git config user.email "1@decentri.city"
+          git add -A
+          git commit -m "Integrate 3D world display into 2026 revamp"
+          git push origin HEAD:2026revamp-world-dev
