@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#020806">
+  <meta name="description" content="Decentricity 2026 — a terminal-first personal machine, project archive and laboratory.">
+  <title>DECENTRICITY // 2026</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="crt" aria-hidden="true"></div>
+  <div id="glitch-layer" aria-hidden="true"><span>DECENTRICITY</span><span>DECENTRICITY</span></div>
+
+  <main id="machine" class="machine booting" aria-live="polite">
+    <section id="boot-screen" class="screen boot-screen" aria-label="System boot sequence">
+      <div class="boot-brand">
+        <div class="boot-mark">D//26</div>
+        <div>
+          <h1>DECENTRICITY PERSONAL MACHINE</h1>
+          <p>revision 2026.09 // terminal-first shell</p>
+        </div>
+      </div>
+      <pre id="boot-log" class="boot-log"></pre>
+      <div id="boot-progress" class="boot-progress" aria-hidden="true"><i></i></div>
+      <button id="skip-boot" class="ghost-button" type="button">[ ESC ] SKIP BOOT</button>
+    </section>
+
+    <section id="selector-screen" class="screen selector-screen hidden" aria-label="Interface selector">
+      <header class="selector-header">
+        <div>
+          <div class="eyebrow">DISPLAY MANAGER // READY</div>
+          <h1>SELECT INTERFACE</h1>
+        </div>
+        <div id="gpu-state" class="hardware-pill">WEBGPU: PROBING</div>
+      </header>
+      <div class="interface-grid">
+        <button class="interface-card pending" data-interface="world" type="button">
+          <span class="ascii-icon" aria-hidden="true">◎</span>
+          <strong>WORLD</strong>
+          <small>NFTMASSACRE renderer</small>
+          <em id="world-state">module staged</em>
+        </button>
+        <button class="interface-card pending" data-interface="desktop" type="button">
+          <span class="ascii-icon" aria-hidden="true">▣</span>
+          <strong>HEDGEYOS</strong>
+          <small>window manager</small>
+          <em>module staged</em>
+        </button>
+        <button class="interface-card ready selected" data-interface="shell" type="button">
+          <span class="ascii-icon" aria-hidden="true">$_</span>
+          <strong>SHELL</strong>
+          <small>Retraux / AS400-ish</small>
+          <em>online</em>
+        </button>
+      </div>
+      <p class="selector-help">Use ← → and ENTER, press <kbd>3</kbd>, or click a display. WORLD and HEDGEYOS are reserved for the next build.</p>
+    </section>
+
+    <section id="terminal-screen" class="screen terminal-screen hidden" aria-label="Decentricity terminal">
+      <header class="terminal-header">
+        <div class="system-name">DECENTRICITY/400</div>
+        <div id="breadcrumb" class="breadcrumb">SYS:/HOME</div>
+        <div id="clock" class="clock">--:--:--</div>
+      </header>
+
+      <div class="terminal-body">
+        <aside class="rail" aria-label="Quick navigation">
+          <button data-route="home" class="rail-item active" type="button"><span>01</span>HOME</button>
+          <button data-route="projects" class="rail-item" type="button"><span>02</span>PROJECTS</button>
+          <button data-route="families" class="rail-item" type="button"><span>03</span>FAMILIES</button>
+          <button data-route="timeline" class="rail-item" type="button"><span>04</span>TIMELINE</button>
+          <button data-route="archive" class="rail-item" type="button"><span>05</span>ARCHIVE</button>
+          <button data-route="about" class="rail-item" type="button"><span>06</span>ABOUT</button>
+          <button data-route="interfaces" class="rail-item" type="button"><span>07</span>DISPLAYS</button>
+        </aside>
+
+        <section class="panel" aria-label="Menu panel">
+          <div id="panel-title" class="panel-title"></div>
+          <div id="panel-content" class="panel-content"></div>
+        </section>
+      </div>
+
+      <footer class="command-area">
+        <div id="status-line" class="status-line">F1=Help &nbsp; F3=Back &nbsp; F5=Refresh &nbsp; F9=Shell &nbsp; / =Command</div>
+        <form id="command-form" class="command-form" autocomplete="off">
+          <label for="command-input">SYS:&gt;</label>
+          <input id="command-input" name="command" inputmode="text" spellcheck="false" autocapitalize="off" aria-label="Command line">
+          <span class="cursor-block" aria-hidden="true"></span>
+        </form>
+      </footer>
+    </section>
+
+    <section id="message-screen" class="screen message-screen hidden" aria-label="Interface message">
+      <div class="message-box">
+        <div id="message-code" class="message-code">DISPLAY:000</div>
+        <h1 id="message-title">MODULE RESERVED</h1>
+        <p id="message-copy"></p>
+        <button id="message-return" type="button">RETURN TO SHELL</button>
+      </div>
+    </section>
+  </main>
+
+  <template id="project-row-template">
+    <button class="menu-row project-row" type="button">
+      <span class="menu-key"></span>
+      <span class="menu-main"><strong></strong><small></small></span>
+      <span class="menu-meta"></span>
+    </button>
+  </template>
+
+  <script src="projects.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
