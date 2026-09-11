@@ -1,0 +1,109 @@
+name: Archive old Decentri.city once
+
+on:
+  push:
+    branches: [archive-oldsite-work]
+    paths:
+      - '.github/workflows/archive-oldsite-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Mirror published Google Site
+        shell: bash
+        run: |
+          set -u
+          DEST='oldsite/google-sites-archive'
+          RAW="$DEST/raw"
+          mkdir -p "$RAW" "$DEST/drive-linked-files"
+
+          cat > "$DEST/README.md" <<'EOF'
+          # Original Decentri.city archive
+
+          This directory is a preservation snapshot of the old Google Sites version of Decentri.city.
+
+          Sources:
+          - Custom domain: https://www.decentri.city/
+          - Published Google Sites page: https://sites.google.com/view/decentricity/1
+          - Google Sites preview/editor reference supplied by the owner: https://sites.google.com/u/0/d/1vMU47SEvD9OYacrx3jUiIUF2unv5awRi/preview
+          - Drive item title shown by the owner: `www.decentri.city` (modified 2023-04-02)
+
+          Notes:
+          - Google Drive's public API does not expose/export the native Google Sites container through the connected Drive tooling, so the site itself is preserved here by mirroring the published version.
+          - Drive-hosted files directly linked from the site are separately downloaded in `drive-linked-files/` where publicly exportable.
+          - External sites such as YouTube, press articles, and unrelated off-site links are not mirrored.
+          EOF
+
+          # Preserve the custom-domain site, following its own pages and fetching Google-hosted page requisites.
+          wget \
+            --mirror \
+            --convert-links \
+            --adjust-extension \
+            --page-requisites \
+            --span-hosts \
+            --domains=www.decentri.city,lh3.googleusercontent.com,ssl.gstatic.com,www.gstatic.com,fonts.gstatic.com,fonts.googleapis.com \
+            --execute robots=off \
+            --user-agent='Mozilla/5.0 (X11; Linux x86_64) DecentriCityArchive/1.0' \
+            --timeout=30 \
+            --tries=3 \
+            --directory-prefix="$RAW/custom-domain" \
+            https://www.decentri.city/ || true
+
+          # Also preserve the canonical published Google Sites URL as a standalone page + requisites.
+          wget \
+            --page-requisites \
+            --convert-links \
+            --adjust-extension \
+            --span-hosts \
+            --domains=sites.google.com,lh3.googleusercontent.com,ssl.gstatic.com,www.gstatic.com,fonts.gstatic.com,fonts.googleapis.com \
+            --execute robots=off \
+            --user-agent='Mozilla/5.0 (X11; Linux x86_64) DecentriCityArchive/1.0' \
+            --timeout=30 \
+            --tries=3 \
+            --directory-prefix="$RAW/google-sites" \
+            'https://sites.google.com/view/decentricity/1' || true
+
+          # Drive-hosted decks linked directly from the old home page.
+          curl --fail --location --retry 3 \
+            'https://docs.google.com/presentation/d/13c5KICAtswVf7IPie6rwGB7zbSUn1nq3g1189yihPjI/export/pptx' \
+            --output "$DEST/drive-linked-files/DeBio-Network-Summary-Nearcon.pptx" || \
+            printf '%s\n' 'https://docs.google.com/presentation/d/13c5KICAtswVf7IPie6rwGB7zbSUn1nq3g1189yihPjI/edit' > "$DEST/drive-linked-files/DeBio-Network-Summary-Nearcon.url.txt"
+
+          curl --fail --location --retry 3 \
+            'https://docs.google.com/presentation/d/1EOntyxAGE5JIUsMdqpKy1m6N0eb73qINAcESSbCXUCs/export/pptx' \
+            --output "$DEST/drive-linked-files/Myriad-Summary-Nearcon.pptx" || \
+            printf '%s\n' 'https://docs.google.com/presentation/d/1EOntyxAGE5JIUsMdqpKy1m6N0eb73qINAcESSbCXUCs/edit' > "$DEST/drive-linked-files/Myriad-Summary-Nearcon.url.txt"
+
+          # Inventory + integrity hashes.
+          find "$DEST" -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > "$DEST/SHA256SUMS"
+          printf 'Archived UTC: %s\n' "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" > "$DEST/ARCHIVED_AT.txt"
+
+          echo 'Archive inventory:'
+          find "$DEST" -type f -printf '%s bytes  %p\n' | sort -k2
+
+          # Require at least one mirrored HTML page; fail rather than claiming success on an empty mirror.
+          if ! find "$RAW" -type f \( -name '*.html' -o -name '*.htm' \) -print -quit | grep -q .; then
+            echo 'No HTML pages were mirrored.' >&2
+            exit 1
+          fi
+
+      - name: Commit archive snapshot
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add oldsite/google-sites-archive
+          if git diff --cached --quiet; then
+            echo 'Nothing new to commit.'
+            exit 0
+          fi
+          git commit -m 'Archive original Decentri.city Google Site'
+          git push origin HEAD:archive-oldsite-work
