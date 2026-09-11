@@ -7,6 +7,7 @@
   <meta name="description" content="Decentricity 2026 — a terminal-first personal machine, project archive and laboratory.">
   <title>DECENTRICITY // 2026</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="hedgeyos.css">
 </head>
 <body>
   <div id="crt" aria-hidden="true"></div>
@@ -18,7 +19,7 @@
         <div class="boot-mark">D//26</div>
         <div>
           <h1>DECENTRICITY PERSONAL MACHINE</h1>
-          <p>revision 2026.09 // terminal-first shell</p>
+          <p>revision 2026.09 // multi-interface personal system</p>
         </div>
       </div>
       <pre id="boot-log" class="boot-log"></pre>
@@ -41,11 +42,11 @@
           <small>NFTMASSACRE renderer</small>
           <em id="world-state">module staged</em>
         </button>
-        <button class="interface-card pending" data-interface="desktop" type="button">
+        <button class="interface-card ready" data-interface="desktop" type="button">
           <span class="ascii-icon" aria-hidden="true">▣</span>
           <strong>HEDGEYOS</strong>
           <small>window manager</small>
-          <em>module staged</em>
+          <em id="hedgeyos-state">online</em>
         </button>
         <button class="interface-card ready selected" data-interface="shell" type="button">
           <span class="ascii-icon" aria-hidden="true">$_</span>
@@ -54,7 +55,7 @@
           <em>online</em>
         </button>
       </div>
-      <p class="selector-help">Use ← → and ENTER, press <kbd>3</kbd>, or click a display. WORLD and HEDGEYOS are reserved for the next build.</p>
+      <p class="selector-help">Use ← → and ENTER, press <kbd>2</kbd>/<kbd>3</kbd>, or click a display. HEDGEYOS and SHELL are online; WORLD remains staged for the WebGPU build.</p>
     </section>
 
     <section id="terminal-screen" class="screen terminal-screen hidden" aria-label="Decentricity terminal">
@@ -91,6 +92,67 @@
       </footer>
     </section>
 
+    <section id="hedgeyos-screen" class="screen hedgeyos-screen hidden" aria-label="HedgeyOS desktop">
+      <header class="hos-menubar hos-bevel-out" id="hos-menubar">
+        <div class="hos-menu-wrap">
+          <button class="hos-menu-trigger hos-logo" type="button" data-hos-menu="system" aria-haspopup="true">🦔</button>
+          <div class="hos-menu" data-hos-dropdown="system">
+            <button type="button" data-hos-action="about">About This Machine</button>
+            <button type="button" data-hos-action="selector">Display Manager…</button>
+            <div class="hos-menu-sep"></div>
+            <button type="button" data-hos-action="shell">Switch to Shell</button>
+            <button type="button" data-hos-action="world">Open World…</button>
+          </div>
+        </div>
+        <div class="hos-menu-wrap">
+          <button class="hos-menu-trigger" type="button" data-hos-menu="file">File</button>
+          <div class="hos-menu" data-hos-dropdown="file">
+            <button type="button" data-hos-action="about">Open About</button>
+            <button type="button" data-hos-action="archive">Open Archive</button>
+            <button type="button" data-hos-action="timeline">Open Timeline</button>
+            <div class="hos-menu-sep"></div>
+            <button type="button" data-hos-action="close-all">Close All Windows</button>
+          </div>
+        </div>
+        <div class="hos-menu-wrap">
+          <button class="hos-menu-trigger" type="button" data-hos-menu="view">View</button>
+          <div class="hos-menu" data-hos-dropdown="view">
+            <button type="button" data-hos-action="arrange">Arrange Desktop Icons</button>
+            <button type="button" data-hos-action="cascade">Cascade Windows</button>
+            <button type="button" data-hos-action="show-projects">Projects Folder</button>
+          </div>
+        </div>
+        <div class="hos-menu-wrap">
+          <button class="hos-menu-trigger" type="button" data-hos-menu="go">Go</button>
+          <div class="hos-menu" data-hos-dropdown="go">
+            <button type="button" data-hos-action="shell">Terminal UI</button>
+            <button type="button" data-hos-action="selector">Three-UI Selector</button>
+            <button type="button" data-hos-action="github">GitHub ↗</button>
+          </div>
+        </div>
+        <div class="hos-menu-title">DECENTRICITY // HedgeyOS</div>
+        <div class="hos-menubar-spacer"></div>
+        <div id="hos-window-count" class="hos-window-count">0 windows</div>
+        <time id="hos-clock" class="hos-clock">--:--</time>
+      </header>
+
+      <div class="hos-desktop" id="hos-desktop">
+        <div class="hos-wallpaper-mark" aria-hidden="true">
+          <span>🦔</span>
+          <strong>HedgeyOS</strong>
+          <small>DECENTRICITY PERSONAL MACHINE</small>
+        </div>
+        <div id="hos-icons" class="hos-icons" aria-label="Project desktop icons"></div>
+        <div id="hos-window-layer" class="hos-window-layer" aria-live="polite"></div>
+      </div>
+
+      <footer class="hos-taskbar hos-bevel-out">
+        <button type="button" class="hos-task-home" data-hos-action="selector">▣ Displays</button>
+        <div id="hos-tasks" class="hos-tasks" aria-label="Open windows"></div>
+        <div class="hos-task-status">projects mounted read-only · external links open in a new tab</div>
+      </footer>
+    </section>
+
     <section id="message-screen" class="screen message-screen hidden" aria-label="Interface message">
       <div class="message-box">
         <div id="message-code" class="message-code">DISPLAY:000</div>
@@ -109,7 +171,23 @@
     </button>
   </template>
 
+  <template id="hos-window-template">
+    <article class="hos-window hos-bevel-out" data-hos-window>
+      <header class="hos-titlebar" data-hos-drag>
+        <div class="hos-controls">
+          <button type="button" class="hos-control hos-close" title="Close" data-hos-close aria-label="Close window"></button>
+          <button type="button" class="hos-control hos-min" title="Minimize" data-hos-min aria-label="Minimize window"></button>
+        </div>
+        <div class="hos-title" data-hos-title>Project</div>
+        <button type="button" class="hos-control hos-zoom" title="Zoom" data-hos-zoom aria-label="Zoom window"></button>
+      </header>
+      <div class="hos-window-body" data-hos-body></div>
+      <div class="hos-resize-grip" aria-hidden="true"></div>
+    </article>
+  </template>
+
   <script src="projects.js"></script>
   <script src="app.js"></script>
+  <script src="hedgeyos.js"></script>
 </body>
 </html>
