@@ -37,8 +37,8 @@
     .np{font-size:1.48rem;letter-spacing:-.045em;font-weight:700;color:var(--blue)}
     .np small{display:block;margin-top:.35rem;font-size:.75rem;letter-spacing:.16em;font-weight:500;text-transform:uppercase;color:var(--muted)}
     .times{color:var(--muted);font-family:Georgia,serif;font-size:1.5rem;font-weight:400}
-    .bs{font-size:1.3rem;letter-spacing:-.055em;font-weight:700;display:flex;align-items:center;gap:.45rem}
-    .bs img{width:30px;height:30px;object-fit:contain}
+    .bs{display:flex;align-items:center;min-width:0}
+    .bs img{width:12.5rem;height:auto;aspect-ratio:2430/557}
     .nav-links{display:flex;align-items:center;gap:2rem;font-size:.9rem}
     .nav-links a{text-decoration:none;padding:.6rem 0}
     .nav-links a:hover{color:var(--teal);text-decoration:underline}
@@ -102,8 +102,8 @@
     .footer-inner{display:flex;justify-content:space-between;gap:1rem}
     @media(min-width:1600px){.hero{padding-block:5.5rem}}
     @media(max-width:1000px){.nav-links{gap:1rem}.hero{grid-template-columns:1.15fr 1fr;gap:2rem}.client-inner{grid-template-columns:1fr;gap:1.25rem}.client-inner .eyebrow{max-width:none}.clients{justify-content:flex-start;gap:1.1rem 2.4rem}.section-head{grid-template-columns:1fr 2fr;gap:2rem}.programme{grid-template-columns:.8fr 2fr;gap:2rem}.partner{padding-right:2rem}.partner+.partner{padding-left:2rem}}
-    @media(max-width:740px){.nav{flex-direction:column;align-items:flex-start;gap:1.1rem;padding-block:1.3rem}.nav-links{width:100%;justify-content:space-between;border-top:1px solid var(--line);padding-top:.65rem}.nav-links a{font-size:.875rem}.hero{grid-template-columns:1fr;padding-block:2.8rem;gap:2.5rem}h1{font-size:clamp(3.7rem,12vw,5.4rem);max-width:12ch}.hero-copy{font-size:1.05rem;margin-top:1.4rem}.year-panel{padding:1.7rem}.year-number{font-size:6.4rem}.panel-label{max-width:none}.disciplines{margin-top:1.5rem}.section-head{grid-template-columns:1fr;gap:1.15rem;margin-bottom:2rem}.section-kicker{padding-top:0}.partners{grid-template-columns:1fr}.partner,.partner+.partner{padding:2rem 0;border-left:0}.partner+.partner{border-top:1px solid var(--line)}.mou{flex-direction:column;gap:.45rem}.programme{grid-template-columns:1fr;gap:1rem;padding-block:2rem}.programme-date{display:flex;align-items:baseline;gap:1rem;flex-wrap:wrap}.programme-date .month{font-size:2.2rem;margin:0}.programme h3{font-size:1.55rem}.closing-inner{grid-template-columns:1fr;gap:1.5rem}.footer-inner{flex-direction:column;gap:.4rem}}
-    @media(max-width:380px){.lockup{gap:.5rem}.np{font-size:1.15rem}.bs{font-size:1.05rem;gap:.35rem}.bs img{width:24px;height:24px}.times{font-size:1.15rem}.clients{font-size:1rem;gap:1rem 1.4rem}.panel-bottom{flex-direction:column;gap:.4rem}}
+    @media(max-width:740px){.nav{flex-direction:column;align-items:flex-start;gap:1.1rem;padding-block:1.3rem}.nav-links{width:100%;justify-content:space-between;border-top:1px solid var(--line);padding-top:.65rem}.nav-links a{font-size:.875rem}.bs img{width:10.5rem}.hero{grid-template-columns:1fr;padding-block:2.8rem;gap:2.5rem}h1{font-size:clamp(3.7rem,12vw,5.4rem);max-width:12ch}.hero-copy{font-size:1.05rem;margin-top:1.4rem}.year-panel{padding:1.7rem}.year-number{font-size:6.4rem}.panel-label{max-width:none}.disciplines{margin-top:1.5rem}.section-head{grid-template-columns:1fr;gap:1.15rem;margin-bottom:2rem}.section-kicker{padding-top:0}.partners{grid-template-columns:1fr}.partner,.partner+.partner{padding:2rem 0;border-left:0}.partner+.partner{border-top:1px solid var(--line)}.mou{flex-direction:column;gap:.45rem}.programme{grid-template-columns:1fr;gap:1rem;padding-block:2rem}.programme-date{display:flex;align-items:baseline;gap:1rem;flex-wrap:wrap}.programme-date .month{font-size:2.2rem;margin:0}.programme h3{font-size:1.55rem}.closing-inner{grid-template-columns:1fr;gap:1.5rem}.footer-inner{flex-direction:column;gap:.4rem}}
+    @media(max-width:380px){.lockup{gap:.5rem}.np{font-size:1.15rem}.bs img{width:9rem}.times{font-size:1.15rem}.clients{font-size:1rem;gap:1rem 1.4rem}.panel-bottom{flex-direction:column;gap:.4rem}}
     @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
     @media print{body{background:white;color:#111}.nav-links,.skip,.text-link{display:none}.hero{padding-block:2rem}.year-panel,.closing{background:#edf3ef;color:#111}.year-panel *,.closing *{color:#111!important}.section{padding-block:2rem}.programme,.partner{break-inside:avoid}.programme{gap:1rem}footer{border-top:1px solid #aaa}}
   </style>
@@ -115,7 +115,7 @@
       <a class="lockup" href="#main" aria-label="NobleProg and Blocksphere collaboration">
         <span class="np">NobleProg<small>Indonesia</small></span>
         <span class="times" aria-hidden="true">×</span>
-        <span class="bs"><img src="../blocksphere2026/assets/logo/blocksphere.png" alt="" width="30" height="30"><span>Blocksphere<span style="font-weight:400">.id</span></span></span>
+        <span class="bs"><img src="../blocksphere2026/assets/logo/blocksphere.png" alt="Blocksphere" width="2430" height="557"></span>
       </a>
       <nav class="nav-links" aria-label="Main navigation">
         <a href="#collaboration">The collaboration</a>
