@@ -307,7 +307,7 @@ function updateMovement(dt){
   if(dossierOpen) return;
   let forward=(keys.has('KeyW')?1:0)-(keys.has('KeyS')?1:0);
   let strafe=(keys.has('KeyD')?1:0)-(keys.has('KeyA')?1:0);
-  if(coarsePointer){strafe+=moveTouch.x;forward+=-moveTouch.y;}
+  if(coarsePointer){strafe+=-moveTouch.x;forward+=-moveTouch.y;}
   const mag=Math.hypot(forward,strafe);if(mag>1){forward/=mag;strafe/=mag;}
   const sprint=(keys.has('ShiftLeft')||keys.has('ShiftRight'))?player.sprint:1;
   const sy=Math.sin(yaw),cy=Math.cos(yaw);
