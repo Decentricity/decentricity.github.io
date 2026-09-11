@@ -46,7 +46,7 @@
     worldFrame = document.createElement('iframe');
     worldFrame.id = 'world-frame';
     worldFrame.title = 'Decentricity World';
-    worldFrame.src = 'world/?v=20260911b';
+    worldFrame.src = 'world/?v=20260911c';
     worldFrame.setAttribute('allow', 'fullscreen');
     worldFrame.style.cssText = 'display:block;width:100%;height:100%;border:0;background:#02030a;';
     worldFrame.addEventListener('load', () => {
@@ -94,6 +94,9 @@
     });
   }
 
+  // Deliberately updates only WORLD-owned labels. HedgeyOS has its own
+  // MutationObserver; touching its shared help/home labels here would make
+  // the two renderers fight over the same DOM nodes.
   function syncLabels() {
     const card = $('[data-interface="world"]');
     if (card) {
@@ -109,13 +112,6 @@
       }
     }
 
-    const help = $('.selector-help');
-    if (help) {
-      help.innerHTML = hasWebGPU
-        ? 'Use ← → and ENTER, press <kbd>1</kbd>/<kbd>2</kbd>/<kbd>3</kbd>, or click a display. WORLD, HEDGEYOS and SHELL are online.'
-        : 'Use ← → and ENTER, press <kbd>2</kbd>/<kbd>3</kbd>, or click a display. HEDGEYOS and SHELL are online; WORLD requires WebGPU.';
-    }
-
     const worldButton = $('[data-display="world"]');
     if (worldButton) {
       const article = worldButton.closest('.data-card');
@@ -126,25 +122,9 @@
       worldButton.textContent = hasWebGPU ? 'OPEN WORLD' : 'WEBGPU REQUIRED';
     }
 
-    const homeDisplay = $('[data-go="interfaces"]');
-    if (homeDisplay) {
-      const small = $('.menu-main small', homeDisplay);
-      const meta = $('.menu-meta', homeDisplay);
-      const copy = hasWebGPU ? 'Shell + HedgeyOS + World online' : 'Shell + HedgeyOS online; World requires WebGPU';
-      const count = hasWebGPU ? '3 online' : '2 online';
-      if (small) small.textContent = copy;
-      if (meta) meta.textContent = count;
-    }
-
     const boot = $('#boot-log');
-    if (boot?.textContent) {
-      let text = boot.textContent;
-      if (hasWebGPU) {
-        text = text.replace(/SPAWN nftworld\.service[^\n]*STAGED/g, 'SPAWN nftworld.service ......................................... OK');
-      }
-      text = text.replace('NOTE graphical renderers are reserved for a later build', hasWebGPU
-        ? 'MOUNT HedgeyOS + World displays ............................... OK'
-        : 'MOUNT HedgeyOS project desktop ................................. OK');
+    if (boot?.textContent && hasWebGPU && worldLoaded) {
+      const text = boot.textContent.replace(/SPAWN nftworld\.service[^\n]*STAGED/g, 'SPAWN nftworld.service ......................................... OK');
       if (boot.textContent !== text) boot.textContent = text;
     }
   }
@@ -189,8 +169,9 @@
     leaveWorld(msg.target || 'selector');
   });
 
-  const observer = new MutationObserver(syncLabels);
-  observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+  // The interfaces page is rendered dynamically, so refresh only WORLD-owned
+  // labels periodically rather than observing/mutating the whole document.
+  window.setInterval(syncLabels, 750);
 
   preloadWorld();
   syncLabels();
