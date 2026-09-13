@@ -15,9 +15,16 @@
     const eyebrow = $('#selector-screen .eyebrow');
     if (eyebrow) eyebrow.textContent = 'DISPLAY MANAGER // AUDIT CHECKPOINT 01';
 
+    const selectorHelp = $('.selector-help');
+    if (selectorHelp) {
+      selectorHelp.textContent = navigator.gpu
+        ? 'Use ← → and ENTER, press 1/2/3, or click a display. WORLD, HEDGEYOS and SHELL are mounted.'
+        : 'Use ← → and ENTER, press 2/3, or click a display. HEDGEYOS and SHELL are mounted; WORLD requires WebGPU.';
+    }
+
     const boot = $('#boot-log');
     if (boot?.textContent) {
-      let text = boot.textContent
+      const text = boot.textContent
         .replace(/INDEX 18 curated project records/g, `INDEX ${projectCount} audited project records`)
         .replace(/NOTE graphical renderers are reserved for a later build/g, 'NOTE project graph rebuilt from manual repository audit')
         .replace(/SPAWN hedgeyos-display\.service([^\n]*)STAGED/g, 'SPAWN hedgeyos-display.service ................................. OK');
@@ -110,8 +117,7 @@
     }
 
     if (state.view === 'world') {
-      const worldCard = $('[data-interface="world"]');
-      worldCard?.click();
+      $('[data-interface="world"]')?.click();
       return;
     }
 
