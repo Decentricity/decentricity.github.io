@@ -1,19 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 600" role="img" aria-labelledby="title desc">
 <title id="title">The agreement gate</title><desc id="desc">After opt-out, unsupported requests, scope changes, and rollout prerequisites: conditional assent is held; unconditional assent is checked against all package gates, then held or prepared for signature. Otherwise the controller records an approval or handles the topic, with clarification as fallback. No branch signs a contract.</desc>
 <defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8" fill="none" stroke="#aaa0b5" stroke-width="1.4"/></marker></defs>
-<style>text{fill:#f2ede6;font-family:system-ui,sans-serif}.label{font-size:12px;fill:#bbb0c2;letter-spacing:.6px}.title{font-size:20px;font-weight:550}.body{font-size:15px}.small{font-size:13px;fill:#bbb0c2}.mono{font-family:ui-monospace,monospace}.pink{fill:#f0a1d0}.lime{fill:#cbef99}.amber{fill:#f2c283}.line{fill:none;stroke:#aaa0b5;stroke-width:1.5;marker-end:url(#arrow)}</style>
+<style>text{fill:#f2ede6;font-family:system-ui,sans-serif}.label{font-size:12px;fill:#bbb0c2;letter-spacing:.6px}.title{font-size:18px;font-weight:550}.body{font-size:15px}.small{font-size:13px;fill:#bbb0c2}.mono{font-family:ui-monospace,monospace}.pink{fill:#f0a1d0}.lime{fill:#cbef99}.amber{fill:#f2c283}.line{fill:none;stroke:#aaa0b5;stroke-width:1.5;marker-end:url(#arrow)}</style>
+<rect width="1120" height="600" fill="#1c1823"/>
 <text x="24" y="28" class="label">COMMITMENT LOGIC · FIRST MATCH WINS, LEFT TO RIGHT</text>
 <rect x="310" y="52" width="500" height="60" fill="#26212e"/>
 <text x="560" y="78" text-anchor="middle" class="title">Stop / policy / scope checks already applied</text><text x="560" y="99" text-anchor="middle" class="small">Including the completed-pilot prerequisite for rollout</text>
-<path d="M390 117V136H185V154M560 117V154M730 117V136H935V154" class="line"/>
+<path d="M390 117V136H185V154" class="line"/><path d="M560 117V154" class="line"/><path d="M730 117V136H935V154" class="line"/>
 <rect x="30" y="162" width="310" height="77" fill="#342437"/><text x="50" y="189" class="label">1 / IF</text><text x="50" y="220" class="title mono">conditional_yes ≥ 0.85</text>
 <rect x="405" y="162" width="310" height="77" fill="#342437"/><text x="425" y="189" class="label">2 / ELSE IF</text><text x="425" y="220" class="title mono" style="font-size:17px">unconditional_yes ≥ 0.85</text>
 <rect x="780" y="162" width="310" height="77" fill="#26212e"/><text x="800" y="189" class="label">3 / ELSE</text><text x="800" y="220" class="title">Neither threshold reached</text>
-<path d="M185 246V280M560 246V280M935 246V280" class="line"/>
+<path d="M185 246V280" class="line"/><path d="M560 246V280" class="line"/><path d="M935 246V280" class="line"/>
 <rect x="30" y="288" width="310" height="110" fill="#302838"/><text x="50" y="324" class="title amber">Hold conditional interest</text><text x="50" y="355" class="body">Keep the unresolved conditions.</text><text x="50" y="378" class="body">Do not advance the agreement.</text>
-<rect x="405" y="288" width="310" height="110" fill="#26212e"/><text x="425" y="324" class="title">All package gates satisfied?</text><text x="425" y="355" class="body">Enough budget + authorized approvals</text><text x="425" y="378" class="body">Approvals must match current scope.</text>
+<rect x="405" y="288" width="310" height="110" fill="#26212e"/><text x="425" y="324" class="title">All package gates satisfied?</text><text x="425" y="355" class="body">Budget + required approvals</text><text x="425" y="378" class="body">Approvals must match current scope.</text>
 <rect x="780" y="288" width="310" height="110" fill="#26212e"/><text x="800" y="324" class="title">Approval update or topic</text><text x="800" y="355" class="body">Record an authorized approval,</text><text x="800" y="378" class="body">route the topic, or clarify.</text>
-<path d="M480 405V424H362V453M640 405V424H756V453" class="line"/>
+<path d="M480 405V424H362V453" class="line"/><path d="M640 405V424H756V453" class="line"/>
 <text x="405" y="443" class="small">NO</text><text x="676" y="443" class="small">YES</text>
 <rect x="212" y="461" width="300" height="77" fill="#302838"/><text x="232" y="490" class="title amber">Hold pending approvals</text><text x="232" y="518" class="body">Name the missing requirements.</text>
 <rect x="606" y="461" width="300" height="77" fill="#273028"/><text x="626" y="490" class="title lime">Prepare for signature</text><text x="626" y="518" class="body">Still not signed. Still not deployed.</text>

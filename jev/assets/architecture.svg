@@ -2,6 +2,7 @@
 <title id="title">Jev interprets; code controls</title><desc id="desc">Message, roles, current state, and typed questions go to Jev. Its typed judgments go to a Python controller which enforces business rules and selects authored replies. Updated state and dialogue feed into the next turn.</desc>
 <defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8" fill="none" stroke="#aaa0b5" stroke-width="1.4"/></marker></defs>
 <style>text{fill:#f2ede6;font-family:system-ui,sans-serif}.label{fill:#bbb0c2;font-size:12px;letter-spacing:1px}.title{font-size:24px;font-weight:600}.body{font-size:16px}.small{font-size:14px;fill:#bbb0c2}.mono{font-family:ui-monospace,monospace}.pink{fill:#f0a1d0}.lime{fill:#cbef99}.line{fill:none;stroke:#aaa0b5;stroke-width:1.5;marker-end:url(#arrow)}</style>
+<rect width="1120" height="440" fill="#1c1823"/>
 <text x="24" y="35" class="label">ONE TURN · FOUR DISTINCT JOBS</text>
 <rect x="20" y="85" width="235" height="205" fill="#26212e"/>
 <text x="40" y="115" class="label">01 / CONTEXT</text><text x="40" y="151" class="title">What we know</text>
