@@ -1,0 +1,180 @@
+{
+  "verified_at_utc": "2026-09-19T23:40:36.764Z",
+  "method": "Local Chromium browser checks against recorded JSON; no new inference",
+  "turns_verified": 25,
+  "layouts": [
+    {
+      "viewport": 1440,
+      "document": 1440,
+      "brokenImages": []
+    },
+    {
+      "viewport": 768,
+      "document": 768,
+      "brokenImages": []
+    },
+    {
+      "viewport": 390,
+      "document": 390,
+      "brokenImages": []
+    },
+    {
+      "viewport": 320,
+      "document": 320,
+      "brokenImages": []
+    }
+  ],
+  "console_errors": [],
+  "turns": [
+    {
+      "scenario": "champion",
+      "turn": 1,
+      "branch": "discover",
+      "rendered_answers": 14
+    },
+    {
+      "scenario": "champion",
+      "turn": 2,
+      "branch": "integration",
+      "rendered_answers": 14
+    },
+    {
+      "scenario": "champion",
+      "turn": 3,
+      "branch": "security",
+      "rendered_answers": 14
+    },
+    {
+      "scenario": "champion",
+      "turn": 4,
+      "branch": "hold_conditional",
+      "rendered_answers": 15
+    },
+    {
+      "scenario": "champion",
+      "turn": 5,
+      "branch": "record_security",
+      "rendered_answers": 14
+    },
+    {
+      "scenario": "champion",
+      "turn": 6,
+      "branch": "record_budget",
+      "rendered_answers": 15
+    },
+    {
+      "scenario": "champion",
+      "turn": 7,
+      "branch": "record_procurement",
+      "rendered_answers": 14
+    },
+    {
+      "scenario": "champion",
+      "turn": 8,
+      "branch": "prepare_pilot_agreement",
+      "rendered_answers": 14
+    },
+    {
+      "scenario": "champion",
+      "turn": 9,
+      "branch": "require_pilot",
+      "rendered_answers": 15
+    },
+    {
+      "scenario": "price",
+      "turn": 1,
+      "branch": "compare",
+      "rendered_answers": 14
+    },
+    {
+      "scenario": "price",
+      "turn": 2,
+      "branch": "discount_limit",
+      "rendered_answers": 14
+    },
+    {
+      "scenario": "price",
+      "turn": 3,
+      "branch": "budget_mismatch",
+      "rendered_answers": 15
+    },
+    {
+      "scenario": "price",
+      "turn": 4,
+      "branch": "discover",
+      "rendered_answers": 14
+    },
+    {
+      "scenario": "price",
+      "turn": 5,
+      "branch": "prepare_discovery_agreement",
+      "rendered_answers": 15
+    },
+    {
+      "scenario": "shortcut",
+      "turn": 1,
+      "branch": "clarify",
+      "rendered_answers": 15
+    },
+    {
+      "scenario": "shortcut",
+      "turn": 2,
+      "branch": "decline_bypass",
+      "rendered_answers": 14
+    },
+    {
+      "scenario": "shortcut",
+      "turn": 3,
+      "branch": "defer",
+      "rendered_answers": 14
+    },
+    {
+      "scenario": "shortcut",
+      "turn": 4,
+      "branch": "stop",
+      "rendered_answers": 14
+    },
+    {
+      "scenario": "guarantee",
+      "turn": 1,
+      "branch": "refuse_guarantee",
+      "rendered_answers": 14
+    },
+    {
+      "scenario": "guarantee",
+      "turn": 2,
+      "branch": "unsupported_requirement",
+      "rendered_answers": 14
+    },
+    {
+      "scenario": "guarantee",
+      "turn": 3,
+      "branch": "stop",
+      "rendered_answers": 14
+    },
+    {
+      "scenario": "same_words_blocked",
+      "turn": 1,
+      "branch": "clarify",
+      "rendered_answers": 14
+    },
+    {
+      "scenario": "same_words_ready",
+      "turn": 1,
+      "branch": "clarify",
+      "rendered_answers": 14
+    },
+    {
+      "scenario": "with_offer_blocked",
+      "turn": 1,
+      "branch": "clarify",
+      "rendered_answers": 14
+    },
+    {
+      "scenario": "with_offer_ready",
+      "turn": 1,
+      "branch": "clarify",
+      "rendered_answers": 14
+    }
+  ]
+}

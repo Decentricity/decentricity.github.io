@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#131019">
+  <title>Oh god, it’s expert systems again. — Decentricity × Jev</title>
+  <meta name="description" content="A former expert-systems developer tries TypeSafe’s Jev: typed AI judgments, a branching sales NPC, 25 real API calls, and the failures left in the demo.">
+  <meta property="og:title" content="Oh god, it’s expert systems again.">
+  <meta property="og:description" content="Except this time the predicates can understand what you mean. A hands-on Jev experiment by Decentricity.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://decentricity.github.io/jev/">
+  <meta property="og:image" content="https://decentricity.github.io/jev/assets/cover.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://decentricity.github.io/jev/">
+  <link rel="stylesheet" href="style.css">
+  <script defer src="data/replay.js"></script>
+  <script defer src="replay.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#article">Skip to article</a>
+  <header class="site-header wrap"><a class="brand" href="/">decentricity<span aria-hidden="true">_</span></a><span class="mono header-note">field notes / AI / 019</span><a href="https://github.com/Decentricity/decentricity.github.io/tree/gh-pages/jev">source ↗</a></header>
+  <main id="article">
+    <section class="hero wrap" id="top">
+      <div>
+        <p class="eyebrow"><span class="signal" aria-hidden="true"></span> hands-on · TypeSafe / Jev</p>
+        <h1>oh god, it’s<br><em>expert systems</em><br>again.</h1>
+        <p class="hero-deck">Except this time the predicates can understand what you mean.</p>
+        <div class="byline"><span>Pandu Sastrowardoyo <span class="muted">/ Decentricity</span></span><time datetime="2026-09-19">19 September 2026</time></div>
+      </div>
+      <figure class="hero-figure">
+        <div class="figure-top mono">a conditional yes is still conditional</div>
+        <blockquote>“If IT and procurement sign off,<br>let’s do the pilot.”</blockquote>
+        <div class="semantic-arrow" aria-hidden="true">↓</div>
+        <div class="judgment-pair"><div><span>Noul · conditional yes</span><strong>0.95</strong></div><div><span>Noul · unconditional yes</span><strong>0.03</strong></div></div>
+        <div class="semantic-arrow" aria-hidden="true">↓</div>
+        <div class="branch-result"><span class="mono">PYTHON SELECTS</span><strong>hold_conditional</strong><span>Interest recorded. No agreement yet.</span></div>
+        <figcaption>Actual answers from turn 4. Dialogue and policy are fictional; inference is real.</figcaption>
+      </figure>
+    </section>
+    <nav class="chapter-nav wrap" aria-label="Article sections"><a href="#primitives">01 / the primitives</a><a href="#npc">02 / the NPC</a><a href="#replay">03 / replay the run</a><a href="#failures">04 / what broke</a><a href="#reproduce">05 / run it yourself</a></nav>
+
+    <article>
+      <section class="prose" id="familiar">
+        <p class="lead">I did AI in college in 2007. Not a typo. Expert systems for writing environmental impact assessment reports: facts, rules, and a lot of care about what was allowed to follow from what.</p>
+        <p>So when I started playing with Jev, my reaction was basically: <em>oh my god. It’s almost like working with expert systems and old NLP systems again, but way smarter.</em></p>
+        <p>The familiar bit is the architecture. A program has state. It asks narrowly defined questions. The answers determine which branch runs. The interesting new bit is that I don’t have to personally enumerate every possible way a human might say “yes, but only after procurement stops screaming.”</p>
+        <p>Jev is TypeSafe’s “System One” model. Think of that as the vendor’s name for a focused judgment interface, not a claim that we have built a literal human intuition module. You give it text or structured state and typed questions; it returns judgments your program can use, rather than an essay explaining its life choices. <a class="citation" href="https://docs.typesafe.ai/models">Model reference ↗</a></p>
+        <p>That does <em>not</em> make it a symbolic reasoner or turn probability into truth. It gives ordinary code a learned language-interpreting component. Which, honestly, is a much more interesting programming toy than “yet another chatbot, but wearing a different hat.”</p>
+      </section>
+
+      <section class="prose" id="primitives">
+        <p class="section-index">01 / small judgments, ordinary code</p><h2>Three primitives.<br>One very familiar <code>if</code>.</h2>
+        <p>We started with a deliberately boring support ticket: a customer was charged twice, wanted the extra charge refunded today, and said it was frustrating. One live request asked three different things.</p>
+        <div class="table-wrap"><table><caption>The first quick test · actual returned values</caption><thead><tr><th>Primitive</th><th>Question</th><th>Observed</th></tr></thead><tbody><tr><th scope="row"><a href="https://docs.typesafe.ai/primitives/noul">Noul</a></th><td>Is a refund requested?</td><td><code>0.99</code></td></tr><tr><th scope="row"><a href="https://docs.typesafe.ai/primitives/score">Score</a></th><td>Frustration on a defined 0–2 scale?</td><td><code>1.00 / 2</code></td></tr><tr><th scope="row"><a href="https://docs.typesafe.ai/primitives/choice">Choice</a></th><td>Which department should handle it?</td><td><code>billing</code></td></tr></tbody></table></div>
+        <p><strong>Noul</strong> is the model’s probability of “yes,” not the intensity of the thing. A 0.5 refund Noul does not mean “half a refund, please.” <strong>Score</strong> gives a probability-weighted position across the ordered levels you describe. <strong>Choice</strong> picks one of your options and includes the distribution over them.</p>
+        <p>The quick test returned HTTP 200 using <code>jev-1.13.0</code>, with 498 input tokens and 78 output tokens. End-to-end time was 7.081 seconds. That is an observation from this run, not a speed claim.</p>
+        <p>Here is the smallest useful version. Yes, this really calls Jev from Python; the ordinary <code>if</code> remains gloriously ordinary.</p>
+        <div class="code-block"><div class="code-title"><span>Python · a semantic predicate</span><a href="code/jev_minimal_example.py" download>download ↓</a></div><pre><code><span class="comment"># pip install typesafe-sdk
+# Set TYPESAFE_API_KEY in the environment.</span>
+from typesafe_sdk import Noul, TypeSafeClient
+
+with TypeSafeClient() as client:
+    result = client.system_one(
+        model="jev-latest",
+        state="It arrived smashed. Can you reverse the charge?",
+        questions={
+            "refund": Noul(
+                instructions="Is the customer asking for their money back?"
+            )
+        },
+    )
+
+p = result.nouls["refund"].noul
+if p &gt;= 0.8:  <span class="comment"># Demo threshold, not a validated business rule.</span>
+    print("Route to refunds")
+else:
+    print("Review manually")</code></pre></div>
+        <p class="small muted">This teaching snippet uses a different message from the three-primitive quick test, so the 0.99 above is not its claimed output. Client setup follows the <a href="https://docs.typesafe.ai/sdk/python">Python SDK documentation</a>; the complete <a href="code/typesafe_quick_test.py">three-question test</a> uses the HTTP API directly.</p>
+        <p>Routing a ticket is bounded. Actually refunding money needs authorization, transaction checks, and whatever other rules the business requires. The model getting the customer’s meaning right does not give it the keys to the till.</p>
+      </section>
+
+      <section class="wide-section" id="architecture">
+        <div class="section-heading"><p class="section-index">the separation that matters</p><h2>The model interprets.<br>The program decides what happens.</h2></div>
+        <figure class="architecture-figure"><img src="assets/architecture.svg" width="1120" height="440" alt="Current message, roles and deal state go into Jev alongside typed questions. Jev returns Choices, Nouls and Scores. Python applies policy and approval gates, selects a scripted reply, and feeds updated state into the next turn."><figcaption>Language judgments are probabilistic. Prices, role checks, state transitions, and the available response scripts are explicit code.</figcaption></figure>
+      </section>
+
+      <section class="prose" id="npc">
+        <p class="section-index">02 / now give it a quest tree</p><h2>A sales NPC.<br>With procurement as the boss fight.</h2>
+        <p>I wanted a conversation with clear branches, but enough moving parts to make keyword matching miserable. So the test sells a fictional product called <strong>OpsPilot</strong> to a fictional distributor: three packages, four buyer-side characters, and one seller NPC called Raya.</p>
+        <p>Mira is the operations champion. Bima approves IT/security. Sari owns the budget. Raka handles procurement. They have different authority, which the Python controller checks against a fixed cast—not against whoever types “I’m the CFO” into a textbox.</p>
+        <div class="table-wrap"><table><caption>Fictional commercial rules, written before the test</caption><thead><tr><th>Package</th><th>Price</th><th>Gate</th></tr></thead><tbody><tr><th scope="row">Discovery<br><span class="muted small">2 weeks</span></th><td>IDR 8m</td><td>Budget-owner approval and enough budget; synthetic data only.</td></tr><tr><th scope="row">Pilot<br><span class="muted small">6 weeks</span></th><td>IDR 36m</td><td>Budget, budget owner, IT, and procurement.</td></tr><tr><th scope="row">Rollout<br><span class="muted small">1 year</span></th><td>IDR 240m</td><td>All pilot gates, plus a completed pilot with accepted results.</td></tr></tbody></table></div>
+        <p>The NPC cannot grant discounts. The fictional policy caps eligible requests at 10%, still subject to manager approval. It cannot promise guaranteed savings, guaranteed regulatory acceptance, air-gapped operation, or ERP write-back. Changing packages clears the old approvals. A verbal yes can prepare an agreement; it can never magically become a signed contract.</p>
+        <p>Every turn asks Jev <strong>14 questions in one batch</strong>: two Choices for topic and package, ten Nouls for intent and approval signals, and two Scores for expressed commitment and objection. If code finds monetary amounts, one extra Choice identifies which candidate is the buyer’s budget. Python parses the number; Jev judges its role in the sentence. The questions are independent, so none sees another question’s answer. <a class="citation" href="https://docs.typesafe.ai/patterns/fan-out">Batching pattern ↗</a></p>
+        <p>The two Scores are telemetry in this version. They are useful to inspect, but they do not drive the branches. A commitment score cannot compensate for missing IT approval. This is not a weighted-average permission slip.</p>
+        <aside class="callout"><span class="eyebrow">important distinction</span><p>The buyers’ lines and Raya’s possible replies were authored. Jev did the real interpretation; Python selected the reply and updated state. <strong>Jev did not generate the conversation’s prose.</strong></p></aside>
+        <p>The controller checks an opt-out first, then bypass requests and unsupported promises, then package changes and scoped approvals, then commitment and the remaining topics. The diagram below expands the agreement gate—the bit a persuasive sales bot really should not freestyle.</p>
+      </section>
+
+      <figure class="wide-section branch-figure"><img src="assets/agreement-gates.svg" width="1120" height="600" alt="After higher-priority stop and policy checks: conditional assent goes on hold. Unconditional assent must pass the package's required gates. Missing gates hold the agreement; satisfied gates prepare it for signature. Without recognized assent the controller records approvals or routes the topic. No path signs a contract."><figcaption>One section of the controller, not a claim that the model always recognizes assent correctly. The short-yes tests below are precisely where that distinction mattered.</figcaption></figure>
+
+      <section class="prose"><h3>The long path actually worked.</h3><p>Mira starts with Friday spreadsheet drudgery, not “please sell me AI.” The conversation moves through read-only integration, a data-location objection, and a conditional yes. Bima, Sari, and Raka then supply the approvals their roles permit.</p><p>At turn 4, Jev returned <code>conditional_yes = 0.95</code> and <code>unconditional_yes = 0.03</code>. Good: “if IT and procurement sign off” stayed an <em>if</em>. At turn 8, with the approvals recorded and an explicit request to prepare the agreement, the controller did exactly that. When Sari immediately tried to upgrade to annual rollout and skip the pilot, it cleared the old scope’s approvals and stopped at the pilot-results gate.</p><p>All nine branches in that path matched the prewritten expectations. No imaginary contract appeared. No money moved. No CRM, email, or deployment system was connected.</p><p class="small muted">The hosting discussion is fictional, not a data-residency recommendation. A Jakarta VM does not establish where an outbound model API processes data. That entire data flow would need an actual architecture review; the demo merely records a simulated approver’s statement.</p></section>
+
+      <section class="wide-section replay-section" id="replay">
+        <div class="section-heading"><p class="section-index">03 / inspect the actual run</p><h2>Walk the conversation.</h2><p>Eight paths. Twenty-five recorded API calls. No key, no live calls, no invented replacement answers.</p></div>
+        <div id="replay-app" class="replay-app">
+          <div class="replay-topline"><span class="mono"><span class="signal" aria-hidden="true"></span> RECORDED RUN / jev-1.13.0</span><span id="replay-counter">25 turns</span></div>
+          <div class="replay-controls"><label for="scenario-select">Scenario<select id="scenario-select"></select></label><div class="turn-control"><span id="turn-label" aria-live="polite"></span><div><button id="previous-turn" type="button">← Previous</button><button id="next-turn" type="button">Next →</button></div></div></div>
+          <div class="jump-controls" aria-label="Interesting turns"><span>Jump to:</span><button type="button" data-scenario="champion" data-turn="3">Conditional yes</button><button type="button" data-scenario="champion" data-turn="7">Agreement gate</button><button type="button" data-scenario="with_offer_ready" data-turn="0">The awkward yes</button><button type="button" data-scenario="shortcut" data-turn="1">No shortcuts</button></div>
+          <div class="replay-grid">
+            <div class="dialogue-panel">
+              <details id="prior-context"><summary>Dialogue before this turn</summary><div id="prior-dialogue"></div></details>
+              <div class="speaker-tag" id="buyer-name"></div><blockquote class="buyer-speech" id="buyer-text"></blockquote>
+              <div class="speaker-tag seller-tag">Raya / authored seller reply</div><p class="seller-speech" id="seller-text"></p>
+              <div class="decision-panel" aria-live="polite"><span class="eyebrow">selected branch</span><strong id="selected-branch"></strong><span id="branch-expectation"></span><span class="small muted" id="state-transition"></span></div>
+            </div>
+            <div class="inspector-panel"><div class="inspector-heading"><h3>Jev’s judgments</h3><span class="mono">OBSERVED</span></div><dl class="judgments" id="judgments"></dl><h3>Approval gates after this turn</h3><div id="approval-gates" class="approval-gates"></div><p class="small muted" id="package-budget"></p><p class="contract-note">Signed contract: <strong id="contract-status">NO</strong></p></div>
+          </div>
+          <details class="raw-details"><summary>All answers, state changes, and test notes</summary><p id="scenario-note"></p><ul id="state-events"></ul><div class="table-wrap"><table><thead><tr><th>Question</th><th>Type</th><th>Value</th><th>Confidence</th></tr></thead><tbody id="all-answers"></tbody></table></div><p class="small">A Noul has no separate confidence. Choice/Score confidence describes distribution concentration, not proof of correctness. Demo thresholds: Noul 0.85; Choice confidence 0.45.</p></details>
+        </div>
+        <noscript><p>Enable JavaScript for the replay, or read the <a href="data/report.md">complete recorded transcript</a>.</p></noscript>
+        <p class="replay-caption">Initial state and actor authority are fictional test fixtures, not verified real-world approvals. “Expected” means our prewritten test label, not an objective oracle.</p>
+      </section>
+
+      <section class="prose" id="results"><h2>What the run actually returned.</h2><div class="table-wrap"><table><caption>Measured in this experiment · 19 September 2026</caption><tbody><tr><th scope="row">Model returned</th><td><code>jev-1.13.0</code></td></tr><tr><th scope="row">Initial run</th><td>6 paths · 23 calls · 19 branch matches</td></tr><tr><th scope="row">Follow-up probes</th><td>2 paths · 2 calls · 0 branch matches</td></tr><tr><th scope="row">Combined</th><td>19 of 25 expected branches matched</td></tr><tr><th scope="row">Recorded invariant failures</th><td>0 across four checks</td></tr><tr><th scope="row">End-to-end latency</th><td>Median 8.212s · range 5.803–11.213s</td></tr><tr><th scope="row">Reported tokens</th><td>62,659 input · 9,542 output</td></tr></tbody></table></div><p>The four invariants check that no signed contract is invented, agreement preparation has the required gates, a selected opt-out branch disables contact, and retained approval evidence matches the package. Those are useful checks of this harness, not proof that it will detect every opt-out or approval mistake.</p><p>These are authored examples, including four closely related short-assent probes. <strong>Nineteen out of twenty-five is not a general accuracy benchmark.</strong> Nor is zero invariant failures a safety certification. The cases are small, the labels are ours, and the policies were designed for the demonstration.</p><p>The latency includes network and client overhead. It does not isolate model inference or establish typical service performance. It also means this particular run does <em>not</em> demonstrate a snappy live NPC, however neat the interface is.</p><p>At the documented price of $0.042 per million input tokens, with output tokens free, the sales run’s token charge estimates to about <strong>$0.00263</strong>. That is arithmetic from the published rate and reported usage, not a billing receipt or an all-in application cost. <a class="citation" href="https://docs.typesafe.ai/models">Pricing source ↗</a></p></section>
+
+      <figure class="wide-section screenshot-figure"><a href="assets/replay-conditional.jpg"><img src="assets/replay-conditional.jpg" width="1280" height="940" loading="lazy" alt="Actual browser capture of the recorded replay at the conditional-yes turn, showing probability 0.95, the hold_conditional branch, and missing approvals."></a><figcaption>Actual browser screenshot from the local replay. This is a replay of recorded Jev answers, not a live vendor console. <a href="assets/replay-conditional.jpg">Open full size ↗</a></figcaption></figure>
+
+      <section class="prose" id="failures">
+        <p class="section-index">04 / the useful part is where it gets awkward</p><h2>“Great, let’s do it.”<br>Apparently we need to talk.</h2>
+        <p>The nicest teaching example was supposed to be this: give the exact same sentence to two deal states, one with missing approvals and one with everything ready. Then watch code turn the same language judgment into different actions.</p><p>Lovely little demo. Except it did not work that way.</p>
+        <p>Both versions of “Great, let’s do it” reached <code>clarify</code>. The topic Choice recognized agreement, but the unconditional-go-ahead Noul stayed below the controller’s 0.85 threshold. The first pair had no preceding seller offer, so we added one explicitly and tested again. Still clarification.</p>
+        <div class="table-wrap"><table><caption>Same buyer line; recorded unconditional-go-ahead Nouls</caption><thead><tr><th>Context</th><th>Approvals missing</th><th>Approvals complete</th></tr></thead><tbody><tr><th scope="row">No preceding offer</th><td>0.19 → clarify</td><td>0.24 → clarify</td></tr><tr><th scope="row">Explicit preceding offer</th><td>0.44 → clarify</td><td>0.61 → clarify</td></tr></tbody></table></div>
+        <p>So no, this experiment does not demonstrate the hoped-for state-dependent branching for that short sentence. Adding context changed the numbers but did not cross the threshold. The code was conservative; the user experience was unnecessarily hesitant relative to our intended labels. Both can be true.</p>
+        <p>The other two mismatches were revealing too. A message about overloaded staff also asked to start process mapping with fake data: topic probability split between discovery (0.50) and capacity (0.43), and the controller chose discovery. That looks at least partly like overlapping labels, not an obviously nonsensical reading. Separately, “I approve up to IDR 40 million…” received a budget-approval Noul of 0.60 and also ended in clarification.</p>
+        <p>My next iteration would separate <em>what objection is present</em> from <em>what next action is requested</em>, collect independently labeled examples, and evaluate thresholds against the actual cost of a false yes or false no. What I would not do is quietly lower the threshold until these exact tests look perfect, then announce that language understanding has been solved. Come on.</p>
+        <aside class="callout warning"><span class="eyebrow">and one very ordinary Python bug</span><p>The original logger kept a reference to the conversation history instead of taking a snapshot. Later turns therefore appeared in older <em>saved</em> request objects. HTTP serialization happened before those turns were appended; the problem was the evidence log.</p><p>The published runner now deep-copies history. The display dataset reconstructs each request’s prior dialogue and explicitly labels that correction. The <a href="data/original-recording.json">original recording</a> is retained; all model responses, timings, expected labels, and observed branches are unchanged. Reconstructed histories are not independent wire captures. Apparently my exciting new AI experiment also needed the ancient technology of copying a list.</p></aside>
+      </section>
+
+      <section class="prose" id="use-cases"><h2>Where I’d actually try this.</h2><p>The sweet spot, to me, is an application that already knows the possible actions but needs help interpreting human language. These are proposed uses, not things this small sales experiment has validated.</p><div class="use-cases"><div><h3>Daily operations</h3><p>A shift handover describes a blocked delivery. Jev judges whether the blocker is stock, approval, or transport; code opens the appropriate review queue. Deadlines and escalation authority remain normal business rules.</p></div><div><h3>Games and training</h3><p>An NPC recognizes a concession, threat, or request for evidence. A state machine selects from authored responses. Quest prerequisites stay explicit, while players are no longer trapped behind four exact dialogue buttons.</p></div><div><h3>Document workflows</h3><p>Code finds candidate amounts or source passages. Jev selects the one matching a narrow question. The application copies the source value and retains its provenance instead of asking a model to invent a fresh string.</p></div></div><p>I would test it before putting it anywhere consequential, and I would keep open-ended planning or long-form writing outside this particular component. You can compose bounded judgments into something complicated without pretending that each judgment is a complete agent.</p></section>
+
+      <section class="prose" id="customization"><h2>Can I train it for my daily ops?</h2><p>Not by uploading company documents and fine-tuning your own Jev, according to the current docs. TypeSafe says the same weights serve every account; there is no customer-specific fine-tuning or LoRA adaptation. Domain customization happens through the state, question instructions, answer criteria, and code around the model. <a class="citation" href="https://docs.typesafe.ai/models#customizing-jev">Customization reference ↗</a></p><p>For daily ops, I would start by supplying relevant SOP excerpts, current records, and clearly defined decisions—not the entire company drive in every call. Keep actual permissions and approval evidence in authenticated systems. A model can interpret “approved”; it cannot establish that the speaker truly has approval authority.</p><p>With enough labeled outcomes, a separate downstream model could learn to combine these signals. That is training a model <em>on Jev’s outputs</em>, not retraining Jev itself. The interesting engineering question is still: which judgments should be learned, and which rules should remain boring, explicit, and testable?</p></section>
+
+      <section class="prose" id="reproduce"><p class="section-index">05 / show your work</p><h2>Run it. Inspect it.<br>Keep the failures.</h2><p>The TypeSafe agent skill was installed for Codex using one installation method:</p><div class="code-block"><pre><code>npx skills add typesafe-ai/skills --skill typesafe-ai \
+  --agent codex --yes --copy --json</code></pre></div><p>The skill’s useful influence was architectural: batch the independent questions, leave exact rules in code, and keep uncertainty visible. It did not train the model or supply a magic prompt that made all the tests pass. <a class="citation" href="https://github.com/typesafe-ai/skills/blob/main/skills/typesafe-ai/SKILL.md">Skill source ↗</a></p><p>The <a href="https://github.com/Decentricity/decentricity.github.io/tree/gh-pages/jev">complete source directory</a> includes the runner, original recording, corrected display data, transcript, and an offline audit. The main runner uses Python’s standard library; the tiny SDK example is optional.</p><div class="code-block"><div class="code-title"><span>From a checkout’s jev/ directory</span><span>Python 3.10+</span></div><pre><code><span class="comment"># Offline: replay all 25 controller decisions.</span>
+python3 code/replay_check.py
+python3 code/replay_check.py --summary
+
+<span class="comment"># Live: enter your own key without echoing it.</span>
+read -rsp 'TypeSafe API key: ' TYPESAFE_API_KEY
+export TYPESAFE_API_KEY
+python3 code/sales_npc.py --scenario champion --output ./new-run
+unset TYPESAFE_API_KEY</code></pre></div><p>Omit <code>--scenario champion</code> to run all eight paths. New results go into a separate directory; they may differ from the recording. This static page never receives a key and does not call the inference API.</p><div class="download-links"><a href="data/report.md">Full transcript ↗</a><a href="data/results.json">Annotated results JSON ↗</a><a href="code/sales_npc.py" download>Python runner ↓</a><a href="README.md">Reproduction notes ↗</a></div></section>
+
+      <figure class="wide-section screenshot-figure"><a href="assets/replay-failure.jpg"><img src="assets/replay-failure.jpg" width="1280" height="940" loading="lazy" alt="Actual browser screenshot of the explicit-offer, all-approvals-ready probe: unconditional go-ahead probability 0.61 and the observed clarify branch, despite an expected prepare_pilot_agreement branch."></a><figcaption>The awkward case, left intact: all approvals present, an explicit offer supplied, and “Great, let’s do it” still leads to clarification. Actual local browser capture. <a href="assets/replay-failure.jpg">Open full size ↗</a></figcaption></figure>
+
+      <section class="prose conclusion"><p class="eyebrow">the thing I’m taking away</p><h2>Smarter predicates.<br>Still our responsibility.</h2><p>What excites me is not replacing software engineering with a paragraph that says “please be a good salesperson.” It is being able to put a small, language-aware judgment where I once would have needed a brittle pile of phrase matching—and then compose it with rules I can actually inspect.</p><p>I recognize that shape. The knowledge engineering, the state, the explicit boundaries. The new part is how much more flexible the interface between messy language and those rules can be.</p><p class="closing-line">Expert systems again, then.<br>With better ears. And still plenty of debugging.</p></section>
+    </article>
+  </main>
+  <footer class="site-footer wrap"><div><a class="brand" href="/">decentricity<span>_</span></a><p>Experiment &amp; field notes · September 2026</p></div><div><p>Build note: implementation, API execution, and browser captures used AI coding assistance. All customer dialogue and commercial policies are fictional; recorded API responses are real.</p><a href="https://github.com/Decentricity/decentricity.github.io/tree/gh-pages/jev">Inspect the source ↗</a><span class="footer-separator"> / </span><a href="#top">Back to top ↑</a></div></footer>
+</body>
+</html>
