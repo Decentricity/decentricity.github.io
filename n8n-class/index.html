@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>n8n Class Workbook — Decentricity</title>
-  <meta name="description" content="Workbook for the Decentricity n8n class: local server setup, Chat UI harnesses, RAG, compaction, Telegram polling, and tool use." />
+  <meta name="description" content="Workbook for the Decentricity n8n class with annotated UI screenshots." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&family=IBM+Plex+Mono:wght@400;500&family=Sora:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -35,7 +35,7 @@
         <div class="eyebrow">Class workbook</div>
         <h1>n8n Class</h1>
         <p class="hero-lead">
-          A practical lab book for standing up n8n on a LAN box, then building chatbots from a raw model call through harnesses, RAG, compaction, Telegram polling, and tools.
+          A practical lab book for standing up n8n on a LAN box, then building chatbots from a raw model call through harnesses, RAG, compaction, Telegram polling, and tools — with annotated UI screenshots.
         </p>
         <div class="hero-actions">
           <a class="btn" href="#exercises">Jump to exercises</a>
@@ -284,6 +284,13 @@ http://YOUR_LAN_IP:5678</code></pre>
 </ul>
 <hr />
 <h2 id="exercises">Exercises</h2>
+<h3 id="ui-walkthrough-screenshots">UI walkthrough screenshots</h3>
+<p><img src="screenshots/01-setup-home.png" alt="Create workflow" /></p>
+<p><em>Start from Overview — click <strong>Create workflow</strong>.</em></p>
+<p><img src="screenshots/02-setup-empty-canvas.png" alt="Empty canvas" /></p>
+<p><em>Empty canvas — click <strong>Add first step</strong>.</em></p>
+<p><img src="screenshots/04-setup-credentials.png" alt="Credentials" /></p>
+<p><em>Credentials page — add credentials here later (never paste secrets into screenshots).</em></p>
 <h3 id="model-provider-read-once">Model provider (read once)</h3>
 <p>These early exercises teach <strong>harness patterns</strong>, not a specific vendor.</p>
 <table>
@@ -310,6 +317,12 @@ http://YOUR_LAN_IP:5678</code></pre>
 <p><strong>Goal:</strong> Build the smallest useful chat workflow: type in n8n’s <strong>built-in chat panel</strong> and get a model reply.</p>
 <p><strong>Important:</strong> <strong>Chat Trigger</strong> is <em>not</em> Slack, WhatsApp, or your company website. It only drives n8n’s own <strong>Open chat</strong> UI inside the editor.</p>
 <p><strong>APIs:</strong> OpenAI only in the example (or Ollama / Claude if you swapped the model node). No other APIs.</p>
+<p><img src="screenshots/ex-1a-01-chat-trigger.png" alt="Search chat and select On chat message / Chat Trigger." /></p>
+<p><em>Search <strong>chat</strong> and select <strong>On chat message</strong> / Chat Trigger.</em></p>
+<p><img src="screenshots/ex-1a-02-openai-node.png" alt="Search OpenAI / Message a model (leave credential empty in class screenshots)." /></p>
+<p><em>Search <strong>OpenAI</strong> / <strong>Message a model</strong> (leave credential empty in class screenshots).</em></p>
+<p><img src="screenshots/ex-1a-03-open-chat.png" alt="Use Open chat after the Chat Trigger is on the canvas." /></p>
+<p><em>Use <strong>Open chat</strong> after the Chat Trigger is on the canvas.</em></p>
 <h4 id="what-you-need">What you need</h4>
 <ul>
 <li>n8n open in the browser (<code>http://YOUR_LAN_IP:5678</code>)</li>
@@ -350,6 +363,12 @@ http://YOUR_LAN_IP:5678</code></pre>
 <p><strong>Goal:</strong> Turn 1A into a small <strong>product-like harness</strong>: a fixed <strong>system prompt</strong> (persona / rules) plus <strong>memory</strong> so turn 2 remembers turn 1.</p>
 <p><strong>Concepts:</strong> harness vs raw call, system vs user message, multi-turn state.</p>
 <p><strong>APIs:</strong> Still only your chat provider (OpenAI in the example). Memory is stored by n8n.</p>
+<p><img src="screenshots/ex-1b-01-ai-agent.png" alt="Add an AI Agent." /></p>
+<p><em>Add an <strong>AI Agent</strong>.</em></p>
+<p><img src="screenshots/ex-1b-02-agent-slots.png" alt="Agent slots: Chat Model, Memory, Tool." /></p>
+<p><em>Agent slots: Chat Model, Memory, Tool.</em></p>
+<p><img src="screenshots/ex-1b-03-memory-config.png" alt="Attach Window Buffer Memory." /></p>
+<p><em>Attach <strong>Window Buffer Memory</strong>.</em></p>
 <h4 id="what-you-need-1">What you need</h4>
 <ul>
 <li>Exercise 1A done (you already have a chat credential)</li>
@@ -409,6 +428,12 @@ Rules:
 <p><strong>Goal:</strong> Ground answers in a small <strong>company FAQ</strong> you provide. Use <strong>embeddings</strong> + an <strong>in-memory vector store</strong>, then answer <strong>only from retrieved text</strong>.</p>
 <p><strong>Concepts:</strong> RAG vs “the model just knows,” embeddings, chunking, retrieval-augmented generation, reducing hallucination.</p>
 <p><strong>APIs:</strong> OpenAI <strong>chat + embeddings</strong> in the example (or your substituted providers). No Exa / Google / Wikipedia.</p>
+<p><img src="screenshots/ex-1c-01-manual-trigger.png" alt="FAQ loader starts with Manual Trigger." /></p>
+<p><em>FAQ loader starts with <strong>Manual Trigger</strong>.</em></p>
+<p><img src="screenshots/ex-1c-02-vector-store.png" alt="Add Simple Vector Store (+ Embeddings OpenAI)." /></p>
+<p><em>Add <strong>Simple Vector Store</strong> (+ Embeddings OpenAI).</em></p>
+<p><img src="screenshots/ex-1c-03-agent-retriever.png" alt="On the chat agent, use the Tool slot for retrieval." /></p>
+<p><em>On the chat agent, use the <strong>Tool</strong> slot for retrieval.</em></p>
 <h4 id="what-you-need-2">What you need</h4>
 <ul>
 <li>Exercise 1B ideas in mind (system prompt helps a lot here)</li>
@@ -498,6 +523,12 @@ Do not invent policies, prices, or order IDs.</code></pre>
 <p><strong>Goal:</strong> Let the model <strong>decide</strong> when to call tools. Use only tools that need <strong>no third-party search APIs</strong>: Calculator, Code, Think, and optionally Call n8n Workflow or Vector Store (your FAQ from 1C).</p>
 <p><strong>Concepts:</strong> tool calling / agent loop, when to compute vs retrieve vs just chat.</p>
 <p><strong>APIs:</strong> Chat model only (OpenAI in the example). Tools run inside n8n.</p>
+<p><img src="screenshots/ex-1d-01-calculator.png" alt="Add Calculator (local tool)." /></p>
+<p><em>Add <strong>Calculator</strong> (local tool).</em></p>
+<p><img src="screenshots/ex-1d-02-think-code.png" alt="Also add Think / Code." /></p>
+<p><em>Also add <strong>Think</strong> / <strong>Code</strong>.</em></p>
+<p><img src="screenshots/ex-1d-03-tools-canvas.png" alt="AI Agent with a local tool attached." /></p>
+<p><em>AI Agent with a local tool attached.</em></p>
 <h4 id="n8n-tools-used-here-no-exagooglewikipedia">n8n tools used here (no Exa/Google/Wikipedia)</h4>
 <table>
 <thead>
@@ -583,6 +614,12 @@ Show short answers. Prefer tools over guessing numbers.</code></pre>
 <p><strong>Goal:</strong> Feel <strong>context loss</strong> on purpose (without waiting for a 128k model window to fill), then fix it with <strong>compaction</strong> (summarize old turns, keep recent turns raw).</p>
 <p><strong>Concepts:</strong> context window vs memory window, truncation vs compaction, summary + recent tail.</p>
 <p><strong>APIs:</strong> Chat provider only (OpenAI in the example). No Exa/Google/Wikipedia.</p>
+<p><img src="screenshots/ex-1e-01-tiny-window.png" alt="Part A: set Context Window Length to 2." /></p>
+<p><em>Part A: set Context Window Length to <strong>2</strong>.</em></p>
+<p><img src="screenshots/ex-1e-02-code-if.png" alt="Part B: IF for needsCompaction." /></p>
+<p><em>Part B: <strong>IF</strong> for <code>needsCompaction</code>.</em></p>
+<p><img src="screenshots/ex-1e-03-summarizer.png" alt="Part B: Message a model as summarizer." /></p>
+<p><em>Part B: <strong>Message a model</strong> as summarizer.</em></p>
 <h4 id="can-we-make-openais-context-window-super-small">Can we make OpenAI’s context window “super small”?</h4>
 <p><strong>Not the model’s hard limit.</strong> The OpenAI API does <strong>not</strong> let you shrink <code>gpt-4o-mini</code>’s real context ceiling for class demos. <code>max_tokens</code> / max completion length only caps the <strong>reply size</strong>, not how much history the model can see.</p>
 <p><strong>Yes for the harness (what we want in class).</strong> n8n’s <strong>Window Buffer Memory</strong> only keeps the last <strong>N</strong> messages. Set N tiny (e.g. <strong>2</strong>) and the bot will forget early facts after a few turns — same <em>symptom</em> as blowing a context budget, in under a minute.</p>
@@ -763,6 +800,12 @@ Part B (fix):  Code history
 <hr />
 <h3 id="exercise-2--telegram-bot-via-polling-no-tools-yet">Exercise 2 — Telegram bot via polling (no tools yet)</h3>
 <p><strong>Goal:</strong> Chat with your OpenAI bot in <strong>Telegram</strong> instead of n8n’s Chat UI, using <strong>polling</strong> like a normal BotFather script on this machine.</p>
+<p><img src="screenshots/ex-2-01-schedule.png" alt="Schedule Trigger for polling." /></p>
+<p><em><strong>Schedule Trigger</strong> for polling.</em></p>
+<p><img src="screenshots/ex-2-02-getupdates.png" alt="HTTP Request getUpdates with placeholder token only." /></p>
+<p><em>HTTP Request <code>getUpdates</code> with placeholder token only.</em></p>
+<p><img src="screenshots/ex-2-03-code-offset.png" alt="Code node advances Telegram offset." /></p>
+<p><em><strong>Code</strong> node advances Telegram offset.</em></p>
 <p><strong>Focus of this exercise:</strong> Telegram receive + reply only. <strong>Do not add tools yet</strong> — that is Exercise 3.</p>
 <h4 id="polling-vs-webhooks-why-this-class-uses-polling">Polling vs webhooks (why this class uses polling)</h4>
 <p>Same BotFather bot + API token either way. What changes is <strong>how new messages arrive</strong>:</p>
@@ -954,6 +997,12 @@ Part B (fix):  Code history
 <hr />
 <h3 id="exercise-3--tools-weather-wikipedia-exa-and-google">Exercise 3 — Tools: weather, Wikipedia, Exa, and Google</h3>
 <p><strong>Goal:</strong> Upgrade the Telegram bot so the model can call tools. Students should be able to say things like:</p>
+<p><img src="screenshots/ex-3-01-http-tool.png" alt="HTTP Request Tool for weather / Exa / Google." /></p>
+<p><em><strong>HTTP Request Tool</strong> for weather / Exa / Google.</em></p>
+<p><img src="screenshots/ex-3-02-wikipedia.png" alt="Built-in Wikipedia tool." /></p>
+<p><em>Built-in <strong>Wikipedia</strong> tool.</em></p>
+<p><img src="screenshots/ex-3-03-routing-prompt.png" alt="System message routes Exa vs Google." /></p>
+<p><em>System message routes Exa vs Google.</em></p>
 <ul>
 <li>“What’s the weather in Jakarta?”</li>
 <li>“Wikipedia: n8n”</li>
@@ -1357,9 +1406,8 @@ Search with Google: n8n telegram bot polling</code></pre>
 <p>Questions during class: keep the server IP written on the board as a short URL students can type — e.g. <code>http://192.168.1.247:5678</code>.</p>
 
         <p class="footer-note">
-          Maintained for Decentricity class use. Source of truth also lives in
+          Maintained for Decentricity class use. Source of truth:
           <a href="https://github.com/Decentricity/n8n-class">github.com/Decentricity/n8n-class</a>.
-          OpenAI is the worked example; Ollama and Claude can substitute where noted.
         </p>
       </article>
     </div>
