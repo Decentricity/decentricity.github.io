@@ -432,19 +432,27 @@ a:hover {
 }
 
 .task-list input[type="checkbox"] {
-  margin-top: 0.35rem;
+  margin-top: 0.28rem;
   width: 1.05rem;
   height: 1.05rem;
   accent-color: var(--accent);
   cursor: pointer;
+  flex: 0 0 auto;
 }
 
-.task-list li.done > span,
-.task-list li.done {
+.task-list label {
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+  cursor: pointer;
+}
+
+.task-list li.done,
+.task-list li.done label {
   color: var(--ink-soft);
 }
 
-.task-list li.done > span {
+.task-list li.done label {
   text-decoration: line-through;
 }
 
