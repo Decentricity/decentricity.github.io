@@ -123,8 +123,8 @@ N8N_PROTOCOL=http
 WEBHOOK_URL=http://192.168.1.247:5678/
 N8N_EDITOR_BASE_URL=http://192.168.1.247:5678/
 N8N_SECURE_COOKIE=false
-GENERIC_TIMEZONE=Asia/Jakarta
-TZ=Asia/Jakarta</code></pre>
+GENERIC_TIMEZONE=Asia/Ho_Chi_Minh
+TZ=Asia/Ho_Chi_Minh</code></pre>
 <p>Why these matter:</p>
 <ul>
 <li><code>WEBHOOK_URL</code> / <code>N8N_EDITOR_BASE_URL</code> — so webhook links and the editor use the LAN address, not <code>localhost</code>.</li>
@@ -260,8 +260,8 @@ http://YOUR_LAN_IP:5678</code></pre>
 <span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">-e</span> WEBHOOK_URL=http://192.168.1.247:5678/ <span class="dt">\</span></span>
 <span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">-e</span> N8N_EDITOR_BASE_URL=http://192.168.1.247:5678/ <span class="dt">\</span></span>
 <span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">-e</span> N8N_SECURE_COOKIE=false <span class="dt">\</span></span>
-<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">-e</span> GENERIC_TIMEZONE=Asia/Jakarta <span class="dt">\</span></span>
-<span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">-e</span> TZ=Asia/Jakarta <span class="dt">\</span></span>
+<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">-e</span> GENERIC_TIMEZONE=Asia/Ho_Chi_Minh <span class="dt">\</span></span>
+<span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">-e</span> TZ=Asia/Ho_Chi_Minh <span class="dt">\</span></span>
 <span id="cb27-16"><a href="#cb27-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">-v</span> <span class="st">&quot;</span><span class="va">$HOME</span><span class="st">/.local/share/n8n/data:/home/node/.n8n:Z&quot;</span> <span class="dt">\</span></span>
 <span id="cb27-17"><a href="#cb27-17" aria-hidden="true" tabindex="-1"></a>  docker.io/n8nio/n8n:latest</span></code></pre></div>
 <p>Then open <code>http://192.168.1.247:5678</code> from another LAN device.</p>
@@ -385,12 +385,12 @@ http://YOUR_LAN_IP:5678</code></pre>
 <li>Open <strong>Options</strong> (or System Message field) and set a <strong>System Message</strong>, for example:</li>
 </ul></li>
 </ol>
-<pre class="text"><code>You are &quot;Ayu&quot;, a friendly helpdesk assistant for a fictional company called Nusa Widgets.
+<pre class="text"><code>You are &quot;Linh&quot;, a friendly helpdesk assistant for a fictional company called Lotus Widgets.
 Rules:
 - Be concise (2–4 short sentences).
 - If you do not know something, say so.
 - Never invent order IDs or prices.
-- Always sign the last line with: — Ayu, Nusa Widgets</code></pre>
+- Always sign the last line with: — Linh, Lotus Widgets</code></pre>
 <ol start="6" type="1">
 <li>On the AI Agent, click <strong>+</strong> under <strong>Chat Model</strong> → <strong>OpenAI Chat Model</strong><br />
 → same OpenAI credential → model e.g. <code>gpt-4o-mini</code><br />
@@ -405,11 +405,11 @@ Rules:
 </ol>
 <h4 id="test-script-say-these-in-order-in-the-same-chat-panel">Test script (say these in order in the same chat panel)</h4>
 <ol type="1">
-<li><code>Hi! My name is Budi and my favorite color is blue.</code></li>
+<li><code>Hi! My name is Somchai and my favorite color is blue.</code></li>
 <li><code>What is my name and favorite color?</code></li>
 <li><code>Who are you and which company do you work for?</code></li>
 </ol>
-<p>Expected: it remembers Budi / blue, stays in character as Ayu, and follows the signature rule.</p>
+<p>Expected: it remembers Somchai / blue, stays in character as Linh, and follows the signature rule.</p>
 <h4 id="remember-1">Remember</h4>
 <pre class="text"><code>Chat Trigger → AI Agent
                 ├─ Chat Model (OpenAI / Ollama / Claude)
@@ -440,12 +440,12 @@ Rules:
 <li>A short FAQ text (paste the sample below or write your own)</li>
 </ul>
 <h4 id="sample-faq-copy-into-the-workflow">Sample FAQ (copy into the workflow)</h4>
-<pre class="text"><code>Nusa Widgets FAQ
+<pre class="text"><code>Lotus Widgets FAQ
 Return policy: You may return unused widgets within 30 days with a receipt. Refunds take 5–7 business days.
-Shipping: Standard shipping in Indonesia is 3–5 business days. Express is 1–2 business days.
-Support hours: Monday–Friday 09:00–18:00 WIB. Email support@nusawidgets.example
+Shipping: Standard shipping in Vietnam is 2–4 business days. Regional Southeast Asia is 3–7 business days. Express is 1–2 business days.
+Support hours: Monday–Friday 09:00–18:00 ICT (Asia/Ho_Chi_Minh). Email support@lotuswidgets.example
 Warranty: All widgets have a 1-year limited warranty against manufacturing defects.
-Order ID format: NW- followed by 8 digits, for example NW-12345678.</code></pre>
+Order ID format: LW- followed by 8 digits, for example LW-12345678.</code></pre>
 <h4 id="step-by-step--part-1-load-the-faq-into-a-vector-store">Step by step — Part 1: load the FAQ into a vector store</h4>
 <p>You will build a <strong>small loader workflow</strong> (run once), then a <strong>chat workflow</strong> that retrieves.</p>
 <p><strong>Loader workflow</strong></p>
@@ -464,7 +464,7 @@ Order ID format: NW- followed by 8 digits, for example NW-12345678.</code></pre>
 </ul></li>
 <li>Add <strong>Simple Vector Store</strong> / <strong>In-Memory Vector Store</strong> in <strong>insert</strong> mode:
 <ul>
-<li>Memory key / index name: e.g. <code>nusa_faq</code></li>
+<li>Memory key / index name: e.g. <code>lotus_faq</code></li>
 <li>Connect documents + embeddings as the UI requires</li>
 </ul></li>
 <li><strong>Save</strong> → <strong>Execute workflow</strong> once. Confirm it finishes without errors.</li>
@@ -478,8 +478,8 @@ Order ID format: NW- followed by 8 digits, for example NW-12345678.</code></pre>
 <li><strong>Chat Trigger</strong> → <strong>AI Agent</strong>.</li>
 <li>System message example:</li>
 </ol>
-<pre class="text"><code>You are Nusa Widgets support. Answer ONLY using the retrieved FAQ context.
-If the answer is not in the context, say you do not know and suggest emailing support@nusawidgets.example.
+<pre class="text"><code>You are Lotus Widgets support. Answer ONLY using the retrieved FAQ context.
+If the answer is not in the context, say you do not know and suggest emailing support@lotuswidgets.example.
 Do not invent policies, prices, or order IDs.</code></pre>
 <ol start="4" type="1">
 <li>Chat Model: <strong>OpenAI Chat Model</strong> (or your substitute).</li>
@@ -488,8 +488,8 @@ Do not invent policies, prices, or order IDs.</code></pre>
 <ul>
 <li>Prefer <strong>Vector Store</strong> tool / <strong>Answer questions with a vector store</strong> pattern for your n8n version:
 <ul>
-<li>Tool description: <code>Search the Nusa Widgets FAQ. Use for any product, shipping, warranty, or returns question.</code></li>
-<li>Same memory key: <code>nusa_faq</code></li>
+<li>Tool description: <code>Search the Lotus Widgets FAQ. Use for any product, shipping, warranty, or returns question.</code></li>
+<li>Same memory key: <code>lotus_faq</code></li>
 <li>Embeddings: <strong>Embeddings OpenAI</strong> (same as loader)</li>
 </ul></li>
 </ul></li>
@@ -556,7 +556,7 @@ Do not invent policies, prices, or order IDs.</code></pre>
 </tr>
 <tr>
 <td><strong>Vector Store</strong> tool (optional)</td>
-<td>Reuse the <code>nusa_faq</code> index from 1C</td>
+<td>Reuse the <code>lotus_faq</code> index from 1C</td>
 </tr>
 </tbody>
 </table>
@@ -570,14 +570,14 @@ Do not invent policies, prices, or order IDs.</code></pre>
 - For math, you MUST use the Calculator tool.
 - For tiny data transforms or parsing, you may use the Code tool.
 - Use the Think tool to plan briefly when the user asks a multi-step question.
-- If a Vector Store / FAQ tool is connected, use it for Nusa Widgets policy questions.
+- If a Vector Store / FAQ tool is connected, use it for Lotus Widgets policy questions.
 - Otherwise answer normally.
 Show short answers. Prefer tools over guessing numbers.</code></pre>
 <ol start="3" type="1">
 <li>On AI Agent → <strong>+</strong> under <strong>Tool</strong> → add <strong>Calculator</strong>.</li>
 <li><strong>+</strong> Tool → <strong>Code</strong> (allow enough to run simple JS; keep it minimal for class).</li>
 <li><strong>+</strong> Tool → <strong>Think</strong>.</li>
-<li>Optional: <strong>+</strong> Tool → <strong>Vector Store</strong> pointing at <code>nusa_faq</code> (from 1C) <strong>or</strong> <strong>Call n8n Workflow</strong> that returns FAQ text.</li>
+<li>Optional: <strong>+</strong> Tool → <strong>Vector Store</strong> pointing at <code>lotus_faq</code> (from 1C) <strong>or</strong> <strong>Call n8n Workflow</strong> that returns FAQ text.</li>
 <li><strong>Save</strong> → <strong>Open chat</strong>.</li>
 </ol>
 <h4 id="test-script-1">Test script</h4>
@@ -634,14 +634,14 @@ Show short answers. Prefer tools over guessing numbers.</code></pre>
 </ol>
 <p><strong>Script (same chat panel, in order):</strong></p>
 <ol type="1">
-<li><code>Remember this secret code: BLUE-ORCA-77. My name is Sari.</code></li>
+<li><code>Remember this secret code: BLUE-ORCA-77. My name is Mai.</code></li>
 <li><code>What is the secret code and my name?</code><br />
 → should still work (recent).</li>
 <li>Send three filler turns, one at a time:
 <ul>
 <li><code>Tell me a fun fact about coffee.</code></li>
-<li><code>Tell me a fun fact about Java.</code></li>
-<li><code>Tell me a fun fact about Bandung.</code></li>
+<li><code>Tell me a fun fact about pho.</code></li>
+<li><code>Tell me a fun fact about Chiang Mai.</code></li>
 </ul></li>
 <li><code>What is the secret code and my name?</code><br />
 → <strong>should fail or guess</strong> — the early turns were <strong>dropped</strong>, not compacted.</li>
@@ -776,11 +776,11 @@ Answer the latest user message. Trust the summary for older facts.</code></pre>
 </ol>
 <h4 id="part-b-test-script-same-panel">Part B test script (same panel)</h4>
 <ol type="1">
-<li><code>Remember this secret code: BLUE-ORCA-77. My name is Sari.</code></li>
-<li>Filler: coffee / Java / Bandung fun facts (same as Part A) — enough turns to trigger compaction.</li>
+<li><code>Remember this secret code: BLUE-ORCA-77. My name is Mai.</code></li>
+<li>Filler: coffee / pho / Chiang Mai fun facts (same as Part A) — enough turns to trigger compaction.</li>
 <li>In <strong>Executions</strong>, confirm a <strong>summarizer</strong> OpenAI call ran when <code>needsCompaction</code> was true.</li>
 <li><code>What is the secret code and my name?</code><br />
-→ should work again, because <strong>BLUE-ORCA-77</strong> and <strong>Sari</strong> live in the <strong>summary</strong>, not only in dropped raw turns.</li>
+→ should work again, because <strong>BLUE-ORCA-77</strong> and <strong>Mai</strong> live in the <strong>summary</strong>, not only in dropped raw turns.</li>
 </ol>
 <h4 id="remember-4">Remember</h4>
 <pre class="text"><code>Part A (break):  AI Agent + Window Buffer Memory(N=2)  → old turns deleted
@@ -1004,7 +1004,7 @@ Part B (fix):  Code history
 <p><img src="screenshots/ex-3-03-routing-prompt.png" alt="System message routes Exa vs Google." /></p>
 <p><em>System message routes Exa vs Google.</em></p>
 <ul>
-<li>“What’s the weather in Jakarta?”</li>
+<li>“What’s the weather in Ho Chi Minh City?”</li>
 <li>“Wikipedia: n8n”</li>
 <li>“Search with Exa: latest RAG papers”</li>
 <li>“Search with Google: n8n telegram polling”</li>
@@ -1085,7 +1085,7 @@ Part B (fix):  Code history
 Routing rules (follow strictly):
 - If the user asks about weather or temperature for a place → call get_weather.
   Pass latitude and longitude. If they only give a city, use well-known coordinates
-  (Jakarta ≈ -6.2,106.8; Singapore ≈ 1.35,103.82; Bandung ≈ -6.9,107.6).
+  (Ho Chi Minh City ≈ 10.82,106.63; Bangkok ≈ 13.76,100.50; Manila ≈ 14.60,120.98; Singapore ≈ 1.35,103.82).
 - If the user asks for an encyclopedia-style fact, or says &quot;wikipedia&quot; → call wikipedia.
 - If the user says &quot;search with exa&quot; / &quot;exa search&quot; / &quot;use exa&quot; → call search_with_exa with their query.
 - If the user says &quot;search with google&quot; / &quot;google search&quot; / &quot;use google&quot; → call search_with_google with their query.
@@ -1276,7 +1276,7 @@ Keep Telegram replies concise. Cite 2–3 titles/URLs when you used a search too
 <li>In Telegram, try:</li>
 </ol>
 <pre class="text"><code>hi
-What&#39;s the weather in Jakarta right now?
+What&#39;s the weather in Ho Chi Minh City right now?
 Wikipedia: Kubernetes
 Search with Exa: latest techniques for RAG evaluation
 Search with Google: n8n telegram bot polling</code></pre>
@@ -1405,13 +1405,9 @@ Search with Google: n8n telegram bot polling</code></pre>
 └── .gitignore           ← ignores .env and data/</code></pre>
 <p>Questions during class: keep the server IP written on the board as a short URL students can type — e.g. <code>http://192.168.1.247:5678</code>.</p>
 
-        <p class="footer-note">
-          Maintained for Decentricity class use. Source of truth:
-          <a href="https://github.com/Decentricity/n8n-class">github.com/Decentricity/n8n-class</a>.
-        </p>
+
       </article>
     </div>
   </div>
   <script src="./workbook.js"></script>
 </body>
-</html>
