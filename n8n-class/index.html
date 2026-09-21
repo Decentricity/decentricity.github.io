@@ -1,0 +1,1369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>n8n Class Workbook — Decentricity</title>
+  <meta name="description" content="Workbook for the Decentricity n8n class: local server setup, Chat UI harnesses, RAG, compaction, Telegram polling, and tool use." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&family=IBM+Plex+Mono:wght@400;500&family=Sora:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <a class="skip" href="#content">Skip to content</a>
+  <div class="mobile-bar">
+    <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open contents">Contents</button>
+    <strong>n8n Class</strong>
+  </div>
+  <div class="shell">
+    <aside class="sidebar" aria-label="Workbook navigation">
+      <a class="brand" href="./">Decentricity</a>
+      <p class="brand-sub">n8n Class workbook</p>
+      <div class="progress" aria-live="polite">
+        <div class="progress-label">
+          <span>Checklist progress</span>
+          <span id="progress-count">0 / 0</span>
+        </div>
+        <div class="progress-track"><div class="progress-bar" id="progress-bar"></div></div>
+      </div>
+      <p class="toc-title">Contents</p>
+      <ul class="toc" id="toc"></ul>
+    </aside>
+    <div class="main">
+      <header class="hero">
+        <div class="eyebrow">Class workbook</div>
+        <h1>n8n Class</h1>
+        <p class="hero-lead">
+          A practical lab book for standing up n8n on a LAN box, then building chatbots from a raw model call through harnesses, RAG, compaction, Telegram polling, and tools.
+        </p>
+        <div class="hero-actions">
+          <a class="btn" href="#exercises">Jump to exercises</a>
+          <a class="btn btn-ghost" href="https://github.com/Decentricity/n8n-class">Source repo</a>
+        </div>
+      </header>
+      <article class="content" id="content">
+<h1 id="n8n-class--local-server-setup">n8n Class — Local Server Setup</h1>
+<p>Course materials for running <strong>n8n as a local server</strong> on your own machine, then opening the web UI from another device on the same LAN (phone, laptop, classroom tablet).</p>
+<p>This matches a headless Linux host setup (no local GUI). Docker / Podman is the supported path.</p>
+<p>After setup:</p>
+<ol type="1">
+<li><strong>Exercises 1A–1E</strong> — OpenAI-only path on n8n’s <strong>Chat UI</strong>: raw chat → harness → RAG → local-tool agent → <strong>tiny memory window + compaction</strong></li>
+<li><strong>Exercise 2</strong> — same bot idea on <strong>Telegram via polling</strong> (no tunnel; Telegram only — no tools yet)</li>
+<li><strong>Exercise 3</strong> — add external tools: <strong>weather</strong>, <strong>Wikipedia</strong>, <strong>Exa</strong>, <strong>Google</strong> (HTTP)</li>
+</ol>
+<p><strong>Model provider note:</strong> The step-by-step examples below use <strong>OpenAI</strong> (API key from <a href="https://platform.openai.com/">platform.openai.com</a>). That is an <strong>example only</strong>. The same patterns work with <strong>Ollama</strong> (local) or <strong>Claude / Anthropic</strong> — in n8n, swap the chat model / embeddings node (e.g. <strong>Ollama Chat Model</strong>, <strong>Anthropic Chat Model</strong>, <strong>Embeddings OpenAI</strong> → the matching embeddings node if you use RAG). Screenshots and field names in this README assume OpenAI so the class stays consistent.</p>
+<p>Exa + Google (Exercise 3 only) need their own free-tier keys.</p>
+<hr />
+<h2 id="what-you-will-end-up-with">What you will end up with</h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>UI URL (from another device)</td>
+<td><code>http://YOUR_LAN_IP:5678</code></td>
+</tr>
+<tr>
+<td>Default port</td>
+<td><code>5678</code></td>
+</tr>
+<tr>
+<td>Data on disk</td>
+<td><code>./data</code> next to <code>docker-compose.yml</code></td>
+</tr>
+<tr>
+<td>Image</td>
+<td><code>docker.io/n8nio/n8n:latest</code></td>
+</tr>
+</tbody>
+</table>
+<p>Replace <code>YOUR_LAN_IP</code> with something like <code>192.168.1.247</code> — never use <code>localhost</code> or <code>127.0.0.1</code> when opening the UI from another device.</p>
+<hr />
+<h2 id="prerequisites">Prerequisites</h2>
+<ol type="1">
+<li>A Linux (or macOS) machine that stays on during class.</li>
+<li>Docker <strong>or</strong> Podman with Compose.</li>
+<li>The machine and your browser device on the <strong>same LAN</strong>.</li>
+<li>Outbound internet once (to pull the n8n image).</li>
+</ol>
+<p>Check tools:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> <span class="at">--version</span> <span class="kw">||</span> <span class="ex">podman</span> <span class="at">--version</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> compose version <span class="kw">||</span> <span class="ex">podman</span> compose version <span class="kw">||</span> <span class="ex">docker-compose</span> <span class="at">--version</span></span></code></pre></div>
+<p>On some Ubuntu systems, <code>docker</code> is an alias for Podman. That is fine for this class.</p>
+<hr />
+<h2 id="1-get-this-repo">1. Get this repo</h2>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone git@github.com:Decentricity/n8n-class.git</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> n8n-class</span></code></pre></div>
+<p>Or with HTTPS:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/Decentricity/n8n-class.git</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> n8n-class</span></code></pre></div>
+<hr />
+<h2 id="2-find-your-lan-ip">2. Find your LAN IP</h2>
+<p>On the <strong>server</strong> machine:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">hostname</span> <span class="at">-I</span> <span class="kw">|</span> <span class="fu">awk</span> <span class="st">&#39;{print $1}&#39;</span></span></code></pre></div>
+<p>Or:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">ip</span> <span class="at">-4</span> route get 1.1.1.1 <span class="kw">|</span> <span class="fu">awk</span> <span class="st">&#39;{print $7; exit}&#39;</span></span></code></pre></div>
+<p>Write that IP down. Example used in this document: <code>192.168.1.247</code>.</p>
+<p>Confirm the interface that owns the default route (ethernet is usually more stable than Wi‑Fi in class):</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">ip</span> route get 1.1.1.1</span></code></pre></div>
+<hr />
+<h2 id="3-create-your-env">3. Create your <code>.env</code></h2>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cp</span> .env.example .env</span></code></pre></div>
+<p>Edit <code>.env</code> and set <strong>your</strong> LAN IP in all three places (<code>N8N_HOST</code>, <code>WEBHOOK_URL</code>, <code>N8N_EDITOR_BASE_URL</code>):</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">nano</span> .env</span></code></pre></div>
+<p>Example of a finished <code>.env</code>:</p>
+<pre class="env"><code>N8N_HOST=192.168.1.247
+N8N_PORT=5678
+N8N_PROTOCOL=http
+WEBHOOK_URL=http://192.168.1.247:5678/
+N8N_EDITOR_BASE_URL=http://192.168.1.247:5678/
+N8N_SECURE_COOKIE=false
+GENERIC_TIMEZONE=Asia/Jakarta
+TZ=Asia/Jakarta</code></pre>
+<p>Why these matter:</p>
+<ul>
+<li><code>WEBHOOK_URL</code> / <code>N8N_EDITOR_BASE_URL</code> — so webhook links and the editor use the LAN address, not <code>localhost</code>.</li>
+<li><code>N8N_SECURE_COOKIE=false</code> — required when you use plain <code>http://</code> so the browser can keep your login session.</li>
+<li>Do <strong>not</strong> commit <code>.env</code> (it is gitignored). Keep the example file updated instead.</li>
+</ul>
+<hr />
+<h2 id="4-create-the-data-directory-and-fix-permissions-if-needed">4. Create the data directory (and fix permissions if needed)</h2>
+<div class="sourceCode" id="cb10"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> data</span></code></pre></div>
+<p>n8n inside the container usually runs as UID <code>1000</code>. If you see <code>EACCES: permission denied</code> on <code>/home/node/.n8n/config</code>, fix ownership:</p>
+<p><strong>Docker:</strong></p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> chown <span class="at">-R</span> 1000:1000 data</span></code></pre></div>
+<p><strong>Rootless Podman:</strong></p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">podman</span> unshare chown <span class="at">-R</span> 1000:1000 data</span></code></pre></div>
+<hr />
+<h2 id="5-start-n8n">5. Start n8n</h2>
+<p>From the repo root:</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> compose up <span class="at">-d</span></span></code></pre></div>
+<p>If your system uses Podman Compose:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="ex">podman</span> compose up <span class="at">-d</span></span></code></pre></div>
+<p>Pull + first start can take a minute. Watch logs:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> compose logs <span class="at">-f</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="co"># or</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="ex">podman</span> logs <span class="at">-f</span> n8n</span></code></pre></div>
+<p>You want a line like:</p>
+<pre class="text"><code>Editor is now accessible via:
+http://YOUR_LAN_IP:5678</code></pre>
+<p>Health check from the server:</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-sS</span> http://127.0.0.1:5678/healthz</span></code></pre></div>
+<p>Expected:</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode json"><code class="sourceCode json"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span><span class="dt">&quot;status&quot;</span><span class="fu">:</span><span class="st">&quot;ok&quot;</span><span class="fu">}</span></span></code></pre></div>
+<p>Also test the LAN address from the server:</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-sS</span> http://YOUR_LAN_IP:5678/healthz</span></code></pre></div>
+<hr />
+<h2 id="6-open-the-ui-from-another-device-headless-server">6. Open the UI from another device (headless server)</h2>
+<p>On a phone or laptop on the <strong>same LAN</strong>, open a browser and go to:</p>
+<pre class="text"><code>http://YOUR_LAN_IP:5678</code></pre>
+<p>Example:</p>
+<pre class="text"><code>http://192.168.1.247:5678</code></pre>
+<p>First visit: create the <strong>owner account</strong> (email + password). Store that password somewhere safe for the class.</p>
+<p>If the page does not load:</p>
+<ol type="1">
+<li>Confirm both devices are on the same subnet (<code>192.168.1.x</code> with <code>192.168.1.x</code>, etc.).</li>
+<li>Confirm n8n is listening: <code>ss -tlnp | grep 5678</code></li>
+<li>Temporarily disable VPN on either device if it isolates LAN traffic.</li>
+<li>Re-check <code>.env</code> IPs match the server’s current LAN IP (Wi‑Fi vs ethernet can differ).</li>
+</ol>
+<hr />
+<h2 id="7-license-key-optional--if-your-class-uses-one">7. License key (optional / if your class uses one)</h2>
+<ol type="1">
+<li>In the n8n UI, paste the license key where prompted.</li>
+<li>Restart so the license is fully reloaded:</li>
+</ol>
+<div class="sourceCode" id="cb22"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> compose restart</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="co"># or</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a><span class="ex">podman</span> restart n8n</span></code></pre></div>
+<ol start="3" type="1">
+<li>Confirm healthy again:</li>
+</ol>
+<div class="sourceCode" id="cb23"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-sS</span> http://127.0.0.1:5678/healthz</span></code></pre></div>
+<p>In logs you should see a license line with <code>isValid=true</code>.</p>
+<hr />
+<h2 id="8-everyday-commands">8. Everyday commands</h2>
+<table>
+<thead>
+<tr>
+<th>Goal</th>
+<th>Command</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Start</td>
+<td><code>docker compose up -d</code></td>
+</tr>
+<tr>
+<td>Stop</td>
+<td><code>docker compose down</code></td>
+</tr>
+<tr>
+<td>Restart</td>
+<td><code>docker compose restart</code></td>
+</tr>
+<tr>
+<td>Logs</td>
+<td><code>docker compose logs -f</code></td>
+</tr>
+<tr>
+<td>Status</td>
+<td><code>docker compose ps</code></td>
+</tr>
+</tbody>
+</table>
+<p>Podman equivalents: <code>podman start n8n</code>, <code>podman stop n8n</code>, <code>podman restart n8n</code>, <code>podman logs -f n8n</code>.</p>
+<p>Workflows and credentials live under <code>./data</code>. Do not delete that folder unless you intend to wipe the class instance.</p>
+<hr />
+<h2 id="9-optional--start-on-boot-linux-user-systemd--podman">9. Optional — start on boot (Linux user systemd + Podman)</h2>
+<p>If the container already exists (created once with Compose or <code>podman run</code>), you can enable a user unit:</p>
+<div class="sourceCode" id="cb24"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> ~/.config/systemd/user</span></code></pre></div>
+<p>Create <code>~/.config/systemd/user/n8n.service</code>:</p>
+<div class="sourceCode" id="cb25"><pre class="sourceCode ini"><code class="sourceCode ini"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[Unit]</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="dt">Description</span><span class="ot">=</span><span class="st">n8n workflow automation</span></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a><span class="dt">After</span><span class="ot">=</span><span class="st">network-online.target</span></span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a><span class="dt">Wants</span><span class="ot">=</span><span class="st">network-online.target</span></span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a><span class="kw">[Service]</span></span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a><span class="dt">Type</span><span class="ot">=</span><span class="st">oneshot</span></span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a><span class="dt">RemainAfterExit</span><span class="ot">=</span><span class="kw">yes</span></span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a><span class="dt">ExecStart</span><span class="ot">=</span><span class="st">/usr/bin/podman start n8n</span></span>
+<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a><span class="dt">ExecStop</span><span class="ot">=</span><span class="st">/usr/bin/podman stop n8n</span></span>
+<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a><span class="dt">TimeoutStartSec</span><span class="ot">=</span><span class="dv">120</span></span>
+<span id="cb25-12"><a href="#cb25-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-13"><a href="#cb25-13" aria-hidden="true" tabindex="-1"></a><span class="kw">[Install]</span></span>
+<span id="cb25-14"><a href="#cb25-14" aria-hidden="true" tabindex="-1"></a><span class="dt">WantedBy</span><span class="ot">=</span><span class="st">default.target</span></span></code></pre></div>
+<p>Enable it:</p>
+<div class="sourceCode" id="cb26"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="ex">systemctl</span> <span class="at">--user</span> daemon-reload</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="ex">systemctl</span> <span class="at">--user</span> enable <span class="at">--now</span> n8n.service</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="ex">loginctl</span> enable-linger <span class="st">&quot;</span><span class="va">$USER</span><span class="st">&quot;</span></span></code></pre></div>
+<p>For Docker Compose on boot, prefer enabling Docker itself and using <code>restart: unless-stopped</code> in <code>docker-compose.yml</code> (already set).</p>
+<hr />
+<h2 id="10-one-shot-podman-run-no-compose">10. One-shot <code>podman run</code> (no Compose)</h2>
+<p>Useful if Compose is unavailable. Replace the IP and path:</p>
+<div class="sourceCode" id="cb27"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="st">&quot;</span><span class="va">$HOME</span><span class="st">/.local/share/n8n/data&quot;</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="ex">podman</span> unshare chown <span class="at">-R</span> 1000:1000 <span class="st">&quot;</span><span class="va">$HOME</span><span class="st">/.local/share/n8n/data&quot;</span></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a><span class="ex">podman</span> run <span class="at">-d</span> <span class="dt">\</span></span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">--name</span> n8n <span class="dt">\</span></span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">--restart</span> unless-stopped <span class="dt">\</span></span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">-p</span> 5678:5678 <span class="dt">\</span></span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">-e</span> N8N_HOST=192.168.1.247 <span class="dt">\</span></span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">-e</span> N8N_PORT=5678 <span class="dt">\</span></span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">-e</span> N8N_PROTOCOL=http <span class="dt">\</span></span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">-e</span> WEBHOOK_URL=http://192.168.1.247:5678/ <span class="dt">\</span></span>
+<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">-e</span> N8N_EDITOR_BASE_URL=http://192.168.1.247:5678/ <span class="dt">\</span></span>
+<span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">-e</span> N8N_SECURE_COOKIE=false <span class="dt">\</span></span>
+<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">-e</span> GENERIC_TIMEZONE=Asia/Jakarta <span class="dt">\</span></span>
+<span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">-e</span> TZ=Asia/Jakarta <span class="dt">\</span></span>
+<span id="cb27-16"><a href="#cb27-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">-v</span> <span class="st">&quot;</span><span class="va">$HOME</span><span class="st">/.local/share/n8n/data:/home/node/.n8n:Z&quot;</span> <span class="dt">\</span></span>
+<span id="cb27-17"><a href="#cb27-17" aria-hidden="true" tabindex="-1"></a>  docker.io/n8nio/n8n:latest</span></code></pre></div>
+<p>Then open <code>http://192.168.1.247:5678</code> from another LAN device.</p>
+<hr />
+<h2 id="classroom-checklist-setup">Classroom checklist (setup)</h2>
+<ul class="task-list">
+<li><label><input type="checkbox" />Image pulled successfully</label></li>
+<li><label><input type="checkbox" /><code>curl http://127.0.0.1:5678/healthz</code> → <code>{"status":"ok"}</code></label></li>
+<li><label><input type="checkbox" />UI opens at <code>http://YOUR_LAN_IP:5678</code> from a second device</label></li>
+<li><label><input type="checkbox" />Owner account created</label></li>
+<li><label><input type="checkbox" />(Optional) License applied + restart done</label></li>
+<li><label><input type="checkbox" />Students know: stop/start/logs commands and where <code>./data</code> lives</label></li>
+<li><label><input type="checkbox" />Exercise <strong>1A</strong> completed (single-turn Chat UI ↔︎ model)</label></li>
+<li><label><input type="checkbox" />Exercise <strong>1B</strong> completed (system prompt + memory / multi-turn)</label></li>
+<li><label><input type="checkbox" />Exercise <strong>1C</strong> completed (RAG over a small FAQ with embeddings)</label></li>
+<li><label><input type="checkbox" />Exercise <strong>1D</strong> completed (AI Agent + Calculator / Code / Think / optional Workflow or Vector Store tool)</label></li>
+<li><label><input type="checkbox" />Exercise <strong>1E</strong> completed (tiny memory window loses facts; compaction preserves them)</label></li>
+<li><label><input type="checkbox" />Exercise 2 completed (Telegram polling chat works — no external tools required)</label></li>
+<li><label><input type="checkbox" />Exercise 3 completed (weather + Wikipedia + Exa + Google tools work on command)</label></li>
+</ul>
+<hr />
+<h2 id="exercises">Exercises</h2>
+<h3 id="model-provider-read-once">Model provider (read once)</h3>
+<p>These early exercises teach <strong>harness patterns</strong>, not a specific vendor.</p>
+<table>
+<thead>
+<tr>
+<th>In the README examples</th>
+<th>You may substitute</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>OpenAI Chat Model</strong> / OpenAI <strong>Message a model</strong></td>
+<td><strong>Ollama Chat Model</strong>, <strong>Anthropic Chat Model</strong> (Claude), etc.</td>
+</tr>
+<tr>
+<td><strong>Embeddings OpenAI</strong> (Exercise 1C)</td>
+<td>Matching embeddings for your stack (e.g. Ollama embeddings), or keep OpenAI embeddings even if chat is elsewhere</td>
+</tr>
+</tbody>
+</table>
+<p>Create the matching <strong>Credential</strong> in n8n for whatever you pick. Class demos and click paths below stay on <strong>OpenAI</strong> so everyone can follow the same screens.</p>
+<hr />
+<h3 id="exercise-1a--talk-to-a-model-via-n8ns-chat-ui">Exercise 1A — Talk to a model via n8n’s Chat UI</h3>
+<p><strong>Goal:</strong> Build the smallest useful chat workflow: type in n8n’s <strong>built-in chat panel</strong> and get a model reply.</p>
+<p><strong>Important:</strong> <strong>Chat Trigger</strong> is <em>not</em> Slack, WhatsApp, or your company website. It only drives n8n’s own <strong>Open chat</strong> UI inside the editor.</p>
+<p><strong>APIs:</strong> OpenAI only in the example (or Ollama / Claude if you swapped the model node). No other APIs.</p>
+<h4 id="what-you-need">What you need</h4>
+<ul>
+<li>n8n open in the browser (<code>http://YOUR_LAN_IP:5678</code>)</li>
+<li>An OpenAI API key (<a href="https://platform.openai.com/">platform.openai.com</a> → API keys) — <em>or</em> Ollama running locally / an Anthropic key if you are not following the OpenAI example</li>
+</ul>
+<h4 id="step-by-step">Step by step</h4>
+<ol type="1">
+<li>Click <strong>Create workflow</strong>.</li>
+<li>Click the workflow name at the top and rename it, e.g. <code>Exercise 1A — Basic Chat</code>.</li>
+<li>Click <strong>Add first step</strong> (or the big <strong>+</strong>).</li>
+<li>Search for <strong>Chat Trigger</strong> → click <strong>When chat message received</strong>.</li>
+<li>Click the <strong>+</strong> on the right of that node.</li>
+<li>Search for <strong>OpenAI</strong> → click <strong>Message a model</strong><br />
+<em>(If using Ollama/Claude instead: add <strong>Ollama Chat Model</strong> or <strong>Anthropic Chat Model</strong> / Message-style node and connect it the same way.)</em></li>
+<li>Under <strong>Credential to connect with</strong> → <strong>Create new</strong> → paste your OpenAI API key → <strong>Save</strong>.</li>
+<li>Choose a model (e.g. <code>gpt-4o-mini</code>).</li>
+<li>In the <strong>Prompt</strong> / <strong>Message</strong> field, map the text from Chat Trigger:
+<ul>
+<li>open the field → use the mapping / expression UI</li>
+<li>pick the chat message (often <code>{{ $json.chatInput }}</code>)</li>
+</ul></li>
+<li>Click <strong>Save</strong> (top right).</li>
+<li>Click <strong>Open chat</strong> and type: <code>Say hello in one sentence.</code></li>
+</ol>
+<p>You should see a model reply in that same panel.</p>
+<h4 id="remember">Remember</h4>
+<pre class="text"><code>Create workflow → Chat Trigger → OpenAI Message a model → Save → Open chat</code></pre>
+<h4 id="done-when">Done when</h4>
+<ul class="task-list">
+<li><label><input type="checkbox" />Workflow saved</label></li>
+<li><label><input type="checkbox" />Credential saved (do not paste keys into group chat or screenshots)</label></li>
+<li><label><input type="checkbox" />A test message in <strong>Open chat</strong> gets a reply</label></li>
+</ul>
+<h4 id="what-you-just-learned">What you just learned</h4>
+<p>Calling a model once with <strong>no</strong> system prompt, <strong>no</strong> memory, and <strong>no</strong> tools — a raw completion wrapped in n8n’s Chat UI.</p>
+<hr />
+<h3 id="exercise-1b--chatbot-harness-persona--memory">Exercise 1B — Chatbot harness (persona + memory)</h3>
+<p><strong>Goal:</strong> Turn 1A into a small <strong>product-like harness</strong>: a fixed <strong>system prompt</strong> (persona / rules) plus <strong>memory</strong> so turn 2 remembers turn 1.</p>
+<p><strong>Concepts:</strong> harness vs raw call, system vs user message, multi-turn state.</p>
+<p><strong>APIs:</strong> Still only your chat provider (OpenAI in the example). Memory is stored by n8n.</p>
+<h4 id="what-you-need-1">What you need</h4>
+<ul>
+<li>Exercise 1A done (you already have a chat credential)</li>
+</ul>
+<h4 id="step-by-step-1">Step by step</h4>
+<ol type="1">
+<li><strong>Duplicate</strong> your 1A workflow (or create a new one) → rename to <code>Exercise 1B — Harness + Memory</code>.</li>
+<li>Keep <strong>Chat Trigger</strong> as the first step.</li>
+<li>Delete the simple <strong>Message a model</strong> node if you are rebuilding; add <strong>AI Agent</strong> instead (search <strong>AI Agent</strong>).</li>
+<li>Connect: <strong>Chat Trigger → AI Agent</strong>.</li>
+<li>On <strong>AI Agent</strong>:
+<ul>
+<li><strong>Source for Prompt / User Message:</strong> map <code>{{ $json.chatInput }}</code> from Chat Trigger.</li>
+<li>Open <strong>Options</strong> (or System Message field) and set a <strong>System Message</strong>, for example:</li>
+</ul></li>
+</ol>
+<pre class="text"><code>You are &quot;Ayu&quot;, a friendly helpdesk assistant for a fictional company called Nusa Widgets.
+Rules:
+- Be concise (2–4 short sentences).
+- If you do not know something, say so.
+- Never invent order IDs or prices.
+- Always sign the last line with: — Ayu, Nusa Widgets</code></pre>
+<ol start="6" type="1">
+<li>On the AI Agent, click <strong>+</strong> under <strong>Chat Model</strong> → <strong>OpenAI Chat Model</strong><br />
+→ same OpenAI credential → model e.g. <code>gpt-4o-mini</code><br />
+<em>(Or Ollama / Anthropic chat model.)</em></li>
+<li>On the AI Agent, click <strong>+</strong> under <strong>Memory</strong> → <strong>Window Buffer Memory</strong> (sometimes labeled <strong>Simple Memory</strong> / <strong>Buffer Window</strong>).
+<ul>
+<li>Session key: use the Chat Trigger session id if shown (often available from the trigger), or the default session — the important part is that <strong>the same Open chat panel reuses one memory</strong>.</li>
+<li>Context window length: e.g. <strong>10</strong> messages.</li>
+</ul></li>
+<li><strong>Do not</strong> add tools yet.</li>
+<li><strong>Save</strong> → <strong>Open chat</strong>.</li>
+</ol>
+<h4 id="test-script-say-these-in-order-in-the-same-chat-panel">Test script (say these in order in the same chat panel)</h4>
+<ol type="1">
+<li><code>Hi! My name is Budi and my favorite color is blue.</code></li>
+<li><code>What is my name and favorite color?</code></li>
+<li><code>Who are you and which company do you work for?</code></li>
+</ol>
+<p>Expected: it remembers Budi / blue, stays in character as Ayu, and follows the signature rule.</p>
+<h4 id="remember-1">Remember</h4>
+<pre class="text"><code>Chat Trigger → AI Agent
+                ├─ Chat Model (OpenAI / Ollama / Claude)
+                └─ Window Buffer Memory
+              (+ System Message = persona)</code></pre>
+<h4 id="done-when-1">Done when</h4>
+<ul class="task-list">
+<li><label><input type="checkbox" />System prompt clearly changes the bot’s personality vs 1A</label></li>
+<li><label><input type="checkbox" />Second message correctly recalls a fact from the first</label></li>
+<li><label><input type="checkbox" />No external tools / no other APIs</label></li>
+</ul>
+<h4 id="what-you-just-learned-1">What you just learned</h4>
+<p>A <strong>chatbot harness</strong> = model + <strong>instructions</strong> + <strong>state (memory)</strong>.</p>
+<hr />
+<h3 id="exercise-1c--rag-retrieve-then-answer">Exercise 1C — RAG (retrieve, then answer)</h3>
+<p><strong>Goal:</strong> Ground answers in a small <strong>company FAQ</strong> you provide. Use <strong>embeddings</strong> + an <strong>in-memory vector store</strong>, then answer <strong>only from retrieved text</strong>.</p>
+<p><strong>Concepts:</strong> RAG vs “the model just knows,” embeddings, chunking, retrieval-augmented generation, reducing hallucination.</p>
+<p><strong>APIs:</strong> OpenAI <strong>chat + embeddings</strong> in the example (or your substituted providers). No Exa / Google / Wikipedia.</p>
+<h4 id="what-you-need-2">What you need</h4>
+<ul>
+<li>Exercise 1B ideas in mind (system prompt helps a lot here)</li>
+<li>A short FAQ text (paste the sample below or write your own)</li>
+</ul>
+<h4 id="sample-faq-copy-into-the-workflow">Sample FAQ (copy into the workflow)</h4>
+<pre class="text"><code>Nusa Widgets FAQ
+Return policy: You may return unused widgets within 30 days with a receipt. Refunds take 5–7 business days.
+Shipping: Standard shipping in Indonesia is 3–5 business days. Express is 1–2 business days.
+Support hours: Monday–Friday 09:00–18:00 WIB. Email support@nusawidgets.example
+Warranty: All widgets have a 1-year limited warranty against manufacturing defects.
+Order ID format: NW- followed by 8 digits, for example NW-12345678.</code></pre>
+<h4 id="step-by-step--part-1-load-the-faq-into-a-vector-store">Step by step — Part 1: load the FAQ into a vector store</h4>
+<p>You will build a <strong>small loader workflow</strong> (run once), then a <strong>chat workflow</strong> that retrieves.</p>
+<p><strong>Loader workflow</strong></p>
+<ol type="1">
+<li><strong>Create workflow</strong> → <code>Exercise 1C — FAQ Loader</code>.</li>
+<li><strong>Manual Trigger</strong> (or <strong>When clicking Test workflow</strong>).</li>
+<li>Add <strong>Document Default Data Loader</strong> (or <strong>Default Data Loader</strong>) → mode that accepts text / JSON.
+<ul>
+<li>Paste the FAQ into the text field (or use a <strong>Set</strong> node that outputs <code>{ "text": "..." }</code> and point the loader at it).</li>
+</ul></li>
+<li>Add <strong>Recursive Character Text Splitter</strong> (chunk size ~400, overlap ~50) if the loader does not split for you — connect loader → splitter as your n8n version expects.</li>
+<li>Add <strong>Embeddings OpenAI</strong> (sub-node / connected embeddings):
+<ul>
+<li>Same OpenAI credential</li>
+<li>Model e.g. <code>text-embedding-3-small</code></li>
+</ul></li>
+<li>Add <strong>Simple Vector Store</strong> / <strong>In-Memory Vector Store</strong> in <strong>insert</strong> mode:
+<ul>
+<li>Memory key / index name: e.g. <code>nusa_faq</code></li>
+<li>Connect documents + embeddings as the UI requires</li>
+</ul></li>
+<li><strong>Save</strong> → <strong>Execute workflow</strong> once. Confirm it finishes without errors.</li>
+</ol>
+<blockquote>
+<p>In-memory stores reset when n8n restarts. Re-run the loader after a restart. That is fine for class.</p>
+</blockquote>
+<h4 id="step-by-step--part-2-chat-with-retrieval">Step by step — Part 2: chat with retrieval</h4>
+<ol type="1">
+<li><strong>Create workflow</strong> → <code>Exercise 1C — FAQ Chat (RAG)</code>.</li>
+<li><strong>Chat Trigger</strong> → <strong>AI Agent</strong>.</li>
+<li>System message example:</li>
+</ol>
+<pre class="text"><code>You are Nusa Widgets support. Answer ONLY using the retrieved FAQ context.
+If the answer is not in the context, say you do not know and suggest emailing support@nusawidgets.example.
+Do not invent policies, prices, or order IDs.</code></pre>
+<ol start="4" type="1">
+<li>Chat Model: <strong>OpenAI Chat Model</strong> (or your substitute).</li>
+<li>Memory: optional <strong>Window Buffer Memory</strong> (nice, not required for the RAG lesson).</li>
+<li>Add a tool or retriever for the vector store:
+<ul>
+<li>Prefer <strong>Vector Store</strong> tool / <strong>Answer questions with a vector store</strong> pattern for your n8n version:
+<ul>
+<li>Tool description: <code>Search the Nusa Widgets FAQ. Use for any product, shipping, warranty, or returns question.</code></li>
+<li>Same memory key: <code>nusa_faq</code></li>
+<li>Embeddings: <strong>Embeddings OpenAI</strong> (same as loader)</li>
+</ul></li>
+</ul></li>
+<li>If your build uses <strong>Retriever</strong> + chain instead of Agent+Tool, use that equivalent: question → retrieve top K chunks → stuff into prompt → generate. Same idea.</li>
+<li><strong>Save</strong> → <strong>Open chat</strong>.</li>
+</ol>
+<h4 id="test-script">Test script</h4>
+<ol type="1">
+<li><code>What is your return policy?</code> → should match the FAQ.</li>
+<li><code>How fast is express shipping?</code> → from FAQ.</li>
+<li><code>What is the CEO’s favorite food?</code> → should refuse / say not in docs.</li>
+</ol>
+<h4 id="remember-2">Remember</h4>
+<pre class="text"><code>[Once] Manual Trigger → Load FAQ text → Split → Embeddings → Insert In-Memory Vector Store
+
+[Chat] Chat Trigger → AI Agent
+                      ├─ Chat Model
+                      ├─ (optional) Memory
+                      └─ Vector Store tool / retriever (same index + embeddings)</code></pre>
+<h4 id="done-when-2">Done when</h4>
+<ul class="task-list">
+<li><label><input type="checkbox" />FAQ loader ran successfully</label></li>
+<li><label><input type="checkbox" />In-policy questions are answered from the FAQ</label></li>
+<li><label><input type="checkbox" />Out-of-policy questions are refused instead of invented</label></li>
+<li><label><input type="checkbox" />No web search APIs used</label></li>
+</ul>
+<h4 id="what-you-just-learned-2">What you just learned</h4>
+<p><strong>RAG</strong> = retrieve relevant chunks with embeddings, then generate an answer grounded in those chunks.</p>
+<hr />
+<h3 id="exercise-1d--tool-using-agent-harness-n8n-local-tools-only">Exercise 1D — Tool-using agent harness (n8n-local tools only)</h3>
+<p><strong>Goal:</strong> Let the model <strong>decide</strong> when to call tools. Use only tools that need <strong>no third-party search APIs</strong>: Calculator, Code, Think, and optionally Call n8n Workflow or Vector Store (your FAQ from 1C).</p>
+<p><strong>Concepts:</strong> tool calling / agent loop, when to compute vs retrieve vs just chat.</p>
+<p><strong>APIs:</strong> Chat model only (OpenAI in the example). Tools run inside n8n.</p>
+<h4 id="n8n-tools-used-here-no-exagooglewikipedia">n8n tools used here (no Exa/Google/Wikipedia)</h4>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>What it is for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Calculator</strong></td>
+<td>Arithmetic the model should not guess</td>
+</tr>
+<tr>
+<td><strong>Code</strong></td>
+<td>Small JavaScript snippets the agent may run</td>
+</tr>
+<tr>
+<td><strong>Think</strong></td>
+<td>Scratchpad / reasoning step (no side effects)</td>
+</tr>
+<tr>
+<td><strong>Call n8n Workflow</strong> (optional)</td>
+<td>Call another workflow you built (e.g. FAQ helper)</td>
+</tr>
+<tr>
+<td><strong>Vector Store</strong> tool (optional)</td>
+<td>Reuse the <code>nusa_faq</code> index from 1C</td>
+</tr>
+</tbody>
+</table>
+<p>Skip for 1D: HTTP Request, Wikipedia, SerpAPI, Wolfram, etc.</p>
+<h4 id="step-by-step-2">Step by step</h4>
+<ol type="1">
+<li><strong>Duplicate</strong> Exercise 1B → rename <code>Exercise 1D — Local Tools Agent</code>.</li>
+<li>Keep <strong>Chat Trigger → AI Agent</strong> + <strong>Chat Model</strong> + (optional) <strong>Memory</strong> + a clear <strong>System Message</strong>, e.g.:</li>
+</ol>
+<pre class="text"><code>You are a careful class demo agent.
+- For math, you MUST use the Calculator tool.
+- For tiny data transforms or parsing, you may use the Code tool.
+- Use the Think tool to plan briefly when the user asks a multi-step question.
+- If a Vector Store / FAQ tool is connected, use it for Nusa Widgets policy questions.
+- Otherwise answer normally.
+Show short answers. Prefer tools over guessing numbers.</code></pre>
+<ol start="3" type="1">
+<li>On AI Agent → <strong>+</strong> under <strong>Tool</strong> → add <strong>Calculator</strong>.</li>
+<li><strong>+</strong> Tool → <strong>Code</strong> (allow enough to run simple JS; keep it minimal for class).</li>
+<li><strong>+</strong> Tool → <strong>Think</strong>.</li>
+<li>Optional: <strong>+</strong> Tool → <strong>Vector Store</strong> pointing at <code>nusa_faq</code> (from 1C) <strong>or</strong> <strong>Call n8n Workflow</strong> that returns FAQ text.</li>
+<li><strong>Save</strong> → <strong>Open chat</strong>.</li>
+</ol>
+<h4 id="test-script-1">Test script</h4>
+<ol type="1">
+<li><code>What is (17 * 19) + 3.5?</code> → should show Calculator in <strong>Executions</strong>.</li>
+<li><code>Think step-by-step: I have 3 boxes of 12 and give away 5. How many left?</code> → Think and/or Calculator.</li>
+<li><em>(If FAQ tool connected)</em> <code>How long is the widget warranty?</code> → Vector Store / Workflow tool.</li>
+<li><code>Just say hi</code> → no tool required.</li>
+</ol>
+<h4 id="remember-3">Remember</h4>
+<pre class="text"><code>Chat Trigger → AI Agent
+                ├─ Chat Model (OpenAI / Ollama / Claude)
+                ├─ Memory (optional)
+                ├─ Calculator
+                ├─ Code
+                ├─ Think
+                └─ (optional) Vector Store or Call n8n Workflow</code></pre>
+<h4 id="done-when-3">Done when</h4>
+<ul class="task-list">
+<li><label><input type="checkbox" />A math question clearly triggers <strong>Calculator</strong> in Executions</label></li>
+<li><label><input type="checkbox" />Chit-chat does not force unnecessary tools</label></li>
+<li><label><input type="checkbox" />No Exa / Google / Wikipedia / weather HTTP tools on this workflow</label></li>
+</ul>
+<h4 id="what-you-just-learned-3">What you just learned</h4>
+<p>An <strong>agent harness</strong> = instructions + (optional) memory + <strong>tools the model can choose</strong>.</p>
+<h4 id="roadmap-after-1d">Roadmap after 1D</h4>
+<ul>
+<li><strong>Exercise 1E</strong> shows what happens when memory is tiny (context loss) and how <strong>compaction</strong> fixes it.</li>
+<li><strong>Exercise 2</strong> moves the chat channel to <strong>Telegram (polling)</strong> — still no external search tools.</li>
+<li><strong>Exercise 3</strong> adds <strong>external</strong> tools (weather, Wikipedia, Exa, Google).</li>
+</ul>
+<hr />
+<h3 id="exercise-1e--context-window-forgetting-and-compaction">Exercise 1E — Context window, forgetting, and compaction</h3>
+<p><strong>Goal:</strong> Feel <strong>context loss</strong> on purpose (without waiting for a 128k model window to fill), then fix it with <strong>compaction</strong> (summarize old turns, keep recent turns raw).</p>
+<p><strong>Concepts:</strong> context window vs memory window, truncation vs compaction, summary + recent tail.</p>
+<p><strong>APIs:</strong> Chat provider only (OpenAI in the example). No Exa/Google/Wikipedia.</p>
+<h4 id="can-we-make-openais-context-window-super-small">Can we make OpenAI’s context window “super small”?</h4>
+<p><strong>Not the model’s hard limit.</strong> The OpenAI API does <strong>not</strong> let you shrink <code>gpt-4o-mini</code>’s real context ceiling for class demos. <code>max_tokens</code> / max completion length only caps the <strong>reply size</strong>, not how much history the model can see.</p>
+<p><strong>Yes for the harness (what we want in class).</strong> n8n’s <strong>Window Buffer Memory</strong> only keeps the last <strong>N</strong> messages. Set N tiny (e.g. <strong>2</strong>) and the bot will forget early facts after a few turns — same <em>symptom</em> as blowing a context budget, in under a minute.</p>
+<p>Optional extra (Part A advanced): a <strong>Code</strong> node that also enforces a tiny <strong>character budget</strong> on history before the model call. Still a simulation — but very clear for students.</p>
+<h4 id="part-a--break-it-tiny-memory-window-experience-forgetting">Part A — Break it: tiny memory window (experience forgetting)</h4>
+<ol type="1">
+<li><strong>Duplicate</strong> Exercise 1B → rename <code>Exercise 1E-A — Tiny Window (forget)</code>.</li>
+<li>Keep <strong>Chat Trigger → AI Agent</strong> + <strong>OpenAI Chat Model</strong> + system message (persona is fine).</li>
+<li>On <strong>Window Buffer Memory</strong>, set <strong>Context Window Length</strong> to <strong><code>2</code></strong><br />
+(wording may be “context window length” / “window size” — use the smallest value the UI allows that still means “only a couple of recent messages”).</li>
+<li><strong>Save</strong> → <strong>Open chat</strong>. Use a <strong>fresh</strong> chat session if the panel has old memory (new workflow usually starts clean).</li>
+</ol>
+<p><strong>Script (same chat panel, in order):</strong></p>
+<ol type="1">
+<li><code>Remember this secret code: BLUE-ORCA-77. My name is Sari.</code></li>
+<li><code>What is the secret code and my name?</code><br />
+→ should still work (recent).</li>
+<li>Send three filler turns, one at a time:
+<ul>
+<li><code>Tell me a fun fact about coffee.</code></li>
+<li><code>Tell me a fun fact about Java.</code></li>
+<li><code>Tell me a fun fact about Bandung.</code></li>
+</ul></li>
+<li><code>What is the secret code and my name?</code><br />
+→ <strong>should fail or guess</strong> — the early turns were <strong>dropped</strong>, not compacted.</li>
+</ol>
+<p>In <strong>Executions</strong>, you are not looking for a model error; you are looking for a confident wrong/empty memory after fillers.</p>
+<p><strong>What you just saw:</strong> truncation (“keep last N, delete the rest”). That is <strong>not</strong> compaction.</p>
+<h4 id="part-b--fix-it-compaction-summary--recent-tail">Part B — Fix it: compaction (summary + recent tail)</h4>
+<p>We stop relying on tiny Window Buffer Memory alone. Instead we keep:</p>
+<ul>
+<li>a rolling <strong><code>summary</code></strong> of older conversation, and</li>
+<li>only the last few <strong>raw</strong> turns</li>
+</ul>
+<p>When raw history gets long, we call the model once to <strong>compact</strong> old turns into the summary.</p>
+<ol type="1">
+<li><strong>Create workflow</strong> → <code>Exercise 1E-B — Compaction</code>.</li>
+<li><strong>Chat Trigger</strong> as the first node.</li>
+<li>Add a <strong>Code</strong> node (mode: <strong>Run Once for All Items</strong>). Paste:</li>
+</ol>
+<div class="sourceCode" id="cb36"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> staticData <span class="op">=</span> <span class="fu">$getWorkflowStaticData</span>(<span class="st">&#39;global&#39;</span>)<span class="op">;</span></span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> sessionKey <span class="op">=</span> <span class="st">&#39;default&#39;</span><span class="op">;</span> <span class="co">// fine for one Open-chat panel in class</span></span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="op">!</span>staticData<span class="op">.</span><span class="at">sessions</span>) staticData<span class="op">.</span><span class="at">sessions</span> <span class="op">=</span> {}<span class="op">;</span></span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="op">!</span>staticData<span class="op">.</span><span class="at">sessions</span>[sessionKey]) {</span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a>  staticData<span class="op">.</span><span class="at">sessions</span>[sessionKey] <span class="op">=</span> { <span class="dt">summary</span><span class="op">:</span> <span class="st">&#39;&#39;</span><span class="op">,</span> <span class="dt">recent</span><span class="op">:</span> [] }<span class="op">;</span></span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-8"><a href="#cb36-8" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> session <span class="op">=</span> staticData<span class="op">.</span><span class="at">sessions</span>[sessionKey]<span class="op">;</span></span>
+<span id="cb36-9"><a href="#cb36-9" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> userText <span class="op">=</span> items[<span class="dv">0</span>]<span class="op">.</span><span class="at">json</span><span class="op">.</span><span class="at">chatInput</span> <span class="op">||</span> items[<span class="dv">0</span>]<span class="op">.</span><span class="at">json</span><span class="op">.</span><span class="at">message</span><span class="op">?.</span><span class="at">text</span> <span class="op">||</span> <span class="st">&#39;&#39;</span><span class="op">;</span></span>
+<span id="cb36-10"><a href="#cb36-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-11"><a href="#cb36-11" aria-hidden="true" tabindex="-1"></a><span class="co">// Tunables for class — keep these SMALL so compaction happens quickly</span></span>
+<span id="cb36-12"><a href="#cb36-12" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> MAX_RECENT_MESSAGES <span class="op">=</span> <span class="dv">4</span><span class="op">;</span> <span class="co">// raw turns kept (user+assistant count as separate)</span></span>
+<span id="cb36-13"><a href="#cb36-13" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> COMPACT_WHEN_RECENT_REACHES <span class="op">=</span> <span class="dv">4</span><span class="op">;</span></span>
+<span id="cb36-14"><a href="#cb36-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-15"><a href="#cb36-15" aria-hidden="true" tabindex="-1"></a>session<span class="op">.</span><span class="at">recent</span><span class="op">.</span><span class="fu">push</span>({ <span class="dt">role</span><span class="op">:</span> <span class="st">&#39;user&#39;</span><span class="op">,</span> <span class="dt">content</span><span class="op">:</span> userText })<span class="op">;</span></span>
+<span id="cb36-16"><a href="#cb36-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-17"><a href="#cb36-17" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> needsCompaction <span class="op">=</span> session<span class="op">.</span><span class="at">recent</span><span class="op">.</span><span class="at">length</span> <span class="op">&gt;=</span> COMPACT_WHEN_RECENT_REACHES<span class="op">;</span></span>
+<span id="cb36-18"><a href="#cb36-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-19"><a href="#cb36-19" aria-hidden="true" tabindex="-1"></a><span class="cf">return</span> [</span>
+<span id="cb36-20"><a href="#cb36-20" aria-hidden="true" tabindex="-1"></a>  {</span>
+<span id="cb36-21"><a href="#cb36-21" aria-hidden="true" tabindex="-1"></a>    <span class="dt">json</span><span class="op">:</span> {</span>
+<span id="cb36-22"><a href="#cb36-22" aria-hidden="true" tabindex="-1"></a>      userText<span class="op">,</span></span>
+<span id="cb36-23"><a href="#cb36-23" aria-hidden="true" tabindex="-1"></a>      <span class="dt">summary</span><span class="op">:</span> session<span class="op">.</span><span class="at">summary</span> <span class="op">||</span> <span class="st">&#39;(none yet)&#39;</span><span class="op">,</span></span>
+<span id="cb36-24"><a href="#cb36-24" aria-hidden="true" tabindex="-1"></a>      <span class="dt">recent</span><span class="op">:</span> session<span class="op">.</span><span class="at">recent</span><span class="op">,</span></span>
+<span id="cb36-25"><a href="#cb36-25" aria-hidden="true" tabindex="-1"></a>      needsCompaction<span class="op">,</span></span>
+<span id="cb36-26"><a href="#cb36-26" aria-hidden="true" tabindex="-1"></a>      <span class="co">// text blob for the summarizer</span></span>
+<span id="cb36-27"><a href="#cb36-27" aria-hidden="true" tabindex="-1"></a>      <span class="dt">recentTranscript</span><span class="op">:</span> session<span class="op">.</span><span class="at">recent</span></span>
+<span id="cb36-28"><a href="#cb36-28" aria-hidden="true" tabindex="-1"></a>        <span class="op">.</span><span class="fu">map</span>((m) <span class="kw">=&gt;</span> <span class="vs">`</span><span class="sc">${</span>m<span class="op">.</span><span class="at">role</span><span class="op">.</span><span class="fu">toUpperCase</span>()<span class="sc">}</span><span class="vs">: </span><span class="sc">${</span>m<span class="op">.</span><span class="at">content</span><span class="sc">}</span><span class="vs">`</span>)</span>
+<span id="cb36-29"><a href="#cb36-29" aria-hidden="true" tabindex="-1"></a>        <span class="op">.</span><span class="fu">join</span>(<span class="st">&#39;</span><span class="sc">\n</span><span class="st">&#39;</span>)<span class="op">,</span></span>
+<span id="cb36-30"><a href="#cb36-30" aria-hidden="true" tabindex="-1"></a>    }<span class="op">,</span></span>
+<span id="cb36-31"><a href="#cb36-31" aria-hidden="true" tabindex="-1"></a>  }<span class="op">,</span></span>
+<span id="cb36-32"><a href="#cb36-32" aria-hidden="true" tabindex="-1"></a>]<span class="op">;</span></span></code></pre></div>
+<ol start="4" type="1">
+<li>Add an <strong>IF</strong> node: <code>needsCompaction</code> <strong>is true</strong>.</li>
+</ol>
+<p><strong>True branch — compact:</strong></p>
+<ol start="5" type="1">
+<li><strong>OpenAI → Message a model</strong> (summarizer):
+<ul>
+<li>System / instructions:</li>
+</ul></li>
+</ol>
+<pre class="text"><code>Compress the conversation below into a short memory note for a chatbot.
+Keep names, secret codes, preferences, and decisions. Drop chit-chat and fun facts.
+Max 8 bullet points. Do not invent facts.</code></pre>
+<ul>
+<li>User message / prompt:</li>
+</ul>
+<pre class="text"><code>Existing summary:
+{{ $json.summary }}
+
+New turns to fold in:
+{{ $json.recentTranscript }}</code></pre>
+<ol start="6" type="1">
+<li><strong>Code</strong> node after summarizer (Run Once for All Items):</li>
+</ol>
+<div class="sourceCode" id="cb39"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> staticData <span class="op">=</span> <span class="fu">$getWorkflowStaticData</span>(<span class="st">&#39;global&#39;</span>)<span class="op">;</span></span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> session <span class="op">=</span> staticData<span class="op">.</span><span class="at">sessions</span><span class="op">.</span><span class="at">default</span><span class="op">;</span></span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> summary <span class="op">=</span></span>
+<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a>  items[<span class="dv">0</span>]<span class="op">.</span><span class="at">json</span><span class="op">.</span><span class="at">message</span><span class="op">?.</span><span class="at">content</span> <span class="op">||</span></span>
+<span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a>  items[<span class="dv">0</span>]<span class="op">.</span><span class="at">json</span><span class="op">.</span><span class="at">text</span> <span class="op">||</span></span>
+<span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a>  items[<span class="dv">0</span>]<span class="op">.</span><span class="at">json</span><span class="op">.</span><span class="at">output</span> <span class="op">||</span></span>
+<span id="cb39-7"><a href="#cb39-7" aria-hidden="true" tabindex="-1"></a>  <span class="bu">JSON</span><span class="op">.</span><span class="fu">stringify</span>(items[<span class="dv">0</span>]<span class="op">.</span><span class="at">json</span>)<span class="op">;</span></span>
+<span id="cb39-8"><a href="#cb39-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-9"><a href="#cb39-9" aria-hidden="true" tabindex="-1"></a><span class="co">// Keep only the latest 2 raw messages; older content now lives in summary</span></span>
+<span id="cb39-10"><a href="#cb39-10" aria-hidden="true" tabindex="-1"></a>session<span class="op">.</span><span class="at">summary</span> <span class="op">=</span> <span class="bu">String</span>(summary)<span class="op">;</span></span>
+<span id="cb39-11"><a href="#cb39-11" aria-hidden="true" tabindex="-1"></a>session<span class="op">.</span><span class="at">recent</span> <span class="op">=</span> session<span class="op">.</span><span class="at">recent</span><span class="op">.</span><span class="fu">slice</span>(<span class="op">-</span><span class="dv">2</span>)<span class="op">;</span></span>
+<span id="cb39-12"><a href="#cb39-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-13"><a href="#cb39-13" aria-hidden="true" tabindex="-1"></a><span class="cf">return</span> [</span>
+<span id="cb39-14"><a href="#cb39-14" aria-hidden="true" tabindex="-1"></a>  {</span>
+<span id="cb39-15"><a href="#cb39-15" aria-hidden="true" tabindex="-1"></a>    <span class="dt">json</span><span class="op">:</span> {</span>
+<span id="cb39-16"><a href="#cb39-16" aria-hidden="true" tabindex="-1"></a>      <span class="dt">userText</span><span class="op">:</span> session<span class="op">.</span><span class="at">recent</span>[session<span class="op">.</span><span class="at">recent</span><span class="op">.</span><span class="at">length</span> <span class="op">-</span> <span class="dv">1</span>]<span class="op">?.</span><span class="at">content</span> <span class="op">||</span> <span class="st">&#39;&#39;</span><span class="op">,</span></span>
+<span id="cb39-17"><a href="#cb39-17" aria-hidden="true" tabindex="-1"></a>      <span class="dt">summary</span><span class="op">:</span> session<span class="op">.</span><span class="at">summary</span><span class="op">,</span></span>
+<span id="cb39-18"><a href="#cb39-18" aria-hidden="true" tabindex="-1"></a>      <span class="dt">recentTranscript</span><span class="op">:</span> session<span class="op">.</span><span class="at">recent</span></span>
+<span id="cb39-19"><a href="#cb39-19" aria-hidden="true" tabindex="-1"></a>        <span class="op">.</span><span class="fu">map</span>((m) <span class="kw">=&gt;</span> <span class="vs">`</span><span class="sc">${</span>m<span class="op">.</span><span class="at">role</span><span class="op">.</span><span class="fu">toUpperCase</span>()<span class="sc">}</span><span class="vs">: </span><span class="sc">${</span>m<span class="op">.</span><span class="at">content</span><span class="sc">}</span><span class="vs">`</span>)</span>
+<span id="cb39-20"><a href="#cb39-20" aria-hidden="true" tabindex="-1"></a>        <span class="op">.</span><span class="fu">join</span>(<span class="st">&#39;</span><span class="sc">\n</span><span class="st">&#39;</span>)<span class="op">,</span></span>
+<span id="cb39-21"><a href="#cb39-21" aria-hidden="true" tabindex="-1"></a>      <span class="dt">needsCompaction</span><span class="op">:</span> <span class="kw">false</span><span class="op">,</span></span>
+<span id="cb39-22"><a href="#cb39-22" aria-hidden="true" tabindex="-1"></a>    }<span class="op">,</span></span>
+<span id="cb39-23"><a href="#cb39-23" aria-hidden="true" tabindex="-1"></a>  }<span class="op">,</span></span>
+<span id="cb39-24"><a href="#cb39-24" aria-hidden="true" tabindex="-1"></a>]<span class="op">;</span></span></code></pre></div>
+<p><strong>False branch — no compact:</strong> pass the first Code node’s JSON through (or connect IF false directly toward the reply model).</p>
+<ol start="7" type="1">
+<li><strong>Merge</strong> both branches (or connect both into the same next node) → <strong>OpenAI → Message a model</strong> (the actual chatbot):</li>
+</ol>
+<pre class="text"><code>You are a helpful assistant with compacted memory.
+
+Long-term summary (may be empty at first):
+{{ $json.summary }}
+
+Recent raw turns:
+{{ $json.recentTranscript }}
+
+Answer the latest user message. Trust the summary for older facts.</code></pre>
+<p>Map the latest user line if your node needs a separate “user message” field: <code>{{ $json.userText }}</code>.</p>
+<ol start="8" type="1">
+<li>Final <strong>Code</strong> node to store the assistant reply into <code>recent</code>:</li>
+</ol>
+<div class="sourceCode" id="cb41"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> staticData <span class="op">=</span> <span class="fu">$getWorkflowStaticData</span>(<span class="st">&#39;global&#39;</span>)<span class="op">;</span></span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> session <span class="op">=</span> staticData<span class="op">.</span><span class="at">sessions</span><span class="op">.</span><span class="at">default</span><span class="op">;</span></span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> reply <span class="op">=</span></span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>  items[<span class="dv">0</span>]<span class="op">.</span><span class="at">json</span><span class="op">.</span><span class="at">message</span><span class="op">?.</span><span class="at">content</span> <span class="op">||</span></span>
+<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a>  items[<span class="dv">0</span>]<span class="op">.</span><span class="at">json</span><span class="op">.</span><span class="at">text</span> <span class="op">||</span></span>
+<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a>  items[<span class="dv">0</span>]<span class="op">.</span><span class="at">json</span><span class="op">.</span><span class="at">output</span> <span class="op">||</span></span>
+<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a>  <span class="st">&#39;&#39;</span><span class="op">;</span></span>
+<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-9"><a href="#cb41-9" aria-hidden="true" tabindex="-1"></a>session<span class="op">.</span><span class="at">recent</span><span class="op">.</span><span class="fu">push</span>({ <span class="dt">role</span><span class="op">:</span> <span class="st">&#39;assistant&#39;</span><span class="op">,</span> <span class="dt">content</span><span class="op">:</span> <span class="bu">String</span>(reply) })<span class="op">;</span></span>
+<span id="cb41-10"><a href="#cb41-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-11"><a href="#cb41-11" aria-hidden="true" tabindex="-1"></a><span class="cf">return</span> [{ <span class="dt">json</span><span class="op">:</span> { reply<span class="op">,</span> <span class="dt">summary</span><span class="op">:</span> session<span class="op">.</span><span class="at">summary</span><span class="op">,</span> <span class="dt">recent</span><span class="op">:</span> session<span class="op">.</span><span class="at">recent</span> } }]<span class="op">;</span></span></code></pre></div>
+<blockquote>
+<p>Chat Trigger workflows often show the <strong>last node’s text</strong> in Open chat. If the panel does not show <code>reply</code>, add a tiny <strong>Set</strong> node that outputs <code>{ "output": "={{ $json.reply }}" }</code> or map whatever field your Chat setup expects.</p>
+</blockquote>
+<ol start="9" type="1">
+<li><strong>Save</strong> → <strong>Open chat</strong> (fresh session; or reset by temporarily changing <code>sessionKey</code> in the first Code node).</li>
+</ol>
+<h4 id="part-b-test-script-same-panel">Part B test script (same panel)</h4>
+<ol type="1">
+<li><code>Remember this secret code: BLUE-ORCA-77. My name is Sari.</code></li>
+<li>Filler: coffee / Java / Bandung fun facts (same as Part A) — enough turns to trigger compaction.</li>
+<li>In <strong>Executions</strong>, confirm a <strong>summarizer</strong> OpenAI call ran when <code>needsCompaction</code> was true.</li>
+<li><code>What is the secret code and my name?</code><br />
+→ should work again, because <strong>BLUE-ORCA-77</strong> and <strong>Sari</strong> live in the <strong>summary</strong>, not only in dropped raw turns.</li>
+</ol>
+<h4 id="remember-4">Remember</h4>
+<pre class="text"><code>Part A (break):  AI Agent + Window Buffer Memory(N=2)  → old turns deleted
+
+Part B (fix):  Code history
+                 → IF long enough → OpenAI summarize → shrink recent + update summary
+                 → OpenAI reply using (summary + recent tail)
+                 → Code store assistant reply</code></pre>
+<h4 id="done-when-4">Done when</h4>
+<ul class="task-list">
+<li><label><input type="checkbox" />Part A: after fillers, the bot forgets the secret code / name</label></li>
+<li><label><input type="checkbox" />Part B: after fillers + compaction, the bot still recalls the secret code / name</label></li>
+<li><label><input type="checkbox" />Student can explain: <strong>truncation deletes; compaction compresses then keeps</strong></label></li>
+</ul>
+<h4 id="teaching-note">Teaching note</h4>
+<p>Production systems also watch <strong>token</strong> budgets (not just message counts). For class, message-count thresholds are enough to feel the failure and the fix without waiting for a huge OpenAI context window.</p>
+<hr />
+<h3 id="exercise-2--telegram-bot-via-polling-no-tools-yet">Exercise 2 — Telegram bot via polling (no tools yet)</h3>
+<p><strong>Goal:</strong> Chat with your OpenAI bot in <strong>Telegram</strong> instead of n8n’s Chat UI, using <strong>polling</strong> like a normal BotFather script on this machine.</p>
+<p><strong>Focus of this exercise:</strong> Telegram receive + reply only. <strong>Do not add tools yet</strong> — that is Exercise 3.</p>
+<h4 id="polling-vs-webhooks-why-this-class-uses-polling">Polling vs webhooks (why this class uses polling)</h4>
+<p>Same BotFather bot + API token either way. What changes is <strong>how new messages arrive</strong>:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>Polling</strong> (<code>getUpdates</code>) — <strong>this exercise</strong></th>
+<th><strong>Webhooks</strong> (n8n’s built-in <strong>Telegram Trigger</strong>)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Who calls whom</td>
+<td><strong>Your n8n</strong> repeatedly asks Telegram: “any new messages?”</td>
+<td><strong>Telegram</strong> POSTs into your n8n URL when a message arrives</td>
+</tr>
+<tr>
+<td>Public URL / tunnel?</td>
+<td><strong>Not needed</strong> (only outbound HTTPS to <code>api.telegram.org</code>)</td>
+<td><strong>Required</strong> — Telegram must reach your host</td>
+</tr>
+<tr>
+<td>Feels like</td>
+<td>A local script with a bot token on this computer</td>
+<td>A public HTTP endpoint waiting for Telegram</td>
+</tr>
+<tr>
+<td>Pros</td>
+<td>Simple LAN deploy; no tunnel; matches scripts many people already know</td>
+<td>Instant delivery; no schedule interval; less “busy waiting”</td>
+</tr>
+<tr>
+<td>Cons</td>
+<td>Small delay (poll interval); you must track <code>offset</code>; slightly more nodes</td>
+<td>Needs HTTPS tunnel or public host; harder for classroom LAN boxes</td>
+</tr>
+</tbody>
+</table>
+<p><strong>We use polling here</strong> so a LAN-only n8n (e.g. <code>http://192.168.1.247:5678</code>) works without a tunnel.</p>
+<blockquote>
+<p>Note: n8n’s <strong>Telegram Trigger</strong> node is webhook-based. For polling we use <strong>Schedule Trigger + HTTP Request → <code>getUpdates</code></strong>, then <strong>Telegram → Send a text message</strong> for replies. Same token.</p>
+</blockquote>
+<h4 id="what-you-need-3">What you need</h4>
+<ul>
+<li>Exercises 1A–1E recommended first (at least 1A so you have an OpenAI — or other — credential in n8n)</li>
+<li>Telegram on your phone</li>
+<li>Outbound internet from the n8n host to <code>api.telegram.org</code> (normal home/office internet is enough — <strong>no inbound port open</strong>)</li>
+</ul>
+<h4 id="part-a--create-a-telegram-bot">Part A — Create a Telegram bot</h4>
+<ol type="1">
+<li>In Telegram, open <strong>@BotFather</strong>.</li>
+<li>Send <code>/newbot</code>.</li>
+<li>Follow the prompts (display name + username ending in <code>bot</code>).</li>
+<li>Copy the <strong>HTTP API token</strong>. Treat it like a password.</li>
+</ol>
+<h4 id="part-b--add-telegram-credentials-in-n8n">Part B — Add Telegram credentials in n8n</h4>
+<ol type="1">
+<li>In n8n, open <strong>Credentials</strong>.</li>
+<li><strong>Add credential</strong> → <strong>Telegram</strong> → <strong>Telegram API</strong>.</li>
+<li>Paste the bot token → <strong>Save</strong>.</li>
+</ol>
+<h4 id="part-c--one-time-clear-any-old-webhook">Part C — One-time: clear any old webhook</h4>
+<p>If this bot token was ever used with a webhook, polling will fail until you clear it.</p>
+<ol type="1">
+<li>New temporary workflow (or a one-off manual run): <strong>Manual Trigger</strong> → <strong>HTTP Request</strong>.</li>
+<li>Method <code>GET</code>, URL (paste your token):</li>
+</ol>
+<pre class="text"><code>https://api.telegram.org/bot&lt;YOUR_BOT_TOKEN&gt;/deleteWebhook</code></pre>
+<ol start="3" type="1">
+<li>Execute once. You want <code>"ok": true</code> in the response.</li>
+<li>You can delete that tiny workflow afterward.</li>
+</ol>
+<h4 id="part-d--build-the-polling-workflow">Part D — Build the polling workflow</h4>
+<ol type="1">
+<li><strong>Create workflow</strong> → rename to <code>Exercise 2 — Telegram Chat (polling)</code>.</li>
+<li><strong>Add first step</strong> → <strong>Schedule Trigger</strong>.
+<ul>
+<li>Interval: every <strong>5 seconds</strong> (fine for class; raise to 10–15s if you want less load).</li>
+</ul></li>
+<li>Click <strong>+</strong> → <strong>HTTP Request</strong> (this is the poll):
+<ul>
+<li>Method: <code>GET</code></li>
+<li>URL:</li>
+</ul></li>
+</ol>
+<pre class="text"><code>https://api.telegram.org/bot&lt;YOUR_BOT_TOKEN&gt;/getUpdates</code></pre>
+<ul>
+<li><strong>Send Query Parameters</strong> → add:</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>timeout</code></td>
+<td><code>0</code></td>
+</tr>
+<tr>
+<td><code>limit</code></td>
+<td><code>10</code></td>
+</tr>
+<tr>
+<td><code>offset</code></td>
+<td><em>(expression — see below)</em></td>
+</tr>
+</tbody>
+</table>
+<p>For <code>offset</code>, switch the value to expression mode and paste:</p>
+<pre class="text"><code>={{ $getWorkflowStaticData(&#39;global&#39;).offset || &#39;&#39; }}</code></pre>
+<p>That reuses the last acknowledged update id (same idea as <code>offset</code> in a polling script). Leave it empty on the first run.</p>
+<ol start="4" type="1">
+<li>Click <strong>+</strong> → <strong>Code</strong> node (split updates + advance offset). Mode: <strong>Run Once for All Items</strong>. Paste:</li>
+</ol>
+<div class="sourceCode" id="cb46"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> staticData <span class="op">=</span> <span class="fu">$getWorkflowStaticData</span>(<span class="st">&#39;global&#39;</span>)<span class="op">;</span></span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> body <span class="op">=</span> items[<span class="dv">0</span>]<span class="op">.</span><span class="at">json</span><span class="op">;</span></span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> updates <span class="op">=</span> <span class="bu">Array</span><span class="op">.</span><span class="fu">isArray</span>(body<span class="op">.</span><span class="at">result</span>) <span class="op">?</span> body<span class="op">.</span><span class="at">result</span> <span class="op">:</span> []<span class="op">;</span></span>
+<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb46-5"><a href="#cb46-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (updates<span class="op">.</span><span class="at">length</span> <span class="op">===</span> <span class="dv">0</span>) {</span>
+<span id="cb46-6"><a href="#cb46-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> []<span class="op">;</span></span>
+<span id="cb46-7"><a href="#cb46-7" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb46-8"><a href="#cb46-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb46-9"><a href="#cb46-9" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> maxId <span class="op">=</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">max</span>(<span class="op">...</span>updates<span class="op">.</span><span class="fu">map</span>((u) <span class="kw">=&gt;</span> u<span class="op">.</span><span class="at">update_id</span>))<span class="op">;</span></span>
+<span id="cb46-10"><a href="#cb46-10" aria-hidden="true" tabindex="-1"></a>staticData<span class="op">.</span><span class="at">offset</span> <span class="op">=</span> maxId <span class="op">+</span> <span class="dv">1</span><span class="op">;</span></span>
+<span id="cb46-11"><a href="#cb46-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb46-12"><a href="#cb46-12" aria-hidden="true" tabindex="-1"></a><span class="cf">return</span> updates</span>
+<span id="cb46-13"><a href="#cb46-13" aria-hidden="true" tabindex="-1"></a>  <span class="op">.</span><span class="fu">filter</span>((u) <span class="kw">=&gt;</span> u<span class="op">.</span><span class="at">message</span> <span class="op">&amp;&amp;</span> u<span class="op">.</span><span class="at">message</span><span class="op">.</span><span class="at">text</span>)</span>
+<span id="cb46-14"><a href="#cb46-14" aria-hidden="true" tabindex="-1"></a>  <span class="op">.</span><span class="fu">map</span>((u) <span class="kw">=&gt;</span> ({ <span class="dt">json</span><span class="op">:</span> u }))<span class="op">;</span></span></code></pre></div>
+<ol start="5" type="1">
+<li>Click <strong>+</strong> → <strong>OpenAI</strong> → <strong>Message a model</strong> (same idea as Exercise 1A — <strong>no AI Agent / no tools yet</strong>).
+<ul>
+<li>Use your existing OpenAI credential; model e.g. <code>gpt-4o-mini</code>.</li>
+<li>Prompt / message: <code>={{ $json.message.text }}</code></li>
+</ul></li>
+<li>Click <strong>+</strong> → <strong>Telegram</strong> → <strong>Send a text message</strong>:</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Credential</td>
+<td>your Telegram credential</td>
+</tr>
+<tr>
+<td><strong>Chat ID</strong></td>
+<td><code>={{ $('Code').item.json.message.chat.id }}</code> (or pick it from the Code node in the mapper)</td>
+</tr>
+<tr>
+<td><strong>Text</strong></td>
+<td>map the OpenAI reply (often <code>={{ $json.message.content }}</code> or whatever field your Message-a-model node outputs — use the mapper)</td>
+</tr>
+</tbody>
+</table>
+<ol start="7" type="1">
+<li><strong>Save</strong> → toggle <strong>Active</strong>.</li>
+</ol>
+<p>Empty polls return no items from the Code node, so OpenAI/Telegram simply do not run — that is expected.</p>
+<h4 id="part-e--test-in-telegram">Part E — Test in Telegram</h4>
+<ol type="1">
+<li>Open your bot → <strong>Start</strong>.</li>
+<li>Send <code>hi</code> → you should get a normal OpenAI reply within ~5 seconds.</li>
+<li>Confirm in <strong>Executions</strong> that message runs go Schedule → HTTP → Code → OpenAI → Telegram.</li>
+</ol>
+<h4 id="remember-this-sequence">Remember this sequence</h4>
+<pre class="text"><code>Schedule Trigger (every 5s)
+  → HTTP getUpdates (polling)
+  → Code (emit new messages, bump offset)
+  → OpenAI Message a model
+  → Telegram Send Message</code></pre>
+<h4 id="done-when-5">Done when</h4>
+<ul class="task-list">
+<li><label><input type="checkbox" />Bot created; Telegram credential saved</label></li>
+<li><label><input type="checkbox" /><code>deleteWebhook</code> run once if the token was reused</label></li>
+<li><label><input type="checkbox" />Workflow Active on LAN — <strong>no tunnel</strong></label></li>
+<li><label><input type="checkbox" />Normal Telegram chat works</label></li>
+<li><label><input type="checkbox" /><strong>No</strong> weather / search tools on this workflow yet</label></li>
+</ul>
+<h4 id="why-this-matters-before-exercise-3">Why this matters before Exercise 3</h4>
+<p>You now have a reliable Telegram loop. Exercise 3 only adds <strong>tools</strong> on top of that loop.</p>
+<hr />
+<h3 id="exercise-3--tools-weather-wikipedia-exa-and-google">Exercise 3 — Tools: weather, Wikipedia, Exa, and Google</h3>
+<p><strong>Goal:</strong> Upgrade the Telegram bot so the model can call tools. Students should be able to say things like:</p>
+<ul>
+<li>“What’s the weather in Jakarta?”</li>
+<li>“Wikipedia: n8n”</li>
+<li>“Search with Exa: latest RAG papers”</li>
+<li>“Search with Google: n8n telegram polling”</li>
+</ul>
+<p><strong>Tools in this exercise</strong></p>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>How in n8n</th>
+<th>Extra signup?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Weather</td>
+<td><strong>HTTP Request Tool</strong> → Open-Meteo</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Wikipedia</td>
+<td>Built-in <strong>Wikipedia</strong> tool</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Exa search</td>
+<td><strong>HTTP Request Tool</strong> → Exa API</td>
+<td>Yes — Exa API key</td>
+</tr>
+<tr>
+<td>Google search</td>
+<td><strong>HTTP Request Tool</strong> → Google Custom Search JSON API</td>
+<td>Yes — Google API key + Search Engine ID (<code>cx</code>)</td>
+</tr>
+</tbody>
+</table>
+<h4 id="part-a--register-for-exa-api-key">Part A — Register for Exa (API key)</h4>
+<ol type="1">
+<li>Open <strong><a href="https://exa.ai">https://exa.ai</a></strong> → <strong>Sign up</strong> / <strong>Get started</strong> (email or supported SSO).</li>
+<li>Verify email if asked.</li>
+<li>Open the dashboard API keys page: <strong><a href="https://dashboard.exa.ai/api-keys">https://dashboard.exa.ai/api-keys</a></strong></li>
+<li><strong>Create</strong> / <strong>Generate</strong> an API key. Copy it once; store it somewhere private (password manager). Do not paste it into group chats or commit it to git.</li>
+<li>Free tier is enough for class demos (quota is limited — don’t loop searches in a tight schedule).</li>
+</ol>
+<p>Optional onboarding that generates sample snippets: <strong><a href="https://dashboard.exa.ai/onboarding">https://dashboard.exa.ai/onboarding</a></strong></p>
+<h4 id="part-b--register-for-google-custom-search-http-search-with-google">Part B — Register for Google Custom Search (HTTP “search with Google”)</h4>
+<p>Google does not offer an anonymous “just scrape google.com” API. For class we use the official <strong>Custom Search JSON API</strong> over HTTP:</p>
+<ol type="1">
+<li>Open <strong><a href="https://console.cloud.google.com/">https://console.cloud.google.com/</a></strong> and create/select a project (e.g. <code>n8n-class</code>).</li>
+<li>Go to <strong>APIs &amp; Services → Library</strong> → search <strong>Custom Search API</strong> → <strong>Enable</strong>.</li>
+<li><strong>APIs &amp; Services → Credentials → Create credentials → API key</strong>. Copy the key. (Optionally restrict it to Custom Search API.)</li>
+<li>Create a programmable search engine: <strong><a href="https://programmablesearchengine.google.com/">https://programmablesearchengine.google.com/</a></strong>
+<ul>
+<li><strong>Add</strong> a search engine.</li>
+<li>Under setup, turn on <strong>Search the entire web</strong> (wording may be “Search the entire web” / similar).</li>
+<li>Open the engine → copy the <strong>Search engine ID</strong> (<code>cx</code>).</li>
+</ul></li>
+<li>You now have two secrets: <strong>Google API key</strong> and <strong><code>cx</code></strong>. Keep both private.</li>
+</ol>
+<p>Test outside n8n (optional):</p>
+<div class="sourceCode" id="cb48"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-sS</span> <span class="st">&quot;https://www.googleapis.com/customsearch/v1?key=GOOGLE_API_KEY&amp;cx=SEARCH_ENGINE_ID&amp;q=n8n&quot;</span></span></code></pre></div>
+<p>You want JSON with an <code>items</code> array.</p>
+<h4 id="part-c--duplicate-exercise-2-and-swap-in-an-ai-agent">Part C — Duplicate Exercise 2 and swap in an AI Agent</h4>
+<ol type="1">
+<li>Open your Exercise 2 workflow → menu → <strong>Duplicate</strong> → rename to <code>Exercise 3 — Telegram + Tools</code>.</li>
+<li><strong>Deactivate</strong> Exercise 2 (only one polling workflow should own the bot token at a time).</li>
+<li>Delete the <strong>OpenAI Message a model</strong> node (keep Schedule → HTTP getUpdates → Code → … → Telegram Send).</li>
+<li>Between <strong>Code</strong> and <strong>Telegram Send</strong>, add <strong>AI Agent</strong>.</li>
+<li>Wire: Code → AI Agent → Telegram Send Message.</li>
+<li>AI Agent:
+<ul>
+<li><strong>User message:</strong> <code>={{ $json.message.text }}</code></li>
+<li><strong>System message:</strong></li>
+</ul></li>
+</ol>
+<pre class="text"><code>You are a helpful class demo assistant on Telegram with tools.
+
+Routing rules (follow strictly):
+- If the user asks about weather or temperature for a place → call get_weather.
+  Pass latitude and longitude. If they only give a city, use well-known coordinates
+  (Jakarta ≈ -6.2,106.8; Singapore ≈ 1.35,103.82; Bandung ≈ -6.9,107.6).
+- If the user asks for an encyclopedia-style fact, or says &quot;wikipedia&quot; → call wikipedia.
+- If the user says &quot;search with exa&quot; / &quot;exa search&quot; / &quot;use exa&quot; → call search_with_exa with their query.
+- If the user says &quot;search with google&quot; / &quot;google search&quot; / &quot;use google&quot; → call search_with_google with their query.
+- If they ask to &quot;search the web&quot; without naming a backend, prefer search_with_exa.
+- Do not call both Exa and Google unless the user asked for both.
+- For normal chit-chat, call no tools.
+
+Keep Telegram replies concise. Cite 2–3 titles/URLs when you used a search tool.</code></pre>
+<ol start="7" type="1">
+<li>On AI Agent → <strong>+</strong> under <strong>Chat Model</strong> → <strong>OpenAI Chat Model</strong> → your OpenAI credential → e.g. <code>gpt-4o-mini</code>.</li>
+<li>Telegram <strong>Send a text message</strong> text field: <code>={{ $json.output }}</code> (agent output). Chat ID still from the Code node.</li>
+</ol>
+<h4 id="part-d--attach-the-four-tools">Part D — Attach the four tools</h4>
+<p>On the AI Agent, add <strong>four</strong> tools under <strong>Tool</strong>:</p>
+<h5 id="1-get_weather--http-request-tool--open-meteo">1) <code>get_weather</code> — HTTP Request Tool → Open-Meteo</h5>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Name</strong></td>
+<td><code>get_weather</code></td>
+</tr>
+<tr>
+<td><strong>Description</strong></td>
+<td><code>Get current weather for latitude/longitude via Open-Meteo. Use for weather or temperature questions.</code></td>
+</tr>
+<tr>
+<td><strong>Method</strong></td>
+<td><code>GET</code></td>
+</tr>
+<tr>
+<td><strong>URL</strong></td>
+<td><code>https://api.open-meteo.com/v1/forecast</code></td>
+</tr>
+</tbody>
+</table>
+<p>Query parameters:</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>latitude</code></td>
+<td>from AI</td>
+</tr>
+<tr>
+<td><code>longitude</code></td>
+<td>from AI</td>
+</tr>
+<tr>
+<td><code>current</code></td>
+<td><code>temperature_2m,weather_code,wind_speed_10m</code> (fixed)</td>
+</tr>
+<tr>
+<td><code>timezone</code></td>
+<td><code>auto</code> (fixed)</td>
+</tr>
+</tbody>
+</table>
+<h5 id="2-wikipedia--built-in-wikipedia-tool">2) <code>wikipedia</code> — built-in Wikipedia tool</h5>
+<ol type="1">
+<li>AI Agent → <strong>+</strong> Tool → <strong>Wikipedia</strong>.</li>
+<li>Leave defaults (or set a clear tool description if the UI asks). Name it clearly if you can, e.g. description: <code>Look up a topic on Wikipedia.</code></li>
+</ol>
+<h5 id="3-search_with_exa--http-request-tool--exa">3) <code>search_with_exa</code> — HTTP Request Tool → Exa</h5>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Name</strong></td>
+<td><code>search_with_exa</code></td>
+</tr>
+<tr>
+<td><strong>Description</strong></td>
+<td><code>Web search via Exa. Use when the user says search with Exa / exa search, or asks to search the web without naming Google.</code></td>
+</tr>
+<tr>
+<td><strong>Method</strong></td>
+<td><code>POST</code></td>
+</tr>
+<tr>
+<td><strong>URL</strong></td>
+<td><code>https://api.exa.ai/search</code></td>
+</tr>
+</tbody>
+</table>
+<p>Headers:</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Content-Type</code></td>
+<td><code>application/json</code></td>
+</tr>
+<tr>
+<td><code>Authorization</code></td>
+<td><code>Bearer &lt;YOUR_EXA_API_KEY&gt;</code></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>Better for class hygiene: create an n8n <strong>Header Auth</strong> credential with <code>Authorization</code> = <code>Bearer …</code> and select it on the tool, instead of pasting the key into the canvas.</p>
+</blockquote>
+<p><strong>JSON body</strong> (enable JSON / raw body; mark <code>query</code> as filled by the model):</p>
+<div class="sourceCode" id="cb50"><pre class="sourceCode json"><code class="sourceCode json"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb50-2"><a href="#cb50-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;query&quot;</span><span class="fu">:</span> <span class="st">&quot;{query}&quot;</span><span class="fu">,</span></span>
+<span id="cb50-3"><a href="#cb50-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;type&quot;</span><span class="fu">:</span> <span class="st">&quot;auto&quot;</span><span class="fu">,</span></span>
+<span id="cb50-4"><a href="#cb50-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;numResults&quot;</span><span class="fu">:</span> <span class="dv">5</span><span class="fu">,</span></span>
+<span id="cb50-5"><a href="#cb50-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;contents&quot;</span><span class="fu">:</span> <span class="fu">{</span> <span class="dt">&quot;highlights&quot;</span><span class="fu">:</span> <span class="kw">true</span> <span class="fu">}</span></span>
+<span id="cb50-6"><a href="#cb50-6" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<p>If your n8n HTTP Request Tool uses “AI placeholders” / “Using fields below”, define one AI field <code>query</code> (string) and keep <code>type</code>, <code>numResults</code>, and <code>contents</code> fixed as above.</p>
+<h5 id="4-search_with_google--http-request-tool--google-custom-search">4) <code>search_with_google</code> — HTTP Request Tool → Google Custom Search</h5>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Name</strong></td>
+<td><code>search_with_google</code></td>
+</tr>
+<tr>
+<td><strong>Description</strong></td>
+<td><code>Web search via Google Custom Search API. Use only when the user says search with Google / google search / use google.</code></td>
+</tr>
+<tr>
+<td><strong>Method</strong></td>
+<td><code>GET</code></td>
+</tr>
+<tr>
+<td><strong>URL</strong></td>
+<td><code>https://www.googleapis.com/customsearch/v1</code></td>
+</tr>
+</tbody>
+</table>
+<p>Query parameters:</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>key</code></td>
+<td>your Google API key (fixed; prefer a credential / expression from env if you set one)</td>
+</tr>
+<tr>
+<td><code>cx</code></td>
+<td>your Search Engine ID (fixed)</td>
+</tr>
+<tr>
+<td><code>q</code></td>
+<td>from AI (the search query)</td>
+</tr>
+<tr>
+<td><code>num</code></td>
+<td><code>5</code> (fixed)</td>
+</tr>
+</tbody>
+</table>
+<h4 id="part-e--activate-and-test">Part E — Activate and test</h4>
+<ol type="1">
+<li><strong>Save</strong> → toggle Exercise 3 <strong>Active</strong> (Exercise 2 must stay inactive).</li>
+<li>In Telegram, try:</li>
+</ol>
+<pre class="text"><code>hi
+What&#39;s the weather in Jakarta right now?
+Wikipedia: Kubernetes
+Search with Exa: latest techniques for RAG evaluation
+Search with Google: n8n telegram bot polling</code></pre>
+<ol start="3" type="1">
+<li>In n8n → <strong>Executions</strong>, open each run and confirm the matching tool fired (weather → Open-Meteo; Exa → <code>api.exa.ai</code>; Google → <code>googleapis.com</code>; Wikipedia → Wikipedia tool).</li>
+</ol>
+<h4 id="remember-this-sequence-1">Remember this sequence</h4>
+<pre class="text"><code>Schedule → getUpdates → Code
+  → AI Agent
+       ├─ OpenAI Chat Model
+       ├─ get_weather (Open-Meteo HTTP)
+       ├─ Wikipedia
+       ├─ search_with_exa (Exa HTTP)
+       └─ search_with_google (Google Custom Search HTTP)
+  → Telegram Send Message</code></pre>
+<h4 id="done-when-6">Done when</h4>
+<ul class="task-list">
+<li><label><input type="checkbox" />Exa API key created; Google Custom Search API key + <code>cx</code> created</label></li>
+<li><label><input type="checkbox" />Four tools attached and described so the model can route “Exa” vs “Google”</label></li>
+<li><label><input type="checkbox" />Weather, Wikipedia, Exa, and Google each succeed at least once in <strong>Executions</strong></label></li>
+<li><label><input type="checkbox" />Telegram replies cite a couple of results for search prompts</label></li>
+</ul>
+<h4 id="teaching-note-1">Teaching note</h4>
+<p>Exa and Google are both “search the web over HTTP,” but different products. Forcing the student to say <strong>search with Exa</strong> vs <strong>search with Google</strong> makes tool-routing visible in class.</p>
+<hr />
+<h2 id="troubleshooting">Troubleshooting</h2>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Likely cause</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>UI works on server with <code>localhost</code> but not from phone</td>
+<td>Using <code>127.0.0.1</code> / wrong IP / different Wi‑Fi</td>
+<td>Use the host’s LAN IP; same subnet</td>
+</tr>
+<tr>
+<td>Login cookie does not stick</td>
+<td>HTTPS-only cookies over HTTP</td>
+<td>Keep <code>N8N_SECURE_COOKIE=false</code> for LAN HTTP</td>
+</tr>
+<tr>
+<td>Webhooks show <code>localhost</code></td>
+<td>Missing <code>WEBHOOK_URL</code></td>
+<td>Set <code>WEBHOOK_URL=http://YOUR_LAN_IP:5678/</code> and restart (editor links; not required for Telegram polling)</td>
+</tr>
+<tr>
+<td>Telegram polling returns no messages / Conflict</td>
+<td>Webhook still set on that bot</td>
+<td>Run <code>deleteWebhook</code> once (Exercise 2 Part C), then poll again</td>
+</tr>
+<tr>
+<td>Bot replies duplicate messages</td>
+<td><code>offset</code> not advanced</td>
+<td>Confirm Code node sets <code>staticData.offset = maxId + 1</code></td>
+</tr>
+<tr>
+<td>Two workflows fight over one bot</td>
+<td>Exercise 2 and 3 both Active</td>
+<td>Keep only one polling workflow Active</td>
+</tr>
+<tr>
+<td>Poll runs but AI never fires</td>
+<td>No <code>message.text</code> or empty <code>result</code></td>
+<td>Send plain text; empty polls are normal</td>
+</tr>
+<tr>
+<td>Agent calls the wrong search tool</td>
+<td>Vague user wording / weak descriptions</td>
+<td>Say “search with Exa” or “search with Google”; tighten tool descriptions + system message</td>
+</tr>
+<tr>
+<td>Exa <code>401</code></td>
+<td>Bad/missing API key</td>
+<td>Recheck <code>Authorization: Bearer …</code> or Header Auth credential</td>
+</tr>
+<tr>
+<td>Google <code>403</code> / <code>API key not valid</code></td>
+<td>Custom Search API not enabled or wrong key/<code>cx</code></td>
+<td>Enable API; confirm key + Search Engine ID; test with <code>curl</code></td>
+</tr>
+<tr>
+<td>Google returns no <code>items</code></td>
+<td>Engine not set to search the web</td>
+<td>Edit the programmable search engine → search entire web</td>
+</tr>
+<tr>
+<td>Agent never calls weather tool</td>
+<td>Weak system message</td>
+<td>Ask explicitly about weather for a city</td>
+</tr>
+<tr>
+<td><code>EACCES</code> writing config</td>
+<td>Volume ownership</td>
+<td><code>chown</code> / <code>podman unshare chown</code> on <code>data</code> (UID 1000)</td>
+</tr>
+<tr>
+<td>Port already in use</td>
+<td>Something else on 5678</td>
+<td><code>ss -tlnp | grep 5678</code> and stop the other process or change the host port mapping</td>
+</tr>
+<tr>
+<td>Python runner warning in logs</td>
+<td>Optional Python runner missing</td>
+<td>Safe to ignore for basic JS workflows</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="security-notes-for-class">Security notes for class</h2>
+<ul>
+<li>This class stack stays on <strong>LAN HTTP</strong> for the editor. Exercises 2–3 use <strong>Telegram polling</strong> (outbound only) — no need to expose n8n to the public internet for those exercises.</li>
+<li>Treat <code>./data</code> as sensitive (credentials encryption key + workflow secrets). Never commit bot tokens, OpenAI keys, Exa keys, or Google keys (prefer Credentials UI; if a token appears in an HTTP URL for teaching, rotate it after class).</li>
+<li>Prefer a dedicated class password; rotate after the course if the machine is shared.</li>
+</ul>
+<hr />
+<h2 id="repo-layout">Repo layout</h2>
+<pre class="text"><code>n8n-class/
+├── README.md            ← this guide
+├── docker-compose.yml   ← one-service stack
+├── .env.example         ← copy to .env
+└── .gitignore           ← ignores .env and data/</code></pre>
+<p>Questions during class: keep the server IP written on the board as a short URL students can type — e.g. <code>http://192.168.1.247:5678</code>.</p>
+
+        <p class="footer-note">
+          Maintained for Decentricity class use. Source of truth also lives in
+          <a href="https://github.com/Decentricity/n8n-class">github.com/Decentricity/n8n-class</a>.
+          OpenAI is the worked example; Ollama and Claude can substitute where noted.
+        </p>
+      </article>
+    </div>
+  </div>
+  <script src="./workbook.js"></script>
+</body>
+</html>
