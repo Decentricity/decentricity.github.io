@@ -35,7 +35,7 @@
         <div class="eyebrow">Class workbook</div>
         <h1>n8n Class</h1>
         <p class="hero-lead">
-          A practical lab book for standing up n8n on a LAN box, then building chatbots from a raw model call through harnesses, RAG, compaction, Telegram polling, and tools — with annotated UI screenshots.
+          A practical lab book for standing up n8n on a LAN box, then building chatbots, tools, schedulers, webhook APIs, sub-workflows, and a full office intake desk — with annotated UI screenshots.
         </p>
         <div class="hero-actions">
           <a class="btn" href="#exercises">Jump to exercises</a>
@@ -51,6 +51,10 @@
 <li><strong>Exercises 1A–1E</strong> — OpenAI-only path on n8n’s <strong>Chat UI</strong>: raw chat → harness → RAG → local-tool agent → <strong>tiny memory window + compaction</strong></li>
 <li><strong>Exercise 2</strong> — same bot idea on <strong>Telegram via polling</strong> (no tunnel; Telegram only — no tools yet)</li>
 <li><strong>Exercise 3</strong> — add external tools: <strong>weather</strong>, <strong>Wikipedia</strong>, <strong>Exa</strong>, <strong>Google</strong> (HTTP)</li>
+<li><strong>Exercise 4</strong> — classic automation: <strong>Schedule + HTTP + IF + files</strong> (SEA morning weather desk)</li>
+<li><strong>Exercise 5</strong> — <strong>Webhook API</strong> façade (Switch + Respond to Webhook)</li>
+<li><strong>Exercise 6</strong> — <strong>sub-workflows</strong>, <strong>Wait</strong>, and <strong>Error Trigger</strong></li>
+<li><strong>Exercise 7</strong> — full <strong>end-to-end Lotus Intake Desk</strong> (Form → route → Wait → audit)</li>
 </ol>
 <p><strong>Model provider note:</strong> The step-by-step examples below use <strong>OpenAI</strong> (API key from <a href="https://platform.openai.com/">platform.openai.com</a>). That is an <strong>example only</strong>. The same patterns work with <strong>Ollama</strong> (local) or <strong>Claude / Anthropic</strong> — in n8n, swap the chat model / embeddings node (e.g. <strong>Ollama Chat Model</strong>, <strong>Anthropic Chat Model</strong>, <strong>Embeddings OpenAI</strong> → the matching embeddings node if you use RAG). Screenshots and field names in this README assume OpenAI so the class stays consistent.</p>
 <p>Exa + Google (Exercise 3 only) need their own free-tier keys.</p>
@@ -281,6 +285,10 @@ http://YOUR_LAN_IP:5678</code></pre>
 <li><label><input type="checkbox" />Exercise <strong>1E</strong> completed (tiny memory window loses facts; compaction preserves them)</label></li>
 <li><label><input type="checkbox" />Exercise 2 completed (Telegram polling chat works — no external tools required)</label></li>
 <li><label><input type="checkbox" />Exercise 3 completed (weather + Wikipedia + Exa + Google tools work on command)</label></li>
+<li><label><input type="checkbox" />Exercise 4 completed (scheduled weather desk writes a JSON log)</label></li>
+<li><label><input type="checkbox" />Exercise 5 completed (LAN webhook API returns 200/400 by action)</label></li>
+<li><label><input type="checkbox" />Exercise 6 completed (child + parent Wait + error workflow wired)</label></li>
+<li><label><input type="checkbox" />Exercise 7 completed (form intake produces ticket id + audit log)</label></li>
 </ul>
 <hr />
 <h2 id="exercises">Exercises</h2>
@@ -1302,6 +1310,455 @@ Search with Google: n8n telegram bot polling</code></pre>
 <h4 id="teaching-note-1">Teaching note</h4>
 <p>Exa and Google are both “search the web over HTTP,” but different products. Forcing the student to say <strong>search with Exa</strong> vs <strong>search with Google</strong> makes tool-routing visible in class.</p>
 <hr />
+<h3 id="exercise-4--sea-weather-desk-schedule--branch--files">Exercise 4 — SEA Weather Desk (schedule + branch + files)</h3>
+<p><strong>Goal:</strong> Build a <strong>non-AI</strong> morning automation that n8n runs on a schedule in <strong>ICT (<code>Asia/Ho_Chi_Minh</code>)</strong>: fetch live weather for <strong>Ho Chi Minh City, Bangkok, and Manila</strong>, branch on rain risk, build one report, and write a dated JSON log to disk.</p>
+<p><strong>Why this exercise:</strong> Exercises 1–3 were chat/agent heavy. Real offices also need <strong>cron jobs, HTTP pulls, IF branching, field mapping, and file side-effects</strong>.</p>
+<p><strong>Features you will use</strong></p>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Role here</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Schedule Trigger</strong></td>
+<td>Weekdays <strong>07:30</strong> via cron <code>30 7 * * 1-5</code></td>
+</tr>
+<tr>
+<td><strong>Code</strong></td>
+<td>Emit city rows; normalize Open-Meteo JSON; aggregate report</td>
+</tr>
+<tr>
+<td><strong>HTTP Request</strong></td>
+<td>Call Open-Meteo (no API key)</td>
+</tr>
+<tr>
+<td><strong>IF</strong></td>
+<td>Umbrella vs clear path</td>
+</tr>
+<tr>
+<td><strong>Edit Fields (Set)</strong></td>
+<td>Attach <code>umbrella: true/false</code></td>
+</tr>
+<tr>
+<td><strong>Convert to File</strong></td>
+<td>JSON → binary</td>
+</tr>
+<tr>
+<td><strong>Read/Write File</strong></td>
+<td>Persist under <code>/home/node/.n8n/lotus-logs/</code></td>
+</tr>
+<tr>
+<td><strong>Sticky Note</strong></td>
+<td>Document the canvas for classmates</td>
+</tr>
+</tbody>
+</table>
+<p><strong>APIs:</strong> Open-Meteo only (free, no key). No OpenAI / Telegram required.</p>
+<p><img src="screenshots/ex-4-01-canvas.png" alt="Exercise 4 canvas — Schedule → HTTP → IF → file log" /></p>
+<p><em>Exercise 4 canvas — Schedule → HTTP → IF → file log.</em></p>
+<h4 id="import-optional">Import (optional)</h4>
+<p>A finished workflow lives at <code>workflows/exercise-04-sea-weather-desk.json</code>. In n8n: <strong>… menu → Import from File</strong>. Or build it by hand below (recommended once).</p>
+<h4 id="step-by-step-3">Step by step</h4>
+<ol type="1">
+<li><strong>Create workflow</strong> → rename <code>Exercise 4 — SEA Weather Desk</code>.</li>
+<li>Add a <strong>Sticky Note</strong> summarizing the goal (copy the note text from the import, or write your own).</li>
+<li><strong>Add first step</strong> → <strong>Schedule Trigger</strong>.
+<ul>
+<li>Interval / rule: <strong>Custom (Cron)</strong>.</li>
+<li>Expression: <code>30 7 * * 1-5</code> (minute <code>30</code>, hour <code>7</code>, Mon–Fri).</li>
+<li>Confirm the n8n host uses <code>GENERIC_TIMEZONE=Asia/Ho_Chi_Minh</code> and <code>TZ=Asia/Ho_Chi_Minh</code> (see <code>.env.example</code>). Schedule Trigger follows that timezone.</li>
+</ul></li>
+<li>Add <strong>Code</strong> → name <code>City list</code> → mode <strong>Run Once for All Items</strong>:</li>
+</ol>
+<div class="sourceCode" id="cb53"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> cities <span class="op">=</span> [</span>
+<span id="cb53-2"><a href="#cb53-2" aria-hidden="true" tabindex="-1"></a>  { <span class="dt">city</span><span class="op">:</span> <span class="st">&#39;Ho Chi Minh City&#39;</span><span class="op">,</span> <span class="dt">lat</span><span class="op">:</span> <span class="fl">10.82</span><span class="op">,</span> <span class="dt">lon</span><span class="op">:</span> <span class="fl">106.63</span> }<span class="op">,</span></span>
+<span id="cb53-3"><a href="#cb53-3" aria-hidden="true" tabindex="-1"></a>  { <span class="dt">city</span><span class="op">:</span> <span class="st">&#39;Bangkok&#39;</span><span class="op">,</span> <span class="dt">lat</span><span class="op">:</span> <span class="fl">13.76</span><span class="op">,</span> <span class="dt">lon</span><span class="op">:</span> <span class="fl">100.50</span> }<span class="op">,</span></span>
+<span id="cb53-4"><a href="#cb53-4" aria-hidden="true" tabindex="-1"></a>  { <span class="dt">city</span><span class="op">:</span> <span class="st">&#39;Manila&#39;</span><span class="op">,</span> <span class="dt">lat</span><span class="op">:</span> <span class="fl">14.60</span><span class="op">,</span> <span class="dt">lon</span><span class="op">:</span> <span class="fl">120.98</span> }<span class="op">,</span></span>
+<span id="cb53-5"><a href="#cb53-5" aria-hidden="true" tabindex="-1"></a>]<span class="op">;</span></span>
+<span id="cb53-6"><a href="#cb53-6" aria-hidden="true" tabindex="-1"></a><span class="cf">return</span> cities<span class="op">.</span><span class="fu">map</span>(c <span class="kw">=&gt;</span> ({ <span class="dt">json</span><span class="op">:</span> c }))<span class="op">;</span></span></code></pre></div>
+<ol start="5" type="1">
+<li>Add <strong>HTTP Request</strong> → name <code>Open-Meteo current</code>:
+<ul>
+<li>Method <strong>GET</strong></li>
+<li>URL:</li>
+</ul></li>
+</ol>
+<pre class="text"><code>=https://api.open-meteo.com/v1/forecast?latitude={{ $json.lat }}&amp;longitude={{ $json.lon }}&amp;current=temperature_2m,precipitation_probability,rain,weather_code</code></pre>
+<p>n8n runs this <strong>once per city item</strong> automatically.</p>
+<ol start="6" type="1">
+<li>Add <strong>Code</strong> → <code>Normalize fields</code> → <strong>Run Once for Each Item</strong>:</li>
+</ol>
+<div class="sourceCode" id="cb55"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> city <span class="op">=</span> <span class="fu">$</span>(<span class="st">&#39;City list&#39;</span>)<span class="op">.</span><span class="at">item</span><span class="op">.</span><span class="at">json</span><span class="op">.</span><span class="at">city</span><span class="op">;</span></span>
+<span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> cur <span class="op">=</span> $json<span class="op">.</span><span class="at">current</span> <span class="op">||</span> {}<span class="op">;</span></span>
+<span id="cb55-3"><a href="#cb55-3" aria-hidden="true" tabindex="-1"></a><span class="cf">return</span> [{</span>
+<span id="cb55-4"><a href="#cb55-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">json</span><span class="op">:</span> {</span>
+<span id="cb55-5"><a href="#cb55-5" aria-hidden="true" tabindex="-1"></a>    city<span class="op">,</span></span>
+<span id="cb55-6"><a href="#cb55-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">temperature_c</span><span class="op">:</span> cur<span class="op">.</span><span class="at">temperature_2m</span><span class="op">,</span></span>
+<span id="cb55-7"><a href="#cb55-7" aria-hidden="true" tabindex="-1"></a>    <span class="dt">precipitation_probability</span><span class="op">:</span> cur<span class="op">.</span><span class="at">precipitation_probability</span><span class="op">,</span></span>
+<span id="cb55-8"><a href="#cb55-8" aria-hidden="true" tabindex="-1"></a>    <span class="dt">rain_mm</span><span class="op">:</span> cur<span class="op">.</span><span class="at">rain</span><span class="op">,</span></span>
+<span id="cb55-9"><a href="#cb55-9" aria-hidden="true" tabindex="-1"></a>    <span class="dt">weather_code</span><span class="op">:</span> cur<span class="op">.</span><span class="at">weather_code</span><span class="op">,</span></span>
+<span id="cb55-10"><a href="#cb55-10" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb55-11"><a href="#cb55-11" aria-hidden="true" tabindex="-1"></a>}]<span class="op">;</span></span></code></pre></div>
+<ol start="7" type="1">
+<li>Add <strong>IF</strong> → <code>Rain likely?</code><br />
+Condition (Boolean → <strong>true</strong>):</li>
+</ol>
+<pre class="text"><code>={{ Number($json.precipitation_probability || 0) &gt;= 50 || Number($json.rain_mm || 0) &gt; 0.2 }}</code></pre>
+<ol start="8" type="1">
+<li><strong>True</strong> branch → <strong>Edit Fields (Set)</strong> <code>Flag umbrella</code> with fields: <code>umbrella=true</code>, plus pass through <code>city</code>, <code>temperature_c</code>, <code>precipitation_probability</code>, <code>rain_mm</code>.<br />
+<strong>False</strong> branch → Set <code>No umbrella</code> with <code>umbrella=false</code> and the same pass-through fields.</li>
+<li>Merge both branches into <strong>Code</strong> <code>Build morning report</code> (<strong>Run Once for All Items</strong>):</li>
+</ol>
+<div class="sourceCode" id="cb57"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> rows <span class="op">=</span> items<span class="op">.</span><span class="fu">map</span>(i <span class="kw">=&gt;</span> i<span class="op">.</span><span class="at">json</span>)<span class="op">;</span></span>
+<span id="cb57-2"><a href="#cb57-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> flagged <span class="op">=</span> rows<span class="op">.</span><span class="fu">filter</span>(r <span class="kw">=&gt;</span></span>
+<span id="cb57-3"><a href="#cb57-3" aria-hidden="true" tabindex="-1"></a>  (<span class="bu">Number</span>(r<span class="op">.</span><span class="at">precipitation_probability</span>) <span class="op">||</span> <span class="dv">0</span>) <span class="op">&gt;=</span> <span class="dv">50</span> <span class="op">||</span></span>
+<span id="cb57-4"><a href="#cb57-4" aria-hidden="true" tabindex="-1"></a>  (<span class="bu">Number</span>(r<span class="op">.</span><span class="at">rain_mm</span>) <span class="op">||</span> <span class="dv">0</span>) <span class="op">&gt;</span> <span class="fl">0.2</span></span>
+<span id="cb57-5"><a href="#cb57-5" aria-hidden="true" tabindex="-1"></a>)<span class="op">;</span></span>
+<span id="cb57-6"><a href="#cb57-6" aria-hidden="true" tabindex="-1"></a><span class="cf">return</span> [{</span>
+<span id="cb57-7"><a href="#cb57-7" aria-hidden="true" tabindex="-1"></a>  <span class="dt">json</span><span class="op">:</span> {</span>
+<span id="cb57-8"><a href="#cb57-8" aria-hidden="true" tabindex="-1"></a>    <span class="dt">generated_at_ict</span><span class="op">:</span> <span class="kw">new</span> <span class="bu">Date</span>()<span class="op">.</span><span class="fu">toLocaleString</span>(<span class="st">&#39;en-GB&#39;</span><span class="op">,</span> { <span class="dt">timeZone</span><span class="op">:</span> <span class="st">&#39;Asia/Ho_Chi_Minh&#39;</span> })<span class="op">,</span></span>
+<span id="cb57-9"><a href="#cb57-9" aria-hidden="true" tabindex="-1"></a>    <span class="dt">timezone</span><span class="op">:</span> <span class="st">&#39;Asia/Ho_Chi_Minh&#39;</span><span class="op">,</span></span>
+<span id="cb57-10"><a href="#cb57-10" aria-hidden="true" tabindex="-1"></a>    <span class="dt">cities</span><span class="op">:</span> rows<span class="op">,</span></span>
+<span id="cb57-11"><a href="#cb57-11" aria-hidden="true" tabindex="-1"></a>    <span class="dt">umbrella_cities</span><span class="op">:</span> flagged<span class="op">.</span><span class="fu">map</span>(r <span class="kw">=&gt;</span> r<span class="op">.</span><span class="at">city</span>)<span class="op">,</span></span>
+<span id="cb57-12"><a href="#cb57-12" aria-hidden="true" tabindex="-1"></a>    <span class="dt">headline</span><span class="op">:</span> flagged<span class="op">.</span><span class="at">length</span></span>
+<span id="cb57-13"><a href="#cb57-13" aria-hidden="true" tabindex="-1"></a>      <span class="op">?</span> <span class="vs">`Bring an umbrella — rain likely in: </span><span class="sc">${</span>flagged<span class="op">.</span><span class="fu">map</span>(r <span class="kw">=&gt;</span> r<span class="op">.</span><span class="at">city</span>)<span class="op">.</span><span class="fu">join</span>(<span class="st">&#39;, &#39;</span>)<span class="sc">}</span><span class="vs">`</span></span>
+<span id="cb57-14"><a href="#cb57-14" aria-hidden="true" tabindex="-1"></a>      <span class="op">:</span> <span class="st">&#39;No rain flags for the monitored cities this morning.&#39;</span><span class="op">,</span></span>
+<span id="cb57-15"><a href="#cb57-15" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb57-16"><a href="#cb57-16" aria-hidden="true" tabindex="-1"></a>}]<span class="op">;</span></span></code></pre></div>
+<ol start="10" type="1">
+<li><strong>Convert to File</strong> → operation <strong>to JSON</strong>.</li>
+<li><strong>Read/Write Files from Disk</strong> → <strong>Write</strong>:</li>
+</ol>
+<pre class="text"><code>=/home/node/.n8n/lotus-logs/weather-{{ $now.setZone(&quot;Asia/Ho_Chi_Minh&quot;).toFormat(&quot;yyyy-MM-dd&quot;) }}.json</code></pre>
+<pre><code>Create the folder once on the server:</code></pre>
+<div class="sourceCode" id="cb60"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a><span class="ex">podman</span> exec n8n mkdir <span class="at">-p</span> /home/node/.n8n/lotus-logs</span></code></pre></div>
+<ol start="12" type="1">
+<li><strong>Save</strong>. For class demos you can click <strong>Execute workflow</strong> (Schedule still allows manual runs). For production mornings, toggle the workflow <strong>Active</strong>.</li>
+</ol>
+<h4 id="done-when-7">Done when</h4>
+<ul class="task-list">
+<li><label><input type="checkbox" />Cron is weekdays 07:30 and timezone is ICT</label></li>
+<li><label><input type="checkbox" />Three cities return temperatures in <strong>Executions</strong></label></li>
+<li><label><input type="checkbox" />IF marks at least one umbrella path in a wet scenario (or you temporarily lower the threshold to test)</label></li>
+<li><label><input type="checkbox" />A JSON file appears under <code>/home/node/.n8n/lotus-logs/</code></label></li>
+</ul>
+<h4 id="what-you-just-learned-4">What you just learned</h4>
+<p><strong>Schedulers + HTTP + branching + durable side effects</strong> — the backbone of ops automation without an LLM.</p>
+<hr />
+<h3 id="exercise-5--office-webhook-api-requestresponse">Exercise 5 — Office Webhook API (request/response)</h3>
+<p><strong>Goal:</strong> Turn n8n into a tiny <strong>LAN JSON API</strong>: accept <code>POST</code>, route on <code>action</code>, return <strong>200</strong> or <strong>400</strong> with <strong>Respond to Webhook</strong>.</p>
+<p><strong>Why this exercise:</strong> Chatbots are one interface. Many office tools need a <strong>synchronous HTTP façade</strong> (scripts, intranet pages, other automations).</p>
+<p><strong>Features you will use</strong></p>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Role here</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Webhook</strong></td>
+<td>Entry URL; <strong>Respond</strong> mode = “Using Respond to Webhook node”</td>
+</tr>
+<tr>
+<td><strong>Code</strong></td>
+<td>Parse <code>body</code> / <code>query</code>, implement actions</td>
+</tr>
+<tr>
+<td><strong>Switch</strong></td>
+<td>OK vs error outputs</td>
+</tr>
+<tr>
+<td><strong>Respond to Webhook</strong></td>
+<td>Explicit status codes + JSON body</td>
+</tr>
+<tr>
+<td><strong>WEBHOOK_URL</strong></td>
+<td>Must match the LAN URL classmates open</td>
+</tr>
+</tbody>
+</table>
+<p><strong>APIs:</strong> None external. LAN only.</p>
+<p><img src="screenshots/ex-5-01-canvas.png" alt="Exercise 5 canvas — Webhook → Switch → Respond" /></p>
+<p><em>Exercise 5 canvas — Webhook → Switch → Respond.</em></p>
+<h4 id="import-optional-1">Import (optional)</h4>
+<p><code>workflows/exercise-05-office-webhook-api.json</code></p>
+<h4 id="step-by-step-4">Step by step</h4>
+<ol type="1">
+<li><strong>Create workflow</strong> → <code>Exercise 5 — Office Webhook API</code>.</li>
+<li>Add <strong>Webhook</strong>:
+<ul>
+<li>HTTP Method: <strong>POST</strong></li>
+<li>Path: <code>lotus-office-api</code></li>
+<li>Respond: <strong>Using Respond to Webhook node</strong></li>
+</ul></li>
+<li>Copy the <strong>Test URL</strong> / <strong>Production URL</strong>. Production looks like:</li>
+</ol>
+<pre class="text"><code>http://YOUR_LAN_IP:5678/webhook/lotus-office-api</code></pre>
+<p>Test URL uses <code>/webhook-test/...</code> and only works while <strong>Listen</strong> / <strong>Execute</strong> is armed.</p>
+<ol start="4" type="1">
+<li>Add <strong>Code</strong> <code>Route actions</code>:</li>
+</ol>
+<div class="sourceCode" id="cb62"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb62-1"><a href="#cb62-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> body <span class="op">=</span> $json<span class="op">.</span><span class="at">body</span> <span class="op">||</span> {}<span class="op">;</span></span>
+<span id="cb62-2"><a href="#cb62-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> query <span class="op">=</span> $json<span class="op">.</span><span class="at">query</span> <span class="op">||</span> {}<span class="op">;</span></span>
+<span id="cb62-3"><a href="#cb62-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> action <span class="op">=</span> <span class="bu">String</span>(body<span class="op">.</span><span class="at">action</span> <span class="op">||</span> query<span class="op">.</span><span class="at">action</span> <span class="op">||</span> <span class="st">&#39;ping&#39;</span>)<span class="op">.</span><span class="fu">toLowerCase</span>()<span class="op">;</span></span>
+<span id="cb62-4"><a href="#cb62-4" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> nowIct <span class="op">=</span> <span class="kw">new</span> <span class="bu">Date</span>()<span class="op">.</span><span class="fu">toLocaleString</span>(<span class="st">&#39;en-GB&#39;</span><span class="op">,</span> { <span class="dt">timeZone</span><span class="op">:</span> <span class="st">&#39;Asia/Ho_Chi_Minh&#39;</span> })<span class="op">;</span></span>
+<span id="cb62-5"><a href="#cb62-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb62-6"><a href="#cb62-6" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (action <span class="op">===</span> <span class="st">&#39;ping&#39;</span>) {</span>
+<span id="cb62-7"><a href="#cb62-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> [{ <span class="dt">json</span><span class="op">:</span> { <span class="dt">ok</span><span class="op">:</span> <span class="kw">true</span><span class="op">,</span> action<span class="op">,</span> <span class="dt">message</span><span class="op">:</span> <span class="st">&#39;pong from Lotus office API&#39;</span><span class="op">,</span> <span class="dt">ict</span><span class="op">:</span> nowIct } }]<span class="op">;</span></span>
+<span id="cb62-8"><a href="#cb62-8" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb62-9"><a href="#cb62-9" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (action <span class="op">===</span> <span class="st">&#39;ict-now&#39;</span>) {</span>
+<span id="cb62-10"><a href="#cb62-10" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> [{ <span class="dt">json</span><span class="op">:</span> { <span class="dt">ok</span><span class="op">:</span> <span class="kw">true</span><span class="op">,</span> action<span class="op">,</span> <span class="dt">timezone</span><span class="op">:</span> <span class="st">&#39;Asia/Ho_Chi_Minh&#39;</span><span class="op">,</span> <span class="dt">ict</span><span class="op">:</span> nowIct<span class="op">,</span> <span class="dt">epoch_ms</span><span class="op">:</span> <span class="bu">Date</span><span class="op">.</span><span class="fu">now</span>() } }]<span class="op">;</span></span>
+<span id="cb62-11"><a href="#cb62-11" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb62-12"><a href="#cb62-12" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (action <span class="op">===</span> <span class="st">&#39;ticket-id&#39;</span>) {</span>
+<span id="cb62-13"><a href="#cb62-13" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> d <span class="op">=</span> <span class="kw">new</span> <span class="bu">Date</span>()<span class="op">.</span><span class="fu">toLocaleString</span>(<span class="st">&#39;sv-SE&#39;</span><span class="op">,</span> { <span class="dt">timeZone</span><span class="op">:</span> <span class="st">&#39;Asia/Ho_Chi_Minh&#39;</span> })<span class="op">.</span><span class="fu">slice</span>(<span class="dv">0</span><span class="op">,</span> <span class="dv">10</span>)<span class="op">.</span><span class="fu">replace</span>(<span class="ss">/-/g</span><span class="op">,</span> <span class="st">&#39;&#39;</span>)<span class="op">;</span></span>
+<span id="cb62-14"><a href="#cb62-14" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> suffix <span class="op">=</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">floor</span>(<span class="dv">1000</span> <span class="op">+</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">random</span>() <span class="op">*</span> <span class="dv">9000</span>)<span class="op">;</span></span>
+<span id="cb62-15"><a href="#cb62-15" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> [{ <span class="dt">json</span><span class="op">:</span> { <span class="dt">ok</span><span class="op">:</span> <span class="kw">true</span><span class="op">,</span> action<span class="op">,</span> <span class="dt">ticket_id</span><span class="op">:</span> <span class="vs">`LW-</span><span class="sc">${</span>d<span class="sc">}</span><span class="vs">-</span><span class="sc">${</span>suffix<span class="sc">}</span><span class="vs">`</span><span class="op">,</span> <span class="dt">ict</span><span class="op">:</span> nowIct } }]<span class="op">;</span></span>
+<span id="cb62-16"><a href="#cb62-16" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb62-17"><a href="#cb62-17" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (action <span class="op">===</span> <span class="st">&#39;weather-hint&#39;</span>) {</span>
+<span id="cb62-18"><a href="#cb62-18" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> city <span class="op">=</span> body<span class="op">.</span><span class="at">city</span> <span class="op">||</span> query<span class="op">.</span><span class="at">city</span> <span class="op">||</span> <span class="st">&#39;Ho Chi Minh City&#39;</span><span class="op">;</span></span>
+<span id="cb62-19"><a href="#cb62-19" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> [{ <span class="dt">json</span><span class="op">:</span> { <span class="dt">ok</span><span class="op">:</span> <span class="kw">true</span><span class="op">,</span> action<span class="op">,</span> city<span class="op">,</span> <span class="dt">hint</span><span class="op">:</span> <span class="st">&#39;Use Exercise 4 / Open-Meteo for live data&#39;</span><span class="op">,</span> <span class="dt">ict</span><span class="op">:</span> nowIct } }]<span class="op">;</span></span>
+<span id="cb62-20"><a href="#cb62-20" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb62-21"><a href="#cb62-21" aria-hidden="true" tabindex="-1"></a><span class="cf">return</span> [{ <span class="dt">json</span><span class="op">:</span> { <span class="dt">ok</span><span class="op">:</span> <span class="kw">false</span><span class="op">,</span> <span class="dt">error</span><span class="op">:</span> <span class="st">&#39;unknown action&#39;</span><span class="op">,</span> <span class="dt">allowed</span><span class="op">:</span> [<span class="st">&#39;ping&#39;</span><span class="op">,</span> <span class="st">&#39;ict-now&#39;</span><span class="op">,</span> <span class="st">&#39;ticket-id&#39;</span><span class="op">,</span> <span class="st">&#39;weather-hint&#39;</span>]<span class="op">,</span> <span class="dt">ict</span><span class="op">:</span> nowIct } }]<span class="op">;</span></span></code></pre></div>
+<ol start="5" type="1">
+<li>Add <strong>Switch</strong> <code>OK vs error</code> (mode <strong>Rules</strong>):
+<ul>
+<li>Rule <strong>ok</strong>: <code>{{ $json.ok }}</code> is <strong>true</strong></li>
+<li>Fallback → error path</li>
+</ul></li>
+<li><strong>Respond to Webhook</strong> on the ok path: Respond With <strong>JSON</strong>, body <code>={{ $json }}</code>, response code <strong>200</strong>.</li>
+<li>Second <strong>Respond to Webhook</strong> on fallback: same body, code <strong>400</strong>.</li>
+<li><strong>Save</strong> → <strong>Active</strong> (needed for Production URL).</li>
+</ol>
+<h4 id="test-from-any-lan-machine">Test from any LAN machine</h4>
+<div class="sourceCode" id="cb63"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-sS</span> <span class="at">-X</span> POST http://YOUR_LAN_IP:5678/webhook/lotus-office-api <span class="dt">\</span></span>
+<span id="cb63-2"><a href="#cb63-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">-H</span> <span class="st">&#39;Content-Type: application/json&#39;</span> <span class="dt">\</span></span>
+<span id="cb63-3"><a href="#cb63-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">-d</span> <span class="st">&#39;{&quot;action&quot;:&quot;ping&quot;}&#39;</span></span>
+<span id="cb63-4"><a href="#cb63-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb63-5"><a href="#cb63-5" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-sS</span> <span class="at">-X</span> POST http://YOUR_LAN_IP:5678/webhook/lotus-office-api <span class="dt">\</span></span>
+<span id="cb63-6"><a href="#cb63-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">-H</span> <span class="st">&#39;Content-Type: application/json&#39;</span> <span class="dt">\</span></span>
+<span id="cb63-7"><a href="#cb63-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">-d</span> <span class="st">&#39;{&quot;action&quot;:&quot;ticket-id&quot;}&#39;</span></span>
+<span id="cb63-8"><a href="#cb63-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb63-9"><a href="#cb63-9" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-sS</span> <span class="at">-X</span> POST http://YOUR_LAN_IP:5678/webhook/lotus-office-api <span class="dt">\</span></span>
+<span id="cb63-10"><a href="#cb63-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">-H</span> <span class="st">&#39;Content-Type: application/json&#39;</span> <span class="dt">\</span></span>
+<span id="cb63-11"><a href="#cb63-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">-d</span> <span class="st">&#39;{&quot;action&quot;:&quot;nope&quot;}&#39;</span></span></code></pre></div>
+<h4 id="done-when-8">Done when</h4>
+<ul class="task-list">
+<li><label><input type="checkbox" /><code>ping</code> returns JSON with <code>ok: true</code> and an ICT timestamp</label></li>
+<li><label><input type="checkbox" /><code>ticket-id</code> returns an <code>LW-YYYYMMDD-####</code> id</label></li>
+<li><label><input type="checkbox" />Unknown action returns HTTP <strong>400</strong></label></li>
+<li><label><input type="checkbox" />You understand Test URL vs Production URL</label></li>
+</ul>
+<h4 id="what-you-just-learned-5">What you just learned</h4>
+<p><strong>Webhooks are APIs.</strong> Respond-to-Webhook gives you status codes; Switch keeps success/error paths obvious.</p>
+<hr />
+<h3 id="exercise-6--sub-workflows-wait-and-error-trigger">Exercise 6 — Sub-workflows, Wait, and Error Trigger</h3>
+<p><strong>Goal:</strong> Split work across workflows: a <strong>child</strong> formatter, a <strong>parent</strong> that calls it and <strong>Waits</strong>, plus a shared <strong>Error Trigger</strong> logger.</p>
+<p><strong>Why this exercise:</strong> Production n8n is rarely one giant canvas. You need <strong>reuse (Execute Workflow)</strong>, <strong>pauses (Wait)</strong>, and <strong>failure fan-out (Error Workflow)</strong>.</p>
+<p><strong>Features you will use</strong></p>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Role here</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Error Trigger</strong></td>
+<td>Separate workflow that only runs when an <strong>Active</strong> workflow fails</td>
+</tr>
+<tr>
+<td><strong>Execute Workflow Trigger</strong></td>
+<td>Child entrypoint (not Manual Trigger)</td>
+</tr>
+<tr>
+<td><strong>Execute Workflow</strong></td>
+<td>Parent calls child and waits for its result</td>
+</tr>
+<tr>
+<td><strong>Wait</strong></td>
+<td>Pause (class: 15s interval; production: webhook resume / form)</td>
+</tr>
+<tr>
+<td><strong>Workflow Settings → Error Workflow</strong></td>
+<td>Wire parent → 6A</td>
+</tr>
+<tr>
+<td><strong>Sticky Note</strong></td>
+<td>Label each canvas</td>
+</tr>
+</tbody>
+</table>
+<p><strong>APIs:</strong> None required. Optional later: Telegram notify from 6A.</p>
+<p><img src="screenshots/ex-6a-01-canvas.png" alt="Exercise 6A — Error Trigger handler" /></p>
+<p><em>Exercise 6A — Error Trigger handler.</em></p>
+<p><img src="screenshots/ex-6b-01-canvas.png" alt="Exercise 6B child — Execute Workflow Trigger" /></p>
+<p><em>Exercise 6B child — Execute Workflow Trigger.</em></p>
+<p><img src="screenshots/ex-6c-01-canvas.png" alt="Exercise 6C parent — Execute Workflow + Wait" /></p>
+<p><em>Exercise 6C parent — Execute Workflow + Wait.</em></p>
+<h4 id="import-optional-2">Import (optional)</h4>
+<ul>
+<li><code>workflows/exercise-06a-error-handler.json</code></li>
+<li><code>workflows/exercise-06b-format-desk-card.json</code></li>
+<li><code>workflows/exercise-06c-parent-wait.json</code></li>
+</ul>
+<p>After import, open <strong>6C</strong>, select <strong>Call Format Desk Card</strong>, and re-pick the <strong>6B</strong> workflow in the dropdown (IDs differ per machine). In <strong>6C → Workflow settings</strong>, set <strong>Error Workflow</strong> to <strong>6A</strong>.</p>
+<h4 id="part-a--error-handler-6a">Part A — Error Handler (6A)</h4>
+<ol type="1">
+<li>Create <code>Exercise 6A — Error Handler</code>.</li>
+<li>Trigger: <strong>Error Trigger</strong> (search “Error”).</li>
+<li><strong>Code</strong> <code>Format error card</code> — map workflow name, last node, message, execution id, ICT time.</li>
+<li><strong>Convert to File</strong> → <strong>Write</strong> under <code>/home/node/.n8n/lotus-logs/errors-….json</code>.</li>
+<li>Save. (No need to Activate 6A for it to be selectable as an error workflow; keep it available.)</li>
+</ol>
+<blockquote>
+<p><strong>Teaching gotcha:</strong> Error Trigger does <strong>not</strong> fire on manual <strong>Execute workflow</strong> failures in the editor. It fires when an <strong>Active</strong> workflow errors in production. For class, demo the wiring + log shape; optionally force a failure on an Active throwaway workflow.</p>
+</blockquote>
+<h4 id="part-b--child-formatter-6b">Part B — Child formatter (6B)</h4>
+<ol type="1">
+<li>Create <code>Exercise 6B — Format Desk Card (child)</code>.</li>
+<li>First node: <strong>Execute Workflow Trigger</strong> (when called by another workflow).</li>
+<li><strong>Code</strong> builds a short <code>card</code> string from <code>name</code> / <code>topic</code> / <code>detail</code>.</li>
+<li>Save.</li>
+</ol>
+<h4 id="part-c--parent--wait-6c">Part C — Parent + Wait (6C)</h4>
+<ol type="1">
+<li>Create <code>Exercise 6C — Parent + Wait</code>.</li>
+<li><strong>Manual Trigger</strong> → <strong>Edit Fields</strong> with sample data (<code>Mai Nguyen</code>, <code>facilities</code>, <code>Meeting room A/C too cold</code>).</li>
+<li><strong>Execute Workflow</strong> → select <strong>6B</strong>; enable <strong>Wait for sub-workflow</strong>.</li>
+<li><strong>Wait</strong> → Resume <strong>After time interval</strong> → <strong>15 seconds</strong> (class stand-in for a human).</li>
+<li><strong>Edit Fields</strong> <code>After wait</code> — mark <code>status=resumed_after_wait</code> and keep <code>card</code>.</li>
+<li>Open <strong>Workflow settings</strong> (⋯) → <strong>Error Workflow</strong> → choose <strong>6A</strong>.</li>
+<li><strong>Save</strong> → <strong>Execute workflow</strong>. Watch it pause on Wait, then resume.</li>
+</ol>
+<h4 id="production-upgrade-discuss-dont-require">Production upgrade (discuss, don’t require)</h4>
+<p>Change Wait to <strong>On webhook call</strong>, send <code>{{ $execution.resumeUrl }}</code> to Telegram/email, and resume with:</p>
+<div class="sourceCode" id="cb64"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb64-1"><a href="#cb64-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-sS</span> <span class="at">-X</span> POST <span class="st">&quot;</span><span class="va">$RESUME_URL</span><span class="st">&quot;</span> <span class="at">-H</span> <span class="st">&#39;Content-Type: application/json&#39;</span> <span class="at">-d</span> <span class="st">&#39;{&quot;approved&quot;:true}&#39;</span></span></code></pre></div>
+<h4 id="done-when-9">Done when</h4>
+<ul class="task-list">
+<li><label><input type="checkbox" />6B is callable only via Execute Workflow Trigger</label></li>
+<li><label><input type="checkbox" />6C shows child output on the Execute Workflow node</label></li>
+<li><label><input type="checkbox" />Wait visibly pauses the execution ~15s</label></li>
+<li><label><input type="checkbox" />6C settings point Error Workflow at 6A</label></li>
+</ul>
+<h4 id="what-you-just-learned-6">What you just learned</h4>
+<p><strong>Modularity + time</strong> — sub-workflows for reuse, Wait for human/system lag, Error Trigger for ops visibility.</p>
+<hr />
+<h3 id="exercise-7--lotus-intake-desk-full-end-to-end">Exercise 7 — Lotus Intake Desk (full end-to-end)</h3>
+<p><strong>Goal:</strong> One <strong>singular complex office use case</strong>: a public <strong>n8n Form</strong> for IT / Facilities / HR / General requests → mint <code>LW-…</code> ticket ids in ICT → <strong>route</strong> auto-ack vs escalate → <strong>Wait</strong> for a duty-desk window on escalations → <strong>audit log</strong> (workflow static data + JSON file) → completion message back to the form.</p>
+<p><strong>Why this exercise:</strong> It stitches Forms, Code, Switch, Wait, file I/O, and (optionally) AI/Telegram into a story an office can recognize.</p>
+<p><strong>Features you will use</strong></p>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Role here</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Form Trigger</strong></td>
+<td>Intake UI hosted by n8n</td>
+</tr>
+<tr>
+<td><strong>Code</strong></td>
+<td>Ticket ids, routing heuristics, audit <code>staticData</code></td>
+</tr>
+<tr>
+<td><strong>Switch</strong></td>
+<td><code>escalate</code> vs auto</td>
+</tr>
+<tr>
+<td><strong>Wait</strong></td>
+<td>Duty-desk review window (class: timed; prod: webhook/form resume)</td>
+</tr>
+<tr>
+<td><strong>Set</strong></td>
+<td>Shape fields per branch</td>
+</tr>
+<tr>
+<td><strong>Convert to File + Read/Write File</strong></td>
+<td>Per-ticket JSON log</td>
+</tr>
+<tr>
+<td><strong>Respond to Webhook</strong></td>
+<td>Form completion text</td>
+</tr>
+<tr>
+<td><strong>Optional:</strong> AI Agent / Telegram</td>
+<td>Smarter classify + human ping (see upgrades)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>APIs:</strong> None required for the base path. OpenAI/Telegram optional upgrades.</p>
+<p><img src="screenshots/ex-7-01-canvas.png" alt="Exercise 7 E2E — Form → route → Wait → audit" /></p>
+<p><em>Exercise 7 E2E — Form → route → Wait → audit.</em></p>
+<p><img src="screenshots/ex-4-7-overview.png" alt="Overview — Exercises 4–7 workflows" /></p>
+<p><em>Overview — Exercises 4–7 workflows ready to open.</em></p>
+<h4 id="import-optional-3">Import (optional)</h4>
+<p><code>workflows/exercise-07-lotus-intake-desk.json</code></p>
+<h4 id="step-by-step--base-path-no-ai">Step by step — base path (no AI)</h4>
+<ol type="1">
+<li><strong>Create workflow</strong> → <code>Exercise 7 — Lotus Intake Desk</code>.</li>
+<li><strong>Form Trigger</strong> <code>On form submission</code>:
+<ul>
+<li>Title: <code>Lotus Widgets — Office Intake</code></li>
+<li>Description: mention ICT hours</li>
+<li>Fields:
+<ul>
+<li><strong>Requester Name</strong> (text, required)</li>
+<li><strong>Requester Email</strong> (email, required)</li>
+<li><strong>Team</strong> (text)</li>
+<li><strong>Category</strong> (dropdown: IT / Facilities / HR / General)</li>
+<li><strong>Urgency</strong> (dropdown: Normal / High / Urgent)</li>
+<li><strong>Description</strong> (textarea, required)</li>
+</ul></li>
+<li>Respond: <strong>When last node finishes</strong> (so the completion message can include the ticket id)</li>
+</ul></li>
+<li><strong>Code</strong> <code>Mint ticket id</code> — build <code>LW-YYYYMMDD-####</code> using <code>Asia/Ho_Chi_Minh</code> dates; copy form fields into clean keys (<code>requester_name</code>, <code>category</code>, …).</li>
+<li><strong>Code</strong> <code>Route + draft reply</code> — deterministic router for class:
+<ul>
+<li>Escalate if urgency/description suggests critical/outage <strong>or</strong> HR/leave keywords</li>
+<li>Otherwise auto-ack with a Linh / Lotus Widgets draft</li>
+</ul></li>
+<li><strong>Switch</strong> <code>Auto vs escalate</code> on <code>{{ $json.route }} === "escalate"</code>; fallback = auto.</li>
+<li><strong>Auto path:</strong> Set <code>decision=auto_acked</code> + pass ticket fields.</li>
+<li><strong>Escalate path:</strong> <strong>Wait</strong> 20 seconds (stand-in for duty review) → Set <code>decision=escalated_reviewed</code>.</li>
+<li>Both paths → <strong>Code</strong> <code>Append audit (staticData)</code> pushing into <code>$getWorkflowStaticData('global').tickets</code>.</li>
+<li><strong>Convert to File</strong> → <strong>Write</strong> <code>ticket-{{ticket_id}}.json</code> under <code>lotus-logs</code>.</li>
+<li><strong>Respond to Webhook</strong> (or Form ending) with ticket id + draft reply + decision.</li>
+<li><strong>Save</strong> → <strong>Active</strong>. Open the Form <strong>Production URL</strong> on a phone on the LAN.</li>
+</ol>
+<h4 id="test-script-2">Test script</h4>
+<p>Submit twice:</p>
+<ol type="1">
+<li>Category <strong>IT</strong>, Urgency <strong>Normal</strong>, Description <code>VPN client will not connect</code> → expect <strong>auto</strong> path (fast completion).</li>
+<li>Category <strong>HR</strong>, Urgency <strong>Urgent</strong>, Description <code>Need leave approval ASAP for tomorrow</code> → expect <strong>escalate</strong> path (Wait delay, then completion).</li>
+</ol>
+<p>Check <strong>Executions</strong> and <code>/home/node/.n8n/lotus-logs/ticket-LW-*.json</code>.</p>
+<h4 id="optional-upgrades-if-time--keys-allow">Optional upgrades (if time / keys allow)</h4>
+<ol type="1">
+<li><strong>AI classify:</strong> After <code>Mint ticket id</code>, add <strong>AI Agent</strong> + OpenAI Chat Model; ask for JSON <code>{route, draft_reply, needs_human}</code>; parse with Code; keep Switch.</li>
+<li><strong>Telegram duty ping:</strong> On escalate branch, before Wait, <strong>Telegram Send</strong> to the duty chat including <code>ticket_id</code> + <code>$execution.resumeUrl</code>, and change Wait to <strong>webhook resume</strong>.</li>
+<li><strong>Reuse Exercise 6B:</strong> Call the child formatter for a pretty card string.</li>
+<li><strong>Error Workflow:</strong> Point settings at Exercise <strong>6A</strong>.</li>
+</ol>
+<h4 id="done-when-10">Done when</h4>
+<ul class="task-list">
+<li><label><input type="checkbox" />Form loads on LAN without copy-pasting a giant URL (short <code>http://YOUR_LAN_IP:5678/form/...</code>)</label></li>
+<li><label><input type="checkbox" />Auto vs escalate paths both produce a ticket id and completion text</label></li>
+<li><label><input type="checkbox" />Escalations show a Waiting state in Executions</label></li>
+<li><label><input type="checkbox" />JSON ticket logs exist on disk</label></li>
+<li><label><input type="checkbox" />(Optional) AI or Telegram upgrade demonstrated once</label></li>
+</ul>
+<h4 id="what-you-just-learned-7">What you just learned</h4>
+<p>An <strong>end-to-end office desk</strong>: human-facing form, business routing, human-time Wait, durable audit, and a clear completion path — the pattern behind real service-desk automations.</p>
+<hr />
 <h2 id="troubleshooting">Troubleshooting</h2>
 <table>
 <thead>
@@ -1392,18 +1849,25 @@ Search with Google: n8n telegram bot polling</code></pre>
 <hr />
 <h2 id="security-notes-for-class">Security notes for class</h2>
 <ul>
-<li>This class stack stays on <strong>LAN HTTP</strong> for the editor. Exercises 2–3 use <strong>Telegram polling</strong> (outbound only) — no need to expose n8n to the public internet for those exercises.</li>
+<li>This class stack stays on <strong>LAN HTTP</strong> for the editor. Exercises 2–3 use <strong>Telegram polling</strong> (outbound only). Exercises 5 and 7 expose <strong>Webhook / Form</strong> URLs on the LAN via <code>WEBHOOK_URL</code> — keep them off the public internet unless you add auth and TLS.</li>
 <li>Treat <code>./data</code> as sensitive (credentials encryption key + workflow secrets). Never commit bot tokens, OpenAI keys, Exa keys, or Google keys (prefer Credentials UI; if a token appears in an HTTP URL for teaching, rotate it after class).</li>
 <li>Prefer a dedicated class password; rotate after the course if the machine is shared.</li>
 </ul>
 <hr />
 <h2 id="repo-layout">Repo layout</h2>
 <pre class="text"><code>n8n-class/
-├── README.md            ← this guide
-├── docker-compose.yml   ← one-service stack
-├── .env.example         ← copy to .env
-└── .gitignore           ← ignores .env and data/</code></pre>
+├── README.md                 ← this guide
+├── docker-compose.yml        ← one-service stack
+├── .env.example              ← copy to .env
+├── workflows/                ← importable Exercises 4–7 JSON
+├── docs/
+│   ├── screenshots/          ← annotated UI PNGs
+│   ├── build_exercises_4_7.py
+│   └── EXERCISES_4_7.md      ← source snippet for Ex 4–7
+└── .gitignore</code></pre>
 <p>Questions during class: keep the server IP written on the board as a short URL students can type — e.g. <code>http://192.168.1.247:5678</code>.</p>
+
+
 
 
       </article>
@@ -1411,3 +1875,4 @@ Search with Google: n8n telegram bot polling</code></pre>
   </div>
   <script src="./workbook.js"></script>
 </body>
+</html>
