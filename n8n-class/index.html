@@ -63,6 +63,10 @@
 
         <h2 id="day-one">Day one: Microsoft-connected AI workflows</h2>
         <h3 id="lab-1">Lab 1 — Build a first n8n workflow</h3>
+        <p><img loading="lazy" src="screenshots/02-setup-empty-canvas.png" alt="Empty n8n workflow canvas with the Add first step control" /></p>
+        <p><em>Start on a blank workflow canvas and add the first step.</em></p>
+        <p><img loading="lazy" src="screenshots/ex-1c-01-manual-trigger.png" alt="Node picker showing the Manual Trigger option" /></p>
+        <p><em>Choose Manual Trigger for test runs; this screenshot comes from an earlier example workflow.</em></p>
         <p><strong>Goal:</strong> Understand triggers, nodes, items, expressions, executions, and where an AI step belongs. AI is useful for interpreting unstructured requests; deterministic routing and approvals still belong in explicit workflow logic.</p>
         <ol>
           <li>Open the provided training instance and create <code>D1-01 Operations request</code>.</li>
@@ -74,6 +78,8 @@
         <ul><li><label><input type="checkbox" />I can trace input, expressions, branches, and output in an execution.</label></li></ul>
 
         <h3 id="lab-2">Lab 2 — Microsoft services and secure connections</h3>
+        <p><img loading="lazy" src="screenshots/04-setup-credentials.png" alt="n8n Credentials tab and Create credential button" /></p>
+        <p><em>The Credentials screen is where you begin adding an approved Microsoft connection.</em></p>
         <p><strong>Goal:</strong> Replace sample input with a Microsoft business event and make an approved Microsoft action. Use native nodes when the required operation is available; use authenticated HTTP Request against Microsoft Graph or the service API for gaps. Check the installed n8n version and permissions before choosing an operation.</p>
         <ol>
           <li>Choose one sandbox intake source: an <strong>Outlook message</strong>, a <strong>SharePoint list item</strong>, or a <strong>Teams event</strong> if the training tenant supports its trigger. Otherwise retain Manual Trigger and sample input.</li>
@@ -81,6 +87,8 @@
           <li>Normalize the incoming record to <code>requestId</code>, <code>subject</code>, <code>description</code>, <code>source</code>, and <code>submittedAt</code>. Test with a sandbox record.</li>
           <li>Choose one output: post a status message in a sandbox Teams channel, draft or send an Outlook reply to a test mailbox, or update a SharePoint list item. Verify exactly one action for one request.</li>
         </ol>
+        <p><img loading="lazy" src="screenshots/ex-5-01-canvas.png" alt="Example n8n webhook workflow with routing and separate success and error responses" /></p>
+        <p><em>Earlier generic webhook example: the request/response pattern can support a Power Apps or other approved API integration; replace its example route and endpoints for this class.</em></p>
         <p><strong>Integration map:</strong> Teams, Outlook, and SharePoint are the core practice services. Dataverse is a possible case record store; Power Apps can submit a request through an approved API or webhook; Power BI can consume a cleaned output through an approved interface. Azure Functions and other APIs fit through HTTP Request. We will discuss each connection pattern without assuming every tenant or n8n edition has every node and operation.</p>
         <p><strong>Done when:</strong> a test request enters the workflow and produces an action in a permitted Microsoft sandbox. If live access is blocked, show the mapped payload and explain the missing permission or endpoint.</p>
         <ul><li><label><input type="checkbox" />I have tested one Microsoft input and one Microsoft action, or their sandbox equivalents.</label></li></ul>
@@ -98,6 +106,8 @@
         <ul><li><label><input type="checkbox" />I can explain which part uses AI and which part enforces the rules.</label></li></ul>
 
         <h3 id="lab-4">Lab 4 — Errors, retries, and safe notifications</h3>
+        <p><img loading="lazy" src="screenshots/ex-6a-01-canvas.png" alt="Error Trigger workflow connecting an error formatter to logging nodes" /></p>
+        <p><em>Earlier Error Trigger example: keep the trigger and formatting pattern; use an approved Teams or Outlook alert for this lab instead of its file log.</em></p>
         <p><strong>Goal:</strong> Make failures visible without silently duplicating updates or messages.</p>
         <ol>
           <li>Deliberately fail a sandbox API action. Inspect the failed execution and identify the node, request ID, and error response.</li>
@@ -110,6 +120,8 @@
 
         <h2 id="day-two">Day two: reuse, DevOps, and operations</h2>
         <h3 id="lab-5">Lab 5 — End-to-end Microsoft operations intake</h3>
+        <p><img loading="lazy" src="screenshots/ex-6b-01-canvas.png" alt="Child workflow starting with When called by another workflow and a formatting step" /></p>
+        <p><em>An earlier child workflow demonstrates the reusable formatter pattern used in this lab.</em></p>
         <p><strong>Goal:</strong> Combine the day-one pieces into an office workflow that can be demonstrated to an operations team.</p>
         <ol>
           <li>Receive a test request from Outlook, SharePoint, or the sample Manual Trigger. Normalize fields and reject incomplete submissions.</li>
