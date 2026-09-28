@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Singularity: A Cambrian Explosion of Minds</title>
+<style>
+:root{
+  --bg:#05070a;
+  --panel:#0b1016;
+  --ink:#f4f7f8;
+  --muted:#9eaab5;
+  --cyan:#69e6ff;
+  --amber:#ffb35c;
+  --line:#22303d;
+  --bio:#b8ff7a;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;overflow:hidden}
+body:before{
+  content:"";position:fixed;inset:0;pointer-events:none;
+  background:
+    radial-gradient(circle at 18% 28%,rgba(105,230,255,.09),transparent 25%),
+    radial-gradient(circle at 80% 68%,rgba(255,179,92,.08),transparent 28%);
+}
+.deck{width:100vw;height:100vh;position:relative}
+.slide{
+  display:none;position:absolute;inset:0;padding:6vh 7vw 7vh;
+  flex-direction:column;justify-content:center;
+}
+.slide.active{display:flex}
+.eyebrow{font-size:clamp(14px,1.3vw,22px);letter-spacing:.18em;text-transform:uppercase;color:var(--cyan);font-weight:700;margin-bottom:2.4vh}
+h1,h2{margin:0;line-height:.96;letter-spacing:-.045em;max-width:1180px}
+h1{font-size:clamp(56px,7.7vw,128px)}
+h2{font-size:clamp(46px,6.1vw,96px)}
+.subtitle{margin-top:3vh;font-size:clamp(20px,2vw,34px);line-height:1.35;color:var(--muted);max-width:960px}
+.bigline{font-size:clamp(34px,4.4vw,72px);line-height:1.1;letter-spacing:-.03em;max-width:1200px}
+.accent{color:var(--cyan)}
+.bio{color:var(--bio)}
+.amber{color:var(--amber)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:3vw;margin-top:4vh;max-width:1250px}
+.card{background:rgba(11,16,22,.76);border:1px solid var(--line);padding:2.2vw;border-radius:22px;min-height:190px}
+.card h3{font-size:clamp(23px,2.2vw,36px);margin:0 0 1vh}
+.card p{font-size:clamp(17px,1.45vw,25px);line-height:1.45;color:var(--muted);margin:.3em 0}
+.flow{display:flex;gap:14px;align-items:stretch;flex-wrap:wrap;margin-top:5vh;max-width:1300px}
+.node{border:1px solid var(--line);background:rgba(11,16,22,.85);padding:18px 20px;border-radius:16px;min-width:155px;flex:1}
+.node strong{display:block;font-size:clamp(18px,1.5vw,26px)}
+.node span{display:block;color:var(--muted);margin-top:8px;font-size:clamp(14px,1.1vw,20px);line-height:1.35}
+.arrow{display:flex;align-items:center;color:var(--cyan);font-size:30px}
+.demo{
+  margin-top:4vh;min-height:48vh;border:2px dashed rgba(105,230,255,.6);border-radius:28px;
+  display:flex;align-items:center;justify-content:center;text-align:center;background:rgba(105,230,255,.035);
+}
+.demo .inner{max-width:800px}
+.demo .label{font-size:clamp(25px,3vw,52px);font-weight:800;letter-spacing:.04em}
+.demo .hint{color:var(--muted);font-size:clamp(16px,1.3vw,22px);margin-top:14px}
+.species{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:4vh;max-width:1250px}
+.species div{border:1px solid var(--line);background:rgba(11,16,22,.72);padding:20px;border-radius:18px}
+.species strong{font-size:clamp(20px,1.8vw,30px);display:block}
+.species span{color:var(--muted);font-size:clamp(15px,1.15vw,20px);line-height:1.35;display:block;margin-top:6px}
+.quote{font-size:clamp(40px,5.3vw,86px);line-height:1.05;letter-spacing:-.04em;max-width:1250px}
+.footer{position:absolute;left:7vw;right:7vw;bottom:2.2vh;display:flex;justify-content:space-between;color:#6f7a84;font-size:13px;letter-spacing:.08em;text-transform:uppercase}
+.progress{position:absolute;left:0;bottom:0;height:3px;background:linear-gradient(90deg,var(--cyan),var(--amber));transition:width .25s ease}
+.controls{position:fixed;right:18px;bottom:16px;color:#66717a;font-size:12px;z-index:20}
+.notes{display:none}
+@media (max-width:900px){
+  .grid,.species{grid-template-columns:1fr}
+  .slide{padding:5vh 6vw 8vh}
+  .flow{gap:8px}.arrow{display:none}
+}
+</style>
+</head>
+<body>
+<div class="deck">
+
+<section class="slide active" data-title="Title">
+  <div class="eyebrow">Pandu Sastrowardoyo · AI / systems / weird experiments</div>
+  <h1>The Singularity:<br><span class="accent">A Cambrian Explosion of Minds</span></h1>
+  <div class="subtitle">Why the future of intelligence probably won't be one giant model.</div>
+  <aside class="notes">OPEN: We usually picture the singularity as one curve going vertical: one system becomes smarter and smarter until everything changes. I want to offer a different picture. The Cambrian explosion wasn't one organism becoming infinitely good. It was a sudden diversification of forms. I think intelligence may be entering that kind of phase now.</aside>
+</section>
+
+<section class="slide" data-title="Wrong singularity">
+  <div class="eyebrow">01 · The wrong mental image</div>
+  <div class="grid">
+    <div class="card">
+      <h3 class="amber">The usual singularity</h3>
+      <p>One model.</p><p>One scaling curve.</p><p>One increasingly general intelligence.</p>
+    </div>
+    <div class="card">
+      <h3 class="accent">What may actually happen</h3>
+      <p>Many architectures.</p><p>Many substrates.</p><p>Many kinds of cognition appearing at once.</p>
+    </div>
+  </div>
+  <div class="subtitle">Not a ladder. An ecosystem.</div>
+  <aside class="notes">The dominant story is basically a ladder: scale the same thing upward. But biology rarely works that way, and computing doesn't either. Once useful components exist, people recombine them. We are already moving from a world of individual models to systems made out of models, rules, memory, tools, sensors, and other agents.</aside>
+</section>
+
+<section class="slide" data-title="2007 to now">
+  <div class="eyebrow">02 · I have seen one AI cycle already</div>
+  <h2>In 2007, my AI was an <span class="bio">expert system.</span></h2>
+  <div class="subtitle">Rules, knowledge bases, explicit reasoning — built to help write environmental impact assessments. Then came deep learning, transformers, RLHF, tool use, agents.</div>
+  <div class="bigline" style="margin-top:5vh">The techniques changed.<br><span class="accent">The systems question came back.</span></div>
+  <aside class="notes">I started working with AI in college around 2007, using expert systems. At the time, intelligence meant encoding structure explicitly. The modern era went in the opposite direction: learn enormous amounts of structure implicitly. Transformers changed what was possible. But now that models are capable enough, the interesting design problem is becoming architectural again: what do we put around the model?</aside>
+</section>
+
+<section class="slide" data-title="Model is not the mind">
+  <div class="eyebrow">03 · The thesis</div>
+  <h2>The model is <span class="amber">not</span> the mind.</h2>
+  <div class="flow">
+    <div class="node"><strong>Models</strong><span>Pattern completion, language, perception</span></div>
+    <div class="arrow">+</div>
+    <div class="node"><strong>Rules</strong><span>Fast constraints and explicit knowledge</span></div>
+    <div class="arrow">+</div>
+    <div class="node"><strong>Memory</strong><span>Identity, continuity, experience</span></div>
+    <div class="arrow">+</div>
+    <div class="node"><strong>Tools</strong><span>Action in the world</span></div>
+    <div class="arrow">+</div>
+    <div class="node"><strong>Other minds</strong><span>Agents, humans, specialized systems</span></div>
+  </div>
+  <div class="subtitle">A foundation model is extraordinary cognitive tissue. A mind is an architecture.</div>
+  <aside class="notes">This is the part I keep coming back to in my talks about sovereign and trustworthy AI. We obsess over which model is smartest. But real deployed intelligence is already a stack. The model is one cognitive organ inside a larger architecture. Once you accept that, the design space becomes much bigger than 'which LLM wins?'.</aside>
+</section>
+
+<section class="slide" data-title="Demo Jev">
+  <div class="eyebrow">DEMO 01 · Fast cognition</div>
+  <h2>System One can be <span class="accent">tiny.</span></h2>
+  <div class="demo">
+    <div class="inner">
+      <div class="label">ADD DEMO VIDEO HERE</div>
+      <div class="hint">Jev / fast System-One decision experiment · suggested clip: 20–25 sec</div>
+    </div>
+  </div>
+  <aside class="notes">This is Jev, an experiment inspired by Thinking, Fast and Slow. It isn't trying to be a tiny ChatGPT. It is deliberately closer to a reflex: extremely fast, cheap decision machinery. My point isn't that this replaces an LLM. My point is that it shouldn't. Different cognitive jobs want different machines.</aside>
+</section>
+
+<section class="slide" data-title="Hybrid mind">
+  <div class="eyebrow">04 · Heterogeneous cognition</div>
+  <h2>Build the mind from <span class="accent">different kinds of thinking.</span></h2>
+  <div class="flow">
+    <div class="node"><strong class="bio">REFLEX</strong><span>Jev / heuristics<br>milliseconds</span></div>
+    <div class="arrow">→</div>
+    <div class="node"><strong>EXPERTISE</strong><span>Rules / expert systems<br>deterministic</span></div>
+    <div class="arrow">→</div>
+    <div class="node"><strong class="accent">DELIBERATION</strong><span>LLMs / reasoning models<br>expensive</span></div>
+    <div class="arrow">→</div>
+    <div class="node"><strong class="amber">ACTION</strong><span>Tools / robots / APIs<br>world-facing</span></div>
+  </div>
+  <div class="subtitle">Brains do not use one algorithm for everything. Why should machine minds?</div>
+  <aside class="notes">This is where the old AI world and the new one suddenly fit together. Expert systems are still fantastic when the knowledge is explicit and you need determinism. A fast decider is great for reflexes. An LLM is great when ambiguity and generalization matter. Tools act. Memory persists. A good machine mind can route between these modes rather than forcing one giant model to imitate all of them.</aside>
+</section>
+
+<section class="slide" data-title="Demo connectome">
+  <div class="eyebrow">DEMO 02 · Biological architecture, computational substrate</div>
+  <h2>What if the architecture is a <span class="bio">nervous system?</span></h2>
+  <div class="demo">
+    <div class="inner">
+      <div class="label">ADD DEMO VIDEO HERE</div>
+      <div class="hint">Drosophila connectome simulation + Muse EEG experiment · suggested clip: 20–30 sec</div>
+    </div>
+  </div>
+  <aside class="notes">Then I pushed the question in a weirder direction. Instead of making software that merely borrows metaphors from brains, what happens when you simulate an actual biological neural architecture? This experiment runs a small fly connectome model and feeds human EEG signals into it. It is primitive, but conceptually the boundary gets strange very quickly: biological organization, digital substrate, human input.</aside>
+</section>
+
+<section class="slide" data-title="Demo local">
+  <div class="eyebrow">DEMO 03 · Intelligence escapes the cloud</div>
+  <h2>Minds are becoming <span class="accent">portable infrastructure.</span></h2>
+  <div class="demo">
+    <div class="inner">
+      <div class="label">ADD DEMO VIDEO HERE</div>
+      <div class="hint">Local / headless / hybrid-agent experiment · suggested clip: 15–25 sec</div>
+    </div>
+  </div>
+  <div class="subtitle">Local models + tools + memory + specialist components = intelligence you can own, move, fork, and compose.</div>
+  <aside class="notes">Another consequence is that intelligence is no longer synonymous with a giant cloud endpoint. I have been experimenting with local models and headless agentic systems running on ordinary hardware. They are not frontier models. That is exactly why this matters: useful cognition is becoming something you can distribute, specialize, own, and compose.</aside>
+</section>
+
+<section class="slide" data-title="Cambrian explosion">
+  <div class="eyebrow">05 · The Cambrian explosion</div>
+  <h2>The next step is not <span class="amber">one successor species.</span></h2>
+  <div class="species">
+    <div><strong>Biological minds</strong><span>Humans and animals, augmented by machines</span></div>
+    <div><strong>Digital minds</strong><span>Agents, models, persistent synthetic identities</span></div>
+    <div><strong>Hybrid minds</strong><span>Bio + machine loops, prosthetic cognition, BCIs</span></div>
+    <div><strong>Collective minds</strong><span>Multi-agent systems, human-machine organizations</span></div>
+    <div><strong>Simulated minds</strong><span>Connectomes and biologically inspired architectures</span></div>
+    <div><strong>Mind children</strong><span>Artificial descendants carrying human culture beyond one substrate</span></div>
+  </div>
+  <div class="subtitle">The interesting future is diversification — and eventually intelligence that can move between biological, machine, and mixed substrates.</div>
+  <aside class="notes">This is why I like the Cambrian metaphor. The singularity may be less like one alien god appearing and more like an explosion of cognitive species. Some will be biological, some digital, some hybrid, some collective. Our AI systems may become what Hans Moravec called mind children: not merely tools, but another continuation of the lineage of intelligence and culture. Far enough out, substrate itself may become a choice.</aside>
+</section>
+
+<section class="slide" data-title="Close">
+  <div class="eyebrow">THE QUESTION</div>
+  <div class="quote">Maybe the singularity isn't <span class="amber">one mind waking up.</span><br><br>Maybe it's a <span class="accent">biosphere.</span></div>
+  <div class="subtitle">For years we asked: <em>How intelligent is the model?</em><br>The better question may be: <strong>What kinds of minds can we build?</strong></div>
+  <aside class="notes">So I would stop asking only how smart the next model will be. That question matters, but it is only one axis. The bigger question is what kinds of minds become possible once intelligence is modular, composable, biological, digital, local, networked, fast, slow, embodied, and shared. The singularity might not be a single mind waking up. It might be a biosphere.</aside>
+</section>
+
+<div class="footer"><span>THE SINGULARITY: A CAMBRIAN EXPLOSION OF MINDS</span><span id="counter">1 / 10</span></div>
+<div class="progress" id="progress"></div>
+<div class="controls">← → / space · F fullscreen · N notes</div>
+</div>
+
+<script>
+const slides=[...document.querySelectorAll('.slide')];
+let i=0, notesOpen=false;
+function render(){
+  slides.forEach((s,n)=>s.classList.toggle('active',n===i));
+  document.getElementById('counter').textContent=(i+1)+' / '+slides.length;
+  document.getElementById('progress').style.width=((i+1)/slides.length*100)+'%';
+  document.title=slides[i].dataset.title+' — The Singularity: A Cambrian Explosion of Minds';
+}
+function next(){if(i<slides.length-1){i++;render()}}
+function prev(){if(i>0){i--;render()}}
+function toggleNotes(){
+  notesOpen=!notesOpen;
+  let box=document.getElementById('notesbox');
+  if(!box){
+    box=document.createElement('div');box.id='notesbox';
+    Object.assign(box.style,{position:'fixed',left:'2vw',right:'2vw',bottom:'5vh',padding:'18px 22px',background:'rgba(0,0,0,.94)',border:'1px solid #334250',borderRadius:'14px',zIndex:'99',fontSize:'18px',lineHeight:'1.45',color:'#dbe3e8'});
+    document.body.appendChild(box);
+  }
+  const note=slides[i].querySelector('.notes');
+  box.innerHTML='<strong style="color:#69e6ff">SPEAKER NOTES</strong><br><br>'+(note?note.innerHTML:'');
+  box.style.display=notesOpen?'block':'none';
+}
+document.addEventListener('keydown',e=>{
+  if(['ArrowRight','PageDown',' ','Enter'].includes(e.key)){e.preventDefault();next()}
+  if(['ArrowLeft','PageUp','Backspace'].includes(e.key)){e.preventDefault();prev()}
+  if(e.key.toLowerCase()==='f'){document.documentElement.requestFullscreen?.()}
+  if(e.key.toLowerCase()==='n'){toggleNotes()}
+});
+document.addEventListener('click',e=>{if(e.clientX>innerWidth*.55)next();else prev()});
+render();
+</script>
+</body>
+</html>
