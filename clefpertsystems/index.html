@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f5ee">
+  <title>ClefpertSystems — Old knowledge. New intelligence.</title>
+  <meta name="description" content="Pandu Sastrowardoyo’s research into turning executable expert systems into training data for Jev/Clef-style neural decision models. Explore real Prolog results and the path to symbolic-to-neural distillation.">
+  <link rel="canonical" href="https://decentricity.github.io/clefpertsystems/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="ClefpertSystems — Old knowledge. New intelligence.">
+  <meta property="og:description" content="A migration layer for institutional intelligence. Executable rules → oracle-labeled data → neural decisions. By Pandu Sastrowardoyo.">
+  <meta property="og:url" content="https://decentricity.github.io/clefpertsystems/">
+  <meta property="og:image" content="https://decentricity.github.io/clefpertsystems/assets/social-card.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="assets/mark.svg" type="image/svg+xml">
+  <link rel="preload" href="assets/space-grotesk-700.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="scroll-progress" aria-hidden="true"></div>
+<header class="header">
+  <a class="brand" href="#top" aria-label="ClefpertSystems home"><img src="assets/mark.svg" width="30" height="30" alt="">Clefpert<span>Systems</span></a>
+  <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="navigation">Menu <span aria-hidden="true">+</span></button>
+  <nav id="navigation" aria-label="Main navigation">
+    <a href="#thesis">The idea</a><a href="#explorer">Oracle explorer</a><a href="#roadmap">What’s next</a>
+    <a class="nav-source" href="https://github.com/Decentricity/ClefpertSystems" target="_blank" rel="noopener noreferrer">GitHub <span aria-hidden="true">↗</span></a>
+  </nav>
+</header>
+<main id="main">
+<section class="hero wrap" id="top">
+  <div class="hero-copy">
+    <div class="eyebrow"><span class="status-dot" aria-hidden="true"></span> Decentricity research / symbolic → neural</div>
+    <h1>Old knowledge.<br><em>New intelligence.</em></h1>
+    <p class="hero-lead">The next training frontier may already be running. Turn executable expert knowledge into the experience that teaches a neural decision model.</p>
+    <div class="hero-actions"><a class="button button-dark" href="#explorer">Explore the working oracle <span aria-hidden="true">↗</span></a><a class="text-link" href="https://digilib.itb.ac.id/gdl/view_data/penggunaan-penilaian-metoda-dampak-warner-preston-dalam-program-komputer-sistem-pakar-analisa-dampak-industri-semen">Read the original thesis <span aria-hidden="true">↗</span></a></div>
+    <p class="hero-byline">A project by <a href="#author">Pandu Sastrowardoyo</a>.<br>Rooted in AI research from 2007–2008. Reimagined for the neural era.</p>
+  </div>
+  <div class="hero-art" aria-label="Conceptual architecture: running symbolic rules feed training examples for a future neural student">
+    <div class="art-top"><span class="mono">KNOWLEDGE TRANSFER / CONCEPT</span><span class="art-indicator">01 → 02</span></div>
+    <svg class="bridge-art" viewBox="0 0 600 425" role="img" aria-labelledby="bridge-title bridge-desc">
+      <title id="bridge-title">Executable knowledge becomes a training signal</title>
+      <desc id="bridge-desc">A running Prolog teacher connects through a dataset to the planned neural student. The neural stage is under construction.</desc>
+      <defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#7d9586" opacity=".22"/></pattern><linearGradient id="stream"><stop stop-color="#436e51"/><stop offset="1" stop-color="#b0d45d"/></linearGradient><filter id="glow"><feGaussianBlur stdDeviation="5"/></filter></defs>
+      <rect width="600" height="425" fill="url(#grid)"/>
+      <ellipse cx="429" cy="205" rx="132" ry="123" fill="#d4edac" opacity=".48"/>
+      <g class="orbital" fill="none" stroke="#8faa87" opacity=".42"><ellipse cx="430" cy="205" rx="124" ry="106"/><ellipse cx="430" cy="205" rx="98" ry="133" transform="rotate(50 430 205)"/></g>
+      <g fill="none" stroke="url(#stream)" stroke-width="1.3"><path class="stream-line" d="M177 152 C240 152 257 96 338 126"/><path class="stream-line second" d="M177 197 C262 197 244 204 338 204"/><path class="stream-line third" d="M177 244 C263 244 257 290 338 280"/></g>
+      <g class="teacher-nodes"><rect x="39" y="112" width="142" height="173" rx="12" fill="#fcfdf7" stroke="#819487"/><rect x="53" y="127" width="112" height="29" rx="5" fill="#e6eddc"/><text x="66" y="146" class="svg-mono">fact(X).</text><rect x="53" y="172" width="112" height="29" rx="5" fill="#e6eddc"/><text x="66" y="191" class="svg-mono">rule(X,Y).</text><rect x="53" y="217" width="112" height="29" rx="5" fill="#d1eb9c"/><text x="66" y="236" class="svg-mono">decide(Y).</text><circle cx="175" cy="152" r="4" fill="#2a6241"/><circle cx="175" cy="197" r="4" fill="#2a6241"/><circle cx="175" cy="244" r="4" fill="#2a6241"/></g>
+      <g class="neural-links" fill="none" stroke="#6f8969" stroke-width="1.1"><path d="M338 126L422 99 506 156 422 205 338 126 338 204 422 99M338 204L422 205 506 156M338 204L422 309 506 251 422 205 338 280 422 309M338 126L422 205L506 251M338 280L422 205L338 204M422 99L506 251M422 309L506 156"/></g>
+      <g class="neural-nodes" fill="#f8fced" stroke="#567750" stroke-width="1.5"><circle cx="338" cy="126" r="9"/><circle cx="338" cy="204" r="9"/><circle cx="338" cy="280" r="9"/><circle cx="422" cy="99" r="11"/><circle cx="422" cy="205" r="14" fill="#c5e687"/><circle cx="422" cy="309" r="11"/><circle cx="506" cy="156" r="9"/><circle cx="506" cy="251" r="9"/></g>
+      <g class="transfer-particles" fill="#30583e"><circle r="4"><animateMotion dur="4s" repeatCount="indefinite" path="M177 152 C240 152 257 96 338 126"/></circle><circle r="4"><animateMotion dur="4s" begin="1s" repeatCount="indefinite" path="M177 197 C262 197 244 204 338 204"/></circle><circle r="4"><animateMotion dur="4s" begin="2s" repeatCount="indefinite" path="M177 244 C263 244 257 290 338 280"/></circle></g>
+      <text x="42" y="334" class="svg-label">SYMBOLIC TEACHER</text><text x="42" y="356" class="svg-small">Prolog · running</text><text x="331" y="354" class="svg-label">NEURAL STUDENT</text><text x="331" y="377" class="svg-small">Jev / Clef-style · planned</text>
+    </svg>
+    <div class="art-bottom"><span><i class="status-dot" aria-hidden="true"></i> Oracle operational</span><span class="future-status"><i aria-hidden="true"></i> Training under construction</span></div>
+  </div>
+  <div class="definitions">
+    <div><span class="mono definition-number">01 / EXPERT SYSTEMS</span><p>Expert knowledge expressed as facts and rules. Give the program a situation; it derives a decision you can inspect.</p></div>
+    <div><span class="mono definition-number">02 / JEV + THE CLEF TARGET</span><p><a href="https://docs.typesafe.ai/models">Jev</a> returns typed neural judgments for software. Clef is our intended training target for learning this kind of decision behavior.</p></div>
+    <div class="definition-link"><span class="mono definition-number">THE NATURAL CONNECTION</span><p>One makes expertise executable.<br><strong>The other could learn from its executions.</strong></p></div>
+  </div>
+</section>
+<section class="proof-strip" aria-label="Current implementation evidence">
+  <div class="wrap proof-inner"><div><strong>3,136</strong><span>oracle-labeled cases</span></div><div><strong>55</strong><span>executed consultations</span></div><div><strong>149</strong><span>scenario checks passed</span></div><a href="https://github.com/Decentricity/ClefpertSystems#executed-prolog-daily-use-test"><span class="proof-icon" aria-hidden="true">↗</span><span>Open code.<br>Inspectable evidence.</span></a></div>
+</section>
+<section class="thesis-section wrap section" id="thesis">
+  <div class="section-head reveal"><p class="eyebrow">01 / The opportunity</p><h2>The overlooked training corpus<br>is hiding in <em>the rules.</em></h2></div>
+  <div class="thesis-layout">
+    <p class="large-copy reveal">For decades, experts translated judgment into software: eligibility rules, diagnostic pathways, industrial assessments, operational policies. That knowledge still runs. It can also <em>teach.</em></p>
+    <div class="body-copy reveal"><p>An executable knowledge base is a compact generator of labeled experience. Enumerate valid situations, ask the system what follows, and keep the decision alongside its proof path.</p><p>ClefpertSystems explores whether a neural student can learn that behavior, then earn its place by being tested against the symbolic teacher. The long-term opportunity is a migration layer for institutional intelligence: domain knowledge carried forward into adaptable decision software.</p><a class="text-link" href="https://github.com/Decentricity/ClefpertSystems/blob/main/docs/reconstruction-methodology.md">Read the reconstruction methodology <span aria-hidden="true">↗</span></a></div>
+  </div>
+  <div class="opportunity-grid">
+    <article class="reveal"><span class="card-index">A</span><h3>Knowledge as supervision</h3><p>A rule base defines how decisions change across a domain. Run it across valid cases to reveal that behavior as training examples.</p></article>
+    <article class="reveal"><span class="card-index">B</span><h3>A teacher that stays available</h3><p>Keep the oracle after training. Check agreement, inspect disagreements, and rerun regression cases when the source knowledge changes.</p></article>
+    <article class="reveal"><span class="card-index">C</span><h3>A route out of legacy silos</h3><p>Reusable adapters could carry Prolog, Datalog and other rule systems into a common learning pipeline, while retaining their origins.</p></article>
+  </div>
+</section>
+<section class="pipeline-section section" id="pipeline">
+  <div class="wrap">
+    <div class="pipeline-title reveal"><p class="eyebrow light">02 / The migration architecture</p><h2>Rules become experience.<br><em>Experience becomes intelligence.</em></h2><p>Separate the source of expertise from the software that eventually learns to use it.</p></div>
+    <div class="pipeline" aria-label="Select a pipeline stage">
+      <button type="button" data-stage="0" aria-pressed="true"><span>01</span><strong>Symbolic KB</strong><small>Facts + rules</small><i aria-hidden="true">↗</i></button>
+      <button type="button" data-stage="1" aria-pressed="false"><span>02</span><strong>Executable oracle</strong><small>Grounded decisions</small><i aria-hidden="true">↗</i></button>
+      <button type="button" data-stage="2" aria-pressed="false"><span>03</span><strong>Case generation</strong><small>Valid state space</small><i aria-hidden="true">↗</i></button>
+      <button type="button" data-stage="3" aria-pressed="false"><span>04</span><strong>Training dataset</strong><small>Versioned examples</small><i aria-hidden="true">↗</i></button>
+      <button type="button" data-stage="4" aria-pressed="false" class="planned"><span>05</span><strong>Neural student</strong><small>Under construction</small><i aria-hidden="true">↗</i></button>
+      <button type="button" data-stage="5" aria-pressed="false" class="planned"><span>06</span><strong>Equivalence tests</strong><small>Model evaluation next</small><i aria-hidden="true">↗</i></button>
+    </div>
+    <div class="pipeline-detail" aria-live="polite"><span class="mono" id="stage-status">IMPLEMENTED / RECONSTRUCTED</span><h3 id="stage-title">Start with knowledge that can execute.</h3><p id="stage-copy">The cement-industry knowledge base combines thesis-derived facts with explicitly marked reconstruction assumptions and a separately sourced current ambient-reference profile.</p></div>
+    <div class="architecture-note"><span class="mono">ARCHITECTURAL REFERENCE</span><p>Jev’s typed decision interface informs the student design. Current hosted Jev is configured through requests, rather than customer fine-tuning. A verified Clef model and training-format contract remain part of the planned integration. <a href="https://docs.typesafe.ai/models">TypeSafe model documentation ↗</a></p></div>
+  </div>
+</section>
+<section class="explorer-section section wrap" id="explorer">
+  <div class="section-head reveal"><p class="eyebrow">03 / The working proof</p><h2>The oracle is running.<br><em>Inspect what it decides.</em></h2><p>Selected SWI-Prolog executions from 55 consultations across five synthetic operator workdays. Each case retains its input, result and rule trace.</p></div>
+  <div class="explorer-controls"><div class="mode-buttons" role="group" aria-label="Recorded workflow"><button type="button" data-mode="water" aria-pressed="true">Water pathways</button><button type="button" data-mode="ambient" aria-pressed="false">Air references</button><button type="button" data-mode="gap" aria-pressed="false">Missing evidence</button></div><label class="day-picker">Workday <select id="day-select"><option value="01">01 · Baseline</option><option value="02" selected>02 · Runoff review</option><option value="03">03 · Elevated impacts</option><option value="04">04 · Alternative scenario</option><option value="05">05 · Zero exposure</option></select></label></div>
+  <div class="oracle-panel" id="oracle-panel" aria-busy="true">
+    <div class="oracle-heading"><span><i class="status-dot" aria-hidden="true"></i> SYMBOLIC ORACLE / SWI-PROLOG</span><span id="case-id" class="mono">Loading recorded case…</span></div>
+    <div class="oracle-layout">
+      <div class="case-facts"><span class="mono sublabel">CASE INPUT</span><h3 id="case-title">Surface water pathways</h3><p id="case-subtitle">Loading the saved execution.</p><dl id="input-facts"></dl><p class="recorded-note">Recorded output · 11 Oct 2026<br>Synthetic scenarios · reconstructed logic</p></div>
+      <div class="case-result" aria-live="polite"><div class="result-label"><span class="mono sublabel">RETURNED DECISION</span><span id="decision-badge" class="decision-badge">Loading</span></div><div class="result-number" id="result-number">—</div><p id="result-description">The explorer replays saved Prolog executions.</p><div id="pathway-view" class="pathway-view"></div><div id="alternative-view" class="alternative-view"></div></div>
+    </div>
+    <div class="oracle-footer"><span id="trace-count">Loading proof trace</span><a id="record-source" href="https://github.com/Decentricity/ClefpertSystems/tree/main/docs/runs/daily-use/outputs">Inspect original result <span aria-hidden="true">↗</span></a></div>
+  </div>
+  <p id="data-error" class="data-error" role="alert" hidden>Recorded data could not be loaded. <a href="data/oracle-recordings.json">Open the saved executions directly.</a></p>
+  <noscript><p>The interactive explorer requires JavaScript. <a href="data/oracle-recordings.json">Read the complete saved Prolog results.</a></p></noscript>
+  <details class="raw-output"><summary><span>Open the complete input, output and proof trace</span><span aria-hidden="true">+</span></summary><div class="raw-columns"><div><h3 class="mono">INPUT JSON</h3><pre id="raw-input">Loading…</pre></div><div><h3 class="mono">PROLOG OUTPUT + RULE IDS</h3><pre id="raw-result">Loading…</pre></div></div></details>
+  <div class="evidence-note"><span class="note-mark" aria-hidden="true">↳</span><p>These decisions reproduce the versioned reconstructed program. Scores are POC assumptions; missing facts remain unresolved. The US ambient profile screens supplied statistical summaries. It does not determine Indonesian compliance. <a href="https://github.com/Decentricity/ClefpertSystems/blob/main/docs/current-standards.md">Read the source boundaries.</a></p></div>
+</section>
+<section class="training-section section" id="roadmap">
+  <div class="wrap">
+    <div class="section-head reveal"><p class="eyebrow">04 / The neural chapter</p><h2>A student is next.<br><em>The standard is measurable.</em></h2><p>The training pipeline will have to demonstrate that the learned decisions agree with the teacher across held-out cases.</p></div>
+    <div class="training-grid">
+      <article class="training-card reveal"><div class="construction-tag"><span aria-hidden="true">◌</span> UNDER CONSTRUCTION</div><h3>Model training</h3><p>Connect a verified Clef training contract, train a neural student on oracle-labeled examples, and publish the run configuration.</p><div class="construction-visual" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div><div class="training-foot">Training outputs will appear here.</div></article>
+      <article class="training-card reveal"><div class="construction-tag"><span aria-hidden="true">◌</span> UNDER CONSTRUCTION</div><h3>Decision comparison</h3><p>Replay the same case through Prolog and the student. Surface complete decisions, disagreements and the responsible rule paths.</p><div class="comparison-placeholder" aria-label="Model comparison pending"><span>Prolog <i>ready</i></span><span>Neural student <i>pending</i></span></div><div class="training-foot">No trained-model results are published yet.</div></article>
+      <article class="training-card reveal"><div class="construction-tag"><span aria-hidden="true">◌</span> UNDER CONSTRUCTION</div><h3>Equivalence & confidence</h3><p>Measure exact decision agreement, per-class accuracy, rule-path coverage and confidence calibration where supported.</p><div class="benchmark-placeholder"><span>Agreement</span><strong>Awaiting model</strong></div><div class="training-foot">Evaluation tooling exists; model evaluation follows training.</div></article>
+    </div>
+    <div class="roadmap-band"><span class="mono">THE RESEARCH QUESTION</span><p>How much of an expert system’s decision behavior can a neural model inherit—and where does that inheritance break?</p></div>
+  </div>
+</section>
+<section class="platform-section section wrap" id="platform">
+  <div class="platform-copy reveal"><p class="eyebrow">05 / Beyond one knowledge base</p><h2>A migration layer<br>for <em>institutional intelligence.</em></h2><p class="large-copy">The first teacher assesses cement-industry impacts. The larger idea is a repeatable way to carry expertise across generations of software.</p></div>
+  <div class="platform-points reveal"><div><span class="mono">01 / DOMAIN LEVERAGE</span><h3>Start with judgment already paid for.</h3><p>Expert-built rules represent accumulated effort. They could provide differentiated supervision for domain-specific neural systems.</p></div><div><span class="mono">02 / DATA ECONOMICS</span><h3>Generate scenarios, retain the source.</h3><p>A finite knowledge base can label many valid combinations. Coverage-aware generation targets decision boundaries and rare paths.</p></div><div><span class="mono">03 / CONTROL OF CHANGE</span><h3>Make migration inspectable.</h3><p>Version the oracle, regenerate the corpus, and compare the student. The source of each learning signal remains available for review.</p></div></div>
+  <div class="expansion-labels"><span>Possible future domains</span><span>Industrial operations</span><span>Eligibility & underwriting</span><span>Diagnostic support</span><span>Policy workflows</span></div>
+</section>
+<section class="author-section section" id="author"><div class="wrap author-layout">
+  <div class="author-intro reveal"><p class="eyebrow">06 / A research thread, eighteen years long</p><h2>Pandu<br><em>Sastrowardoyo.</em></h2><p class="large-copy">Engineer, researcher and entrepreneur. Building at the intersection of AI, enterprise systems and decentralized technology.</p><a class="text-link" href="https://decentricity.github.io/">Explore Pandu’s work <span aria-hidden="true">↗</span></a></div>
+  <div class="timeline reveal"><article><span class="mono">2007–2008</span><div><h3>Expert systems, before the current AI wave.</h3><p>AI research and a Prolog environmental-impact assessment system. The ITB thesis documented cement-industry knowledge and Warner–Preston methodology assessment.</p><a href="https://digilib.itb.ac.id/gdl/view_data/penggunaan-penilaian-metoda-dampak-warner-preston-dalam-program-komputer-sistem-pakar-analisa-dampak-industri-semen">Read the original thesis ↗</a></div></article><article><span class="mono">2011–2016</span><div><h3>Creative and accessible AI.</h3><p>Robotpuisi, an Indonesian poetry bot, followed by AI-assisted library work for visually impaired users—projects described in Pandu’s personal archive.</p><a href="https://decentricity.github.io/#whatIveMadeHeading">Explore the AI history ↗</a></div></article><article><span class="mono">2026 →</span><div><h3>From symbolic judgment to neural learning.</h3><p>Reconstruct the original knowledge, execute it as a teacher, and investigate a reusable symbolic-to-neural distillation pipeline.</p><a href="https://decentricity.github.io/jev/">Read the earlier Jev experiment ↗</a></div></article></div>
+</div></section>
+<section class="closing wrap section reveal"><p class="eyebrow">Open research. Platform ambition.</p><h2>Let the past<br><em>teach the next system.</em></h2><p>Explore the implementation, inspect the oracle, and follow the neural chapter as it develops.</p><div class="hero-actions"><a class="button button-dark" href="https://github.com/Decentricity/ClefpertSystems" target="_blank" rel="noopener noreferrer">Explore the repository <span aria-hidden="true">↗</span></a><a class="text-link" href="https://digilib.itb.ac.id/gdl/view_data/penggunaan-penilaian-metoda-dampak-warner-preston-dalam-program-komputer-sistem-pakar-analisa-dampak-industri-semen">Read the original thesis <span aria-hidden="true">↗</span></a></div></section>
+</main>
+<footer class="wrap footer"><a class="brand" href="#top"><img src="assets/mark.svg" width="25" height="25" alt="">Clefpert<span>Systems</span></a><p>Clef + Expert Systems.<br>A Decentricity research project by Pandu Sastrowardoyo.</p><div><a href="https://github.com/Decentricity/ClefpertSystems">Source code ↗</a><a href="https://decentricity.github.io/">Decentricity ↗</a><a href="https://docs.typesafe.ai/models">Jev reference ↗</a></div><span class="footer-status"><i class="status-dot" aria-hidden="true"></i> Symbolic teacher available · Neural student in progress</span></footer>
+</body>
+</html>

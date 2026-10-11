@@ -1,0 +1,12 @@
+{
+  "checked_on": "2026-10-11",
+  "biography_sources": [
+    "https://decentricity.github.io/",
+    "https://decentricity.github.io/ai.html",
+    "https://decentricity.github.io/jev/"
+  ],
+  "model_source": "https://docs.typesafe.ai/models",
+  "model_note": "Current documentation states Jev is not customer fine-tuned or LoRA-adapted. Clef integration is an intended target pending verified public model/format documentation.",
+  "thesis": "https://digilib.itb.ac.id/gdl/view_data/penggunaan-penilaian-metoda-dampak-warner-preston-dalam-program-komputer-sistem-pakar-analisa-dampak-industri-semen",
+  "current_reference": "https://www.epa.gov/criteria-air-pollutants/naaqs-table"
+}
