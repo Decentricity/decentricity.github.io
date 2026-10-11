@@ -1,0 +1,30 @@
+{
+  "checked_at": "2026-10-11T07:44:21.217456+00:00",
+  "checker": "axe-core 4.10.3",
+  "tags": [
+    "wcag2a",
+    "wcag2aa",
+    "wcag21aa"
+  ],
+  "checks": [
+    {
+      "width": 1440,
+      "violations": [],
+      "automated_passes": 28,
+      "manual_review_rules": [
+        "aria-prohibited-attr",
+        "color-contrast"
+      ]
+    },
+    {
+      "width": 375,
+      "violations": [],
+      "automated_passes": 28,
+      "manual_review_rules": [
+        "aria-prohibited-attr",
+        "color-contrast"
+      ]
+    }
+  ],
+  "scope": "Automated scan plus keyboard/reduced-motion checks; not an accessibility certification"
+}
