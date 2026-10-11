@@ -50,12 +50,12 @@
   }
 
   const stages = [
-    ['IMPLEMENTED / RECONSTRUCTED', 'Start with knowledge that can execute.', 'The cement-industry knowledge base combines thesis-derived facts with explicitly marked reconstruction assumptions and a separately sourced current ambient-reference profile.'],
-    ['IMPLEMENTED / SWI-PROLOG', 'Ask the teacher what follows.', 'The adapter runs evaluate/3 inside SWI-Prolog. Inputs produce structured decisions and rule IDs. A missing relation can remain explicitly unresolved.'],
-    ['IMPLEMENTED / VALID INPUT STATES', 'Turn a rule base into a world of cases.', 'Enumerate or sample valid state combinations. Exercise thresholds, alternate paths, supported cases and missing-data boundaries while respecting the input contract.'],
-    ['IMPLEMENTED / 3,136 LABELED CASES', 'Preserve the behavior as training data.', 'Keep generic input/target records, grouped train/validation/test splits, and a separate provenance audit. Clean exports carry the query and the oracle-produced target.'],
-    ['UNDER CONSTRUCTION / TRAINING', 'Teach a neural student the decision behavior.', 'Verify the Clef model and dataset contract, run training and retain the exact configuration. No trained-model outputs or accuracy results are published yet.'],
-    ['TOOLS IMPLEMENTED / MODEL RUN PENDING', 'Measure what the student has inherited.', 'Compare complete predictions with fresh oracle outputs. Report exact agreement, per-class behavior, coverage and disagreements; evaluate confidence when the student supplies it.']
+    ['IMPLEMENTED / RECONSTRUCTED', 'Reconstruct the knowledge base', 'The cement-industry knowledge base combines thesis-derived facts with explicitly marked reconstruction assumptions and a separately sourced current ambient-reference profile.'],
+    ['IMPLEMENTED / SWI-PROLOG', 'Run queries in SWI-Prolog', 'The adapter runs evaluate/3 inside SWI-Prolog. Inputs produce structured decisions and rule IDs. A missing relation can remain explicitly unresolved.'],
+    ['IMPLEMENTED / VALID INPUT STATES', 'Generate valid input combinations', 'Enumerate or sample valid state combinations. Exercise thresholds, alternate paths, supported cases and missing-data boundaries while respecting the input contract.'],
+    ['IMPLEMENTED / 3,136 LABELED CASES', 'Export labeled examples', 'Keep generic input/target records, grouped train/validation/test splits, and a separate provenance audit. Clean exports carry the query and the oracle-produced target.'],
+    ['UNDER CONSTRUCTION / TRAINING', 'Train the decision model', 'Confirm Clef’s model and dataset specification, run training and publish the configuration. No trained-model outputs or accuracy results are published yet.'],
+    ['TOOLS IMPLEMENTED / MODEL RUN PENDING', 'Compare model outputs with Prolog', 'Compare complete predictions with fresh Prolog outputs. Report exact agreement, per-class accuracy, coverage and disagreements; evaluate confidence when the model supplies it.']
   ];
   $$('[data-stage]').forEach(button => button.addEventListener('click', () => {
     $$('[data-stage]').forEach(other => other.setAttribute('aria-pressed', String(other === button)));
@@ -100,7 +100,7 @@
     $('#pathway-view').replaceChildren(); $('#alternative-view').replaceChildren();
     $('#alternative-view').hidden = true;
     if (mode === 'water') {
-      $('#case-title').textContent = 'Water, ecosystems, consequences.';
+      $('#case-title').textContent = 'Surface-water assessment';
       $('#case-subtitle').textContent = 'A supplied impact magnitude follows documented direct and indirect environmental relationships.';
       facts([['Pollutant', input.pollutant], ['Process', input.processes.join(', ')], ['Magnitude', input.magnitude], ['Receptors', input.receptors.join(', ')]]);
       resultNumber(format(target.maximum_score), '/ 100 · inferred score');
@@ -136,7 +136,7 @@
         $('#pathway-view').append(node('div', 'path-chip', `${target.averaging_time} averaging period`), node('div', 'path-chip', target.protection.replaceAll('_', ' + ')));
       }
     } else {
-      $('#case-title').textContent = 'When evidence ends, abstain.';
+      $('#case-title').textContent = 'Unsupported impact relationship';
       $('#case-subtitle').textContent = 'This reconstructed knowledge base has no supported CO-to-aquatic-plants relationship for the selected case.';
       facts([['Pollutant', input.pollutant], ['Process', input.processes.join(', ')], ['Magnitude', input.magnitude], ['Receptor', input.receptors.join(', ')]]);
       resultNumber('Unresolved', '', true);

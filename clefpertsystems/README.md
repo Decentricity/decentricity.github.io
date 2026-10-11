@@ -10,7 +10,7 @@ A standalone static research showcase for [Decentricity/ClefpertSystems](https:/
 - An interactive recorded-oracle explorer: water pathways, current ambient references and unresolved evidence across five synthetic workdays.
 - Full original input/result/rule-trace inspection and pinned links to source records.
 - Explicit under-construction cards for model training, comparison and calibration/equivalence results.
-- The institutional-knowledge migration thesis and a biography grounded in Pandu Sastrowardoyo's existing portfolio.
+- A first-person account of Pandu Sastrowardoyo’s 2007–2008 expert-system research and the proposed transmutation of symbolic decisions into neural-model training data.
 - Links to the source repo, original ITB thesis, TypeSafe's model documentation and Pandu's earlier Jev experiment.
 - Locally hosted OFL fonts, reduced-motion support, keyboard-accessible controls and responsive layouts.
 
@@ -20,7 +20,7 @@ A standalone static research showcase for [Decentricity/ClefpertSystems](https:/
 
 The source includes an approximate reconstruction, historical importance weights, explicit POC scoring assumptions, and a separately sourced current US ambient-reference profile. The page preserves those distinctions and presents no trained-model results. Its illustrated neural graph is a conceptual architecture, not evidence of an executed training run.
 
-The broader migration story is a research/platform thesis, not a demonstrated deployment in the suggested future domains. It asks whether executable legacy knowledge can provide training supervision and a retained regression oracle for neural decision models.
+The page explains the proposed use of other expert systems as training-data sources. Those applications are future possibilities. The current project tests whether executable rules can supply labeled examples and a retained reference for evaluating neural decision models.
 
 Official TypeSafe documentation currently describes Jev as a request-configured typed-judgment model, not a customer-fine-tuned model. Jev is the interface/style reference here. A verified Clef model/training contract remains a planned integration; the page does not claim an available Clef endpoint or supported training schema. `data/source-notes.json` records the checked sources and this distinction.
 
