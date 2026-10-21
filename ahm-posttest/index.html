@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10251f">
+  <meta name="description" content="AI for Supply Chain and Manufacturing — AHM post-training assessment. Fifteen multiple-choice questions with instant results.">
+  <title>AHM Post-Test | AI for Supply Chain and Manufacturing</title>
+  <style>
+    :root { --ink:#10251f; --muted:#617169; --paper:#f5f7f3; --line:#dae3dc; --green:#176649; --green-deep:#103e2c; --accent:#c6ed94; --white:#fff; --amber:#ad5a20; --shadow:0 18px 70px rgba(12,45,29,.09); }
+    * { box-sizing:border-box; }
+    body { margin:0; font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Arial,sans-serif; color:var(--ink); background:var(--paper); min-height:100vh; }
+    button,input { font:inherit; }
+    button { cursor:pointer; }
+    button:focus-visible,input:focus-visible { outline:3px solid #569775; outline-offset:3px; }
+    [hidden] { display:none !important; }
+    .shell { width:min(100% - 32px,830px); margin:0 auto; }
+    .masthead { padding:24px 0; display:flex; gap:16px; align-items:center; justify-content:space-between; }
+    .brand { display:flex; align-items:center; gap:11px; font-size:13px; letter-spacing:.11em; font-weight:800; text-transform:uppercase; }
+    .brand-icon { width:37px; height:37px; display:grid; place-items:center; background:var(--ink); color:var(--accent); border-radius:11px; font-size:21px; letter-spacing:0; }
+    .masthead .tag { font-size:12px; font-weight:650; border:1px solid var(--line); border-radius:99px; padding:6px 12px; color:var(--muted); text-align:center; }
+    main { padding:18px 0 65px; }
+    .panel { background:white; border:1px solid var(--line); border-radius:22px; box-shadow:var(--shadow); overflow:hidden; }
+    .intro,.quiz,.result { padding:clamp(24px,5vw,52px); }
+    .eyebrow { margin:0 0 10px; font-size:12px; font-weight:850; text-transform:uppercase; letter-spacing:.15em; color:var(--green); }
+    h1,h2,h3,p { margin-top:0; }
+    h1 { font-size:clamp(30px,5.6vw,48px); line-height:1.13; letter-spacing:-.04em; margin-bottom:20px; }
+    h2 { font-size:clamp(24px,4vw,34px); line-height:1.24; letter-spacing:-.025em; }
+    .lede { font-size:17px; color:#49584f; max-width:640px; }
+    .pills { display:flex; flex-wrap:wrap; gap:8px; margin:22px 0 27px; }
+    .pill { font-size:12px; color:var(--green-deep); background:#eaf4e6; padding:7px 12px; border-radius:99px; font-weight:700; }
+    .field { margin:23px 0 18px; }
+    .field label { display:block; font-weight:750; margin-bottom:7px; }
+    .field input { width:100%; border:1.5px solid #bac9bc; border-radius:11px; padding:13px 15px; color:var(--ink); background:#fff; }
+    .field .hint { font-size:12px; color:var(--muted); margin:6px 0 0; }
+    .primary { background:var(--green); color:white; border:2px solid var(--green); border-radius:12px; min-height:49px; font-weight:780; padding:11px 22px; transition:background .15s, transform .15s; }
+    .primary:hover { background:#0d5037; }
+    .primary:active,.secondary:active { transform:translateY(1px); }
+    .primary:disabled { opacity:.44; cursor:not-allowed; transform:none; }
+    .secondary { color:var(--green-deep); background:white; border:1.5px solid #c5d5c8; border-radius:12px; min-height:49px; font-weight:720; padding:11px 19px; }
+    .secondary:hover { background:#f0f7ef; }
+    .fineprint { color:var(--muted); font-size:13px; margin:18px 0 0; }
+    .progress-header { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:15px; color:var(--muted); font-size:13px; font-weight:750; }
+    .progress-track { background:#e8eee9; height:9px; border-radius:99px; overflow:hidden; margin-bottom:40px; }
+    .progress-fill { height:100%; width:0; background:var(--green); border-radius:99px; transition:width .25s; }
+    .question { font-size:clamp(23px,4.25vw,32px); font-weight:800; letter-spacing:-.025em; line-height:1.35; margin-bottom:27px; }
+    .choices { display:grid; gap:11px; }
+    .choice { width:100%; display:flex; align-items:flex-start; gap:13px; text-align:left; border:1.5px solid #d6e0d7; border-radius:13px; background:#fff; padding:16px 15px; color:var(--ink); min-height:70px; }
+    .choice:hover { background:#f6faf5; border-color:#98b79f; }
+    .choice.selected { border-color:var(--green); background:#e8f3e6; box-shadow:inset 0 0 0 1px var(--green); }
+    .choice-letter { flex:0 0 29px; width:29px; height:29px; border-radius:8px; background:#eef3ee; display:grid; place-items:center; font-weight:850; font-size:13px; }
+    .choice.selected .choice-letter { background:var(--green); color:white; }
+    .choice-label { flex:1; font-size:15px; padding-top:3px; }
+    .actions { display:flex; gap:12px; justify-content:space-between; margin-top:32px; }
+    .actions .primary { min-width:150px; }
+    .question-help { font-size:12px; color:var(--muted); margin-top:12px; }
+    .result-header { text-align:center; }
+    .result-heading { font-size:12px; font-weight:850; text-transform:uppercase; letter-spacing:.16em; color:var(--green); }
+    .score-box { border-radius:18px; background:var(--green-deep); color:#fff; padding:28px 20px 32px; text-align:center; margin:23px 0; }
+    .score-label { font-weight:800; text-transform:uppercase; letter-spacing:.16em; font-size:13px; color:#cce5cf; }
+    .score-numeral { font-size:clamp(76px,16vw,138px); font-weight:900; line-height:1.08; letter-spacing:-.095em; font-variant-numeric:tabular-nums; margin-top:6px; }
+    .score-numeral span { font-size:.36em; letter-spacing:-.04em; color:#cfe8d4; margin-left:12px; }
+    .score-percent { font-size:clamp(25px,5vw,36px); font-weight:850; color:var(--accent); margin-top:5px; }
+    .student-card { background:#f4f8f2; border:1px solid #dce9d8; border-radius:15px; display:grid; grid-template-columns:1fr 1fr; gap:16px; padding:19px; }
+    .detail-caption { font-size:11px; color:var(--muted); font-weight:850; text-transform:uppercase; letter-spacing:.09em; }
+    .detail-value { font-size:16px; font-weight:800; overflow-wrap:anywhere; margin-top:3px; }
+    .result-status { display:inline-block; font-size:13px; border-radius:99px; background:#e5f4e6; color:var(--green-deep); padding:7px 13px; font-weight:800; margin:16px 0 0; }
+    .result-status.below { background:#fff0df; color:#8b4c18; }
+    .submission-note { border-left:4px solid var(--green); background:#f4f9f3; border-radius:0 11px 11px 0; padding:14px 18px; margin:21px 0; font-size:14px; }
+    .result-actions { display:flex; flex-wrap:wrap; justify-content:center; gap:11px; margin-top:20px; }
+    .footer { padding:0 0 28px; color:#708078; text-align:center; font-size:12px; }
+    .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+    @media (max-width:540px) {
+      .shell { width:min(100% - 22px,830px); }
+      .masthead { padding:16px 0; }
+      .brand { font-size:11px; letter-spacing:.05em; }
+      .masthead .tag { font-size:10px; }
+      .intro,.quiz,.result { padding:22px 19px 26px; }
+      .actions .primary { min-width:0; }
+      .student-card { grid-template-columns:1fr; gap:11px; }
+      .score-box { padding:24px 10px; }
+      .score-numeral span { margin-left:6px; }
+    }
+    @media print {
+      body { background:white; }
+      .masthead,.footer,.result-actions,.question-help { display:none !important; }
+      main { padding:0; }
+      .shell { width:100%; }
+      .panel { border:0; box-shadow:none; }
+      .result { padding:14px; }
+      .score-box { print-color-adjust:exact; -webkit-print-color-adjust:exact; }
+      @page { size:A4; margin:12mm; }
+    }
+  </style>
+</head>
+<body>
+  <header class="shell masthead">
+    <div class="brand"><div class="brand-icon" aria-hidden="true">✓</div><span>AHM · Post-Training Assessment</span></div>
+    <span class="tag">AI for Supply Chain &amp; Manufacturing</span>
+  </header>
+
+  <main class="shell">
+    <section class="panel">
+      <div id="intro" class="intro">
+        <p class="eyebrow">PT Astra Honda Motor · Post-Test</p>
+        <h1>Put your AI &amp; supply chain knowledge to the test.</h1>
+        <p class="lede">15 multiple-choice questions covering data cleaning, exploratory analysis, forecasting, inventory decisions, and n8n automation.</p>
+        <div class="pills"><span class="pill">15 questions</span><span class="pill">~15–20 minutes</span><span class="pill">1 point each</span><span class="pill">Instant score</span></div>
+        <form id="start-form" autocomplete="on">
+          <div class="field">
+            <label for="student-name">Full name</label>
+            <input type="text" id="student-name" name="student-name" maxlength="90" minlength="2" required autocomplete="name" placeholder="Enter your name as registered" aria-describedby="name-help">
+            <p class="hint" id="name-help">Your name will appear on the result screen for NobleProg verification.</p>
+          </div>
+          <button class="primary" type="submit">Start post-test →</button>
+        </form>
+        <p class="fineprint">Choose one answer per question. You can go back and change your answers before submitting. Results are calculated on this device; no answers or personal details are uploaded.</p>
+      </div>
+
+      <section id="quiz" class="quiz" hidden aria-live="off">
+        <div class="progress-header"><span id="progress-label">Question 1 of 15</span><span id="answered-label">0 answered</span></div>
+        <div class="progress-track" role="progressbar" aria-label="Quiz progress" aria-valuemin="0" aria-valuemax="15" aria-valuenow="0" id="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
+        <h2 class="question" id="question-title" tabindex="-1"></h2>
+        <div id="choices" class="choices" role="radiogroup" aria-labelledby="question-title"></div>
+        <div class="actions">
+          <button id="back-btn" class="secondary" type="button">← Back</button>
+          <button id="next-btn" class="primary" type="button" disabled>Next →</button>
+        </div>
+        <p class="question-help">Select one answer to continue. Answers are not revealed during the test.</p>
+      </section>
+
+      <section id="result" class="result" hidden>
+        <div class="result-header">
+          <p class="result-heading">Assessment completed</p>
+          <h2>Post-Test Results</h2>
+          <p class="lede" style="margin:0 auto;">AI for Supply Chain and Manufacturing · PT Astra Honda Motor</p>
+        </div>
+
+        <div id="screenshot-card" aria-label="Screenshot-ready assessment results">
+          <div class="score-box">
+            <div class="score-label">Your final score</div>
+            <div class="score-numeral" id="score-display">0<span>/ 15</span></div>
+            <div class="score-percent" id="percent-display">0%</div>
+          </div>
+          <div class="student-card">
+            <div><div class="detail-caption">Participant name</div><div id="result-name" class="detail-value"></div></div>
+            <div><div class="detail-caption">Completed on</div><div id="result-date" class="detail-value"></div></div>
+            <div><div class="detail-caption">Correct answers</div><div id="correct-count" class="detail-value"></div></div>
+            <div><div class="detail-caption">Reference number</div><div id="attempt-code" class="detail-value"></div></div>
+          </div>
+          <div style="text-align:center;"><span id="pass-status" class="result-status"></span></div>
+          <div class="submission-note"><strong>Submit this result to NobleProg.</strong> Take a screenshot showing your name, score, date and reference number, and send it to your training coordinator for final confirmation.</div>
+          <p class="fineprint" style="text-align:center;">This page grades locally. Your screenshot is a submission for review, not an automatically issued certificate or independently verified record.</p>
+        </div>
+        <div class="result-actions">
+          <button class="primary" id="print-result" type="button">Print / save result</button>
+          <button class="secondary" id="restart-btn" type="button">Take test again</button>
+        </div>
+      </section>
+    </section>
+  </main>
+  <footer class="shell footer">Course assessment · PT Astra Honda Motor · Self-contained browser-based quiz · No data collection</footer>
+<script>
+"use strict";
+(function () {
+  // The correct answer key is held client-side. This test is intended for classroom
+  // assessment and screenshot submission, not a secure proctored certification.
+  const QUESTIONS = [
+    {q:"A sales dataset contains two identical records with the same transaction ID. What should you do first?", a:["Keep both records because more data improves the model","Investigate whether they represent duplicate transactions","Average the sales quantities","Delete all records from that dealership"],k:1},
+    {q:"What is the primary purpose of Exploratory Data Analysis (EDA)?",a:["Automatically generate a sales forecast","Replace the need for data cleaning","Understand patterns, relationships, and unusual observations","Determine which AI chatbot to purchase"],k:2},
+    {q:"A dealership suddenly reports twice its usual motorcycle sales. What is the best next step?",a:["Remove the observation immediately","Assume the dealership has doubled its long-term demand","Increase every dealership's forecast","Investigate promotions, special orders, and potential data errors"],k:3},
+    {q:"You have six years of historical sales data. What is the most appropriate way to evaluate a model intended to predict future sales?",a:["Test it on a later period that was not used for training","Test it only on the data used to train the model","Choose the model with the most complicated algorithm","Ask an LLM whether the forecast looks reasonable"],k:0},
+    {q:"Scoopy sales consistently increase during certain months each year. This recurring pattern is called:",a:["Data duplication","Seasonality","Model overfitting","Inventory turnover"],k:1},
+    {q:"Which external factor could reasonably improve a motorcycle sales forecasting model?",a:["The order of columns in the spreadsheet","The name of the analyst creating the forecast","Promotions, holidays, and local economic conditions","The font used in the sales report"],k:2},
+    {q:"A simple forecasting model performs better on unseen data than a more complex AI model. What should you do?",a:["Always use the complex model because it uses AI","Combine both models without testing","Ignore the evaluation results","Prefer the simpler model unless there is evidence supporting another choice"],k:3},
+    {q:"A dealership has 12 Scoopy motorcycles physically on hand and another 20 currently in transit. How many are physically available for immediate sale, assuming none are reserved or blocked?",a:["12","20","32","8"],k:0},
+    {q:"In inventory management, what does lead time generally mean?",a:["The time required to sell all existing inventory","The time between placing a replenishment order and receiving it","The time used to train a forecasting model","The duration of a marketing campaign"],k:1},
+    {q:"Expected demand during replenishment lead time is 40 motorcycles, and the dealership maintains 15 motorcycles as safety stock. What is the reorder point?",a:["25","40","55","60"],k:2},
+    {q:"Which inventory policy adjusts its buffer according to changes in demand variability and replenishment lead time?",a:["Fixed days of cover","Fixed safety stock","No safety stock","Dynamic safety stock"],k:3},
+    {q:"What is the difference between a demand forecast and a supply plan?",a:["Demand forecasts estimate expected sales; supply plans determine replenishment requirements using forecasts, inventory, and business rules","Demand forecasts calculate delivery costs; supply plans calculate marketing expenses","Demand forecasts only use current inventory; supply plans only use historical sales","There is no meaningful difference"],k:0},
+    {q:"When Gemini generates Python code that produces a sales forecast, what is the user's most important responsibility?",a:["Assume the code is correct because it was AI-generated","Check the calculations, assumptions, and results","Avoid examining the dataset","Use the generated result without comparing it to historical data"],k:1},
+    {q:"An n8n form receives the date, dealership name, motorcycle model, and units sold. What is the most useful next step for an automated sales-monitoring workflow?",a:["Immediately change the dealership's inventory order","Delete the previous sales records","Save the entry and compare it with the corresponding forecast","Generate a new six-year dataset"],k:2},
+    {q:"On April 1, a dealership reports 20 Scoopy units sold. Its forecasting model predicts 19 units for that day, and the reporting threshold is a deviation greater than 50%. What should the automated workflow do?",a:["Flag the observation as a major anomaly","Automatically increase inventory by 50 motorcycles","Delete the observation because it differs from the forecast","Record the sale without triggering a deviation alert"],k:3}
+  ];
+  const TOTAL=QUESTIONS.length;
+  const letters=["A","B","C","D"];
+  const $=id=>document.getElementById(id);
+  const answers=Array(TOTAL).fill(null);
+  let current=0,student="",finished=false;
+
+  function show(screen) {
+    ["intro","quiz","result"].forEach(s=>$(s).hidden=s!==screen);
+    window.scrollTo({top:0,behavior:"instant"});
+  }
+  function render() {
+    const item=QUESTIONS[current];
+    $("progress-label").textContent="Question "+(current+1)+" of "+TOTAL;
+    $("answered-label").textContent=answers.filter(n=>n!==null).length+" answered";
+    $("progress-fill").style.width=((current+1)/TOTAL*100)+"%";
+    $("progress-bar").setAttribute("aria-valuenow",String(current+1));
+    $("question-title").textContent=item.q;
+    const list=$("choices");
+    list.replaceChildren();
+    item.a.forEach((label,i)=>{
+      const btn=document.createElement("button");
+      btn.type="button";
+      btn.className="choice"+(answers[current]===i?" selected":"");
+      btn.setAttribute("role","radio");
+      btn.setAttribute("aria-checked",answers[current]===i?"true":"false");
+      const mark=document.createElement("span");
+      mark.className="choice-letter";
+      mark.textContent=letters[i];
+      const text=document.createElement("span");
+      text.className="choice-label";
+      text.textContent=label;
+      btn.append(mark,text);
+      btn.addEventListener("click",()=>{
+        answers[current]=i;
+        [...list.children].forEach((x,j)=>{x.classList.toggle("selected",j===i);x.setAttribute("aria-checked",j===i?"true":"false")});
+        $("next-btn").disabled=false;
+      });
+      list.append(btn);
+    });
+    $("back-btn").disabled=current===0;
+    $("next-btn").disabled=answers[current]===null;
+    $("next-btn").textContent=current===TOTAL-1?"Submit answers ✓":"Next →";
+    $("question-title").focus({preventScroll:true});
+  }
+  function finish() {
+    if(finished || answers.some(n=>n===null)) return;
+    finished=true;
+    const score=answers.reduce((t,v,i)=>t+(v===QUESTIONS[i].k?1:0),0);
+    const pct=Math.round(score/TOTAL*100);
+    const now=new Date();
+    const completed=now.toLocaleString("en-GB",{year:"numeric",month:"short",day:"numeric",hour:"2-digit",minute:"2-digit",timeZone:"Asia/Jakarta",timeZoneName:"short"});
+    const bytes=new Uint8Array(4);
+    if(window.crypto && crypto.getRandomValues) crypto.getRandomValues(bytes);
+    else for(let i=0;i<4;i++) bytes[i]=Math.floor(Math.random()*256);
+    const ref="AHM-"+Array.from(bytes,b=>b.toString(16).padStart(2,"0")).join("").toUpperCase();
+    $("score-display").innerHTML=String(score)+"<span>/ "+TOTAL+"</span>";
+    $("percent-display").textContent=pct+"%";
+    $("result-name").textContent=student;
+    $("result-date").textContent=completed+" (WIB)";
+    $("correct-count").textContent=score+" of "+TOTAL;
+    $("attempt-code").textContent=ref;
+    const passing=score>=11;
+    $("pass-status").textContent=passing?"Meets suggested passing score (11/15)":"Below suggested passing score (11/15)";
+    $("pass-status").classList.toggle("below",!passing);
+    show("result");
+  }
+  $("start-form").addEventListener("submit",event=>{
+    event.preventDefault();
+    student=$("student-name").value.trim().replace(/\s+/g," ");
+    if(student.length<2){$("student-name").setCustomValidity("Please enter your full name.");$("student-name").reportValidity();return}
+    $("student-name").setCustomValidity("");
+    current=0;
+    show("quiz");render();
+  });
+  $("student-name").addEventListener("input",()=>$("student-name").setCustomValidity(""));
+  $("back-btn").addEventListener("click",()=>{if(current>0){current--;render()}});
+  $("next-btn").addEventListener("click",()=>{
+    if(answers[current]===null)return;
+    if(current===TOTAL-1){finish();return}
+    current++;render();
+  });
+  $("print-result").addEventListener("click",()=>window.print());
+  $("restart-btn").addEventListener("click",()=>{
+    answers.fill(null);current=0;student="";finished=false;
+    $("student-name").value="";show("intro");
+  });
+  document.addEventListener("keydown",event=>{
+    if($("quiz").hidden || event.altKey || event.ctrlKey || event.metaKey)return;
+    if(["1","2","3","4"].includes(event.key)) {
+      const index=Number(event.key)-1;
+      $("choices").children[index]?.click();
+    } else if(event.key==="ArrowRight" && answers[current]!==null && document.activeElement?.tagName!=="BUTTON") {
+      $("next-btn").click();
+    }
+  });
+})();
+</script>
+</body>
+</html>
