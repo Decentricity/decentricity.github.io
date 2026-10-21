@@ -190,7 +190,7 @@
 
   function show(screen) {
     ["intro","quiz","result"].forEach(s=>$(s).hidden=s!==screen);
-    window.scrollTo({top:0,behavior:"instant"});
+    window.scrollTo({top:0,behavior:"auto"});
   }
   function render() {
     const item=QUESTIONS[current];
