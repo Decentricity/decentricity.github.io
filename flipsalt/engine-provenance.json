@@ -1,0 +1,54 @@
+{
+  "source": "https://claude.ai/artifact/BGY1SztrAYcJQHSsnHHGmp",
+  "original_sha256": "e2c5eab93a7862e8da036975ccffbb2a437bffe053b92f1162bdbcf46d5c099b",
+  "engine_sha256": "0036ddccf265f4ab01c0619092fc7422ac85d3abd4b43ba4745b3330600dc4a8",
+  "patches": [
+    {
+      "anchor": "async function cL(){",
+      "replacement": "async function cL(){window.FLIPSALT.configure({sun:Z0,sky:T0,materials:ug,qualities:jr});"
+    },
+    {
+      "anchor": "t.physics=v_(t),t.props=fv(t)",
+      "replacement": "window.FLIPSALT.prepare(t),t.physics=v_(t),t.props=fv(t)"
+    },
+    {
+      "anchor": "async function I5(n){",
+      "replacement": "async function I5(n){if(window.FLIPSALT)return window.FLIPSALT.weapon(n);"
+    },
+    {
+      "anchor": "async function W5(n){",
+      "replacement": "async function W5(n){if(window.FLIPSALT)return window.FLIPSALT.friends(n);"
+    },
+    {
+      "anchor": "function yE(n){",
+      "replacement": "function yE(n){if(window.FLIPSALT)return{items:[],reset(){},update(){}};"
+    },
+    {
+      "anchor": "function sT(n){",
+      "replacement": "function sT(n){if(window.FLIPSALT)return window.FLIPSALT.hud(n);"
+    },
+    {
+      "anchor": "function pT(n){",
+      "replacement": "function pT(n){if(window.FLIPSALT)return window.FLIPSALT.game(n);"
+    },
+    {
+      "anchor": "await fa(\"Waiting for first light\",.92);",
+      "replacement": "await window.FLIPSALT.decorate(t);await fa(\"Waiting for first light\",.92);"
+    }
+  ],
+  "unchanged_systems": [
+    "Three.js runtime",
+    "ov renderer and postprocessing shaders",
+    "lv procedural material generation",
+    "Pg harbor geometry",
+    "Iv backdrop",
+    "Vg water and ground",
+    "v_ collision and navigation",
+    "xE player movement and camera",
+    "gE keyboard/mouse/touch/gamepad input",
+    "cE procedural audio",
+    "cL frame loop (apart from listed hooks)"
+  ],
+  "verification": "Reversing exactly these eight hooks reproduces the original source byte-for-byte.",
+  "credit": "Original Saltline game by Felix; original engine retained. Storybook adaptation by Decentricity."
+}
