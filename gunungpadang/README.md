@@ -6,8 +6,9 @@ Canonical research source, processing code, archived paper, and interaction test
 https://github.com/Decentricity/gunung-padang-gedi
 
 Serve with any static HTTP server. All runtime dependencies are vendored; no
-API key or account is needed. The landscape is georeferenced. The underground
-model is explicitly schematic and is not registered to the landscape.
+API key or account is needed. A single georeferenced scene combines the DSM, geoid-converted GEDI
+heights, and the paper-derived units placed below the surface. The data
+provenance file records the model registration and conversion method.
 
 Only this directory is deployed to the shared GitHub Pages repository. Never
 replace the site root, force-push its branch, or overwrite another project.

@@ -27,6 +27,40 @@
   "gedi_source": "GFZ public dog-ext.gedidb.gedi-l2-l4-v002.0",
   "gedi_shots": 117,
   "gedi_csv_sha256": "f891a483e306db0a0e6035b1cc79f22c25631d7ca308735fd3872651169b5d81",
-  "vertical_alignment": "GEDI footprint rings are draped on DSM for location only. GEDI ellipsoidal heights are NOT transformed to EGM2008 or used as terrain vertices.",
-  "model": "Conceptual geometry based on Figure 14 and Table 1; no georeferenced subsurface volume is available in this repository."
+  "vertical_alignment": "GEDI lowest-mode ellipsoidal height minus bilinear NGA EGM2008 geoid undulation. Terrain and GEDI ground heights use EGM2008 metres.",
+  "model": "Four paper-derived units in the shared landscape, anchored at the heritage registry point below the DSM. Envelope shapes, horizontal extent, and registration are visualization choices, not surveyed interfaces.",
+  "geoid_source": {
+    "url": "https://cdn.proj.org/us_nga_egm08_25.tif",
+    "local_crop_sha256": "d7704cda43a3b2ce59d69bd0983a3bff5ec042a9d7b26c48c7eb94feec1fdb63",
+    "interpolation": "bilinear at each shot center",
+    "formula": "H = h - N"
+  },
+  "model_registration": {
+    "origin_latitude": -6.993939,
+    "origin_longitude": 107.056273,
+    "rotation_degrees": 16,
+    "footprint_metres": [
+      200,
+      260
+    ],
+    "height_metres": 56,
+    "surface_offset_metres": 2,
+    "unit_depth_offsets_metres": [
+      0,
+      2,
+      6,
+      23
+    ],
+    "chamber_dimensions_metres": [
+      10,
+      10,
+      15
+    ],
+    "chamber_center_local_metres": [
+      0,
+      38,
+      0
+    ],
+    "source": "Natawidjaja et al. Figure 14, Table 1, Section 3.6.2; placement and envelopes chosen for visualization"
+  }
 }
