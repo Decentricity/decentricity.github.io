@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f7efe0">
+  <meta name="description" content="A little world. Six little friends. All the time in the world. A cozy Flipside Cubewalker adventure.">
+  <meta property="og:title" content="Flipside · Little Hearts">
+  <meta property="og:description" content="Walk around a tiny garden cube. Make a few prickly friends. Send a little love.">
+  <title>Flipside · Little Hearts</title>
+  <link rel="icon" href="assets/hedgey.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="world" aria-label="Three-dimensional garden cube"></div>
+  <div id="grain" aria-hidden="true"></div>
+  <div id="fade" aria-hidden="true"></div>
+
+  <header id="hud" hidden>
+    <a class="wordmark" href="https://flipside.ink" target="_blank" rel="noopener">flipside<span>little hearts</span></a>
+    <div class="hud-right"><span id="friends-count">♡ 0 / 6 friends</span><button id="pause-button" aria-label="Pause game">Ⅱ</button></div>
+  </header>
+  <div id="place" hidden><span class="eyebrow">SOMEWHERE ON THE FLIPSIDE</span><span id="place-name">The picnic lawn</span></div>
+  <div id="reticle" hidden aria-hidden="true"><span>♡</span></div>
+  <div id="interaction" hidden><span id="target-name"></span><span class="key">click</span> send a little heart</div>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <div id="desktop-hint" hidden><span>W A S D <i>wander</i></span><span>MOUSE <i>look around</i></span><span>CLICK <i>send love</i></span><span>ESC <i>take a breath</i></span></div>
+  <button id="picnic-button" hidden>Everyone’s here · join the picnic ♡</button>
+  <button id="capture" hidden>Click to keep wandering ♡</button>
+
+  <main id="welcome" class="overlay">
+    <div class="intro">
+      <div class="eyebrow"><span class="tiny-flower">✳</span> A SMALL ADVENTURE FROM FLIPSIDE.INK</div>
+      <h1>flipside<span>little hearts<span class="title-heart">♡</span></span></h1>
+      <p class="intro-copy">A little world.<br>A few prickly friends.<br>All the time in the world.</p>
+      <div class="intro-actions"><button id="play" class="primary" disabled>Growing your garden…</button><button id="intro-settings" class="round-button" aria-label="Open settings">☼</button></div>
+      <button id="new-game" class="text-button" hidden>or begin a brand-new day</button>
+      <p class="small-note">Wander around the cube. Send a little love.<br>No hurry. No wrong turns.</p>
+    </div>
+    <div class="intro-caption"><span class="doodle-heart">♡</span><span>there’s a friend<br>on every side.</span></div>
+    <footer><span>MADE WITH LOVE & A LITTLE INK</span><a href="https://flipside.ink" target="_blank" rel="noopener">visit the original flipside ↗</a></footer>
+  </main>
+
+  <section id="pause" class="modal-wrap" hidden aria-label="Game paused">
+    <div class="card"><span class="eyebrow">THERE’S NO HURRY</span><h2>A little breather.</h2><p>Your friends will be right here.</p><button id="resume" class="primary">Back to the garden ♡</button><button id="pause-settings" class="secondary">Make yourself comfortable</button><button id="back-home" class="text-button">Back to the beginning</button></div>
+  </section>
+  <section id="settings" class="modal-wrap" hidden aria-labelledby="settings-title">
+    <div class="card settings-card"><span class="eyebrow">MAKE YOURSELF AT HOME</span><h2 id="settings-title">Little comforts.</h2>
+      <label class="setting">Garden sounds <input id="sound" type="checkbox" checked></label>
+      <label class="setting">Gentle transitions <input id="reduced-motion" type="checkbox"><small>Fade between faces instead of turning the camera.</small></label>
+      <label class="setting">Mouse sensitivity <input id="sensitivity" type="range" min="0.3" max="2" step="0.1" value="1"></label>
+      <button id="close-settings" class="primary">Just right ♡</button>
+    </div>
+  </section>
+  <section id="celebration" class="modal-wrap celebration" hidden aria-label="Picnic celebration">
+    <div class="card"><span class="eyebrow">SIX FRIENDS. ONE LITTLE WORLD.</span><h2>Love comes<br>full circle.</h2><p>A heart here. A hello there.<br>You made this little world feel like home.</p><div class="friend-portraits" aria-hidden="true"><img src="assets/hedgey.png" alt=""><span>♡</span><img src="assets/hedgey-wizard.webp" alt=""></div><button id="keep-exploring" class="primary">Stay a little longer ♡</button><p class="small-note">There’s always room for one more heart.</p></div>
+  </section>
+  <section id="fatal" class="modal-wrap" hidden role="alert"><div class="card"><h2>A little cloud.</h2><p id="fatal-message">The garden couldn’t open.</p><button id="retry" class="primary">Try again</button></div></section>
+  <div id="touch-controls" hidden><div id="joystick" aria-label="Drag to move"><div id="joystick-knob"></div></div><button id="touch-heart" aria-label="Send a heart">♡</button><span class="touch-look-hint">drag the right side to look</span></div>
+  <script type="module" src="game.js"></script>
+</body>
+</html>
