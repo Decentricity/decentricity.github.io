@@ -23,26 +23,41 @@
   function orb(parent,x,y,z,r,color,scale=[1,1,1]){const m=mesh(new T.SphereGeometry(r,18,12),color,parent,[x,y,z]);m.scale.set(...scale);return m}
   function makeHeart(){const s=new T.Shape();s.moveTo(0,-.46);s.bezierCurveTo(-.6,-.03,-.62,.47,-.27,.47);s.bezierCurveTo(-.12,.47,-.02,.36,0,.25);s.bezierCurveTo(.03,.38,.14,.47,.28,.47);s.bezierCurveTo(.65,.47,.6,-.04,0,-.46);return new T.ExtrudeGeometry(s,{depth:.13,bevelEnabled:true,bevelSegments:3,steps:1,bevelSize:.035,bevelThickness:.035,curveSegments:16})}
   function heart(parent,pos,scale=.4){const m=mesh(heartGeo,material(0xf4a7b8,{emissive:0xc95d86,emissiveIntensity:.25,roughness:.35}),parent,pos);m.scale.setScalar(scale);m.castShadow=false;return m}
-  function hedgehog(index){
+  async function artwork(url){
+    const texture=await new T.TextureLoader().loadAsync(url),image=texture.image;
+    const canvas=document.createElement('canvas');canvas.width=image.width;canvas.height=image.height;
+    const context=canvas.getContext('2d',{willReadFrequently:true});context.drawImage(image,0,0);
+    const pixels=context.getImageData(0,0,image.width,image.height).data;
+    let left=image.width,top=image.height,right=-1,bottom=-1;
+    for(let y=0;y<image.height;y++)for(let x=0;x<image.width;x++)if(pixels[(y*image.width+x)*4+3]>25){left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y)}
+    if(right<left)throw new Error('Hedgey artwork is empty: '+url);
+    // Crop only the UVs: the original illustration file remains untouched.
+    texture.colorSpace=T.SRGBColorSpace;texture.anisotropy=Math.min(8,G.renderer.capabilities.getMaxAnisotropy());
+    texture.offset.set(left/image.width,1-(bottom+1)/image.height);
+    texture.repeat.set((right-left+1)/image.width,(bottom-top+1)/image.height);
+    texture.needsUpdate=true;
+    return {texture,aspect:(right-left+1)/(bottom-top+1)};
+  }
+  function hedgehog(index,art){
     const root=new T.Group(),body=new T.Group();root.add(body);
-    const brown=[0xb18667,0xc3928a,0x9d9275,0xc79777,0x9f849d,0xae9e7e][index],cream=0xf2d9b7;
-    orb(body,0,.74,0,.68,brown,[.88,1.15,.8]);orb(body,0,.72,.34,.56,cream,[.85,1.15,.73]);
-    orb(body,0,1.26,.24,.46,cream,[1,.9,.9]);
-    for(const side of [-1,1]){orb(body,side*.34,1.57,.13,.16,brown,[.8,1,.6]);orb(body,side*.34,1.57,.21,.1,0xe0a8a0);orb(body,side*.175,1.28,.61,.052,0x423b3b,[1,1.2,.75]);orb(body,side*.16,1.30,.65,.014,0xfff3d7);orb(body,side*.3,1.12,.59,.09,0xe6ad9d,[1,.45,.25]);orb(body,side*.43,.68,.36,.16,cream,[.65,1.4,.7]);orb(body,side*.23,.14,.15,.22,brown,[.85,.7,1.4])}
-    orb(body,0,1.10,.67,.17,cream,[1,.68,1.3]);orb(body,0,1.14,.83,.07,0x4a3b3f,[1,.75,.8]);
-    // Instanced quills retain real lighting and shadows in Saltline's pipeline.
-    const spikeGeo=new T.ConeGeometry(.09,.32,5),spikes=new T.InstancedMesh(spikeGeo,M(brown),38),dummy=new T.Object3D();
-    for(let i=0;i<38;i++){const a=i*2.39996,y=.15+(i/37)*1.35;const r=Math.sin(Math.PI*(y-.05)/1.6)*.63;const x=Math.cos(a)*r,z=Math.sin(a)*r*.75-.12;const direction=v(x,y-.65,z-.1).normalize();dummy.position.set(x,y,z);dummy.quaternion.setFromUnitVectors(v(0,1,0),direction);dummy.updateMatrix();spikes.setMatrixAt(i,dummy.matrix)}spikes.castShadow=true;spikes.receiveShadow=true;body.add(spikes);
-    if(index===1||index===4){const brim=mesh(new T.CylinderGeometry(.54,.54,.045,24),0xc89bb2,body,[0,1.69,.1]);const hat=mesh(new T.ConeGeometry(.36,.93,20),0xd3a7bf,body,[0,2.12,.1]);hat.rotation.z=-.14;orb(body,.1,1.94,.4,.065,0xffdca4);}
-    else{const flower=new T.Group();flower.position.set(.29,1.6,.36);body.add(flower);for(let i=0;i<5;i++){const a=i*Math.PI*2/5;orb(flower,Math.cos(a)*.09,Math.sin(a)*.09,0,.067,[0xecc0cc,0xe3c88f,0xc1c59b,0xe7b59b][index%4],[1,1,.4])}orb(flower,0,0,.04,.045,0xf4d797)}
-    const marker=heart(root,[0,index===1||index===4?2.95:2.25,0],.18);
-    return {root,body,marker};
+    const height=index===1||index===4?2.3:1.9,width=height*art.aspect;
+    const paper=material(0xffffff,{map:art.texture,side:T.DoubleSide,alphaTest:.22,roughness:.96,metalness:0,emissive:0xffffff,emissiveMap:art.texture,emissiveIntensity:.12});
+    // Two alpha-cut paper faces give a tiny physical separation without a box.
+    const geometry=new T.PlaneGeometry(width,height);
+    mesh(geometry,paper,body,[0,height/2,.012]);
+    const back=mesh(geometry,paper,body,[0,height/2,-.012]);back.rotation.y=Math.PI;back.castShadow=false;
+    const marker=heart(root,[0,height+.4,0],.18);
+    return {root,body,marker,height};
+  }
+  function faceAvatars(dt){
+    if(!G||!T)return;
+    for(const f of friends){const d=G.camera.position.clone().sub(f.root.position);if(d.x*d.x+d.z*d.z<.0001)continue;const angle=Math.atan2(d.x,d.z),delta=Math.atan2(Math.sin(angle-f.root.rotation.y),Math.cos(angle-f.root.rotation.y));f.root.rotation.y+=delta*(1-Math.exp(-Math.min(dt,.05)*12))}
   }
   function sound(){const ctx=G.audio?.ctx;if(!ctx||!settings.sound||ctx.state!=='running')return;[523,659,784].forEach((freq,i)=>{const o=ctx.createOscillator(),a=ctx.createGain(),at=ctx.currentTime+i*.1;o.type='sine';o.frequency.value=freq;a.gain.setValueAtTime(0,at);a.gain.linearRampToValueAtTime(.055,at+.02);a.gain.exponentialRampToValueAtTime(.001,at+.7);o.connect(a);a.connect(ctx.destination);o.start(at);o.stop(at+.72);o.onended=()=>{o.disconnect();a.disconnect()}})}
   function safePosition(point){const p=v(...point),nav=G.physics.nav;if(nav.isWalkable(p.x,p.z))return p;for(let r=.5;r<5;r+=.5)for(let i=0;i<16;i++){const x=p.x+Math.cos(i*Math.PI/8)*r,z=p.z+Math.sin(i*Math.PI/8)*r;if(nav.isWalkable(x,z))return v(x,0,z)}return G.level.coverPoints.find(p=>p.y===0&&nav.isWalkable(p.x,p.z)).clone()}
   function chooseTarget(){
     const origin=G.camera.position,dir=G.camera.getWorldDirection(v()),ray=new T.Ray(origin,dir);let picked=null,nearest=14;
-    for(const f of friends){const center=f.root.position.clone().add(v(0,1.05,0)),hit=ray.intersectSphere(new T.Sphere(center,.85),v());if(!hit)continue;const dist=origin.distanceTo(hit);if(dist<nearest){const wall=G.physics.raycast(origin,dir,dist);if(!wall||wall.dist>dist-.15){picked=f;nearest=dist}}}
+    for(const f of friends){const center=f.root.position.clone().add(v(0,f.height*.55,0)),hit=ray.intersectSphere(new T.Sphere(center,Math.min(.85,f.height*.43)),v());if(!hit)continue;const dist=origin.distanceTo(hit);if(dist<nearest){const wall=G.physics.raycast(origin,dir,dist);if(!wall||wall.dist>dist-.15){picked=f;nearest=dist}}}
     target=picked;$('target').hidden=!picked;$('reticle').classList.toggle('active',!!picked);if(picked){$('friend-name').textContent=picked.name+(met.has(picked.name)?' · your friend':'');$('portrait').src=picked.index===1||picked.index===4?'assets/wizard.webp':'assets/hedgey.png'}
     return picked;
   }
@@ -97,10 +112,11 @@
       return {ads:0,stub:false,reset(){},setVisible(on){held.visible=on},update(dt){cooldown=Math.max(0,cooldown-dt);throwTime=Math.max(0,throwTime-dt);held.position.y=-.38-Math.sin(throwTime/.45*Math.PI)*.18;held.rotation.z=settings.gentle?0:Math.sin(elapsed*1.5)*.04;if(n.input.fire||n.input.pressed('interact'))throwHeart();animateHearts(dt)}};
     },
     async friends(n){
-      positions.forEach((p,index)=>{const f={...hedgehog(index),index,name:names[index],hop:0};f.root.position.copy(safePosition(p));f.home=f.root.position.clone();f.root.name='Hedgey · '+f.name;n.scene.add(f.root);friends.push(f)});
-      return {items:friends,reset(){},raycast(){return null},update(dt){for(const f of friends){const d=n.camera.position.clone().sub(f.root.position);f.root.rotation.y=Math.atan2(d.x,d.z);f.hop=Math.max(0,f.hop-dt*1.7);f.body.position.y=settings.gentle?0:Math.sin(elapsed*1.5+f.index)*.025+Math.sin(f.hop*Math.PI)*.3;f.body.rotation.z=settings.gentle?0:Math.sin(elapsed+f.index)*.025;f.marker.rotation.y=elapsed*.7;f.marker.scale.setScalar(met.has(f.name)?.2:.14);f.marker.visible=n.camera.position.distanceTo(f.root.position)<25}}};
+      const [plain,wizard]=await Promise.all([artwork('assets/hedgey.png'),artwork('assets/wizard.webp')]);
+      positions.forEach((p,index)=>{const f={...hedgehog(index,index===1||index===4?wizard:plain),index,name:names[index],hop:0};f.root.position.copy(safePosition(p));f.home=f.root.position.clone();f.root.name='Hedgey · '+f.name;n.scene.add(f.root);friends.push(f)});
+      return {items:friends,reset(){},raycast(){return null},update(dt){for(const f of friends){f.hop=Math.max(0,f.hop-dt*1.7);f.body.position.y=settings.gentle?0:Math.sin(elapsed*1.5+f.index)*.025+Math.sin(f.hop*Math.PI)*.3;f.body.rotation.z=settings.gentle?0:Math.sin(elapsed+f.index)*.025;f.marker.rotation.y=elapsed*.7;f.marker.scale.setScalar(met.has(f.name)?.2:.14);f.marker.visible=n.camera.position.distanceTo(f.root.position)<25}}};
     },
-    hud(){return{update(){},reset(){},message:toast}},
+    hud(){return{update(dt){faceAvatars(dt)},reset(){},message:toast}},
     game(n){
       n.player.damage=()=>{};
       return {state:'title',start(){celebrating=false;n.player.reset();n.player.invulnerable=true;n.player.pitch=-.03;n.audio.resume?.();show('playing');n.input.requestLock();toast(met.size?'Welcome back. There’s always another little hello.':'Six Hedgeys, somewhere in the harbor. Follow the little hearts ♡',6)},update(dt){elapsed+=dt;if(toastTimer>0){toastTimer-=dt;if(toastTimer<=0)$('toast').classList.remove('show')}if(celebrating&&n.picnicCenter){n.camera.position.lerp(n.picnicCenter.clone().add(v(5,4,7)),1-Math.exp(-dt*2));n.camera.lookAt(n.picnicCenter.clone().add(v(0,.8,0)));return false}if(this.state==='title'){const path=n.level.cinematicPath;const a=path[0],b=path[1],t=(Math.sin(elapsed*.07)+1)*.5;n.camera.position.fromArray(a.pos).lerp(v(...b.pos),t*.4);n.camera.lookAt(v(...a.look).lerp(v(...b.look),t*.4));return false}if(this.state!=='playing')return false;if(n.input.pressed('pause')||n.input.uiPressed?.('pause')){show('paused');return false}chooseTarget();const p=n.player.pos;$('location').textContent=p.x<-24?'The welcome gate':p.x>16?'The wishing quay':p.z<-10?'The lantern workshop':'The patchwork lanes';n.audio.setIntensity?.(0);n.render.post.saturation=1.08;n.render.post.damage=0;n.render.post.lowHealth=0;return true}};
