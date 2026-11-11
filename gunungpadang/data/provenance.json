@@ -1,0 +1,32 @@
+{
+  "accessed": "2026-11-11",
+  "bounds_wsen": [
+    107.0472,
+    -7.003,
+    107.0654,
+    -6.9849
+  ],
+  "terrain_grid": {
+    "rows": 66,
+    "columns": 66
+  },
+  "copernicus_source_files": [
+    {
+      "name": "padang-copdem-s07.tif",
+      "sha256": "c8dea76ed20c1529c59be2f4ae80fb6a04ab2f9ca04c52c662a6c5adc2830e65"
+    },
+    {
+      "name": "padang-copdem-s08.tif",
+      "sha256": "4ad4ea4247cafa08b69c4df8b1f29c53aa2299e479805d6f1a776df8899fda7a"
+    }
+  ],
+  "source_urls": [
+    "https://copernicus-dem-30m.s3.amazonaws.com/Copernicus_DSM_COG_10_S07_00_E107_00_DEM/Copernicus_DSM_COG_10_S07_00_E107_00_DEM.tif",
+    "https://copernicus-dem-30m.s3.amazonaws.com/Copernicus_DSM_COG_10_S08_00_E107_00_DEM/Copernicus_DSM_COG_10_S08_00_E107_00_DEM.tif"
+  ],
+  "gedi_source": "GFZ public dog-ext.gedidb.gedi-l2-l4-v002.0",
+  "gedi_shots": 117,
+  "gedi_csv_sha256": "f891a483e306db0a0e6035b1cc79f22c25631d7ca308735fd3872651169b5d81",
+  "vertical_alignment": "GEDI footprint rings are draped on DSM for location only. GEDI ellipsoidal heights are NOT transformed to EGM2008 or used as terrain vertices.",
+  "model": "Conceptual geometry based on Figure 14 and Table 1; no georeferenced subsurface volume is available in this repository."
+}
