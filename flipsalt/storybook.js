@@ -60,7 +60,7 @@
   }
   function animateHearts(dt){for(let i=hearts.length-1;i>=0;i--){const h=hearts[i];h.age+=dt;const t=Math.min(1,h.age/h.duration);if(h.burst)h.mesh.position.copy(h.start).addScaledVector(h.velocity,h.age);else h.mesh.position.copy(h.start).multiplyScalar((1-t)**2).addScaledVector(h.control,2*(1-t)*t).addScaledVector(h.end,t*t);h.mesh.rotation.y+=dt*1.6;h.mesh.scale.multiplyScalar(1-dt*(h.burst?.4:0));if(t===1){G.scene.remove(h.mesh);h.mesh.material.dispose();hearts.splice(i,1);if(h.recipient)receive(h.recipient)}}}
   function show(state){
-    G.game.state=state;G.input.setGameplay(state==='playing');G.player.enabled=state==='playing';
+    G.game.state=state;G.input.setGameplay(state==='playing');G.input.endFrame?.();G.player.enabled=state==='playing';if(state==='playing'&&!G.input.touch&&!G.input.locked)G.renderer.domElement.dispatchEvent(new MouseEvent('mousemove',{bubbles:true,clientX:innerWidth/2,clientY:innerHeight/2,movementX:0,movementY:0}));
     $('title').hidden=state!=='title';$('pause').hidden=state!=='paused'||celebrating;$('complete').hidden=!celebrating;
     for(const id of ['hud','chapter','keys','reticle'])$(id).hidden=state!=='playing';$('target').hidden=true;held.visible=state==='playing';
     if(state!=='playing'){G.input.exitLock();G.audio?.setPaused?.(true)}else G.audio?.setPaused?.(false);updateCount();
