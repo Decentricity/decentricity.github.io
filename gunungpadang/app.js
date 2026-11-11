@@ -138,6 +138,7 @@ async function init() {
   const clipPlane=new THREE.Plane(new THREE.Vector3(0,0,-1),0);
   const unitDefs=[{name:'UNIT 1',color:0xcaac78,top:0,bottom:2},{name:'UNIT 2',color:0xf3cf45,top:2,bottom:6},{name:'UNIT 3',color:0x6fbd83,top:6,bottom:23},{name:'UNIT 4',color:0xe16d57,top:23,bottom:80}];
   const unitGroups=[],unitMats=[],caps=[],unitLabels=[];
+  const labelHeights=[72,58,42,17];
   const hill=(x,z)=>Math.max(0,Math.min(56,56*(1-Math.max(Math.abs(x)/100,Math.abs(z)/130))/.81));
   function surfaceGeometry(offset){
     const v=[],idx=[],NX=40,NZ=52;
@@ -151,7 +152,7 @@ async function init() {
     const capMat=new THREE.MeshStandardMaterial({color:def.color,side:THREE.DoubleSide,roughness:1});
     const cap=new THREE.Mesh(new THREE.BufferGeometry(),capMat);group.add(cap);caps.push(cap);
     const edges=new THREE.LineSegments(new THREE.EdgesGeometry(surfaceGeometry(def.top),18),new THREE.LineBasicMaterial({color:0x243b35,transparent:true,opacity:.18,clippingPlanes:[clipPlane]}));group.add(edges);
-    const lab=label(def.name,new THREE.Vector3(121,56-(def.top+Math.min(56,def.bottom))/2,0),hypothesis,8,'#dfebd7');unitLabels.push(lab);
+    const lab=label(def.name,new THREE.Vector3(121,labelHeights[i],0),hypothesis,8,'#dfebd7');unitLabels.push(lab);
   });
   function updateCaps(){
     const z=+$('cut').value;
@@ -179,7 +180,7 @@ async function init() {
     shotsGroup.visible=$('shots-toggle').checked;
     guides.visible=$('grid-toggle').checked;
     const opacity=+$('opacity').value/100;
-    for(const mat of [terrainMat,wallMat,baseMesh.material]){mat.opacity=opacity;mat.transparent=opacity<1;mat.depthWrite=opacity>=1;}
+    for(const mat of [terrainMat,wallMat,baseMesh.material]){if(mat.transparent!==(opacity<1))mat.needsUpdate=true;mat.opacity=opacity;mat.transparent=opacity<1;mat.depthWrite=opacity>=1;}
     wire.material.opacity=.085*opacity;
     const exaggeration=+$('exaggeration').value;landscape.scale.y=exaggeration;
     $('opacity-value').textContent=`${$('opacity').value}%`;
@@ -196,11 +197,11 @@ async function init() {
     selected.visible=false;$('shot-inspector').hidden=true;
   }
   function updateModel(){
-    unitGroups.forEach((g,i)=>{g.visible=$(`unit${i+1}-toggle`).checked;unitLabels[i].visible=g.visible;g.position.y=(3-i)*+$('explode').value*.18;unitLabels[i].position.y=56-(unitDefs[i].top+Math.min(56,unitDefs[i].bottom))/2+g.position.y;});
+    unitGroups.forEach((g,i)=>{g.visible=$(`unit${i+1}-toggle`).checked;unitLabels[i].visible=g.visible;g.position.y=(3-i)*+$('explode').value*.18;unitLabels[i].position.y=labelHeights[i]+g.position.y;});
     const op=+$('model-opacity').value/100;
-    unitMats.forEach(mat=>{mat.clippingPlanes=$('cut-toggle').checked?[clipPlane]:[];mat.opacity=op;mat.transparent=op<1;mat.depthWrite=op>=1;});
+    unitMats.forEach(mat=>{mat.clippingPlanes=$('cut-toggle').checked?[clipPlane]:[];if(mat.transparent!==(op<1))mat.needsUpdate=true;mat.opacity=op;mat.transparent=op<1;mat.depthWrite=op>=1;});
     unitGroups.forEach(g=>g.children.forEach(obj=>{if(obj.isLineSegments)obj.material.clippingPlanes=$('cut-toggle').checked?[clipPlane]:[];}));
-    caps.forEach(cap=>{cap.material.opacity=op;cap.material.transparent=op<1;cap.material.depthWrite=op>=1;});
+    caps.forEach(cap=>{if(cap.material.transparent!==(op<1))cap.material.needsUpdate=true;cap.material.opacity=op;cap.material.transparent=op<1;cap.material.depthWrite=op>=1;});
     anomalyGroup.visible=$('anomaly-toggle').checked;
     $('cut-value').textContent=+$('cut').value===0?'Center':`${$('cut').value}%`;
     $('explode-value').textContent=`${$('explode').value}%`;
@@ -292,7 +293,9 @@ async function init() {
   new ResizeObserver(resize).observe(host);resize();
   const origin=new THREE.Vector3(),north=new THREE.Vector3();
   function frame(){
-    requestAnimationFrame(frame);orbit.update();renderer.render(scene,camera);
+    requestAnimationFrame(frame);orbit.update();
+    if(state.view==='underground')unitLabels.forEach((lab,i)=>lab.visible=unitGroups[i].visible&&orbit.getPolarAngle()>.3);
+    renderer.render(scene,camera);
     if(state.view==='landscape'){
       origin.set(0,0,0).project(camera);north.set(0,0,-100).project(camera);
       const angle=Math.atan2((north.x-origin.x)*host.clientWidth,(north.y-origin.y)*host.clientHeight)*180/Math.PI;
