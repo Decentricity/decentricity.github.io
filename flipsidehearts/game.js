@@ -355,12 +355,12 @@ function bindUI(){
   const canvas=renderer.domElement;let drag=null;
   canvas.addEventListener('pointerdown',e=>{
     if(mode!=='playing')return;initAudio();
-    if(touch){if(e.clientX>window.innerWidth*.35){drag={id:e.pointerId,x:e.clientX,y:e.clientY};canvas.setPointerCapture(e.pointerId)}}
+    if(touch){if(e.clientX>window.innerWidth*.35){drag={id:e.pointerId,x:e.clientX,y:e.clientY,moved:0};canvas.setPointerCapture(e.pointerId)}}
     else if(document.pointerLockElement===canvas)sendHeart();
-    else {drag={id:e.pointerId,x:e.clientX,y:e.clientY};canvas.setPointerCapture(e.pointerId);requestCapture()}
+    else {drag={id:e.pointerId,x:e.clientX,y:e.clientY,moved:0};canvas.setPointerCapture(e.pointerId);requestCapture()}
   });
-  canvas.addEventListener('pointermove',e=>{if(mode==='playing'&&drag?.id===e.pointerId&&document.pointerLockElement!==canvas){look.x+=(e.clientX-drag.x)*1.5;look.y+=(e.clientY-drag.y)*1.5;drag.x=e.clientX;drag.y=e.clientY}});
-  canvas.addEventListener('pointerup',()=>drag=null);canvas.addEventListener('pointercancel',()=>drag=null);
+  canvas.addEventListener('pointermove',e=>{if(mode==='playing'&&drag?.id===e.pointerId&&document.pointerLockElement!==canvas){drag.moved+=Math.abs(e.clientX-drag.x)+Math.abs(e.clientY-drag.y);look.x+=(e.clientX-drag.x)*1.5;look.y+=(e.clientY-drag.y)*1.5;drag.x=e.clientX;drag.y=e.clientY}});
+  canvas.addEventListener('pointerup',()=>{if(drag&&!touch&&drag.moved<6&&document.pointerLockElement!==canvas)sendHeart();drag=null});canvas.addEventListener('pointercancel',()=>drag=null);
   canvas.addEventListener('contextmenu',e=>e.preventDefault());
   let stickId=null;
   function stickMove(e){if(stickId!==e.pointerId)return;const r=$('joystick').getBoundingClientRect();let x=e.clientX-r.left-r.width/2,y=e.clientY-r.top-r.height/2;const l=Math.hypot(x,y);if(l>32){x*=32/l;y*=32/l}joystick.x=x/32;joystick.y=y/32;$('joystick-knob').style.transform=`translate(${x}px,${y}px)`}
