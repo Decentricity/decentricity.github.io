@@ -65,7 +65,7 @@
     for(const id of ['hud','chapter','keys','reticle'])$(id).hidden=state!=='playing';$('target').hidden=true;held.visible=state==='playing';
     if(state!=='playing'){G.input.exitLock();G.audio?.setPaused?.(true)}else G.audio?.setPaused?.(false);updateCount();
   }
-  function applySettings(){G.input.sensitivity=settings.sensitivity;G.audio?.setVolume?.(settings.sound?.42:0);const q=window.FLIPSALT.qualities[settings.quality];if(G.quality.name!==q.name)G.render.setQuality({...q});G.quality.rain=.18;const p=G.player.tuning;if(p){p.bobY=settings.gentle?0:.024;p.bobX=settings.gentle?0:.013;p.rollStrafe=settings.gentle?0:.02;p.fovSprint=settings.gentle?0:6}save()}
+  function applySettings(){G.input.sensitivity=settings.sensitivity;G.audio?.setVolume?.(settings.sound?.42:0);const q=window.FLIPSALT.qualities[settings.quality];if(G.quality.name!==q.name)G.render.setQuality({...q});G.quality.rain=.18;G.ground?.setRain?.(.18);const p=G.player.tuning;if(p){p.bobY=settings.gentle?0:.024;p.bobX=settings.gentle?0:.013;p.rollStrafe=settings.gentle?0:.02;p.fovSprint=settings.gentle?0:6}save()}
   function openSettings(){from=G.game.state;show('settings');$('settings').hidden=false;$('sound').checked=settings.sound;$('gentle').checked=settings.gentle;$('sensitivity').value=settings.sensitivity;$('quality').value=settings.quality}
   function bind(){
     $('begin').onclick=()=>G.game.start();$('new-game').onclick=()=>{if(confirm('Begin a brand-new story? This resets only your Flipsalt friendships.')){met.clear();save();G.game.start()}};
