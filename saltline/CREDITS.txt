@@ -1,0 +1,10 @@
+Saltline
+
+Original game: https://claude.ai/artifact/BGY1SztrAYcJQHSsnHHGmp
+Creator identifies himself as Felix in the retained in-game note.
+
+Recovered and packaged for standalone hosting on 2026-11-11.
+The original bundled engine and embedded legacy game are retained.
+No upstream license was stated in the served artifact; no ownership of
+the upstream game is claimed. Third-party components retain their
+respective rights. See provenance.json for source hashes.
