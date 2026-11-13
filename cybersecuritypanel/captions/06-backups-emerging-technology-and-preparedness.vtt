@@ -1,0 +1,364 @@
+WEBVTT
+
+00:00:00.000 --> 00:00:00.259
+[Music]
+
+00:00:00.260 --> 00:00:02.980
+So the question is what technologies are
+
+00:00:02.980 --> 00:00:05.700
+emerging as key tools in safeguarding
+
+00:00:05.700 --> 00:00:09.100
+critical infrastructure.
+
+00:00:09.140 --> 00:00:11.299
+Well first of all I want to provide
+
+00:00:11.299 --> 00:00:14.179
+disclaimer. I am not the sales team of
+
+00:00:14.179 --> 00:00:17.179
+AWS.
+
+00:00:17.220 --> 00:00:20.020
+I mean this is important because uh the
+
+00:00:20.020 --> 00:00:22.580
+samples would be from my experience in
+
+00:00:22.580 --> 00:00:26.100
+the context of CSP but I think uh we
+
+00:00:26.100 --> 00:00:29.220
+need to reflect uh what what have been
+
+00:00:29.220 --> 00:00:30.980
+experienced with Indonesia for the past
+
+00:00:30.980 --> 00:00:33.700
+few years right the ransomware attack to
+
+00:00:33.700 --> 00:00:35.620
+our national data center I think that's
+
+00:00:35.620 --> 00:00:37.220
+that's one of the tools that we need to
+
+00:00:37.220 --> 00:00:39.059
+have what we call it the immutable
+
+00:00:39.059 --> 00:00:41.299
+backup so don't don't get me wrong about
+
+00:00:41.299 --> 00:00:43.059
+immutable backup that's very easy like
+
+00:00:43.059 --> 00:00:45.860
+you have two mobile phones but one is
+
+00:00:45.860 --> 00:00:48.659
+isolated. You don't have any um
+
+00:00:48.659 --> 00:00:50.100
+telecommunication provider there. That's
+
+00:00:50.100 --> 00:00:52.100
+what I I've been I've been doing for the
+
+00:00:52.100 --> 00:00:55.299
+past 10 years. And the other ones is um
+
+00:00:55.299 --> 00:00:57.779
+just to contact your wife, your friends.
+
+00:00:57.779 --> 00:01:00.100
+But the other one is fully isolated, but
+
+00:01:00.100 --> 00:01:02.659
+all your mobile banking is there. So,
+
+00:01:02.659 --> 00:01:04.659
+this is really safe. I don't get a lot
+
+00:01:04.659 --> 00:01:07.700
+of message offering products, right? But
+
+00:01:07.700 --> 00:01:10.340
+what is immutable backup means like if
+
+00:01:10.340 --> 00:01:12.260
+somebody is attacking you, you still
+
+00:01:12.260 --> 00:01:15.059
+have a golden record that you always can
+
+00:01:15.059 --> 00:01:19.460
+retrieve anytime and nobody can
+
+00:01:19.460 --> 00:01:21.539
+retract it back except you with the
+
+00:01:21.539 --> 00:01:24.740
+access which is good. So just imagine
+
+00:01:24.740 --> 00:01:27.220
+like two years ago there was a bank was
+
+00:01:27.220 --> 00:01:29.380
+being hit by the ransomware attack the
+
+00:01:29.380 --> 00:01:31.539
+backup was hit the production also was
+
+00:01:31.539 --> 00:01:33.620
+hit. he cannot take any data right
+
+00:01:33.620 --> 00:01:35.380
+that's the first one I think the second
+
+00:01:35.380 --> 00:01:37.620
+one has been mentioned by bupandu right
+
+00:01:37.620 --> 00:01:41.620
+so quantum computing is u emerging very
+
+00:01:41.620 --> 00:01:43.620
+fast right so I think the quantum
+
+00:01:43.620 --> 00:01:46.419
+encryption safe I think would be the the
+
+00:01:46.419 --> 00:01:47.779
+second technology that I would like to
+
+00:01:47.779 --> 00:01:51.380
+call out right and the third one is I
+
+00:01:51.380 --> 00:01:53.059
+think it's important to have an
+
+00:01:53.059 --> 00:01:55.700
+automations actually you can find it in
+
+00:01:55.700 --> 00:01:57.460
+the cloud native services so it's
+
+00:01:57.460 --> 00:01:59.940
+automation so everything is automated
+
+00:01:59.940 --> 00:02:03.460
+you use the a IML to improve your cyber
+
+00:02:03.460 --> 00:02:06.500
+security posture, right? You use the AML
+
+00:02:06.500 --> 00:02:09.539
+to get what sort of threat intel, what
+
+00:02:09.539 --> 00:02:11.860
+sort of pattern because if you say we
+
+00:02:11.860 --> 00:02:13.860
+use AI, we talk about unsupervised
+
+00:02:13.860 --> 00:02:16.820
+learning, supervised learning, right? So
+
+00:02:16.820 --> 00:02:19.779
+I think we need to we need to leverage
+
+00:02:19.779 --> 00:02:22.419
+of what we call AIM ML capability and I
+
+00:02:22.419 --> 00:02:24.980
+think you can find it a lot on the uh
+
+00:02:24.980 --> 00:02:27.539
+cloud native services. I think those are
+
+00:02:27.539 --> 00:02:30.100
+three important. So imitable backup
+
+00:02:30.100 --> 00:02:33.380
+cloud native services uh quantum uh
+
+00:02:33.380 --> 00:02:35.700
+encryption safe right and I think the
+
+00:02:35.700 --> 00:02:39.059
+fourth one is could be like yeah it's
+
+00:02:39.059 --> 00:02:41.539
+about sovereignity right uh we need to
+
+00:02:41.539 --> 00:02:42.900
+be careful about the word of
+
+00:02:42.900 --> 00:02:44.500
+sovereignity or Indonesia we call it
+
+00:02:44.500 --> 00:02:46.820
+kadawatan right so I'm talking about
+
+00:02:46.820 --> 00:02:49.779
+access just imagine that what kind of
+
+00:02:49.779 --> 00:02:52.980
+guest that you will allow to enter your
+
+00:02:52.980 --> 00:02:55.220
+house that's we talk about access
+
+00:02:55.220 --> 00:02:57.380
+management so what has been done in
+
+00:02:57.380 --> 00:03:01.059
+Indonesia mostly are deal with the uh
+
+00:03:01.059 --> 00:03:03.220
+access management. So I'm not going to
+
+00:03:03.220 --> 00:03:05.539
+take too far, right? Just just go to the
+
+00:03:05.539 --> 00:03:07.860
+hospital in South Jakarta. Go to the
+
+00:03:07.860 --> 00:03:10.179
+Starbucks. You can find a lot of young
+
+00:03:10.179 --> 00:03:12.340
+people was hanging around there.
+
+00:03:12.340 --> 00:03:14.020
+Actually in the hospital Starbucks
+
+00:03:14.020 --> 00:03:16.100
+actually you need to find old sick
+
+00:03:16.100 --> 00:03:18.580
+people, right? But there are a lot of
+
+00:03:18.580 --> 00:03:21.460
+hackers drinking coffee waiting for
+
+00:03:21.460 --> 00:03:24.179
+vulnerable customers to sit in there to
+
+00:03:24.179 --> 00:03:27.059
+drink a coffee and they will tap to the
+
+00:03:27.059 --> 00:03:30.179
+phones. So what I'm saying is this is
+
+00:03:30.179 --> 00:03:32.580
+why this is important
+
+00:03:32.580 --> 00:03:35.299
+the lack of skill in cyber security but
+
+00:03:35.299 --> 00:03:37.700
+also lack of awareness.
+
+00:03:37.700 --> 00:03:40.020
+So actually don't talk about technology.
+
+00:03:40.020 --> 00:03:42.580
+I think we need to
+
+00:03:42.580 --> 00:03:44.980
+build a solid foundation first. So
+
+00:03:44.980 --> 00:03:47.299
+that's what flower said it's about
+
+00:03:47.299 --> 00:03:49.620
+earning trust and Indonesia is very
+
+00:03:49.620 --> 00:03:52.179
+simple. Seeing is believing.
+
+00:03:52.179 --> 00:03:54.100
+So when you talk about PPP public
+
+00:03:54.100 --> 00:03:57.299
+private partnership I have to see first
+
+00:03:57.299 --> 00:03:58.580
+then I would believe you. That's what
+
+00:03:58.580 --> 00:04:01.380
+you call earn trust. So I think I just
+
+00:04:01.380 --> 00:04:03.620
+want to add some right. It could be a
+
+00:04:03.620 --> 00:04:06.179
+joint training. It could be like
+
+00:04:06.179 --> 00:04:09.380
+tabletop exercise.
+
+00:04:09.380 --> 00:04:13.380
+When did you hear last time we heard
+
+00:04:13.380 --> 00:04:15.460
+there is a tabletop exercise in
+
+00:04:15.460 --> 00:04:17.059
+Indonesia?
+
+00:04:17.059 --> 00:04:19.779
+It's not public. I know, right? But why
+
+00:04:19.779 --> 00:04:22.740
+is not public, right? But if you see the
+
+00:04:22.740 --> 00:04:25.299
+other jurisdiction in APJ, talking about
+
+00:04:25.299 --> 00:04:27.299
+Singapore, I'm talking about Malaysia,
+
+00:04:27.299 --> 00:04:30.179
+there's a joint tabletop exercise. The
+
+00:04:30.179 --> 00:04:32.179
+more you exercise,
+
+00:04:32.179 --> 00:04:34.820
+then you will build a new capability.
+
+00:04:34.820 --> 00:04:36.899
+That's your competitive ad advantage. So
+
+00:04:36.899 --> 00:04:39.299
+when the threat is coming you're ready
+
+00:04:39.299 --> 00:04:41.059
+right whether you're a public or you're
+
+00:04:41.059 --> 00:04:43.140
+private am I correct so that the shared
+
+00:04:43.140 --> 00:04:45.940
+responsibility that the shared expertise
+
+00:04:45.940 --> 00:04:49.059
+that's a lack of what do you call it no
+
+00:04:49.059 --> 00:04:53.620
+redundancy at all so I think be on top
+
+00:04:53.620 --> 00:04:57.860
+of technology I think we have a very big
+
+00:04:57.860 --> 00:05:00.340
+homework on the awareness and the cyber
+
+00:05:00.340 --> 00:05:01.539
+security skill I think that's my
+
+00:05:01.539 --> 00:05:02.300
+response thank you thank you masniku I

@@ -1,0 +1,270 @@
+[
+  {
+    "filename": "01-critical-infrastructure-priorities-and-trust.mp4",
+    "topic": "Critical infrastructure priorities and trusted intelligence sharing",
+    "summary": "Scott Flower explains cross-sector dependencies, national threat visibility, and the governance needed for trusted information sharing.",
+    "ranges": [
+      [
+        235.6,
+        562.3
+      ]
+    ],
+    "id": 1,
+    "slug": "01-critical-infrastructure-priorities-and-trust",
+    "duration": 326.7,
+    "thumbnail": "thumbnails/01-critical-infrastructure-priorities-and-trust.jpg",
+    "src": "media/01-critical-infrastructure-priorities-and-trust.mp4",
+    "captions": "captions/01-critical-infrastructure-priorities-and-trust.vtt",
+    "bytes": 20419003
+  },
+  {
+    "filename": "02-public-private-cooperation-and-skills-incentives.mp4",
+    "topic": "Public–private cooperation and skills incentives",
+    "summary": "The panel links privacy-preserving threat sharing and a sustainable cybersecurity industry to incentives for developing talent.",
+    "ranges": [
+      [
+        571.1,
+        728.45
+      ]
+    ],
+    "id": 2,
+    "slug": "02-public-private-cooperation-and-skills-incentives",
+    "duration": 157.35,
+    "thumbnail": "thumbnails/02-public-private-cooperation-and-skills-incentives.jpg",
+    "src": "media/02-public-private-cooperation-and-skills-incentives.mp4",
+    "captions": "captions/02-public-private-cooperation-and-skills-incentives.vtt",
+    "bytes": 8708848
+  },
+  {
+    "filename": "03-centralization-and-infrastructure-resilience.mp4",
+    "topic": "Centralization and infrastructure resilience",
+    "summary": "The discussion examines single points of failure, delayed detection, and distributed approaches to resilience.",
+    "ranges": [
+      [
+        755.1,
+        928.1
+      ]
+    ],
+    "id": 3,
+    "slug": "03-centralization-and-infrastructure-resilience",
+    "duration": 173.0,
+    "thumbnail": "thumbnails/03-centralization-and-infrastructure-resilience.jpg",
+    "src": "media/03-centralization-and-infrastructure-resilience.mp4",
+    "captions": "captions/03-centralization-and-infrastructure-resilience.vtt",
+    "bytes": 8553658
+  },
+  {
+    "filename": "04-can-crypto-wallets-and-blockchains-be-hacked.mp4",
+    "topic": "Can crypto wallets and blockchains be hacked?",
+    "summary": "The answer distinguishes exchange and personal-wallet failures from attacks on blockchain consensus and explains the responsibility of self-custody.",
+    "ranges": [
+      [
+        928.3,
+        1118.0
+      ]
+    ],
+    "id": 4,
+    "slug": "04-can-crypto-wallets-and-blockchains-be-hacked",
+    "duration": 189.7,
+    "thumbnail": "thumbnails/04-can-crypto-wallets-and-blockchains-be-hacked.jpg",
+    "src": "media/04-can-crypto-wallets-and-blockchains-be-hacked.mp4",
+    "captions": "captions/04-can-crypto-wallets-and-blockchains-be-hacked.vtt",
+    "bytes": 10360905
+  },
+  {
+    "filename": "05-vocational-training-and-the-cyber-workforce.mp4",
+    "topic": "Vocational training and the cyber workforce",
+    "summary": "The panel discusses public–private vocational training partnerships and the people needed to operate AI-enabled cyber defenses.",
+    "ranges": [
+      [
+        1126.7,
+        1370.0
+      ]
+    ],
+    "id": 5,
+    "slug": "05-vocational-training-and-the-cyber-workforce",
+    "duration": 243.3,
+    "thumbnail": "thumbnails/05-vocational-training-and-the-cyber-workforce.jpg",
+    "src": "media/05-vocational-training-and-the-cyber-workforce.mp4",
+    "captions": "captions/05-vocational-training-and-the-cyber-workforce.vtt",
+    "bytes": 10636560
+  },
+  {
+    "filename": "06-backups-emerging-technology-and-preparedness.mp4",
+    "topic": "Backups, emerging technology, and preparedness",
+    "summary": "The answer covers immutable backups, quantum-safe encryption, cloud automation, access controls, and joint exercises.",
+    "ranges": [
+      [
+        1403.5,
+        1705.8
+      ]
+    ],
+    "id": 6,
+    "slug": "06-backups-emerging-technology-and-preparedness",
+    "duration": 302.3,
+    "thumbnail": "thumbnails/06-backups-emerging-technology-and-preparedness.jpg",
+    "src": "media/06-backups-emerging-technology-and-preparedness.mp4",
+    "captions": "captions/06-backups-emerging-technology-and-preparedness.vtt",
+    "bytes": 16242107
+  },
+  {
+    "filename": "07-economic-cost-of-a-cyber-breach.mp4",
+    "topic": "Economic cost of a cyber breach",
+    "summary": "Scott Flower discusses the average Australian breach cost and points to breach reporting as a source of comparative evidence.",
+    "ranges": [
+      [
+        1707.6,
+        1789.2
+      ]
+    ],
+    "id": 7,
+    "slug": "07-economic-cost-of-a-cyber-breach",
+    "duration": 81.6,
+    "thumbnail": "thumbnails/07-economic-cost-of-a-cyber-breach.jpg",
+    "src": "media/07-economic-cost-of-a-cyber-breach.mp4",
+    "captions": "captions/07-economic-cost-of-a-cyber-breach.vtt",
+    "bytes": 3775197
+  },
+  {
+    "filename": "08-making-public-private-partnerships-work.mp4",
+    "topic": "Making public–private partnerships work",
+    "summary": "The panel explains how industry expertise, regulatory capacity, talent, and practical requirements can complement each other.",
+    "ranges": [
+      [
+        1798.75,
+        1969.8
+      ]
+    ],
+    "id": 8,
+    "slug": "08-making-public-private-partnerships-work",
+    "duration": 171.05,
+    "thumbnail": "thumbnails/08-making-public-private-partnerships-work.jpg",
+    "src": "media/08-making-public-private-partnerships-work.mp4",
+    "captions": "captions/08-making-public-private-partnerships-work.vtt",
+    "bytes": 8044833
+  },
+  {
+    "filename": "09-vendor-concentration-and-supply-chain-risk.mp4",
+    "topic": "Vendor concentration and supply-chain risk",
+    "summary": "Scott Flower uses CrowdStrike and file-transfer incidents to explain concentration risk, vendor incentives, and collective intelligence as a check on suppliers.",
+    "ranges": [
+      [
+        1970.2,
+        2225.6
+      ]
+    ],
+    "id": 9,
+    "slug": "09-vendor-concentration-and-supply-chain-risk",
+    "duration": 255.4,
+    "thumbnail": "thumbnails/09-vendor-concentration-and-supply-chain-risk.jpg",
+    "src": "media/09-vendor-concentration-and-supply-chain-risk.mp4",
+    "captions": "captions/09-vendor-concentration-and-supply-chain-risk.vtt",
+    "bytes": 15286546
+  },
+  {
+    "filename": "10-social-engineering-ai-and-single-points-of-failure.mp4",
+    "topic": "Social engineering, AI, and single points of failure",
+    "summary": "The discussion connects transparent audits and concentrated trust to AI-assisted spear phishing and privacy-preserving proof of humanity.",
+    "ranges": [
+      [
+        2281.6,
+        2544.9
+      ]
+    ],
+    "id": 10,
+    "slug": "10-social-engineering-ai-and-single-points-of-failure",
+    "duration": 263.3,
+    "thumbnail": "thumbnails/10-social-engineering-ai-and-single-points-of-failure.jpg",
+    "src": "media/10-social-engineering-ai-and-single-points-of-failure.mp4",
+    "captions": "captions/10-social-engineering-ai-and-single-points-of-failure.vtt",
+    "bytes": 11434920
+  },
+  {
+    "filename": "11-cyber-talent-data-centers-and-semiconductors.mp4",
+    "topic": "Cyber talent, data centers, and semiconductors",
+    "summary": "The panel presents cybersecurity skills as a foundation for data-center growth, semiconductor investment, and Indonesia’s wider digital ecosystem.",
+    "ranges": [
+      [
+        2545.5,
+        2805.15
+      ]
+    ],
+    "id": 11,
+    "slug": "11-cyber-talent-data-centers-and-semiconductors",
+    "duration": 259.65,
+    "thumbnail": "thumbnails/11-cyber-talent-data-centers-and-semiconductors.jpg",
+    "src": "media/11-cyber-talent-data-centers-and-semiconductors.mp4",
+    "captions": "captions/11-cyber-talent-data-centers-and-semiconductors.vtt",
+    "bytes": 11379350
+  },
+  {
+    "filename": "12-who-funds-and-scales-cybersecurity-training.mp4",
+    "topic": "Who funds and scales cybersecurity training?",
+    "summary": "An audience question prompts a multi-panelist discussion of training investment, occupational needs, scalable education, career incentives, and regulatory support.",
+    "ranges": [
+      [
+        2852.15,
+        3481.65
+      ]
+    ],
+    "id": 12,
+    "slug": "12-who-funds-and-scales-cybersecurity-training",
+    "duration": 629.5,
+    "thumbnail": "thumbnails/12-who-funds-and-scales-cybersecurity-training.jpg",
+    "src": "media/12-who-funds-and-scales-cybersecurity-training.mp4",
+    "captions": "captions/12-who-funds-and-scales-cybersecurity-training.vtt",
+    "bytes": 37153755
+  },
+  {
+    "filename": "13-local-content-rules-and-digital-sovereignty.mp4",
+    "topic": "Local-content rules and digital sovereignty",
+    "summary": "The panel weighs local-content goals against measurable service requirements, procurement incentives, software localization, and digital sovereignty.",
+    "ranges": [
+      [
+        3494.5,
+        3566.6
+      ],
+      [
+        3676.9,
+        3837.1
+      ],
+      [
+        3861.9,
+        3946.55
+      ],
+      [
+        4071.8,
+        4324.0
+      ]
+    ],
+    "id": 13,
+    "slug": "13-local-content-rules-and-digital-sovereignty",
+    "duration": 569.15,
+    "thumbnail": "thumbnails/13-local-content-rules-and-digital-sovereignty.jpg",
+    "src": "media/13-local-content-rules-and-digital-sovereignty.mp4",
+    "captions": "captions/13-local-content-rules-and-digital-sovereignty.vtt",
+    "bytes": 36755269
+  },
+  {
+    "filename": "14-threat-informed-tabletop-exercises.mp4",
+    "topic": "Threat-informed tabletop exercises",
+    "summary": "An audience question leads to advice on realistic, intelligence-led exercises that prepare organizations for the attacks they will actually face.",
+    "ranges": [
+      [
+        3570.0,
+        3658.7
+      ],
+      [
+        3946.65,
+        4056.0
+      ]
+    ],
+    "id": 14,
+    "slug": "14-threat-informed-tabletop-exercises",
+    "duration": 198.05,
+    "thumbnail": "thumbnails/14-threat-informed-tabletop-exercises.jpg",
+    "src": "media/14-threat-informed-tabletop-exercises.mp4",
+    "captions": "captions/14-threat-informed-tabletop-exercises.vtt",
+    "bytes": 11449568
+  }
+]
