@@ -276,7 +276,7 @@ try {
       if (!response.ok) throw new Error('Clip list unavailable');
       return response.json();
     }),
-    loader.loadAsync('./avatar.glb?v=4')
+    loader.loadAsync('./avatar.glb?v=7')
   ]);
   clips = manifest;
   avatar = model.scene;
