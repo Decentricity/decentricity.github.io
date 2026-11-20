@@ -147,6 +147,30 @@ function setLoop() {
   if (action) action.setLoop(el('loop').checked ? THREE.LoopRepeat : THREE.LoopOnce, el('loop').checked ? Infinity : 1);
 }
 
+function colorAvatarHair(material) {
+  material.onBeforeCompile = shader => {
+    shader.uniforms.hairBrown = { value: new THREE.Color('#49291f') };
+    shader.uniforms.hairRed = { value: new THREE.Color('#be2938') };
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 hairRestPosition;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nhairRestPosition = position;');
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', `#include <common>
+        varying vec3 hairRestPosition;
+        uniform vec3 hairBrown;
+        uniform vec3 hairRed;`)
+      .replace('#include <map_fragment>', `#include <map_fragment>
+        // Only the hair swatch of the avatar's palette texture is recolored.
+        if (vMapUv.y >= 11.0 / 32.0 && vMapUv.y < 17.0 / 32.0) {
+          // Use the rest position so the streaks follow the skinned hair.
+          float angle = atan(hairRestPosition.y, hairRestPosition.x + 0.00045);
+          float sweep = angle + (hairRestPosition.z - 0.048) * 65.0;
+          float streak = smoothstep(0.85, 0.98, cos(5.0 * sweep - 0.8));
+          diffuseColor.rgb = mix(hairBrown, hairRed, streak);
+        }`);
+  };
+}
+
 function disposeMeshes(root) {
   const resources = new Set();
   root.traverse(node => {
@@ -249,6 +273,7 @@ try {
       node.frustumCulled = false;
     }
   });
+  colorAvatarHair(avatar.getObjectByName('Woman').material);
   scene.add(avatar);
   for (const group of new Set(clips.map(item => item.group))) el('filter').add(new Option(group, group));
   renderLibrary();
