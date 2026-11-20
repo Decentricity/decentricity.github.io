@@ -18,20 +18,50 @@ let buttons = [];
 let selected;
 let request = 0;
 let mixer, action, retarget, avatar, hips;
-let renderer, scene, camera, controls;
-let follow = new THREE.Vector3();
-const point = new THREE.Vector3();
+let renderer, scene, camera, orbitCamera, controls;
+let faceAnchor;
+const facePosition = new THREE.Vector3();
+const faceRotation = new THREE.Quaternion();
+const shadowCenter = new THREE.Vector3();
 
 function resize() {
   renderer.setSize(stage.clientWidth, stage.clientHeight, false);
   camera.aspect = stage.clientWidth / stage.clientHeight;
   camera.updateProjectionMatrix();
+  orbitCamera.aspect = camera.aspect;
+  orbitCamera.updateProjectionMatrix();
 }
 
 function resetView() {
-  camera.position.set(follow.x + 2.25, 1.65, follow.z + 3.65);
-  controls.target.set(follow.x, 0.94, follow.z);
+  orbitCamera.position.set(0, 0, 1.7);
   controls.update();
+}
+
+function attachFaceAnchor(avatar) {
+  const head = avatar.getObjectByName('Head');
+  const skin = avatar.getObjectByProperty('isSkinnedMesh', true).skeleton;
+  const meshToHead = skin.boneInverses[skin.bones.indexOf(head)];
+  // The avatar mesh is Z-up and faces +X in bind space.
+  const faceFrame = new THREE.Matrix4().makeBasis(
+    new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 1), new THREE.Vector3(1, 0, 0)
+  );
+  const anchor = new THREE.Object3D();
+  anchor.position.set(0.003, 0, 0.0482).applyMatrix4(meshToHead);
+  anchor.quaternion.setFromRotationMatrix(new THREE.Matrix4().extractRotation(meshToHead).multiply(faceFrame));
+  head.add(anchor);
+  return anchor;
+}
+
+function updateCamera() {
+  // OrbitControls works in face space. Apply the head pose only to the
+  // rendering camera, so even a head tilt leaves the chosen view intact.
+  controls.update();
+  if (faceAnchor) {
+    faceAnchor.getWorldPosition(facePosition);
+    faceAnchor.getWorldQuaternion(faceRotation);
+  }
+  camera.position.copy(orbitCamera.position).applyQuaternion(faceRotation).add(facePosition);
+  camera.quaternion.copy(faceRotation).multiply(orbitCamera.quaternion);
 }
 
 function setupStage() {
@@ -46,12 +76,11 @@ function setupStage() {
   scene = new THREE.Scene();
   scene.fog = new THREE.Fog('#222d37', 10, 31);
   camera = new THREE.PerspectiveCamera(38, 1, 0.05, 100);
-  controls = new OrbitControls(camera, renderer.domElement);
-  controls.enableDamping = true;
+  orbitCamera = camera.clone();
+  controls = new OrbitControls(orbitCamera, renderer.domElement);
   controls.enablePan = false;
-  controls.minDistance = 1.35;
+  controls.minDistance = 0.55;
   controls.maxDistance = 12;
-  controls.maxPolarAngle = Math.PI / 2 - 0.025;
   resetView();
 
   scene.add(new THREE.HemisphereLight('#d9edff', '#6a707d', 2.2));
@@ -79,17 +108,14 @@ function setupStage() {
     if (action) {
       mixer.update(Math.min((now - previous) / 1000, 0.08));
       retarget.apply();
-      hips.getWorldPosition(point);
-      point.y = 0;
-      camera.position.addScaledVector(follow, -1).add(point);
-      controls.target.addScaledVector(follow, -1).add(point);
-      follow.copy(point);
-      key.position.set(follow.x + 3, 6, follow.z + 4);
-      key.target.position.copy(follow);
+      hips.getWorldPosition(shadowCenter);
+      shadowCenter.y = 0;
+      key.position.set(shadowCenter.x + 3, 6, shadowCenter.z + 4);
+      key.target.position.copy(shadowCenter);
       updateTimeline();
     }
     previous = now;
-    controls.update();
+    updateCamera();
     renderer.render(scene, camera);
   });
 }
@@ -289,6 +315,7 @@ try {
       node.frustumCulled = false;
     }
   });
+  faceAnchor = attachFaceAnchor(avatar);
   scene.add(avatar);
   for (const group of new Set(clips.map(item => item.group))) el('filter').add(new Option(group, group));
   renderLibrary();
