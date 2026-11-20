@@ -272,7 +272,7 @@ el('seek').addEventListener('input', () => {
 try {
   setupStage();
   const [manifest, model] = await Promise.all([
-    fetch('./clips.json').then(response => {
+    fetch('./clips.json?v=250').then(response => {
       if (!response.ok) throw new Error('Clip list unavailable');
       return response.json();
     }),
