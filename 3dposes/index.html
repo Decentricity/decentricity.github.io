@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="description" content="Play 50 real motion-capture movements on a 3D character.">
   <title>3D Poses · CMU motion player</title>
-  <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./style.css?v=9">
   <script type="importmap">
     {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.183.2/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.183.2/examples/jsm/"}}
   </script>
@@ -18,7 +18,13 @@
   <main>
     <section class="player" aria-label="Motion player">
       <div id="stage" class="stage">
-        <div class="stage-top"><output id="status" aria-live="polite">Loading avatar…</output><button type="button" id="camera">Reset view</button></div>
+        <div class="stage-top">
+          <output id="status" aria-live="polite">Loading avatar…</output>
+          <div class="view-tools">
+            <button type="button" id="camera-mode" title="Cycle through Default, Head, and Torso" disabled>View: Default</button>
+            <button type="button" id="camera">Reset view</button>
+          </div>
+        </div>
         <span class="stage-tip">Drag to orbit · Scroll or pinch to zoom</span>
       </div>
       <div class="transport">
@@ -47,6 +53,6 @@
     GLB conversion by <a href="https://huggingface.co/datasets/codepawl/cmu-mocap-glb">CodePawl</a>.
     <a href="https://mocap.cs.cmu.edu/faqs.php">Motion data terms</a>.
   </footer>
-  <script type="module" src="./app.js?v=8"></script>
+  <script type="module" src="./app.js?v=9"></script>
 </body>
 </html>

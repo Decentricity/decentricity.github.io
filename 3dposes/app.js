@@ -19,9 +19,19 @@ let selected;
 let request = 0;
 let mixer, action, retarget, avatar, hips;
 let renderer, scene, camera, orbitCamera, controls;
-let faceAnchor;
-const facePosition = new THREE.Vector3();
-const faceRotation = new THREE.Quaternion();
+const cameraModes = [
+  { label: 'Default', position: [2.25, 0.71, 3.65], minDistance: 1.35,
+    maxPolarAngle: Math.PI / 2 - 0.025, damping: true },
+  { label: 'Head', position: [0, 0, 1.7], minDistance: 0.55,
+    maxPolarAngle: Math.PI, bone: 'Head', center: [0.003, 0, 0.0482] },
+  { label: 'Torso', position: [0, 0, 2.25], minDistance: 0.65,
+    maxPolarAngle: Math.PI, bone: 'Spine2', center: [0.0006, 0, 0.0358] }
+];
+let cameraMode = 0;
+const orbitPositions = cameraModes.map(mode => new THREE.Vector3(...mode.position));
+const orbitAnchors = new Map();
+const orbitCenter = new THREE.Vector3();
+const orbitRotation = new THREE.Quaternion();
 const shadowCenter = new THREE.Vector3();
 
 function resize() {
@@ -32,36 +42,62 @@ function resize() {
   orbitCamera.updateProjectionMatrix();
 }
 
-function resetView() {
-  orbitCamera.position.set(0, 0, 1.7);
+function applyCameraMode(position) {
+  const mode = cameraModes[cameraMode];
+  // Clear any remaining OrbitControls inertia before restoring a saved view.
+  controls.enableDamping = false;
   controls.update();
+  controls.minDistance = mode.minDistance;
+  controls.maxPolarAngle = mode.maxPolarAngle;
+  orbitCamera.position.copy(position);
+  controls.update();
+  controls.enableDamping = Boolean(mode.damping);
+  el('camera-mode').textContent = 'View: ' + mode.label;
 }
 
-function attachFaceAnchor(avatar) {
-  const head = avatar.getObjectByName('Head');
+function resetView() {
+  orbitPositions[cameraMode].set(...cameraModes[cameraMode].position);
+  applyCameraMode(orbitPositions[cameraMode]);
+}
+
+function cycleCameraMode() {
+  orbitPositions[cameraMode].copy(orbitCamera.position);
+  cameraMode = (cameraMode + 1) % cameraModes.length;
+  applyCameraMode(orbitPositions[cameraMode]);
+}
+
+function attachOrbitAnchors(avatar) {
   const skin = avatar.getObjectByProperty('isSkinnedMesh', true).skeleton;
-  const meshToHead = skin.boneInverses[skin.bones.indexOf(head)];
   // The avatar mesh is Z-up and faces +X in bind space.
-  const faceFrame = new THREE.Matrix4().makeBasis(
+  const viewFrame = new THREE.Matrix4().makeBasis(
     new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 1), new THREE.Vector3(1, 0, 0)
   );
-  const anchor = new THREE.Object3D();
-  anchor.position.set(0.003, 0, 0.0482).applyMatrix4(meshToHead);
-  anchor.quaternion.setFromRotationMatrix(new THREE.Matrix4().extractRotation(meshToHead).multiply(faceFrame));
-  head.add(anchor);
-  return anchor;
+  for (const { bone, center } of cameraModes) {
+    if (!bone) continue;
+    const joint = avatar.getObjectByName(bone);
+    const meshToJoint = skin.boneInverses[skin.bones.indexOf(joint)];
+    const anchor = new THREE.Object3D();
+    anchor.position.set(...center).applyMatrix4(meshToJoint);
+    anchor.quaternion.setFromRotationMatrix(new THREE.Matrix4().extractRotation(meshToJoint).multiply(viewFrame));
+    joint.add(anchor);
+    orbitAnchors.set(bone, anchor);
+  }
 }
 
 function updateCamera() {
-  // OrbitControls works in face space. Apply the head pose only to the
-  // rendering camera, so even a head tilt leaves the chosen view intact.
+  // OrbitControls tracks the chosen angle in its own frame. Apply the
+  // animated joint rotation only to the rendering camera in a focused view.
   controls.update();
-  if (faceAnchor) {
-    faceAnchor.getWorldPosition(facePosition);
-    faceAnchor.getWorldQuaternion(faceRotation);
+  const anchor = orbitAnchors.get(cameraModes[cameraMode].bone);
+  if (anchor) {
+    anchor.getWorldPosition(orbitCenter);
+    anchor.getWorldQuaternion(orbitRotation);
+  } else {
+    orbitCenter.set(shadowCenter.x, 0.94, shadowCenter.z);
+    orbitRotation.identity();
   }
-  camera.position.copy(orbitCamera.position).applyQuaternion(faceRotation).add(facePosition);
-  camera.quaternion.copy(faceRotation).multiply(orbitCamera.quaternion);
+  camera.position.copy(orbitCamera.position).applyQuaternion(orbitRotation).add(orbitCenter);
+  camera.quaternion.copy(orbitRotation).multiply(orbitCamera.quaternion);
 }
 
 function setupStage() {
@@ -79,7 +115,6 @@ function setupStage() {
   orbitCamera = camera.clone();
   controls = new OrbitControls(orbitCamera, renderer.domElement);
   controls.enablePan = false;
-  controls.minDistance = 0.55;
   controls.maxDistance = 12;
   resetView();
 
@@ -278,6 +313,7 @@ async function select(item) {
 el('search').addEventListener('input', renderLibrary);
 el('filter').addEventListener('change', renderLibrary);
 el('camera').addEventListener('click', () => { if (camera) resetView(); });
+el('camera-mode').addEventListener('click', cycleCameraMode);
 el('play').addEventListener('click', () => {
   if (!action) return;
   if (action.paused && action.time >= action.getClip().duration) action.reset().play();
@@ -315,7 +351,8 @@ try {
       node.frustumCulled = false;
     }
   });
-  faceAnchor = attachFaceAnchor(avatar);
+  attachOrbitAnchors(avatar);
+  el('camera-mode').disabled = false;
   scene.add(avatar);
   for (const group of new Set(clips.map(item => item.group))) el('filter').add(new Option(group, group));
   renderLibrary();

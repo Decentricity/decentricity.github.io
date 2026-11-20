@@ -13,7 +13,8 @@ main{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,355px);gap:18
 .stage{position:relative;height:clamp(335px,calc(100svh - 290px),720px);background:#202932}
 .stage canvas{display:block;width:100%;height:100%;touch-action:none}
 .stage-top{position:absolute;top:14px;left:14px;right:14px;justify-content:space-between;gap:10px;z-index:1;pointer-events:none}
-.stage-top button{pointer-events:auto}
+.view-tools{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:6px}
+.stage-top button{pointer-events:auto;white-space:nowrap}
 #status,.stage-tip{border-radius:8px;padding:8px 10px;background:#131920e8;color:var(--accent);font-size:.82rem}
 .stage-tip{position:absolute;bottom:14px;left:14px;color:var(--muted);pointer-events:none}
 .transport{padding:17px 19px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;border-top:1px solid var(--line)}
