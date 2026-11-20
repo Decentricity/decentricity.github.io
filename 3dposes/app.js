@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { createRetargeter } from './retarget.js';
+import { createRetargeter } from './retarget.js?v=2';
 
 const el = id => document.getElementById(id);
 const stage = el('stage');

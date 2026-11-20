@@ -39,6 +39,12 @@ function bindPosition(bind, joint) {
   return new Vector3().setFromMatrixPosition(bind.get(joint));
 }
 
+function hipHeading(root, bind, left, right) {
+  const side = bindPosition(bind, root.getObjectByName(left))
+    .sub(bindPosition(bind, root.getObjectByName(right)));
+  return Math.atan2(side.x, side.z);
+}
+
 function alignBindDirection(source, target, sourceBind, targetBind) {
   const nextPair = joints.find(([a, b]) =>
     source.getObjectByName(a)?.parent === source && target.getObjectByName(b)?.parent === target);
@@ -55,6 +61,12 @@ export function createRetargeter(source, avatar) {
   const sourceBind = new Map(source.getObjectsByProperty('isBone', true)
     .map(bone => [bone, bone.matrixWorld.clone()]));
   const targetBind = bindTransforms(avatar);
+  // The female mesh's bind pose faces +X, while the CMU rig faces +Z.
+  // Align their hip axes before deriving the per-joint rotation offsets.
+  const headingOffset = hipHeading(source, sourceBind, 'thigh_l', 'thigh_r')
+    - hipHeading(avatar, targetBind, 'LeftUpLeg', 'RightUpLeg');
+  const alignHeading = new Matrix4().makeRotationY(headingOffset);
+  for (const matrix of targetBind.values()) matrix.premultiply(alignHeading);
   const sourceHips = source.getObjectByName('pelvis');
   const targetHips = avatar.getObjectByName('Hips');
   const sourceRest = bindPosition(sourceBind, sourceHips);
