@@ -147,10 +147,15 @@ function setLoop() {
   if (action) action.setLoop(el('loop').checked ? THREE.LoopRepeat : THREE.LoopOnce, el('loop').checked ? Infinity : 1);
 }
 
-function colorAvatarHair(material) {
+function styleAvatarMaterial(material) {
+  material.metalness = 0;
+  material.roughness = 0.88;
   material.onBeforeCompile = shader => {
     shader.uniforms.hairBrown = { value: new THREE.Color('#49291f') };
-    shader.uniforms.hairRed = { value: new THREE.Color('#be2938') };
+    shader.uniforms.hairRed = { value: new THREE.Color('#a63038') };
+    shader.uniforms.shirtColor = { value: new THREE.Color('#315651') };
+    shader.uniforms.trouserColor = { value: new THREE.Color('#344257') };
+    shader.uniforms.shoeColor = { value: new THREE.Color('#48332f') };
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', '#include <common>\nvarying vec3 hairRestPosition;')
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nhairRestPosition = position;');
@@ -158,15 +163,25 @@ function colorAvatarHair(material) {
       .replace('#include <common>', `#include <common>
         varying vec3 hairRestPosition;
         uniform vec3 hairBrown;
-        uniform vec3 hairRed;`)
+        uniform vec3 hairRed;
+        uniform vec3 shirtColor;
+        uniform vec3 trouserColor;
+        uniform vec3 shoeColor;`)
       .replace('#include <map_fragment>', `#include <map_fragment>
-        // Only the hair swatch of the avatar's palette texture is recolored.
+        // The original atlas assigns hair and clothing to separate palette bands.
         if (vMapUv.y >= 11.0 / 32.0 && vMapUv.y < 17.0 / 32.0) {
           // Use the rest position so the streaks follow the skinned hair.
           float angle = atan(hairRestPosition.y, hairRestPosition.x + 0.00045);
           float sweep = angle + (hairRestPosition.z - 0.048) * 65.0;
-          float streak = smoothstep(0.85, 0.98, cos(5.0 * sweep - 0.8));
-          diffuseColor.rgb = mix(hairBrown, hairRed, streak);
+          float streak = smoothstep(0.89, 0.99, cos(5.0 * sweep - 0.8));
+          float strands = 0.94 + 0.06 * cos(107.0 * sweep);
+          diffuseColor.rgb = mix(hairBrown, hairRed, streak) * strands;
+        } else if (vMapUv.y >= 28.0 / 32.0) {
+          diffuseColor.rgb = shoeColor;
+        } else if (vMapUv.y >= 23.0 / 32.0) {
+          diffuseColor.rgb = trouserColor;
+        } else if (vMapUv.y >= 17.0 / 32.0) {
+          diffuseColor.rgb = shirtColor;
         }`);
   };
 }
@@ -261,7 +276,7 @@ try {
       if (!response.ok) throw new Error('Clip list unavailable');
       return response.json();
     }),
-    loader.loadAsync('../woman.glb')
+    loader.loadAsync('./avatar.glb?v=4')
   ]);
   clips = manifest;
   avatar = model.scene;
@@ -269,11 +284,11 @@ try {
   avatar.scale.setScalar(0.36);
   avatar.traverse(node => {
     if (node.isMesh) {
+      if (node.material.name === 'Material') styleAvatarMaterial(node.material);
       node.castShadow = true;
       node.frustumCulled = false;
     }
   });
-  colorAvatarHair(avatar.getObjectByName('Woman').material);
   scene.add(avatar);
   for (const group of new Set(clips.map(item => item.group))) el('filter').add(new Option(group, group));
   renderLibrary();
