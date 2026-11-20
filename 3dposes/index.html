@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Play 50 real motion-capture movements on a 3D character.">
+  <title>3D Poses · CMU motion player</title>
+  <link rel="stylesheet" href="./style.css">
+  <script type="importmap">
+    {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.183.2/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.183.2/examples/jsm/"}}
+  </script>
+</head>
+<body>
+  <header class="masthead">
+    <div class="identity"><span class="mark" aria-hidden="true">◈</span><h1>3D Poses</h1></div>
+    <span class="collection">CMU Motion Capture</span>
+  </header>
+  <main>
+    <section class="player" aria-label="Motion player">
+      <div id="stage" class="stage">
+        <div class="stage-top"><output id="status" aria-live="polite">Loading avatar…</output><button type="button" id="camera">Reset view</button></div>
+        <span class="stage-tip">Drag to orbit · Scroll or pinch to zoom</span>
+      </div>
+      <div class="transport">
+        <div class="now"><p id="clip-group" class="eyebrow">Motion player</p><h2 id="clip-title">Choose a movement</h2></div>
+        <div class="controls">
+          <button id="play" type="button" disabled>Pause</button>
+          <button id="restart" type="button" disabled>Restart</button>
+          <label class="speed">Speed <select id="speed"><option value=".25">0.25×</option><option value=".5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option></select></label>
+          <label class="loop"><input id="loop" type="checkbox" checked> Loop</label>
+        </div>
+        <div class="timeline"><input id="seek" aria-label="Playback position" type="range" value="0" min="0" max="1" step=".001" disabled><span id="time">0:00 / 0:00</span></div>
+      </div>
+    </section>
+    <aside class="library" aria-labelledby="library-title">
+      <div class="library-head">
+        <div class="library-title"><h2 id="library-title">Movements</h2><span id="count"></span></div>
+        <input id="search" type="search" placeholder="Search movements…" aria-label="Search movements">
+        <select id="filter" aria-label="Filter by movement category"><option value="">All categories</option></select>
+      </div>
+      <div id="clips" class="clip-list"></div>
+    </aside>
+  </main>
+  <footer>
+    The data used in this project was obtained from <a href="https://mocap.cs.cmu.edu/">mocap.cs.cmu.edu</a>.
+    The database was created with funding from NSF EIA-0196217.
+    GLB conversion by <a href="https://huggingface.co/datasets/codepawl/cmu-mocap-glb">CodePawl</a>.
+    <a href="https://mocap.cs.cmu.edu/faqs.php">Motion data terms</a>.
+  </footer>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

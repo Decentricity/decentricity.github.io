@@ -1,0 +1,352 @@
+[
+  {
+    "code": "02_01",
+    "title": "Walk",
+    "group": "Locomotion",
+    "seconds": 2.867,
+    "source": "objects/02_01-walk/02_01-walk.glb"
+  },
+  {
+    "code": "09_01",
+    "title": "Run",
+    "group": "Locomotion",
+    "seconds": 1.233,
+    "source": "objects/09_01-run/09_01-run.glb"
+  },
+  {
+    "code": "03_02",
+    "title": "Uneven terrain",
+    "group": "Locomotion",
+    "seconds": 3.05,
+    "source": "objects/03_02-walk-on-uneven-terrain/03_02-walk-on-uneven-terrain.glb"
+  },
+  {
+    "code": "104_01",
+    "title": "Jog",
+    "group": "Locomotion",
+    "seconds": 3.217,
+    "source": "objects/104_01-jogthrough/104_01-jogthrough.glb"
+  },
+  {
+    "code": "104_03",
+    "title": "Frankenstein walk",
+    "group": "Locomotion",
+    "seconds": 13.5,
+    "source": "objects/104_03-frankenstein-male-walk-exact-footfalls/104_03-frankenstein-male-walk-exact-footfalls.glb"
+  },
+  {
+    "code": "47_01",
+    "title": "Turn and walk back",
+    "group": "Locomotion",
+    "seconds": 11,
+    "source": "objects/47_01-walk-forward-turn-around-walk-back/47_01-walk-forward-turn-around-walk-back.glb"
+  },
+  {
+    "code": "83_01",
+    "title": "Sidestep right",
+    "group": "Locomotion",
+    "seconds": 5.283,
+    "source": "objects/83_01-large-sidestep-to-right/83_01-large-sidestep-to-right.glb"
+  },
+  {
+    "code": "83_03",
+    "title": "Step up a ledge",
+    "group": "Locomotion",
+    "seconds": 5.583,
+    "source": "objects/83_03-large-step-to-a-short-ledge/83_03-large-step-to-a-short-ledge.glb"
+  },
+  {
+    "code": "75_04",
+    "title": "Wide-leg run",
+    "group": "Locomotion",
+    "seconds": 4.833,
+    "source": "objects/75_04-wide-leg-run/75_04-wide-leg-run.glb"
+  },
+  {
+    "code": "105_03",
+    "title": "Figure-eight walk",
+    "group": "Locomotion",
+    "seconds": 15.55,
+    "source": "objects/105_03-walk8/105_03-walk8.glb"
+  },
+  {
+    "code": "02_04",
+    "title": "Jump and balance",
+    "group": "Jumps & acrobatics",
+    "seconds": 4.033,
+    "source": "objects/02_04-jump-balance/02_04-jump-balance.glb"
+  },
+  {
+    "code": "16_03",
+    "title": "High jump",
+    "group": "Jumps & acrobatics",
+    "seconds": 3.417,
+    "source": "objects/16_03-high-jump/16_03-high-jump.glb"
+  },
+  {
+    "code": "75_01",
+    "title": "Running jump",
+    "group": "Jumps & acrobatics",
+    "seconds": 6.3,
+    "source": "objects/75_01-run-jump/75_01-run-jump.glb"
+  },
+  {
+    "code": "85_02",
+    "title": "Jump and twist",
+    "group": "Jumps & acrobatics",
+    "seconds": 6.75,
+    "source": "objects/85_02-jumptwist/85_02-jumptwist.glb"
+  },
+  {
+    "code": "82_04",
+    "title": "Jump off a ledge",
+    "group": "Jumps & acrobatics",
+    "seconds": 7.567,
+    "source": "objects/82_04-jump-off-ledge/82_04-jump-off-ledge.glb"
+  },
+  {
+    "code": "87_03",
+    "title": "Backflip",
+    "group": "Jumps & acrobatics",
+    "seconds": 4.117,
+    "source": "objects/87_03-backflip/87_03-backflip.glb"
+  },
+  {
+    "code": "90_02",
+    "title": "Cartwheel",
+    "group": "Jumps & acrobatics",
+    "seconds": 6.517,
+    "source": "objects/90_02-cartwheel/90_02-cartwheel.glb"
+  },
+  {
+    "code": "01_01",
+    "title": "Playground jump and turn",
+    "group": "Jumps & acrobatics",
+    "seconds": 22.933,
+    "source": "objects/01_01-playground-forward-jumps-turn-around/01_01-playground-forward-jumps-turn-around.glb"
+  },
+  {
+    "code": "89_04",
+    "title": "One-handed balance sequence",
+    "group": "Jumps & acrobatics",
+    "seconds": 31.95,
+    "source": "objects/89_04-spins-flips-stand-on-one-hand/89_04-spins-flips-stand-on-one-hand.glb"
+  },
+  {
+    "code": "88_02",
+    "title": "Platform jumps and handstands",
+    "group": "Jumps & acrobatics",
+    "seconds": 55.467,
+    "source": "objects/88_02-backflips-jump-onto-platform-handstands-vertical/88_02-backflips-jump-onto-platform-handstands-vertical.glb"
+  },
+  {
+    "code": "05_02",
+    "title": "Pirouette",
+    "group": "Dance & performance",
+    "seconds": 9.367,
+    "source": "objects/05_02-dance-expressive-arms-pirouette/05_02-dance-expressive-arms-pirouette.glb"
+  },
+  {
+    "code": "05_03",
+    "title": "Sideways arabesque",
+    "group": "Dance & performance",
+    "seconds": 3.617,
+    "source": "objects/05_03-dance-sideways-arabesque-turn-step-folding-arms/05_03-dance-sideways-arabesque-turn-step-folding-arms.glb"
+  },
+  {
+    "code": "103_04",
+    "title": "Charleston",
+    "group": "Dance & performance",
+    "seconds": 4.217,
+    "source": "objects/103_04-charleston-side-by-side-female/103_04-charleston-side-by-side-female.glb"
+  },
+  {
+    "code": "20_01",
+    "title": "Chicken dance",
+    "group": "Dance & performance",
+    "seconds": 10.717,
+    "source": "objects/20_01-chicken-dance-2-subjects-subject-a/20_01-chicken-dance-2-subjects-subject-a.glb"
+  },
+  {
+    "code": "55_02",
+    "title": "Lambada",
+    "group": "Dance & performance",
+    "seconds": 18.167,
+    "source": "objects/55_02-lambada-dance/55_02-lambada-dance.glb"
+  },
+  {
+    "code": "60_03",
+    "title": "Salsa",
+    "group": "Dance & performance",
+    "seconds": 30.5,
+    "source": "objects/60_03-salsa-dance/60_03-salsa-dance.glb"
+  },
+  {
+    "code": "24_01",
+    "title": "I’m a little teapot",
+    "group": "Dance & performance",
+    "seconds": 17.267,
+    "source": "objects/24_01-nursery-rhyme-i-m-a-little-teapot/24_01-nursery-rhyme-i-m-a-little-teapot.glb"
+  },
+  {
+    "code": "54_01",
+    "title": "Monkey impression",
+    "group": "Dance & performance",
+    "seconds": 16.017,
+    "source": "objects/54_01-monkey-human-subject/54_01-monkey-human-subject.glb"
+  },
+  {
+    "code": "54_03",
+    "title": "Penguin impression",
+    "group": "Dance & performance",
+    "seconds": 23.1,
+    "source": "objects/54_03-penguin-human-subject/54_03-penguin-human-subject.glb"
+  },
+  {
+    "code": "54_04",
+    "title": "Pterosaur impression",
+    "group": "Dance & performance",
+    "seconds": 38.417,
+    "source": "objects/54_04-pterosaur-human-subject/54_04-pterosaur-human-subject.glb"
+  },
+  {
+    "code": "06_04",
+    "title": "Basketball dribble",
+    "group": "Sport & exercise",
+    "seconds": 3.3,
+    "source": "objects/06_04-basketball-forward-dribble/06_04-basketball-forward-dribble.glb"
+  },
+  {
+    "code": "10_03",
+    "title": "Soccer kick",
+    "group": "Sport & exercise",
+    "seconds": 3.017,
+    "source": "objects/10_03-soccer-kick-ball/10_03-soccer-kick-ball.glb"
+  },
+  {
+    "code": "14_02",
+    "title": "Boxing",
+    "group": "Sport & exercise",
+    "seconds": 45.2,
+    "source": "objects/14_02-boxing/14_02-boxing.glb"
+  },
+  {
+    "code": "42_01",
+    "title": "Full-body stretch",
+    "group": "Sport & exercise",
+    "seconds": 18.9,
+    "source": "objects/42_01-stretch-rotate-head-shoulders-arms-legs/42_01-stretch-rotate-head-shoulders-arms-legs.glb"
+  },
+  {
+    "code": "12_04",
+    "title": "Tai chi",
+    "group": "Sport & exercise",
+    "seconds": 148.333,
+    "source": "objects/12_04-tai-chi/12_04-tai-chi.glb"
+  },
+  {
+    "code": "79_02",
+    "title": "Swimming",
+    "group": "Sport & exercise",
+    "seconds": 12.933,
+    "source": "objects/79_02-swimming/79_02-swimming.glb"
+  },
+  {
+    "code": "103_02",
+    "title": "Range-of-motion drill",
+    "group": "Sport & exercise",
+    "seconds": 12.433,
+    "source": "objects/103_02-rangeofmotion-01/103_02-rangeofmotion-01.glb"
+  },
+  {
+    "code": "33_02",
+    "title": "Football throw and catch",
+    "group": "Sport & exercise",
+    "seconds": 21.417,
+    "source": "objects/33_02-football-throw-catch-jump-around-2-subjects-subj/33_02-football-throw-catch-jump-around-2-subjects-subj.glb"
+  },
+  {
+    "code": "26_02",
+    "title": "Basketball referee signals",
+    "group": "Sport & exercise",
+    "seconds": 50.483,
+    "source": "objects/26_02-basketball-signals/26_02-basketball-signals.glb"
+  },
+  {
+    "code": "76_04",
+    "title": "Defensive stance",
+    "group": "Sport & exercise",
+    "seconds": 3.483,
+    "source": "objects/76_04-defensive-guard-pose/76_04-defensive-guard-pose.glb"
+  },
+  {
+    "code": "77_04",
+    "title": "Look around",
+    "group": "Everyday actions",
+    "seconds": 14.717,
+    "source": "objects/77_04-looking-around/77_04-looking-around.glb"
+  },
+  {
+    "code": "81_01",
+    "title": "Fix hair and walk",
+    "group": "Everyday actions",
+    "seconds": 10.433,
+    "source": "objects/81_01-fix-hair-and-walk-forward/81_01-fix-hair-and-walk-forward.glb"
+  },
+  {
+    "code": "13_01",
+    "title": "Sit and stand",
+    "group": "Everyday actions",
+    "seconds": 19.283,
+    "source": "objects/13_01-sit-on-high-stool-stand-up/13_01-sit-on-high-stool-stand-up.glb"
+  },
+  {
+    "code": "14_04",
+    "title": "Drink from a bottle",
+    "group": "Everyday actions",
+    "seconds": 6.333,
+    "source": "objects/14_04-drink-soda-screw-on-bottlecap/14_04-drink-soda-screw-on-bottlecap.glb"
+  },
+  {
+    "code": "18_01",
+    "title": "Walk and shake hands",
+    "group": "Everyday actions",
+    "seconds": 2.533,
+    "source": "objects/18_01-walk-shake-hands-2-subjects-subject-a/18_01-walk-shake-hands-2-subjects-subject-a.glb"
+  },
+  {
+    "code": "62_01",
+    "title": "Loosen a bolt",
+    "group": "Everyday actions",
+    "seconds": 18.033,
+    "source": "objects/62_01-bolt-loosening-wrench/62_01-bolt-loosening-wrench.glb"
+  },
+  {
+    "code": "70_01",
+    "title": "Carry a suitcase",
+    "group": "Everyday actions",
+    "seconds": 5.967,
+    "source": "objects/70_01-carry-5-5lb-suitcase/70_01-carry-5-5lb-suitcase.glb"
+  },
+  {
+    "code": "79_04",
+    "title": "Digging",
+    "group": "Everyday actions",
+    "seconds": 15.15,
+    "source": "objects/79_04-digging/79_04-digging.glb"
+  },
+  {
+    "code": "80_02",
+    "title": "Chop onions",
+    "group": "Everyday actions",
+    "seconds": 11.733,
+    "source": "objects/80_02-chopping-onions/80_02-chopping-onions.glb"
+  },
+  {
+    "code": "80_04",
+    "title": "Sewing",
+    "group": "Everyday actions",
+    "seconds": 18.367,
+    "source": "objects/80_04-sewing/80_04-sewing.glb"
+  }
+]
