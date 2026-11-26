@@ -1,0 +1,30 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+import crypto from 'node:crypto';
+import {chapters,clients,invitations} from '../content.js';
+import {makeScenes} from '../scenes.js';
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+const portfolio=JSON.parse(fs.readFileSync(path.join(root,'portfolio.json')));
+const sources=JSON.parse(fs.readFileSync(path.join(root,'../sources.json')));
+const scenes=makeScenes(chapters);
+assert.equal(scenes.length,9);assert.equal(new Set(scenes.map(s=>s.id)).size,9);
+assert.equal(chapters.reduce((a,c)=>a+c.seconds,0),410);
+for(const [i,c]of chapters.entries()){
+ assert(c.beats.length>=2&&c.beats.length<=4);
+ assert.equal(scenes[i].notes.length,c.beats.length);
+ for(const ref of c.refs)assert(sources[ref],`Missing reference: ${ref}`);
+ for(const p of c.projects||[])assert(portfolio.featuredProjects.some(x=>x.id===p),`Missing project: ${p}`);
+ assert(Math.abs(scenes[i].beats.reduce((a,b)=>a+b.dur+b.hold,0)-c.seconds)<.01);
+}
+assert.equal(clients.length,12);assert.equal(invitations.length,3);
+const engine=fs.readFileSync(path.join(root,'engine.js'),'utf8');
+const donor=fs.readFileSync(path.join(root,'../assets/deck.js'),'utf8');
+const marker='  window.startBlocksphere = () => C3({';
+assert(engine.startsWith(donor.slice(0,donor.lastIndexOf(marker))),'Original engine prefix changed');
+const provenance=JSON.parse(fs.readFileSync(path.join(root,'source/engine-provenance.json')));
+assert.equal(provenance.sourceSha256,crypto.createHash('sha256').update(donor).digest('hex'));
+const scenesCode=fs.readFileSync(path.join(root,'scenes.js'),'utf8');
+for(const m of scenesCode.matchAll(/['"]((?:\.\.\/)?assets\/[^'"]+\.(?:jpg|webp|png))['"]/g))assert(fs.existsSync(path.join(root,m[1])),`Missing asset ${m[1]}`);
+console.log(`Verified ${scenes.length} new scenes, 410 seconds of beats, ${portfolio.archive.length} archive entries, all project/source references, local scene imagery, and unchanged donor engine before the adapter.`);

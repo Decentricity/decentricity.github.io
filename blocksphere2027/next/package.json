@@ -1,0 +1,1 @@
+{"private":true,"type":"module","scripts":{"verify":"node source/verify.mjs","build:engine":"node source/build-engine.cjs"}}
