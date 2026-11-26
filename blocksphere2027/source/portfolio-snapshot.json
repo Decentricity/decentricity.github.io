@@ -1,0 +1,748 @@
+{
+  "schemaVersion": "1.0",
+  "canonicalUrl": "https://portfolio.blocksphere.id/",
+  "company": {
+    "name": "Blocksphere",
+    "legal": "PT Blocksphere Teknoniaga Indonesia",
+    "tagline": "Shipping blockchain since 2017.",
+    "blurb": "Enterprise blockchain consulting and development — bridging boardroom ambition with production-grade decentralization across Indonesia and beyond.",
+    "email": "hello@blocksphere.id",
+    "site": "https://blocksphere.id/",
+    "address": "Marquee, Level 37, Equity Tower, SCBD Lot 9, Jl. Jend. Sudirman Kav 52–53, Jakarta 12190",
+    "social": "@blocksphere.id"
+  },
+  "clients": [
+    "BNI",
+    "Pegadaian",
+    "Bank BRI",
+    "Kominfo",
+    "BCA",
+    "Bank Indonesia",
+    "Angkasa Pura II",
+    "Peruri",
+    "Biido",
+    "Telkom Indonesia",
+    "Astra Honda Motors",
+    "BPJS Kesehatan"
+  ],
+  "featuredProjects": [
+    {
+      "id": "realitychain",
+      "name": "RealityChain",
+      "year": 2021,
+      "client": "RealityChain",
+      "country": "Indonesia",
+      "tagline": "Metaverse as a Service",
+      "summary": "Multichain Metaverse-as-a-Service — winner of MetaBUIDL games — powering interoperable pixel worlds, NFT land, live events, and Myriad.Town on NEAR/Octopus.",
+      "accent": "#1a9b8e",
+      "theme": "pixel",
+      "image": "assets/projects/realitychain.webp",
+      "tags": [
+        "Metaverse",
+        "Multichain",
+        "Live Events"
+      ],
+      "filters": [
+        "metaverse",
+        "web3",
+        "nft"
+      ]
+    },
+    {
+      "id": "myriad",
+      "name": "Myriad Social",
+      "year": 2021,
+      "client": "Myriad LLC",
+      "country": "France",
+      "tagline": "Decentralized social, owned by users",
+      "summary": "Web3 social layer on top of Web2 feeds — tippable identities, sovereign content, and later Polkadot migration — with RealityChain powering Myriad.Town.",
+      "accent": "#7c3aed",
+      "theme": "social",
+      "image": "assets/projects/myriad.webp",
+      "tags": [
+        "Social",
+        "Polkadot",
+        "Web3"
+      ],
+      "filters": [
+        "social",
+        "web3",
+        "polkadot",
+        "metaverse"
+      ]
+    },
+    {
+      "id": "debio",
+      "name": "DeBio Network",
+      "year": 2022,
+      "client": "Daogenics Pte Ltd",
+      "country": "Singapore",
+      "tagline": "Anonymous-first biomedical network",
+      "summary": "Privacy-first genetics and bioinformatics marketplace from Daogenics — ETHDenver IPFS + UN SDG winner — Substrate/Ocean stack against genetic discrimination.",
+      "accent": "#ec4899",
+      "theme": "bio",
+      "image": "assets/projects/debio.webp",
+      "tags": [
+        "Bioinformatics",
+        "Privacy",
+        "Marketplace"
+      ],
+      "filters": [
+        "privacy",
+        "bioinformatics",
+        "healthcare",
+        "web3"
+      ]
+    },
+    {
+      "id": "digiland",
+      "name": "Digiland Bali",
+      "year": 2022,
+      "client": "Digiland Bali",
+      "country": "Indonesia",
+      "tagline": "Blockchain apartment & NFT land platform",
+      "summary": "Property tokenization UX for Bali apartments — wallet-connected ownership, NFT room assets, and fractional digital real-estate flows.",
+      "accent": "#2563eb",
+      "theme": "realty",
+      "image": "assets/projects/digiland.webp",
+      "tags": [
+        "Real Estate",
+        "NFT",
+        "Tokenization"
+      ],
+      "filters": [
+        "tokenization",
+        "rwa",
+        "nft",
+        "realestate"
+      ]
+    },
+    {
+      "id": "btse",
+      "name": "Confidential Crypto Exchange #2",
+      "year": 2025,
+      "client": "Confidential",
+      "country": "Indonesia",
+      "tagline": "Cryptocurrency exchange platform",
+      "summary": "Exchange product engineering for market launch — spot trading, earn strategies, and compliance-ready digital asset UX.",
+      "accent": "#22c55e",
+      "theme": "exchange-dark",
+      "image": "assets/projects/confidential-exchange-2.webp",
+      "tags": [
+        "Exchange",
+        "Trading",
+        "FinTech"
+      ],
+      "filters": [
+        "exchange",
+        "fintech",
+        "trading"
+      ],
+      "noIcon": true
+    },
+    {
+      "id": "nvx",
+      "name": "Confidential Crypto Exchange #1",
+      "year": 2024,
+      "client": "Confidential",
+      "country": "Indonesia",
+      "tagline": "Digital asset exchange platform",
+      "summary": "Full crypto exchange build — deposits, markets, P2P, earn, and launchpad — tuned for local investors and mobile-first flows.",
+      "accent": "#3b82f6",
+      "theme": "exchange-blue",
+      "image": "assets/projects/confidential-exchange-1.webp",
+      "tags": [
+        "Exchange",
+        "Mobile",
+        "FinTech"
+      ],
+      "filters": [
+        "exchange",
+        "fintech",
+        "trading"
+      ],
+      "noIcon": true
+    },
+    {
+      "id": "pegadaian",
+      "name": "Pegadaian Gold Tokenization",
+      "year": 2020,
+      "client": "PT Pegadaian",
+      "country": "Indonesia",
+      "tagline": "Compliance-first digital gold rails",
+      "summary": "Architected reserve-backed gold tokenization for Indonesia’s leading pawn & precious-metals SOE — fractional ownership, KYC, and supply-parity smart contracts.",
+      "accent": "#d4a017",
+      "theme": "gold",
+      "image": "assets/projects/pegadaian.webp",
+      "tags": [
+        "RWA",
+        "Tokenization",
+        "Gold"
+      ],
+      "filters": [
+        "tokenization",
+        "rwa",
+        "fintech",
+        "enterprise",
+        "government"
+      ]
+    },
+    {
+      "id": "idx",
+      "name": "Confidential Study",
+      "year": 2026,
+      "client": "IDX",
+      "country": "Indonesia",
+      "tagline": "National-level strategic report · ongoing",
+      "summary": "Multi-month engagement for a national capital-markets strategic report — reference architectures, market-design options, and recommendation artifacts. Work is ongoing.",
+      "accent": "#0f766e",
+      "theme": "idx",
+      "image": "assets/projects/idx.webp",
+      "tags": [
+        "Tokenization",
+        "RWA",
+        "Advisory"
+      ],
+      "filters": [
+        "tokenization",
+        "rwa",
+        "government",
+        "advisory",
+        "fintech"
+      ]
+    },
+    {
+      "id": "ecoberingin",
+      "name": "Ecoberingin E-Waste Chain",
+      "year": 2018,
+      "client": "PT Ecoberingin",
+      "country": "Indonesia",
+      "tagline": "Blockchain waste traceability",
+      "summary": "End-to-end e-waste tracking from collection to certified recycling — immutable handoffs, anti-fraud certificates, and automated ESG audit trails.",
+      "accent": "#16a34a",
+      "theme": "esg",
+      "image": "assets/projects/ecoberingin.webp",
+      "tags": [
+        "ESG",
+        "Traceability",
+        "Supply Chain"
+      ],
+      "filters": [
+        "esg",
+        "supplychain",
+        "enterprise",
+        "government"
+      ]
+    },
+    {
+      "id": "garuda",
+      "name": "Project Garuda CBDC Paper",
+      "year": 2022,
+      "client": "Bank Indonesia",
+      "country": "Indonesia",
+      "tagline": "National CBDC consultative research",
+      "summary": "Consultative paper contribution to Bank Indonesia’s Project Garuda — architecture options, risks, and design considerations for a sovereign digital rupiah.",
+      "accent": "#0ea5e9",
+      "theme": "cbdc",
+      "image": "assets/projects/garuda.webp",
+      "tags": [
+        "CBDC",
+        "Advisory",
+        "Policy"
+      ],
+      "filters": [
+        "cbdc",
+        "government",
+        "advisory",
+        "fintech"
+      ]
+    },
+    {
+      "id": "bni-loyalty",
+      "name": "BNI Loyalty Infrastructure",
+      "year": 2021,
+      "client": "Bank BNI",
+      "country": "Indonesia",
+      "tagline": "On-chain loyalty point rails",
+      "summary": "Loyalty-point infrastructure design for a major Indonesian bank — programmable points, partner settlement logic, and enterprise-grade ledger controls.",
+      "accent": "#f97316",
+      "theme": "loyalty",
+      "image": "assets/projects/bni-loyalty.webp",
+      "tags": [
+        "Loyalty",
+        "Banking",
+        "Enterprise"
+      ],
+      "filters": [
+        "fintech",
+        "enterprise",
+        "tokenization",
+        "banking"
+      ]
+    },
+    {
+      "id": "bri-agri",
+      "name": "BRI Sugar Farmer Ledger",
+      "year": 2020,
+      "client": "Bank BRI",
+      "country": "Indonesia",
+      "tagline": "Blockchain for agribusiness finance",
+      "summary": "Farmer-management information system for sugarcane supply chains — traceable harvest data feeding financing and bank partnership workflows.",
+      "accent": "#84cc16",
+      "theme": "agri",
+      "image": "assets/projects/bri-agri.webp",
+      "tags": [
+        "Agri",
+        "FinTech",
+        "Traceability"
+      ],
+      "filters": [
+        "supplychain",
+        "fintech",
+        "enterprise",
+        "banking",
+        "esg"
+      ]
+    },
+    {
+      "id": "uniqueone",
+      "name": "UniqueOne NFT Marketplace",
+      "year": 2021,
+      "client": "Uniqueone.io",
+      "country": "USA",
+      "tagline": "Multichain NFT commerce",
+      "summary": "NFT marketplace engineering in the Octopus/NEAR ecosystem — creator minting, trading flows, and interoperable digital collectible UX.",
+      "accent": "#a855f7",
+      "theme": "nft",
+      "image": "assets/projects/uniqueone.webp",
+      "tags": [
+        "NFT",
+        "Marketplace",
+        "Web3"
+      ],
+      "filters": [
+        "nft",
+        "web3",
+        "marketplace",
+        "metaverse"
+      ]
+    },
+    {
+      "id": "agent1c",
+      "name": "Agent1c.ai",
+      "year": 2026,
+      "client": "Solana Superteam",
+      "country": "Indonesia",
+      "tagline": "Cloud agent desktop runtime",
+      "summary": "Local-first / cloud agent operating shell — windowed tools, encrypted workspace, and Solana-native agent workflows for builders.",
+      "accent": "#14b8a6",
+      "theme": "agent",
+      "image": "assets/projects/agent1c.webp",
+      "tags": [
+        "AI",
+        "Agent",
+        "Solana"
+      ],
+      "filters": [
+        "ai",
+        "agent",
+        "solana",
+        "web3"
+      ]
+    },
+    {
+      "id": "hitomi",
+      "name": "Hitomi Agent",
+      "year": 2026,
+      "client": "Solana Superteam",
+      "country": "Indonesia",
+      "tagline": "Mobile companion agent",
+      "summary": "Android companion with floating overlay, cloud chat, and optional Termux bridge — agent tooling that travels with the operator.",
+      "accent": "#f43f5e",
+      "theme": "agent",
+      "image": "assets/projects/hitomi.webp",
+      "tags": [
+        "AI",
+        "Agent",
+        "Mobile"
+      ],
+      "filters": [
+        "ai",
+        "agent",
+        "solana",
+        "mobile"
+      ]
+    },
+    {
+      "id": "biido",
+      "name": "Biido Crypto Exchange",
+      "year": 2018,
+      "client": "PT Biido Indonesia",
+      "country": "Indonesia",
+      "tagline": "Early Indonesian crypto venue",
+      "summary": "End-to-end crypto exchange build for an Indonesian digital-asset pioneer — matching, custody workflows, and trading operations tooling.",
+      "accent": "#38bdf8",
+      "theme": "exchange-blue",
+      "image": "assets/projects/biido.webp",
+      "tags": [
+        "Exchange",
+        "FinTech"
+      ],
+      "filters": [
+        "exchange",
+        "fintech",
+        "trading"
+      ]
+    }
+  ],
+  "archive": [
+    {
+      "name": "Infrastruktur Blockchain As A Service",
+      "year": 2017,
+      "client": "PT Telkom Indonesia",
+      "country": "Indonesia",
+      "tags": [
+        "Infrastructure"
+      ]
+    },
+    {
+      "name": "Sistem Informasi Manajemen Surat Tanah Terdesentralisasi",
+      "year": 2017,
+      "client": "PT Telkom Indonesia",
+      "country": "Indonesia",
+      "tags": [
+        "Land Registry"
+      ]
+    },
+    {
+      "name": "Sistem Informasi Pelacakan Sparepart Kendaraan Bermotor",
+      "year": 2017,
+      "client": "QTrust Indonesia",
+      "country": "Indonesia",
+      "tags": [
+        "Supply Chain"
+      ]
+    },
+    {
+      "name": "Aplikasi Salam Contract Blockchain",
+      "year": 2017,
+      "client": "PT Igrow Resources",
+      "country": "Indonesia",
+      "tags": [
+        "Contracts"
+      ]
+    },
+    {
+      "name": "Decentralized Thinking Workshop",
+      "year": 2018,
+      "client": "Angkasa Pura II",
+      "country": "Indonesia",
+      "tags": [
+        "Training"
+      ]
+    },
+    {
+      "name": "Pengembangan Platform Perdagangan Aset Kripto (Crypto Exchange)",
+      "year": 2018,
+      "client": "PT Biido Indonesia",
+      "country": "Indonesia",
+      "tags": [
+        "Exchange"
+      ]
+    },
+    {
+      "name": "Ecoberingin Blockchain Based Waste Management",
+      "year": 2018,
+      "client": "PT Ecoberingin",
+      "country": "Indonesia",
+      "tags": [
+        "ESG",
+        "Traceability"
+      ]
+    },
+    {
+      "name": "Sistem Informasi Manajemen Properti Berbasis Blockchain (Ayoreal)",
+      "year": 2019,
+      "client": "PT Proptech",
+      "country": "Indonesia",
+      "tags": [
+        "Real Estate"
+      ]
+    },
+    {
+      "name": "JCM Carbon Credit Management",
+      "year": 2019,
+      "client": "IGES Japan",
+      "country": "Japan",
+      "tags": [
+        "Carbon"
+      ]
+    },
+    {
+      "name": "DBLink Blockchain Workshop",
+      "year": 2019,
+      "client": "DBLink",
+      "country": "Singapore",
+      "tags": [
+        "Training"
+      ]
+    },
+    {
+      "name": "Blockchain Hackathon “BCA Finhacks”",
+      "year": 2019,
+      "client": "Bank BCA",
+      "country": "Indonesia",
+      "tags": [
+        "Hackathon"
+      ]
+    },
+    {
+      "name": "Tokenisasi Emas Berbasis Blockchain",
+      "year": 2020,
+      "client": "PT Pegadaian",
+      "country": "Indonesia",
+      "tags": [
+        "RWA",
+        "Tokenization"
+      ]
+    },
+    {
+      "name": "Sistem Informasi Manajemen Petani Tebu Berbasis Blockchain",
+      "year": 2020,
+      "client": "Bank BRI",
+      "country": "Indonesia",
+      "tags": [
+        "Agri",
+        "FinTech"
+      ]
+    },
+    {
+      "name": "Blockchain Platform Workshop",
+      "year": 2020,
+      "client": "PT Astra International",
+      "country": "Indonesia",
+      "tags": [
+        "Training"
+      ]
+    },
+    {
+      "name": "Sistem Informasi Manajemen Loyalty Point Infrastructure",
+      "year": 2021,
+      "client": "Bank BNI",
+      "country": "Indonesia",
+      "tags": [
+        "Loyalty"
+      ]
+    },
+    {
+      "name": "Daogenics - Anonymous Genomics Testing Phase I",
+      "year": 2021,
+      "client": "Daogenics Pte Ltd",
+      "country": "Singapore",
+      "tags": [
+        "Bioinformatics"
+      ]
+    },
+    {
+      "name": "Daogenics - Anonymous Genomics Testing Phase II",
+      "year": 2021,
+      "client": "Daogenics Pte Ltd",
+      "country": "Singapore",
+      "tags": [
+        "Bioinformatics"
+      ]
+    },
+    {
+      "name": "Myriad Social - Decentralized Social Media",
+      "year": 2021,
+      "client": "Myriad LLC",
+      "country": "France",
+      "tags": [
+        "Social"
+      ]
+    },
+    {
+      "name": "Polkaparty Network",
+      "year": 2021,
+      "client": "Polkaparty.io",
+      "country": "USA",
+      "tags": [
+        "Polkadot"
+      ]
+    },
+    {
+      "name": "UniqueOne NFT Marketplace",
+      "year": 2021,
+      "client": "Uniqueone.io",
+      "country": "USA",
+      "tags": [
+        "NFT"
+      ]
+    },
+    {
+      "name": "Debio Network - Bioinformatics Platform",
+      "year": 2022,
+      "client": "Daogenics Pte Ltd",
+      "country": "Singapore",
+      "tags": [
+        "Bioinformatics"
+      ]
+    },
+    {
+      "name": "Digiland Bali Blockchain Based Apartment Platform",
+      "year": 2022,
+      "client": "Digiland Bali",
+      "country": "Indonesia",
+      "tags": [
+        "Real Estate",
+        "NFT"
+      ]
+    },
+    {
+      "name": "Consultative Paper - Project Garuda CBDC Bank Indonesia",
+      "year": 2022,
+      "client": "Bank Indonesia",
+      "country": "Indonesia",
+      "tags": [
+        "CBDC",
+        "Advisory"
+      ]
+    },
+    {
+      "name": "Myriad Polkadot Platform Migration",
+      "year": 2022,
+      "client": "Polkadot Network",
+      "country": "Indonesia",
+      "tags": [
+        "Polkadot"
+      ]
+    },
+    {
+      "name": "Pengembangan Infrastruktur Blockchain PERURI",
+      "year": 2023,
+      "client": "PT Indonesia Blockchain Persada",
+      "country": "Indonesia",
+      "tags": [
+        "Infrastructure"
+      ]
+    },
+    {
+      "name": "Digital Asset Score & Review Workshop",
+      "year": 2023,
+      "client": "Asosiasi Blockchain Indonesia",
+      "country": "Indonesia",
+      "tags": [
+        "Training"
+      ]
+    },
+    {
+      "name": "Sistem Informasi KPB Berbasis Blockchain",
+      "year": 2023,
+      "client": "PT Astra Honda Motors",
+      "country": "Indonesia",
+      "tags": [
+        "Enterprise"
+      ]
+    },
+    {
+      "name": "Feasibility Study Blockchain for Medical Claims",
+      "year": 2024,
+      "client": "BPJS Kesehatan",
+      "country": "Indonesia",
+      "tags": [
+        "Healthcare"
+      ]
+    },
+    {
+      "name": "Cryptocurrency Wallet Application",
+      "year": 2024,
+      "client": "Arise Network (PT Kita Bisa Nich)",
+      "country": "Indonesia",
+      "tags": [
+        "Wallet"
+      ]
+    },
+    {
+      "name": "Confidential Crypto Exchange #1",
+      "year": 2024,
+      "client": "Confidential",
+      "country": "Indonesia",
+      "tags": [
+        "Exchange"
+      ],
+      "noIcon": true
+    },
+    {
+      "name": "Confidential Crypto Exchange #2",
+      "year": 2025,
+      "client": "Confidential",
+      "country": "Indonesia",
+      "tags": [
+        "Exchange"
+      ],
+      "noIcon": true
+    },
+    {
+      "name": "Digital Asset Staking Platform",
+      "year": 2025,
+      "client": "Confidential",
+      "country": "Indonesia",
+      "tags": [
+        "Staking"
+      ],
+      "noIcon": true
+    },
+    {
+      "name": "Digital Asset Social Trading Platform (Solana)",
+      "year": 2025,
+      "client": "Solana Superteam",
+      "country": "Indonesia",
+      "tags": [
+        "Solana",
+        "Trading"
+      ]
+    },
+    {
+      "name": "HedgeyOS",
+      "year": 2026,
+      "client": "Solana Superteam",
+      "country": "Indonesia",
+      "tags": [
+        "OS",
+        "Solana"
+      ]
+    },
+    {
+      "name": "Hitomi Agent",
+      "year": 2026,
+      "client": "Solana Superteam",
+      "country": "Indonesia",
+      "tags": [
+        "AI",
+        "Agent"
+      ]
+    },
+    {
+      "name": "Agent1c.ai",
+      "year": 2026,
+      "client": "Solana Superteam",
+      "country": "Indonesia",
+      "tags": [
+        "AI",
+        "Agent"
+      ]
+    },
+    {
+      "name": "Confidential Study",
+      "year": 2026,
+      "client": "IDX",
+      "country": "Indonesia",
+      "tags": [
+        "Tokenization",
+        "RWA",
+        "Advisory",
+        "Pilot"
+      ]
+    }
+  ]
+}

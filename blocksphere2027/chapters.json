@@ -1,0 +1,210 @@
+[
+  {
+    "id": "office",
+    "title": "Blocksphere 2027",
+    "eyebrow": "01 / THE NEXT CHAPTER",
+    "summary": "Enterprise discipline. Decentralized thinking. A bigger canvas for what comes next.",
+    "notes": [
+      "Blocksphere builds enterprise blockchain and applied AI systems from Jakarta. Founded in 2017, the company connects advisory, engineering and training.",
+      "The story moves through digital sovereignty, delivery, projects and the people behind them. Use the arrows or tap the presentation to continue.",
+      "There is more to the work than a slide can hold: enterprise ledgers, tokenized assets, decentralized communities and AI products. Let the canvas open."
+    ],
+    "sources": [
+      "company",
+      "portfolio"
+    ]
+  },
+  {
+    "id": "tower",
+    "title": "Beyond the slide",
+    "eyebrow": "02 / A BIGGER CANVAS",
+    "summary": "From enterprise ledgers to tokenization, decentralized applications and applied AI.",
+    "notes": [
+      "A single ledger can become part of a much larger system. The rising paper illustrates the expanding scope of connected products, institutions and infrastructure.",
+      "Public portfolio examples include Pegadaian gold tokenization, DeBio's biomedical network and Myriad Social.",
+      "Blocksphere's current product work includes Agent1c.ai, HedgeyOS and Hitomi. Its Sovereign AI offering is open for pilots.",
+      "The next chapter starts with a concrete problem and a system designed for the organization that will use it."
+    ],
+    "sources": [
+      "portfolio",
+      "sovereign",
+      "company"
+    ]
+  },
+  {
+    "id": "boat",
+    "title": "Own your direction",
+    "eyebrow": "03 / DIGITAL SOVEREIGNTY",
+    "summary": "Choose the infrastructure. Keep control of the data. Build the capability to operate it.",
+    "notes": [
+      "A system should give its owner room to move. Blocksphere works across platforms rather than binding every problem to one chain or vendor.",
+      "Sovereign AI offers private deployment on infrastructure the organization chooses: on-premise, private cloud or air-gapped environments.",
+      "HedgeyOS extends that idea to personal computing with a local-first agent workspace. Control over the tools creates room to choose your own direction."
+    ],
+    "sources": [
+      "sovereign",
+      "company"
+    ]
+  },
+  {
+    "id": "loop",
+    "title": "One delivery team",
+    "eyebrow": "04 / SIX CONNECTED PRACTICES",
+    "summary": "Blockchain consulting. Blockchain development. AI. IT consulting. Software. Training.",
+    "notes": [
+      "Begin with a useful problem, a feasibility assessment and a clear architecture. The technology follows the use case.",
+      "Six practices connect business strategy to working software. Consulting, development and training reinforce one another throughout delivery.",
+      "Integration and training make a deployment usable. The work includes connecting existing enterprise systems to new blockchain and AI capabilities.",
+      "An iterative delivery loop: build, learn, improve. Each project adds experience that can inform the next."
+    ],
+    "sources": [
+      "company",
+      "training"
+    ]
+  },
+  {
+    "id": "swarm",
+    "title": "Agents with agency",
+    "eyebrow": "05 / APPLIED AI",
+    "summary": "Agent1c.ai, HedgeyOS and Hitomi: product experience behind the consulting.",
+    "notes": [
+      "Start with one agent and the tools needed to complete a useful task. Connect tools, memory and orchestration around the workflow.",
+      "Agent1c.ai is a browser-based agentic operating system with encrypted files, applications and voice interaction.",
+      "HedgeyOS is the local-first edition. Hitomi is an Android AI companion with browsing and terminal capabilities. These are distinct products with different deployment contexts.",
+      "Sovereign AI brings private models, infrastructure choices and governance into enterprise deployments. Pilot scope and outcomes are agreed with the organization."
+    ],
+    "sources": [
+      "company",
+      "agent1c",
+      "hedgey",
+      "hitomi",
+      "sovereign"
+    ]
+  },
+  {
+    "id": "dominoes",
+    "title": "From pilot to system",
+    "eyebrow": "06 / DESIGN FOR THE NEXT STEP",
+    "summary": "Start small enough to learn. Build carefully enough to grow.",
+    "notes": [
+      "A pilot is the first domino. Define what it must prove: user value, technical fit, operational requirements and governance.",
+      "A real domino can push one larger than itself. This physical illustration captures the value of making the first step useful and the next step possible.",
+      "Reusable architecture, tested integrations and a team that understands the system make subsequent steps possible."
+    ],
+    "sources": [
+      "company",
+      "portfolio"
+    ]
+  },
+  {
+    "id": "calendar",
+    "title": "A year to build",
+    "eyebrow": "07 / 2027 DIRECTION",
+    "summary": "Sovereign AI. Real-world asset infrastructure. Systems that connect people, data and value.",
+    "notes": [
+      "2027 is the next chapter: private AI deployments, real-world asset infrastructure and connected enterprise systems. Bring the use case and shape the roadmap together.",
+      "Choose the problems that deserve attention. Give discovery, evidence and the first useful deployment time to work.",
+      "Prove value before scaling. Discuss requirements, privacy, ownership and integration at the start.",
+      "Make the next year count by building something people can operate and trust."
+    ],
+    "sources": [
+      "sovereign",
+      "portfolio"
+    ]
+  },
+  {
+    "id": "lamp",
+    "title": "The people behind it",
+    "eyebrow": "08 / THREE PERSPECTIVES",
+    "summary": "Pandu Sastrowardoyo. Gilang Bhagaskara. Jean-Daniel \u201cDanny\u201d Gauthier.",
+    "notes": [
+      "Pandu Sastrowardoyo is Blocksphere's Director, a co-founder of Blockchain Zoo and the Indonesian Blockchain Association, and a Bloomberg Technoz host. Her public GitHub profile documents AI, blockchain and product work.",
+      "Gilang Bhagaskara is Managing Director, with a focus on enterprise blockchain architecture, implementation and education. Jean-Daniel Gauthier brings technical architecture, business analysis and more than two decades in IT and communications.",
+      "Together their work connects engineering, policy, education and public communication. Open the chapter details for profiles, portraits and publications."
+    ],
+    "sources": [
+      "founders",
+      "pandu",
+      "gilang",
+      "danny",
+      "bca"
+    ]
+  },
+  {
+    "id": "selectall",
+    "title": "Built in the real world",
+    "eyebrow": "09 / SELECTED WORK",
+    "summary": "A portfolio spanning financial infrastructure, privacy, social networks and environmental traceability.",
+    "notes": [
+      "Pegadaian gold tokenization addresses reserve-backed digital gold infrastructure. DeBio explores privacy-preserving biomedical and bioinformatics services.",
+      "Myriad Social connects decentralized identity, content and social interaction. RealityChain explores multichain virtual worlds and live events.",
+      "Ecoberingin\u2019s e-waste chain tracks handoffs and recycling. The Project Garuda engagement concerns CBDC consultation and research, connecting technical architecture to institutional questions."
+    ],
+    "sources": [
+      "portfolio",
+      "garuda"
+    ]
+  },
+  {
+    "id": "aim",
+    "title": "Governance by design",
+    "eyebrow": "10 / KEEP THE PURPOSE IN VIEW",
+    "summary": "Define the objective. Set the boundaries. Make the system accountable.",
+    "notes": [
+      "Useful automation begins with clarity about what the system should do, whose interests it serves and which decisions remain human.",
+      "A small error becomes consequential when a system scales. The one-degree geometry is an illustration of that principle.",
+      "Architecture, access controls, auditability and validation belong in the design process from the beginning.",
+      "Plan the controls before deployment. Blocksphere offers security, governance and smart-contract review services as part of its broader practice."
+    ],
+    "sources": [
+      "company",
+      "sovereign"
+    ]
+  },
+  {
+    "id": "futures",
+    "title": "Choose the outcome",
+    "eyebrow": "11 / TECHNOLOGY WITH PURPOSE",
+    "summary": "The same tools can support very different outcomes. Drag the divide to explore the scene.",
+    "notes": [
+      "Two imagined landscapes make the choice visible. Drag the divider to explore how the same technical capability can serve different priorities.",
+      "Blocksphere's public record includes work and discussion on digital currency, privacy and traceability. Pandu and Gilang co-authored a Forkast article on a potential digital rupiah in 2020.",
+      "The Project Garuda response-paper credits include Pandu, Gilang and Jean-Daniel. Their perspectives connect practical delivery to policy and institutional questions."
+    ],
+    "sources": [
+      "forkast",
+      "garuda",
+      "portfolio"
+    ]
+  },
+  {
+    "id": "pile",
+    "title": "A body of work",
+    "eyebrow": "12 / EXPERIENCE TO BUILD ON",
+    "summary": "37 entries in the public project archive: enterprise systems, products and training, from 2017 to 2026.",
+    "notes": [
+      "The wall collects the chapters you have just visited: a body of experience in enterprise delivery, product development and public dialogue.",
+      "The public portfolio lists 37 project and engagement entries as of November 2026. Explore the archive, partner profiles and publications to see the work behind the story."
+    ],
+    "sources": [
+      "portfolio",
+      "founders",
+      "training"
+    ]
+  },
+  {
+    "id": "questions",
+    "title": "What will you build?",
+    "eyebrow": "13 / LET'S TALK",
+    "summary": "Bring the problem. We will work out what it takes to build.",
+    "notes": [
+      "What comes next for your organization? Start a conversation about the problem, the constraints and the people who will use the system.",
+      "Blocksphere connects strategy, engineering and implementation across blockchain and AI.",
+      "Contact hello@blocksphere.id or explore the full portfolio. Let's build what comes next."
+    ],
+    "sources": [
+      "company",
+      "portfolio"
+    ]
+  }
+]

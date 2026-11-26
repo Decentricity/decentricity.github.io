@@ -1,0 +1,17 @@
+{
+ "company":{"title":"Blocksphere — company, practices and products","url":"https://blocksphere.id/","note":"Current company descriptions; retrieved 26 November 2026."},
+ "portfolio":{"title":"Blocksphere — project archive","url":"https://portfolio.blocksphere.id/","note":"Public project descriptions, years and client attribution. Snapshot retained locally."},
+ "founders":{"title":"Blocksphere — founders","url":"https://blocksphere.id/founders/","note":"Current roles and professional biographies."},
+ "sovereign":{"title":"Sovereign AI — private enterprise deployments","url":"https://blocksphere.id/sovereign-ai","note":"Deployment choices and pilot offering."},
+ "pandu":{"title":"Pandu Sastrowardoyo — public GitHub profile","url":"https://github.com/Decentricity","note":"Professional history, ventures and current technical projects."},
+ "gilang":{"title":"Gilang Bhagaskara — professional profile","url":"https://www.linkedin.com/in/gilangbhagaskara/","note":"Profile linked from Blocksphere's current team page."},
+ "danny":{"title":"Jean-Daniel Gauthier — professional profile","url":"https://www.linkedin.com/in/jeandanielgauthier/","note":"Profile linked from Blocksphere's current team page."},
+ "forkast":{"title":"A CBDC for Indonesia would bridge the old world with the new","url":"https://forkast.news/indonesia-cbdc-digital-rupiah-blocksphere/","note":"Forkast, 22 December 2020. Pandu Sastrowardoyo and Gilang Bhagaskara. Historical opinion, not a statement of present policy."},
+ "garuda":{"title":"Proyek Garuda — Wholesale Rupiah Digital Cash Ledger response paper","url":"https://dashboard.softease.studio/uploads/4_ABI_Proyek_Garuda_Response_Paper_Teaser_1d9e071e9e.pdf","note":"Asosiasi Blockchain Indonesia, July 2023. Page 3 credits Pandu, Gilang and Jean-Daniel among the team and advisors."},
+ "bca":{"title":"BCA Finhacks 2019 — Jakarta roadshow","url":"https://www.bca.co.id/id/tentang-bca/media-riset/pressroom/siaran-pers/2021/10/21/04/16/jelang-gelaran-puncak-ratusan-peserta-ikuti-roadshow-bca-finhacks-2019-di-jakarta","note":"BCA's report names Gilang as a speaker and Pandu as moderator."},
+ "training":{"title":"Blocksphere × NobleProg — supply-chain finance training","url":"https://www.linkedin.com/feed/update/urn%3Ali%3Aactivity%3A7424429157796896768/","note":"Blocksphere's published account names Gilang, Pandu and Jean-Daniel as trainers."},
+ "agent1c":{"title":"Agent1c.ai","url":"https://agent1c.ai/","note":"Browser-based agentic workspace."},
+ "hedgey":{"title":"HedgeyOS","url":"https://agent1c.me/","note":"Local-first agent workspace."},
+ "hitomi":{"title":"Hitomi — Google Play","url":"https://play.google.com/store/apps/details?id=ai.agent1c.hitomi","note":"Android AI companion, linked from Blocksphere's product page."},
+ "original":{"title":"The Last Boring Slide — original Claude artifact","url":"https://claude.ai/artifact/Cy2d8Vn63CnzCtonA1LSah#swarm-3","note":"Original animation source. This presentation adapts its code, scenes and transitions."}
+}

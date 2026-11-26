@@ -1,0 +1,12 @@
+{
+  "source": "https://claude.ai/artifact/Cy2d8Vn63CnzCtonA1LSah#swarm-3",
+  "title": "The Last Boring Slide",
+  "downloaded": "2026-11-26",
+  "originalFrameSHA256": "64c6cb2eb98b60d4acbd050fede3cce3cf32b9d26d379b59d4ce73ae49ad9216",
+  "originalEngineSHA256": "600bffa16974fdaeea0dbd7462b0cdab0ab94f6846c82c46b8c9d4403e756607",
+  "originalEmbeddedSHA256": "bf73770297de7be4ebbb1e494ea3889185ab53fbe5a69868be31c1d35103e351",
+  "retained": "All 13 scene implementations, shader effects, geometry, camera choreography, transition implementations, audio synthesis, fonts and embedded assets.",
+  "changes": "Blocksphere copy, notes, chapter page numbers, conceptual chart labels, deferred launch, local navigation and research panels. Claude platform wrapper scripts are omitted.",
+  "chapters": 13,
+  "literalEdits": 166
+}

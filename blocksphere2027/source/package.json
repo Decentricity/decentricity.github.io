@@ -1,0 +1,10 @@
+{
+  "private": true,
+  "scripts": {
+    "build": "node adapt.cjs",
+    "verify": "node verify.cjs"
+  },
+  "devDependencies": {
+    "acorn": "8.15.0"
+  }
+}

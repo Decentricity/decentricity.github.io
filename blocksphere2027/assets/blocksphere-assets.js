@@ -1,0 +1,13 @@
+window.__ASSETS["thumb-office.jpg"]="assets/thumb-office.svg";
+window.__ASSETS["thumb-tower.jpg"]="assets/thumb-tower.svg";
+window.__ASSETS["thumb-boat.jpg"]="assets/thumb-boat.svg";
+window.__ASSETS["thumb-loop.jpg"]="assets/thumb-loop.svg";
+window.__ASSETS["thumb-swarm.jpg"]="assets/thumb-swarm.svg";
+window.__ASSETS["thumb-dominoes.jpg"]="assets/thumb-dominoes.svg";
+window.__ASSETS["thumb-calendar.jpg"]="assets/thumb-calendar.svg";
+window.__ASSETS["thumb-lamp.jpg"]="assets/thumb-lamp.svg";
+window.__ASSETS["thumb-selectall.jpg"]="assets/thumb-selectall.svg";
+window.__ASSETS["thumb-aim.jpg"]="assets/thumb-aim.svg";
+window.__ASSETS["thumb-futures.jpg"]="assets/thumb-futures.svg";
+window.__ASSETS["thumb-pile.jpg"]="assets/thumb-pile.svg";
+window.__ASSETS["thumb-questions.jpg"]="assets/thumb-questions.svg";
