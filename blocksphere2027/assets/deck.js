@@ -47038,7 +47038,7 @@ void main(){ float T=1.6+aC.x*1.8; float tau=uLoop>.5?mod(uT*.6+aA.w*T,T):uTau-a
     kA = new F(-0.86, 0.05, 0).multiplyScalar(f0),
     Ky = {
       id: "boat",
-      title: "Own your direction",
+      title: "Own your course",
       enterWith: "fold",
       hud: { color: "#ffffff", font: "monoMed" },
       beats: [
@@ -47257,7 +47257,7 @@ void main(){ float T=1.6+aC.x*1.8; float tau=uLoop>.5?mod(uT*.6+aA.w*T,T):uTau-a
             { x: 120, y: 208, size: 80, leading: 1.2 },
           ),
           nt = V("Dependency is an anchor.", { x: 120, y: 640, size: 82 }),
-          Mt = V("Own your direction.", { x: 120, y: 244, size: 164, valign: "middle" }),
+          Mt = V("Own your course.", { x: 120, y: 244, size: 164, valign: "middle" }),
           Et = new i.SelectBox({ handle: 11, line: 3.4, fill: 0.1 });
         ct.add(ft, nt, Mt, Et);
         let at = 99,
