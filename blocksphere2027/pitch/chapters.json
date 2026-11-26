@@ -1,0 +1,154 @@
+[
+  {
+    "id": "office",
+    "title": "Blocksphere",
+    "eyebrow": "01 / COMPANY CREDENTIALS",
+    "summary": "A company overview. And then something more.",
+    "notes": [
+      "Blocksphere has worked with companies, institutions and product teams since 2017. This is an invitation to build with us.",
+      "Our history spans enterprise infrastructure, financial applications, decentralized products, education and applied AI.",
+      "A presentation can list credentials. The work behind those credentials is much bigger. Let\u2019s step inside."
+    ],
+    "sources": [
+      "company",
+      "portfolio"
+    ]
+  },
+  {
+    "id": "tower",
+    "title": "Built since 2017",
+    "eyebrow": "02 / THE WORK GETS BIGGER",
+    "summary": "From the first ledger to systems with many moving parts.",
+    "notes": [
+      "2017: blockchain infrastructure and decentralized land records for Telkom Indonesia. Early work also included vehicle-parts traceability and agricultural contracts.",
+      "2018\u20132020: Biido exchange engineering, Ecoberingin waste traceability, BCA Finhacks, Pegadaian gold tokenization and BRI sugarcane management.",
+      "2021\u20132023: BNI loyalty infrastructure, DeBio, Myriad Social, Project Garuda consultation, Peruri infrastructure and Astra Honda Motors.",
+      "2024\u20132026: BPJS Kesehatan feasibility work, digital asset platforms, Agent1c, HedgeyOS and Hitomi. Different technologies, a continuous practice of building."
+    ],
+    "sources": [
+      "portfolio"
+    ]
+  },
+  {
+    "id": "boat",
+    "title": "From paper to reality",
+    "eyebrow": "03 / REAL-WORLD SYSTEMS",
+    "summary": "Architecture matters when it leaves the page.",
+    "notes": [
+      "Pegadaian: reserve-backed gold tokenization architecture with fractional ownership, KYC and supply-parity smart contracts.",
+      "BNI: loyalty-point infrastructure and partner settlement logic. BRI: sugarcane farmer-management information and traceable harvest data.",
+      "Bank Indonesia: a contribution to Project Garuda\u2019s consultative paper, covering architecture options, risks and digital-rupiah design considerations."
+    ],
+    "sources": [
+      "portfolio",
+      "garuda"
+    ]
+  },
+  {
+    "id": "swarm",
+    "title": "A body of work",
+    "eyebrow": "04 / CONFIRMED CLIENTS",
+    "summary": "37 engagements in the public project archive.",
+    "notes": [
+      "One engagement begins with a specific problem and a team willing to solve it.",
+      "Experience accumulates across infrastructure, applications, feasibility, consultation and training. The public archive records 37 engagements from 2017 to 2026.",
+      "Organizations we have served include Telkom Indonesia, Pegadaian, BNI, BRI, BCA, Bank Indonesia, Peruri and Angkasa Pura II.",
+      "Other client relationships include Astra Honda Motors, BPJS Kesehatan, Biido and Kominfo. The portfolio records the work behind the names."
+    ],
+    "sources": [
+      "portfolio"
+    ]
+  },
+  {
+    "id": "detonation",
+    "sources": [
+      "portfolio"
+    ],
+    "title": "The work breaks out",
+    "eyebrow": "05 / INSIDE THE PORTFOLIO",
+    "summary": "Real clients. Real engagements. A much bigger picture.",
+    "notes": [
+      "Project records connect a decade of enterprise and product work. The scale of the animation is illustrative; the names and engagements come from the portfolio.",
+      "Financial infrastructure, traceability, privacy, decentralized social systems and agentic products connect through shared delivery experience.",
+      "Each project adds a new perspective. Together they form a body of experience that can inform what we build with you.",
+      "The next connection starts with your problem, your context and the people who will use the system."
+    ]
+  },
+  {
+    "id": "dominoes",
+    "title": "Make the first move",
+    "eyebrow": "06 / BUILDING TOGETHER",
+    "summary": "A well-designed first delivery creates room for the next.",
+    "notes": [
+      "Begin with the use case, the constraints and a concrete first delivery. Define how its usefulness will be assessed.",
+      "Connect advisory, architecture, engineering and integration. Good foundations make the next step possible.",
+      "Training and handover help your team operate the system. Build the capability to improve it over time."
+    ],
+    "sources": [
+      "company",
+      "portfolio"
+    ]
+  },
+  {
+    "id": "lamp",
+    "title": "The people behind it",
+    "eyebrow": "07 / THREE PERSPECTIVES",
+    "summary": "Pandu Sastrowardoyo. Gilang Bhagaskara. Jean-Daniel Gauthier.",
+    "notes": [
+      "Pandu Sastrowardoyo is Blocksphere's Director, a co-founder of Blockchain Zoo and the Indonesian Blockchain Association, and a Bloomberg Technoz host. Her public GitHub profile documents AI, blockchain and product work.",
+      "Gilang Bhagaskara is Managing Director, with a focus on enterprise blockchain architecture, implementation and education. Jean-Daniel Gauthier brings technical architecture, business analysis and more than two decades in IT and communications.",
+      "Together their work connects engineering, policy, education and public communication. Open the chapter details for profiles, portraits and publications."
+    ],
+    "sources": [
+      "founders",
+      "pandu",
+      "gilang",
+      "danny",
+      "bca"
+    ]
+  },
+  {
+    "id": "selectall",
+    "title": "We build products, too",
+    "eyebrow": "08 / PRODUCTS AND ECOSYSTEMS",
+    "summary": "Myriad. DeBio. RealityChain. Agent1c. HedgeyOS. Hitomi.",
+    "notes": [
+      "Myriad Social: decentralized identity and user-owned content. DeBio: privacy-oriented biomedical and bioinformatics services. RealityChain: multichain virtual worlds.",
+      "Agent1c.ai: an agentic operating shell. HedgeyOS: local-first agent workspaces. Hitomi: an Android AI companion with optional terminal integration.",
+      "Product engineering complements institutional delivery. It brings hands-on experience of interfaces, users, operations and the choices behind a working system."
+    ],
+    "sources": [
+      "portfolio"
+    ]
+  },
+  {
+    "id": "pile",
+    "title": "A record of building",
+    "eyebrow": "09 / THE NEXT CHAPTER",
+    "summary": "37 engagements. Many contexts. A foundation for collaboration.",
+    "notes": [
+      "Every project has a context, a scope and people behind it. Explore the complete portfolio and the supporting public record.",
+      "Bring your team\u2019s perspective. We bring architecture, engineering, product experience and a history of working across organizations."
+    ],
+    "sources": [
+      "portfolio",
+      "founders",
+      "training"
+    ]
+  },
+  {
+    "id": "questions",
+    "title": "What should we build together?",
+    "eyebrow": "10 / YOUR NEXT PROJECT",
+    "summary": "Let\u2019s start a conversation.",
+    "notes": [
+      "A project to deliver. A product to build together. A question worth researching. What would you like to make possible?",
+      "Blocksphere connects strategy, engineering and implementation across blockchain and applied AI.",
+      "Write to hello@blocksphere.id to discuss a project, a product partnership, research or training."
+    ],
+    "sources": [
+      "company",
+      "portfolio"
+    ]
+  }
+]
