@@ -1,0 +1,5 @@
+{
+  "source": "../assets/deck.js",
+  "sourceSha256": "ee4f63f01e48a6b8ccb3babee25e00f15b7c1ed0f5bce2f46ec856012bf5a2ac",
+  "change": "Replace boot registration with an explicit engine adapter. Original engine, shader and transition implementations retained."
+}
