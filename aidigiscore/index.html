@@ -8,14 +8,14 @@
 <link rel="stylesheet" href="./app.css">
 </head>
 <body>
-<header class="top"><a class="brand" href="./"><span class="mark" aria-hidden="true">◈</span><strong>AI-DigiScore<small>Decision Harness</small></strong></a><div class="account"><label>Tenant <select id="tenant"></select></label><span id="chain" class="badge"></span></div></header>
+<header class="top"><a class="brand" href="./"><span class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span><strong>AI-DigiScore<small>Enterprise decision harness</small></strong></a><div class="account"><label>Tenant <select id="tenant"></select></label><span id="chain" class="badge"></span></div></header>
 <div id="medical" role="note" hidden></div>
 <div class="shell">
-<aside><nav id="nav" aria-label="Workspace"></nav><details class="about"><summary>About this demo</summary><p>AI-DigiScore concepts by Patrick Hopper. Built in collaboration with Pandu Sastrowardoyo and Danny (Jean-Daniel Gauthier).</p><a href="https://github.com/Decentricity/decentricity.github.io/blob/gh-pages/aidigiscore/README.md">Read the project brief ↗</a></details></aside>
+<aside><div class="side-label">Workspace</div><nav id="nav" aria-label="Workspace"></nav><details class="about"><summary>About this demo</summary><p>AI-DigiScore concepts by Patrick Hopper. Built in collaboration with Pandu Sastrowardoyo and Danny (Jean-Daniel Gauthier).</p><a href="https://github.com/Decentricity/decentricity.github.io/blob/gh-pages/aidigiscore/README.md">Read the project brief ↗</a></details></aside>
 <main>
+<header class="view-header"><h1 id="heading">Decision graph</h1><p id="view-description"></p></header>
 <section class="player" aria-label="Scenario player"><label>Scenario <select id="scenario"></select></label><div class="controls"><button id="reset">Reset</button><button id="play">Play</button><button id="next">Next step →</button></div><label>State <select id="step"></select></label></section>
 <p id="error" role="alert" hidden></p>
-<h1 id="heading">Decision graph</h1>
 <div id="panel" aria-busy="true">Loading workspace…</div>
 </main>
 </div>

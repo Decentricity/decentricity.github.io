@@ -3,6 +3,16 @@ import { MockHarnessClient } from './client.mjs';
 const api = new MockHarnessClient();
 const $ = id => document.getElementById(id);
 const panel = $('panel');
+const descriptions = {
+  graph:'Trace how evidence and decisions flow across projects.',
+  board:'Review decisions that need attention and see what triggered each flag.',
+  detail:'Inspect premises, approvals, scoring, and versioned certificates.',
+  console:'Review simulated agent conversations, tool calls, and checker outcomes.',
+  agents:'Compare proposal outcomes and permitted tools across agents.',
+  audit:'Inspect the event history and independently verify its hash chain.',
+  timeline:'Replay the scenario and inspect the record at each step.',
+};
+const icons = {graph:'<circle cx="4" cy="8" r="2"/><circle cx="12" cy="4" r="2"/><circle cx="12" cy="12" r="2"/><path d="m6 7 4-2M6 9l4 2"/>',board:'<path d="M4 14V3h8l-2 3 2 3H4"/>',detail:'<rect x="4" y="2.5" width="8" height="11" rx="1"/><path d="M6 6h4M6 9h4"/>',console:'<path d="M3 3h10v8H7l-3 2v-2H3zM6 7h4"/>',agents:'<path d="M3 12v-3m5 3V4m5 8V6"/>',audit:'<path d="m8 2 5 2v4c0 3-5 6-5 6S3 11 3 8V4zM6 8l1.5 1.5L10 7"/>',timeline:'<circle cx="8" cy="8" r="5.5"/><path d="M8 5v3l2 1"/>'};
 const screens = { graph:'Decision graph', board:'Flag board', detail:'Decision detail', console:'Agent console',
   agents:'Agent scoreboard', audit:'Audit log', timeline:'Timeline replay' };
 let view = 'graph', selected, scenario, step = 0, timer, busy = false;
@@ -40,31 +50,60 @@ async function jump(index) {
   if (step === scenario.steps.length - 1) stop();
 }
 function diagram(graph, decisions, projects) {
-  const kinds = [projects, graph.nodes.filter(item => item.statement), graph.nodes.filter(item => item.kind || item.allowedTools)];
-  const coordinates = new Map();
-  const columns = [18, 299, 605];
-  const widths = [223, 251, 223];
-  const targets = new Set(decisions.map(item => item.id));
-  const height = Math.max(...kinds.map(items => items.length)) * 51 + 45;
-  for (const [column, items] of kinds.entries()) {
-    items.forEach((item,i) => coordinates.set(item.id, { x:columns[column], y:40+i*51, w:widths[column], item, column }));
+  const relevant = graph.nodes.filter(item => item.statement);
+  const byId = new Map(relevant.map(item => [item.id, item]));
+  const projectNames = new Map(projects.map(item => [item.id, item.name]));
+  const edges = graph.edges.filter(edge => byId.has(edge.fromId) && byId.has(edge.toId));
+  const ranks = new Map();
+  function rank(id, visiting = new Set()) {
+    if (ranks.has(id)) return ranks.get(id);
+    if (visiting.has(id)) return 0;
+    const ancestors = new Set([...visiting, id]);
+    const dependencies = edges.filter(edge => edge.fromId === id);
+    const value = Math.max(0, ...dependencies.map(edge => 1 + rank(edge.toId, ancestors)));
+    ranks.set(id, value);
+    return value;
   }
-  const edges = [...graph.edges, ...kinds[1].map(item => ({ fromId:item.projectId,toId:item.id,type:'contains' }))];
-  return `<div class="graph"><svg viewBox="0 0 848 ${height}" role="group" aria-label="Decision dependencies by project" xmlns="http://www.w3.org/2000/svg">
-  <text x="18" y="24">Projects</text><text x="299" y="24">Decisions</text><text x="605" y="24">Sources and agents</text>
+  const coordinates = new Map();
+  const columns = Map.groupBy(relevant, item => rank(item.id));
+  const ordered = [...columns].sort(([left], [right]) => left - right);
+  const count = Math.max(1, ...ordered.map(([, items]) => items.length));
+  const width = Math.max(760, ordered.length * 223 + 42);
+  const height = Math.max(270, count * 76 + 49);
+  const columnWidth = (width - 52) / ordered.length;
+  const nodeWidth = Math.min(210, columnWidth - 32);
+  const visible = new Set(decisions.map(item => item.id));
+  ordered.forEach(([, items], column) => {
+    items.forEach((item, index) => coordinates.set(item.id, {
+      x: 26 + column * columnWidth, y: 37 + (height - 46) * (index + 0.5) / items.length - 32,
+      item,
+    }));
+  });
+  return `<section class="topology"><header><div><h2>Decision dependencies</h2><p class="muted">Select a decision to inspect its evidence and certificate.</p></div><div class="legend"><span><i></i> Within project</span><span><i></i> Cross-project</span></div></header>
+  <div class="graph"><svg viewBox="0 0 ${width} ${height}" style="--graph-min:${Math.min(width, 1040)}px" role="group" aria-label="Decision dependency graph" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 1 1 L 9 5 L 1 9 z" fill="context-stroke"/></marker></defs>
+  ${ordered.map(([,items],i) => `<text class="column-label" x="${26 + i*columnWidth}" y="26">${i===0?'FOUNDATION':i===ordered.length-1?'OUTCOMES':'DEPENDENT DECISIONS'} · ${items.length}</text>`).join('')}
   ${edges.map(edge => {
-    const from = coordinates.get(edge.fromId), to = coordinates.get(edge.toId);
-    if (!from || !to) return '';
-    const cross = from.item.projectId && to.item.projectId && from.item.projectId !== to.item.projectId;
-    const start = from.x + from.w, end = from.column === to.column ? to.x + to.w : to.x;
-    const bend = from.column === to.column ? start + (cross ? 37 : 21) : (start+end)/2;
-    return `<path class="edge ${cross ? 'cross' : ''}" d="M ${start} ${from.y+19} C ${bend} ${from.y+19}, ${bend} ${to.y+19}, ${end} ${to.y+19}"><title>${esc(edge.type)}${cross ? ' · cross-project' : ''}</title></path>`;
+    const from = coordinates.get(edge.toId), to = coordinates.get(edge.fromId);
+    const cross = from.item.projectId !== to.item.projectId;
+    const start = from.x + nodeWidth, end = to.x - 4, bend = (start + end) / 2;
+    const left = from.y + 32, right = to.y + 32;
+    return `<path class="edge ${cross ? 'cross' : ''}" marker-end="url(#arrow)" d="M ${start} ${left} C ${bend} ${left}, ${bend} ${right}, ${end} ${right}"><title>${esc(edge.type)}${cross ? ' · cross-project' : ''}</title></path>`;
   }).join('')}
-  ${[...coordinates.values()].map(({x,y,w,item}) => {
-    const label = item.statement ?? item.title ?? item.name;
-    const graphic = `<title>${esc(label)}</title><rect class="node ${targets.has(item.id) ? esc(item.disposition) : ''}" x="${x}" y="${y}" width="${w}" height="38" rx="6"/><text x="${x+8}" y="${y+15}">${esc(short(label, w > 230 ? 36 : 31))}</text><text class="sub" x="${x+8}" y="${y+29}">${esc(item.statement ? `v${item.version} · ${item.disposition}` : item.kind ?? (item.allowedTools ? 'Agent' : 'Project'))}</text>`;
-    return item.statement ? `<a href="#detail" data-decision="${esc(item.id)}" aria-label="${esc(label)}">${graphic}</a>` : `<g>${graphic}</g>`;
-  }).join('')}</svg></div>`;
+  ${[...coordinates.values()].map(({x,y,item}) => {
+    const label = item.statement;
+    const project = projectNames.get(item.projectId) ?? '';
+    const words = label.split(' ');
+    let first = words.shift();
+    while (words.length && first.length + words[0].length < 26) first += ' ' + words.shift();
+    const second = short(words.join(' '), 26);
+    return `<a href="#detail" class="decision-node ${esc(item.disposition)} ${visible.has(item.id) ? '' : 'context'}" data-decision="${esc(item.id)}" aria-label="${esc(label)}"><title>${esc(label)} · ${esc(item.disposition)}</title><rect class="node" x="${x}" y="${y}" width="${nodeWidth}" height="64" rx="8"/><circle class="node-dot" cx="${x+13}" cy="${y+16}" r="3.7"/><text class="node-status" x="${x+23}" y="${y+20}">${esc(item.disposition.toUpperCase())} · V${item.version}</text><text x="${x+11}" y="${y+37}">${esc(first)}</text><text x="${x+11}" y="${y+49}">${esc(second)}</text><text class="sub" x="${x+11}" y="${y+59}">${esc(short(project,32))}</text></a>`;
+  }).join('')}</svg></div>
+  <details class="graph-inputs"><summary>Linked sources and agents</summary>
+  ${table(['Decision','Sources','Agents'], decisions.map(item => {
+    const neighbors = graph.edges.filter(edge => edge.fromId === item.id).map(edge => graph.nodes.find(node => node.id === edge.toId));
+    return [link(item.id,item.statement),esc([...new Set(neighbors.filter(node=>node?.kind).map(node=>node.title))].join(' · ') || '—'),esc([...new Set(neighbors.filter(node=>node?.allowedTools).map(node=>node.name))].join(' · ') || '—')];
+  }),'No linked inputs.')}</details></section>`;
 }
 async function graphView(decisions, projects, agents) {
   const visible = await api.listDecisions(filters);
@@ -73,8 +112,8 @@ async function graphView(decisions, projects, agents) {
   panel.innerHTML = `<div class="strip">${[['Projects',projects.length],['Decisions',decisions.length],['Accepted',decisions.filter(item=>item.disposition==='accepted').length],['Flagged',(await api.getFlags()).length]].map(([name,value])=>`<div class="card"><span class="muted">${name}</span><strong class="metric">${value}</strong></div>`).join('')}</div>
   <div class="filters">${select('g-project','Project',projects,filters.projectId,'All projects')}${select('g-status','Disposition',['accepted','rejected','stale','held'].map(id=>({id,name:id})),filters.disposition,'All dispositions')}${select('g-agent','Agent',agents,filters.agentId,'All agents')}${select('g-template','Template',templates,filters.templateId,'All templates')}</div>
   ${visible.length ? diagram(graph,visible,projects) : '<p>No decisions match these filters.</p>'}
-  <p class="muted">Dashed lines connect decisions across projects. Select a decision to inspect its premises.</p>
-  ${table(['Decision','Disposition','Trust','Coverage'],visible.map(item=>[link(item.id,item.statement),badge(item.disposition),score(item.score.T),esc(item.result.reasons.join(', ') || 'Required premises verified')]),'No matching decisions.')}`;
+  <section class="decision-list"><h2>Decision register</h2>
+  ${table(['Decision','Disposition','Trust','Coverage'],visible.map(item=>[link(item.id,item.statement),badge(item.disposition),score(item.score.T),esc(item.result.reasons.join(', ') || 'Required premises verified')]),'No matching decisions.')}</section>`;
   filtersOn(filters,[['g-project','projectId'],['g-status','disposition'],['g-agent','agentId'],['g-template','templateId']]);
 }
 async function boardView(projects, people) {
@@ -154,7 +193,8 @@ async function render() {
   $('step').innerHTML=scenario.steps.map((item,i)=>option(i,item.title,step)).join('');
   $('next').disabled=step>=scenario.steps.length-1;
   $('heading').textContent=screens[view];
-  $('nav').innerHTML=Object.entries(screens).map(([id,name])=>`<button data-view="${id}" ${view===id?'aria-current="page"':''}>${name}</button>`).join('');
+  $('view-description').textContent=descriptions[view];
+  $('nav').innerHTML=Object.entries(screens).map(([id,name])=>`<button data-view="${id}" ${view===id?'aria-current="page"':''}><svg viewBox="0 0 16 16" aria-hidden="true">${icons[id]}</svg>${name}</button>`).join('');
   if(view==='graph') await graphView(decisions,projects,agents);
   if(view==='board') await boardView(projects,people);
   if(view==='detail') await detailView(decisions,people);
@@ -164,7 +204,7 @@ async function render() {
   if(view==='timeline') await timelineView(decisions);
   panel.setAttribute('aria-busy','false');
 }
-$('nav').onclick=event=>{const id=event.target.dataset.view;if(id)action(async()=>{view=id;});};
+$('nav').onclick=event=>{const id=event.target.closest('[data-view]')?.dataset.view;if(id)action(async()=>{view=id;});};
 panel.onclick=event=>{
   const decision=event.target.closest('[data-decision]')?.dataset.decision;
   const agent=event.target.closest('[data-agent]')?.dataset.agent;
