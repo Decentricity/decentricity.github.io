@@ -1,0 +1,76 @@
+{
+  "sources": [
+    {
+      "id": "src-ag-watchlist-2026-q2",
+      "title": "Supplier watchlist · Q2",
+      "kind": "watchlist",
+      "version": 1,
+      "publishedAt": "2026-11-01T09:00:00Z",
+      "validUntil": "2027-11-01T00:00:00Z",
+      "supersededBy": null
+    },
+    {
+      "id": "src-ag-watchlist-2026-q3",
+      "title": "Supplier watchlist · Q3",
+      "kind": "watchlist",
+      "version": 2,
+      "publishedAt": "2026-11-01T09:00:00Z",
+      "validUntil": "2027-11-01T00:00:00Z",
+      "supersededBy": null
+    },
+    {
+      "id": "src-ag-quality-audit-redstone",
+      "title": "Redstone quality audit",
+      "kind": "audit",
+      "version": 1,
+      "publishedAt": "2026-11-01T09:00:00Z",
+      "validUntil": "2027-11-01T00:00:00Z",
+      "supersededBy": null
+    },
+    {
+      "id": "src-ag-contract-redstone-v3",
+      "title": "Redstone supply contract v3",
+      "kind": "contract",
+      "version": 1,
+      "publishedAt": "2026-11-01T09:00:00Z",
+      "validUntil": "2027-11-01T00:00:00Z",
+      "supersededBy": null
+    },
+    {
+      "id": "src-ag-plot-imagery-plt17",
+      "title": "Redstone Orchards (org-redstone-orchards) · Block C (plot-redstone-c)",
+      "kind": "imagery",
+      "version": 1,
+      "publishedAt": "2026-11-01T09:00:00Z",
+      "validUntil": "2027-11-01T00:00:00Z",
+      "supersededBy": null
+    },
+    {
+      "id": "src-ag-forest-policy-v2",
+      "title": "Forest Origin Due Diligence Policy v2",
+      "kind": "policy",
+      "version": 1,
+      "publishedAt": "2026-11-01T09:00:00Z",
+      "validUntil": "2027-11-01T00:00:00Z",
+      "supersededBy": null
+    },
+    {
+      "id": "src-ag-address-v1",
+      "title": "Supplier address v1",
+      "kind": "other",
+      "version": 1,
+      "publishedAt": "2026-11-01T09:00:00Z",
+      "validUntil": "2027-11-01T00:00:00Z",
+      "supersededBy": null
+    },
+    {
+      "id": "src-ag-address-v2",
+      "title": "Corrected supplier address v2",
+      "kind": "other",
+      "version": 2,
+      "publishedAt": "2026-11-01T09:00:00Z",
+      "validUntil": "2027-11-01T00:00:00Z",
+      "supersededBy": null
+    }
+  ]
+}

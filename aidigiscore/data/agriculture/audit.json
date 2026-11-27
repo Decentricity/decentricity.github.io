@@ -1,0 +1,14 @@
+{
+  "records": [
+    {
+      "id": "aud-agriculture-0001",
+      "at": "2026-11-01T09:00:00Z",
+      "type": "scenario.hydrated",
+      "actorId": "harness",
+      "decisionId": null,
+      "payload": {
+        "summary": "Loaded the tenant fixtures at T0."
+      }
+    }
+  ]
+}

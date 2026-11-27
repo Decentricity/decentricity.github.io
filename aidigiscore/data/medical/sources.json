@@ -1,0 +1,94 @@
+{
+  "sources": [
+    {
+      "id": "src-med-nexoral-monograph-v1",
+      "title": "Nexoral 10 mg fictional monograph",
+      "kind": "monograph",
+      "version": 1,
+      "publishedAt": "2026-11-01T09:00:00Z",
+      "validUntil": "2027-11-01T00:00:00Z",
+      "supersededBy": null
+    },
+    {
+      "id": "src-med-aetheris-supply-q3",
+      "title": "Aetheris Pharma supply record",
+      "kind": "agreement",
+      "version": 1,
+      "publishedAt": "2026-11-01T09:00:00Z",
+      "validUntil": "2027-11-01T00:00:00Z",
+      "supersededBy": null
+    },
+    {
+      "id": "src-med-coi-panel-2026",
+      "title": "Panel conflict-of-interest clearance",
+      "kind": "policy",
+      "version": 1,
+      "publishedAt": "2026-11-01T09:00:00Z",
+      "validUntil": "2027-11-01T00:00:00Z",
+      "supersededBy": null
+    },
+    {
+      "id": "src-med-nmb-2026-07",
+      "title": "Fictional National Medicines Bulletin · July",
+      "kind": "bulletin",
+      "version": 1,
+      "publishedAt": "2026-11-01T09:00:00Z",
+      "validUntil": "2027-11-01T00:00:00Z",
+      "supersededBy": null
+    },
+    {
+      "id": "src-med-nmb-2026-11",
+      "title": "Fictional National Medicines Bulletin · November · new restriction",
+      "kind": "bulletin",
+      "version": 2,
+      "publishedAt": "2026-11-01T09:00:00Z",
+      "validUntil": "2027-11-01T00:00:00Z",
+      "supersededBy": null
+    },
+    {
+      "id": "src-med-helix-registry",
+      "title": "HelixPulse fictional device-registry record",
+      "kind": "registry",
+      "version": 1,
+      "publishedAt": "2026-11-01T09:00:00Z",
+      "validUntil": "2027-11-01T00:00:00Z",
+      "supersededBy": null
+    },
+    {
+      "id": "src-med-northwind-service-v2",
+      "title": "Northwind Devices service agreement v2",
+      "kind": "agreement",
+      "version": 1,
+      "publishedAt": "2026-11-01T09:00:00Z",
+      "validUntil": "2027-11-01T00:00:00Z",
+      "supersededBy": null
+    },
+    {
+      "id": "src-med-device-bulletin-2026-06",
+      "title": "Fictional device safety bulletin · June",
+      "kind": "bulletin",
+      "version": 1,
+      "publishedAt": "2026-11-01T09:00:00Z",
+      "validUntil": "2027-11-01T00:00:00Z",
+      "supersededBy": null
+    },
+    {
+      "id": "src-med-address-v1",
+      "title": "Administrative supplier record",
+      "kind": "other",
+      "version": 1,
+      "publishedAt": "2026-11-01T09:00:00Z",
+      "validUntil": "2027-11-01T00:00:00Z",
+      "supersededBy": null
+    },
+    {
+      "id": "src-med-address-v2",
+      "title": "Corrected administrative supplier record",
+      "kind": "other",
+      "version": 2,
+      "publishedAt": "2026-11-01T09:00:00Z",
+      "validUntil": "2027-11-01T00:00:00Z",
+      "supersededBy": null
+    }
+  ]
+}

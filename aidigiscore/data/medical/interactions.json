@@ -1,0 +1,56 @@
+{
+  "interactions": [
+    {
+      "id": "int-med-001",
+      "agentId": "agt-apothecary",
+      "decisionId": "dec-med-nexoral-monograph",
+      "tool": "cite_monograph",
+      "at": "2026-11-01T09:00:00Z",
+      "flag": "used",
+      "score": 8.3,
+      "gateway": "allow",
+      "proposal": "Cite the fictional monograph and supply record.",
+      "verdict": "ACCEPT",
+      "sourceId": "src-med-nexoral-monograph-v1"
+    },
+    {
+      "id": "int-med-002",
+      "agentId": "agt-galen",
+      "decisionId": "dec-med-pathway-cap-v3",
+      "tool": "draft_statement",
+      "at": "2026-11-01T09:00:00Z",
+      "flag": "used",
+      "score": 8.1,
+      "gateway": "allow",
+      "proposal": "Draft the pathway with a versioned formulary citation.",
+      "verdict": "ACCEPT",
+      "sourceId": null
+    },
+    {
+      "id": "int-med-003",
+      "agentId": "agt-sentinel",
+      "decisionId": "dec-med-formulary-nexoral",
+      "tool": "check_bulletin",
+      "at": "2026-11-01T09:00:00Z",
+      "flag": "used",
+      "score": 8.6,
+      "gateway": "allow",
+      "proposal": "Check the July fictional safety bulletin.",
+      "verdict": "ACCEPT",
+      "sourceId": "src-med-nmb-2026-07"
+    },
+    {
+      "id": "int-med-004",
+      "agentId": "agt-scribe",
+      "decisionId": "dec-med-incident-syn2047",
+      "tool": "draft_statement",
+      "at": "2026-11-01T09:00:00Z",
+      "flag": "used",
+      "score": 7.9,
+      "gateway": "allow",
+      "proposal": "Draft the closure for synthetic ticket INC-SYN-2047.",
+      "verdict": "ACCEPT",
+      "sourceId": null
+    }
+  ]
+}

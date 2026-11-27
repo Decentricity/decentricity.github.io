@@ -1,0 +1,188 @@
+{
+  "decisions": [
+    {
+      "id": "dec-ag-watchlist-redstone",
+      "projectId": "prj-ag-onboarding",
+      "templateId": "tmpl-watchlist-check",
+      "version": 1,
+      "statement": "Watchlist check for Redstone Orchards is clear.",
+      "premises": [
+        {
+          "type": "Evidence",
+          "refId": "src-ag-watchlist-2026-q2",
+          "version": 1
+        }
+      ],
+      "base": 8.4,
+      "composed": [],
+      "disposition": "draft",
+      "approverIds": [
+        "per-luis-ortega"
+      ],
+      "tonnes": null
+    },
+    {
+      "id": "dec-ag-quality-redstone",
+      "projectId": "prj-ag-onboarding",
+      "templateId": "tmpl-supplier-quality",
+      "version": 1,
+      "statement": "Quality evidence for Redstone Orchards is accepted.",
+      "premises": [
+        {
+          "type": "Evidence",
+          "refId": "src-ag-quality-audit-redstone",
+          "version": 1
+        }
+      ],
+      "base": 8.1,
+      "composed": [],
+      "disposition": "draft",
+      "approverIds": [
+        "per-tomo-saito"
+      ],
+      "tonnes": null
+    },
+    {
+      "id": "dec-ag-contract-redstone",
+      "projectId": "prj-ag-onboarding",
+      "templateId": "tmpl-supplier-contract",
+      "version": 1,
+      "statement": "Contract terms with Redstone Orchards are accepted.",
+      "premises": [
+        {
+          "type": "Evidence",
+          "refId": "src-ag-contract-redstone-v3",
+          "version": 1
+        }
+      ],
+      "base": 7.6,
+      "composed": [],
+      "disposition": "draft",
+      "approverIds": [
+        "per-elena-vasquez"
+      ],
+      "tonnes": null
+    },
+    {
+      "id": "dec-ag-plot-clearance",
+      "projectId": "prj-ag-sustainability",
+      "templateId": "tmpl-forest-origin-release",
+      "version": 1,
+      "statement": "Release Block C under Forest Origin Due Diligence Policy v2.",
+      "premises": [
+        {
+          "type": "Evidence",
+          "refId": "src-ag-plot-imagery-plt17",
+          "version": 1
+        },
+        {
+          "type": "Evidence",
+          "refId": "src-ag-forest-policy-v2",
+          "version": 1
+        }
+      ],
+      "base": 8.0,
+      "composed": [],
+      "disposition": "draft",
+      "approverIds": [
+        "per-priya-shah"
+      ],
+      "tonnes": null
+    },
+    {
+      "id": "dec-ag-approve-redstone",
+      "projectId": "prj-ag-onboarding",
+      "templateId": "tmpl-vendor-farm-approval",
+      "version": 1,
+      "statement": "Approve Redstone Orchards as a supplier.",
+      "premises": [
+        {
+          "type": "PriorDecision",
+          "refId": "dec-ag-watchlist-redstone",
+          "version": 1
+        },
+        {
+          "type": "PriorDecision",
+          "refId": "dec-ag-quality-redstone",
+          "version": 1
+        },
+        {
+          "type": "PriorDecision",
+          "refId": "dec-ag-contract-redstone",
+          "version": 1
+        },
+        {
+          "type": "PriorDecision",
+          "refId": "dec-ag-plot-clearance",
+          "version": 1
+        }
+      ],
+      "base": 7.6,
+      "composed": [
+        "dec-ag-watchlist-redstone",
+        "dec-ag-quality-redstone",
+        "dec-ag-contract-redstone"
+      ],
+      "disposition": "draft",
+      "approverIds": [
+        "per-maya-chen"
+      ],
+      "tonnes": null
+    },
+    {
+      "id": "dec-ag-allocate-redstone",
+      "projectId": "prj-ag-sourcing",
+      "templateId": "tmpl-volume-allocation",
+      "version": 1,
+      "statement": "Allocate 1,200 tonnes of Q3 apples to Redstone Orchards.",
+      "premises": [
+        {
+          "type": "PriorDecision",
+          "refId": "dec-ag-approve-redstone",
+          "version": 1
+        },
+        {
+          "type": "PriorDecision",
+          "refId": "dec-ag-plot-clearance",
+          "version": 1
+        }
+      ],
+      "base": 7.6,
+      "composed": [
+        "dec-ag-approve-redstone",
+        "dec-ag-plot-clearance"
+      ],
+      "disposition": "draft",
+      "approverIds": [
+        "per-maya-chen"
+      ],
+      "tonnes": 1200
+    },
+    {
+      "id": "dec-ag-certify-lot-441",
+      "projectId": "prj-ag-certification",
+      "templateId": "tmpl-lot-quality-certification",
+      "version": 1,
+      "statement": "Certify LOT-441 Honeycrisp apples for the premium channel.",
+      "premises": [
+        {
+          "type": "PriorDecision",
+          "refId": "dec-ag-quality-redstone",
+          "version": 1
+        },
+        {
+          "type": "PriorDecision",
+          "refId": "dec-ag-allocate-redstone",
+          "version": 1
+        }
+      ],
+      "base": 7.9,
+      "composed": [],
+      "disposition": "draft",
+      "approverIds": [
+        "per-tomo-saito"
+      ],
+      "tonnes": null
+    }
+  ]
+}

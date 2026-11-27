@@ -1,0 +1,65 @@
+{
+  "people": [
+    {
+      "id": "per-amara-okonkwo",
+      "name": "Dr. Amara Okonkwo",
+      "title": "Chief Medical Officer",
+      "roles": [
+        "approver"
+      ],
+      "projectIds": [
+        "prj-med-pathway",
+        "prj-med-safety"
+      ]
+    },
+    {
+      "id": "per-julian-park",
+      "name": "Dr. Julian Park",
+      "title": "Pharmacy & Therapeutics Chair",
+      "roles": [
+        "reviewer",
+        "author"
+      ],
+      "projectIds": [
+        "prj-med-formulary",
+        "prj-med-pathway"
+      ]
+    },
+    {
+      "id": "per-nora-lindqvist",
+      "name": "Nora Lindqvist",
+      "title": "Patient Safety Officer",
+      "roles": [
+        "author"
+      ],
+      "projectIds": [
+        "prj-med-safety"
+      ]
+    },
+    {
+      "id": "per-rafael-mendes",
+      "name": "Rafael Mendes",
+      "title": "Biomedical Engineering Lead",
+      "roles": [
+        "reviewer"
+      ],
+      "projectIds": [
+        "prj-med-device"
+      ]
+    },
+    {
+      "id": "per-hannah-brooks",
+      "name": "Hannah Brooks",
+      "title": "Compliance and Privacy Officer",
+      "roles": [
+        "admin"
+      ],
+      "projectIds": [
+        "prj-med-formulary",
+        "prj-med-device",
+        "prj-med-safety",
+        "prj-med-pathway"
+      ]
+    }
+  ]
+}

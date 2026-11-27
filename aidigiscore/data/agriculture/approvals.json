@@ -1,0 +1,74 @@
+{
+  "approvals": [
+    {
+      "id": "app-dec-ag-watchlist-redstone-1",
+      "decisionId": "dec-ag-watchlist-redstone",
+      "decisionVersion": 1,
+      "personId": "per-luis-ortega",
+      "role": "reviewer",
+      "at": "2026-11-01T09:00:00Z",
+      "kind": "approval",
+      "reason": "Recorded fixture review"
+    },
+    {
+      "id": "app-dec-ag-quality-redstone-1",
+      "decisionId": "dec-ag-quality-redstone",
+      "decisionVersion": 1,
+      "personId": "per-tomo-saito",
+      "role": "reviewer",
+      "at": "2026-11-01T09:00:00Z",
+      "kind": "approval",
+      "reason": "Recorded fixture review"
+    },
+    {
+      "id": "app-dec-ag-contract-redstone-1",
+      "decisionId": "dec-ag-contract-redstone",
+      "decisionVersion": 1,
+      "personId": "per-elena-vasquez",
+      "role": "admin",
+      "at": "2026-11-01T09:00:00Z",
+      "kind": "approval",
+      "reason": "Recorded fixture review"
+    },
+    {
+      "id": "app-dec-ag-plot-clearance-1",
+      "decisionId": "dec-ag-plot-clearance",
+      "decisionVersion": 1,
+      "personId": "per-priya-shah",
+      "role": "approver",
+      "at": "2026-11-01T09:00:00Z",
+      "kind": "approval",
+      "reason": "Recorded fixture review"
+    },
+    {
+      "id": "app-dec-ag-approve-redstone-1",
+      "decisionId": "dec-ag-approve-redstone",
+      "decisionVersion": 1,
+      "personId": "per-maya-chen",
+      "role": "author",
+      "at": "2026-11-01T09:00:00Z",
+      "kind": "approval",
+      "reason": "Recorded fixture review"
+    },
+    {
+      "id": "app-dec-ag-allocate-redstone-1",
+      "decisionId": "dec-ag-allocate-redstone",
+      "decisionVersion": 1,
+      "personId": "per-maya-chen",
+      "role": "author",
+      "at": "2026-11-01T09:00:00Z",
+      "kind": "approval",
+      "reason": "Recorded fixture review"
+    },
+    {
+      "id": "app-dec-ag-certify-lot-441-1",
+      "decisionId": "dec-ag-certify-lot-441",
+      "decisionVersion": 1,
+      "personId": "per-tomo-saito",
+      "role": "reviewer",
+      "at": "2026-11-01T09:00:00Z",
+      "kind": "approval",
+      "reason": "Recorded fixture review"
+    }
+  ]
+}

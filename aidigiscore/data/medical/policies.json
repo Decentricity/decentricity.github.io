@@ -1,0 +1,67 @@
+{
+  "policies": [
+    {
+      "id": "ax-premises-present",
+      "statement": "Required premises are present and current.",
+      "hard": true,
+      "version": 1,
+      "ownerPersonId": "per-hannah-brooks"
+    },
+    {
+      "id": "ax-citations-valid",
+      "statement": "Cited decisions are valid at the recorded version.",
+      "hard": true,
+      "version": 1,
+      "ownerPersonId": "per-hannah-brooks"
+    },
+    {
+      "id": "ax-ai-ceiling",
+      "statement": "AI-only trust is capped at 7.0.",
+      "hard": true,
+      "version": 1,
+      "ownerPersonId": "per-hannah-brooks"
+    },
+    {
+      "id": "ax-no-average-mandatory",
+      "statement": "A mandatory child failure blocks acceptance.",
+      "hard": true,
+      "version": 1,
+      "ownerPersonId": "per-hannah-brooks"
+    },
+    {
+      "id": "ax-approver-authority",
+      "statement": "Approval must come from the required role and project.",
+      "hard": true,
+      "version": 1,
+      "ownerPersonId": "per-hannah-brooks"
+    },
+    {
+      "id": "ax-dual-signoff-pathway",
+      "statement": "A pathway requires P&T Chair and CMO approvals.",
+      "hard": true,
+      "version": 1,
+      "ownerPersonId": "per-hannah-brooks"
+    },
+    {
+      "id": "ax-bulletin-current",
+      "statement": "Formulary and device qualification require a current bulletin.",
+      "hard": true,
+      "version": 1,
+      "ownerPersonId": "per-hannah-brooks"
+    },
+    {
+      "id": "ax-device-qualified-for-incident",
+      "statement": "Incident closure requires current device qualification.",
+      "hard": true,
+      "version": 1,
+      "ownerPersonId": "per-hannah-brooks"
+    },
+    {
+      "id": "ax-no-phi-in-record",
+      "statement": "Records must exclude direct patient identifiers.",
+      "hard": true,
+      "version": 1,
+      "ownerPersonId": "per-hannah-brooks"
+    }
+  ]
+}

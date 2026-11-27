@@ -1,0 +1,65 @@
+{
+  "people": [
+    {
+      "id": "per-maya-chen",
+      "name": "Maya Chen",
+      "title": "Procurement Lead",
+      "roles": [
+        "author",
+        "project-owner"
+      ],
+      "projectIds": [
+        "prj-ag-onboarding",
+        "prj-ag-sourcing"
+      ]
+    },
+    {
+      "id": "per-luis-ortega",
+      "name": "Luis Ortega",
+      "title": "Compliance Officer",
+      "roles": [
+        "reviewer"
+      ],
+      "projectIds": [
+        "prj-ag-onboarding"
+      ]
+    },
+    {
+      "id": "per-priya-shah",
+      "name": "Priya Shah",
+      "title": "Sustainability Director",
+      "roles": [
+        "approver"
+      ],
+      "projectIds": [
+        "prj-ag-sustainability"
+      ]
+    },
+    {
+      "id": "per-tomo-saito",
+      "name": "Tomokazu Saito",
+      "title": "Quality Manager",
+      "roles": [
+        "reviewer"
+      ],
+      "projectIds": [
+        "prj-ag-onboarding",
+        "prj-ag-certification"
+      ]
+    },
+    {
+      "id": "per-elena-vasquez",
+      "name": "Elena Vasquez",
+      "title": "General Counsel",
+      "roles": [
+        "admin"
+      ],
+      "projectIds": [
+        "prj-ag-onboarding",
+        "prj-ag-sourcing",
+        "prj-ag-certification",
+        "prj-ag-sustainability"
+      ]
+    }
+  ]
+}

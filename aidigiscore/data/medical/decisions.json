@@ -1,0 +1,228 @@
+{
+  "decisions": [
+    {
+      "id": "dec-med-nexoral-monograph",
+      "projectId": "prj-med-formulary",
+      "templateId": "tmpl-monograph-review",
+      "version": 1,
+      "statement": "Accept the fictional Nexoral 10 mg monograph for adult use.",
+      "premises": [
+        {
+          "type": "Evidence",
+          "refId": "src-med-nexoral-monograph-v1",
+          "version": 1
+        }
+      ],
+      "base": 8.2,
+      "composed": [],
+      "disposition": "draft",
+      "approverIds": [
+        "per-julian-park"
+      ],
+      "tonnes": null
+    },
+    {
+      "id": "dec-med-nexoral-supply",
+      "projectId": "prj-med-formulary",
+      "templateId": "tmpl-supply-review",
+      "version": 1,
+      "statement": "Aetheris Pharma supply is adequate for the planning period.",
+      "premises": [
+        {
+          "type": "Evidence",
+          "refId": "src-med-aetheris-supply-q3",
+          "version": 1
+        }
+      ],
+      "base": 8,
+      "composed": [],
+      "disposition": "draft",
+      "approverIds": [
+        "per-julian-park"
+      ],
+      "tonnes": null
+    },
+    {
+      "id": "dec-med-nexoral-coi",
+      "projectId": "prj-med-formulary",
+      "templateId": "tmpl-coi-clearance",
+      "version": 1,
+      "statement": "Complete conflict-of-interest clearance for the Nexoral panel.",
+      "premises": [
+        {
+          "type": "Evidence",
+          "refId": "src-med-coi-panel-2026",
+          "version": 1
+        }
+      ],
+      "base": 9,
+      "composed": [],
+      "disposition": "draft",
+      "approverIds": [
+        "per-hannah-brooks"
+      ],
+      "tonnes": null
+    },
+    {
+      "id": "dec-med-formulary-nexoral",
+      "projectId": "prj-med-formulary",
+      "templateId": "tmpl-formulary-addition",
+      "version": 1,
+      "statement": "Add fictional Nexoral 10 mg to the adult formulary.",
+      "premises": [
+        {
+          "type": "Evidence",
+          "refId": "src-med-nmb-2026-07",
+          "version": 1
+        },
+        {
+          "type": "PriorDecision",
+          "refId": "dec-med-nexoral-monograph",
+          "version": 1
+        },
+        {
+          "type": "PriorDecision",
+          "refId": "dec-med-nexoral-supply",
+          "version": 1
+        },
+        {
+          "type": "PriorDecision",
+          "refId": "dec-med-nexoral-coi",
+          "version": 1
+        }
+      ],
+      "base": 8,
+      "composed": [
+        "dec-med-nexoral-monograph",
+        "dec-med-nexoral-supply",
+        "dec-med-nexoral-coi"
+      ],
+      "disposition": "draft",
+      "approverIds": [
+        "per-julian-park"
+      ],
+      "tonnes": null
+    },
+    {
+      "id": "dec-med-pathway-cap-v3",
+      "projectId": "prj-med-pathway",
+      "templateId": "tmpl-treatment-pathway-approval",
+      "version": 1,
+      "statement": "Approve fictional Community-Acquired Pneumonia pathway v3.",
+      "premises": [
+        {
+          "type": "PriorDecision",
+          "refId": "dec-med-formulary-nexoral",
+          "version": 1
+        }
+      ],
+      "base": 8,
+      "composed": [
+        "dec-med-formulary-nexoral"
+      ],
+      "disposition": "draft",
+      "approverIds": [
+        "per-julian-park",
+        "per-amara-okonkwo"
+      ],
+      "tonnes": null
+    },
+    {
+      "id": "dec-med-helix-registry",
+      "projectId": "prj-med-device",
+      "templateId": "tmpl-device-registry-review",
+      "version": 1,
+      "statement": "HelixPulse has a current fictional registry record.",
+      "premises": [
+        {
+          "type": "Evidence",
+          "refId": "src-med-helix-registry",
+          "version": 1
+        }
+      ],
+      "base": 8.5,
+      "composed": [],
+      "disposition": "draft",
+      "approverIds": [
+        "per-rafael-mendes"
+      ],
+      "tonnes": null
+    },
+    {
+      "id": "dec-med-helix-service",
+      "projectId": "prj-med-device",
+      "templateId": "tmpl-device-service-review",
+      "version": 1,
+      "statement": "Accept the Northwind Devices service agreement.",
+      "premises": [
+        {
+          "type": "Evidence",
+          "refId": "src-med-northwind-service-v2",
+          "version": 1
+        }
+      ],
+      "base": 7.8,
+      "composed": [],
+      "disposition": "draft",
+      "approverIds": [
+        "per-rafael-mendes"
+      ],
+      "tonnes": null
+    },
+    {
+      "id": "dec-med-qualify-helixpulse",
+      "projectId": "prj-med-device",
+      "templateId": "tmpl-device-vendor-qualification",
+      "version": 1,
+      "statement": "Qualify the fictional HelixPulse oximeter from Northwind Devices.",
+      "premises": [
+        {
+          "type": "Evidence",
+          "refId": "src-med-device-bulletin-2026-06",
+          "version": 1
+        },
+        {
+          "type": "PriorDecision",
+          "refId": "dec-med-helix-registry",
+          "version": 1
+        },
+        {
+          "type": "PriorDecision",
+          "refId": "dec-med-helix-service",
+          "version": 1
+        }
+      ],
+      "base": 7.8,
+      "composed": [
+        "dec-med-helix-registry",
+        "dec-med-helix-service"
+      ],
+      "disposition": "draft",
+      "approverIds": [
+        "per-rafael-mendes"
+      ],
+      "tonnes": null
+    },
+    {
+      "id": "dec-med-incident-syn2047",
+      "projectId": "prj-med-safety",
+      "templateId": "tmpl-incident-review-closure",
+      "version": 1,
+      "statement": "Close synthetic incident INC-SYN-2047 with a device-settings corrective action.",
+      "premises": [
+        {
+          "type": "PriorDecision",
+          "refId": "dec-med-qualify-helixpulse",
+          "version": 1
+        }
+      ],
+      "base": 7.7,
+      "composed": [],
+      "disposition": "draft",
+      "approverIds": [
+        "per-amara-okonkwo"
+      ],
+      "tonnes": null
+    }
+  ]
+}

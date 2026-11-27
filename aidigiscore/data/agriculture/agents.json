@@ -1,0 +1,40 @@
+{
+  "agents": [
+    {
+      "id": "agt-rowan",
+      "name": "Rowan",
+      "brief": "Research and sourcing",
+      "ownerPersonId": "per-maya-chen",
+      "allowedTools": [
+        "search_records",
+        "cite_source",
+        "draft_option"
+      ],
+      "status": "active"
+    },
+    {
+      "id": "agt-bramble",
+      "name": "Bramble",
+      "brief": "Compliance",
+      "ownerPersonId": "per-luis-ortega",
+      "allowedTools": [
+        "check_watchlist",
+        "check_policy",
+        "propose_repair"
+      ],
+      "status": "active"
+    },
+    {
+      "id": "agt-cedar",
+      "name": "Cedar",
+      "brief": "Drafting",
+      "ownerPersonId": "per-maya-chen",
+      "allowedTools": [
+        "draft_contract",
+        "draft_certificate",
+        "draft_statement"
+      ],
+      "status": "active"
+    }
+  ]
+}

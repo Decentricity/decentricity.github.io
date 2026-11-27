@@ -1,0 +1,53 @@
+{
+  "policies": [
+    {
+      "id": "ax-premises-present",
+      "statement": "Required premises are present and current.",
+      "hard": true,
+      "version": 1,
+      "ownerPersonId": "per-elena-vasquez"
+    },
+    {
+      "id": "ax-citations-valid",
+      "statement": "Cited decisions are valid at the recorded version.",
+      "hard": true,
+      "version": 1,
+      "ownerPersonId": "per-elena-vasquez"
+    },
+    {
+      "id": "ax-ai-ceiling",
+      "statement": "AI-only trust is capped at 7.0.",
+      "hard": true,
+      "version": 1,
+      "ownerPersonId": "per-elena-vasquez"
+    },
+    {
+      "id": "ax-no-average-mandatory",
+      "statement": "A mandatory child failure blocks acceptance.",
+      "hard": true,
+      "version": 1,
+      "ownerPersonId": "per-elena-vasquez"
+    },
+    {
+      "id": "ax-approver-authority",
+      "statement": "Approval must come from the required role and project.",
+      "hard": true,
+      "version": 1,
+      "ownerPersonId": "per-elena-vasquez"
+    },
+    {
+      "id": "ax-watchlist-current",
+      "statement": "Supplier approval requires current watchlist evidence.",
+      "hard": true,
+      "version": 1,
+      "ownerPersonId": "per-elena-vasquez"
+    },
+    {
+      "id": "ax-sustainability-before-volume",
+      "statement": "Allocations above 500 tonnes require current forest-origin release.",
+      "hard": true,
+      "version": 1,
+      "ownerPersonId": "per-elena-vasquez"
+    }
+  ]
+}

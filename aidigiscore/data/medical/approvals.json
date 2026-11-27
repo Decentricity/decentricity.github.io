@@ -1,0 +1,104 @@
+{
+  "approvals": [
+    {
+      "id": "app-dec-med-nexoral-monograph-1",
+      "decisionId": "dec-med-nexoral-monograph",
+      "decisionVersion": 1,
+      "personId": "per-julian-park",
+      "role": "reviewer",
+      "at": "2026-11-01T09:00:00Z",
+      "kind": "approval",
+      "reason": "Recorded fixture review"
+    },
+    {
+      "id": "app-dec-med-nexoral-supply-1",
+      "decisionId": "dec-med-nexoral-supply",
+      "decisionVersion": 1,
+      "personId": "per-julian-park",
+      "role": "reviewer",
+      "at": "2026-11-01T09:00:00Z",
+      "kind": "approval",
+      "reason": "Recorded fixture review"
+    },
+    {
+      "id": "app-dec-med-nexoral-coi-1",
+      "decisionId": "dec-med-nexoral-coi",
+      "decisionVersion": 1,
+      "personId": "per-hannah-brooks",
+      "role": "admin",
+      "at": "2026-11-01T09:00:00Z",
+      "kind": "approval",
+      "reason": "Recorded fixture review"
+    },
+    {
+      "id": "app-dec-med-formulary-nexoral-1",
+      "decisionId": "dec-med-formulary-nexoral",
+      "decisionVersion": 1,
+      "personId": "per-julian-park",
+      "role": "reviewer",
+      "at": "2026-11-01T09:00:00Z",
+      "kind": "approval",
+      "reason": "Recorded fixture review"
+    },
+    {
+      "id": "app-dec-med-pathway-cap-v3-1",
+      "decisionId": "dec-med-pathway-cap-v3",
+      "decisionVersion": 1,
+      "personId": "per-julian-park",
+      "role": "reviewer",
+      "at": "2026-11-01T09:00:00Z",
+      "kind": "approval",
+      "reason": "Recorded fixture review"
+    },
+    {
+      "id": "app-dec-med-pathway-cap-v3-2",
+      "decisionId": "dec-med-pathway-cap-v3",
+      "decisionVersion": 1,
+      "personId": "per-amara-okonkwo",
+      "role": "approver",
+      "at": "2026-11-01T09:00:00Z",
+      "kind": "approval",
+      "reason": "Recorded fixture review"
+    },
+    {
+      "id": "app-dec-med-helix-registry-1",
+      "decisionId": "dec-med-helix-registry",
+      "decisionVersion": 1,
+      "personId": "per-rafael-mendes",
+      "role": "reviewer",
+      "at": "2026-11-01T09:00:00Z",
+      "kind": "approval",
+      "reason": "Recorded fixture review"
+    },
+    {
+      "id": "app-dec-med-helix-service-1",
+      "decisionId": "dec-med-helix-service",
+      "decisionVersion": 1,
+      "personId": "per-rafael-mendes",
+      "role": "reviewer",
+      "at": "2026-11-01T09:00:00Z",
+      "kind": "approval",
+      "reason": "Recorded fixture review"
+    },
+    {
+      "id": "app-dec-med-qualify-helixpulse-1",
+      "decisionId": "dec-med-qualify-helixpulse",
+      "decisionVersion": 1,
+      "personId": "per-rafael-mendes",
+      "role": "reviewer",
+      "at": "2026-11-01T09:00:00Z",
+      "kind": "approval",
+      "reason": "Recorded fixture review"
+    },
+    {
+      "id": "app-dec-med-incident-syn2047-1",
+      "decisionId": "dec-med-incident-syn2047",
+      "decisionVersion": 1,
+      "personId": "per-amara-okonkwo",
+      "role": "approver",
+      "at": "2026-11-01T09:00:00Z",
+      "kind": "approval",
+      "reason": "Recorded fixture review"
+    }
+  ]
+}

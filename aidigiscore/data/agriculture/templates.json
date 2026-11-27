@@ -1,0 +1,185 @@
+{
+  "templates": [
+    {
+      "id": "tmpl-watchlist-check",
+      "name": "watchlist-check",
+      "version": "tmpl-v1",
+      "requiredPremiseTypes": [
+        "Evidence"
+      ],
+      "requiredChildTemplates": [],
+      "requiredAxioms": [
+        "ax-premises-present",
+        "ax-citations-valid",
+        "ax-ai-ceiling",
+        "ax-no-average-mandatory",
+        "ax-approver-authority",
+        "ax-watchlist-current",
+        "ax-sustainability-before-volume"
+      ],
+      "requiredApproverRoles": [
+        "reviewer"
+      ],
+      "requiredSourceKinds": [
+        "watchlist"
+      ],
+      "scorePolicyId": "trust-v1"
+    },
+    {
+      "id": "tmpl-supplier-quality",
+      "name": "supplier-quality",
+      "version": "tmpl-v1",
+      "requiredPremiseTypes": [
+        "Evidence"
+      ],
+      "requiredChildTemplates": [],
+      "requiredAxioms": [
+        "ax-premises-present",
+        "ax-citations-valid",
+        "ax-ai-ceiling",
+        "ax-no-average-mandatory",
+        "ax-approver-authority",
+        "ax-watchlist-current",
+        "ax-sustainability-before-volume"
+      ],
+      "requiredApproverRoles": [
+        "reviewer"
+      ],
+      "requiredSourceKinds": [
+        "audit"
+      ],
+      "scorePolicyId": "trust-v1"
+    },
+    {
+      "id": "tmpl-supplier-contract",
+      "name": "supplier-contract",
+      "version": "tmpl-v1",
+      "requiredPremiseTypes": [
+        "Evidence"
+      ],
+      "requiredChildTemplates": [],
+      "requiredAxioms": [
+        "ax-premises-present",
+        "ax-citations-valid",
+        "ax-ai-ceiling",
+        "ax-no-average-mandatory",
+        "ax-approver-authority",
+        "ax-watchlist-current",
+        "ax-sustainability-before-volume"
+      ],
+      "requiredApproverRoles": [
+        "admin"
+      ],
+      "requiredSourceKinds": [
+        "contract"
+      ],
+      "scorePolicyId": "trust-v1"
+    },
+    {
+      "id": "tmpl-forest-origin-release",
+      "name": "forest-origin-release",
+      "version": "tmpl-v1",
+      "requiredPremiseTypes": [
+        "Evidence"
+      ],
+      "requiredChildTemplates": [],
+      "requiredAxioms": [
+        "ax-premises-present",
+        "ax-citations-valid",
+        "ax-ai-ceiling",
+        "ax-no-average-mandatory",
+        "ax-approver-authority",
+        "ax-watchlist-current",
+        "ax-sustainability-before-volume"
+      ],
+      "requiredApproverRoles": [
+        "approver"
+      ],
+      "requiredSourceKinds": [
+        "imagery",
+        "policy"
+      ],
+      "scorePolicyId": "trust-v1"
+    },
+    {
+      "id": "tmpl-vendor-farm-approval",
+      "name": "vendor-farm-approval",
+      "version": "tmpl-v1",
+      "requiredPremiseTypes": [
+        "PriorDecision"
+      ],
+      "requiredChildTemplates": [
+        "tmpl-watchlist-check",
+        "tmpl-supplier-quality",
+        "tmpl-supplier-contract",
+        "tmpl-forest-origin-release"
+      ],
+      "requiredAxioms": [
+        "ax-premises-present",
+        "ax-citations-valid",
+        "ax-ai-ceiling",
+        "ax-no-average-mandatory",
+        "ax-approver-authority",
+        "ax-watchlist-current",
+        "ax-sustainability-before-volume"
+      ],
+      "requiredApproverRoles": [
+        "author"
+      ],
+      "requiredSourceKinds": [],
+      "scorePolicyId": "weakest-link-v1"
+    },
+    {
+      "id": "tmpl-volume-allocation",
+      "name": "volume-allocation",
+      "version": "tmpl-v1",
+      "requiredPremiseTypes": [
+        "PriorDecision"
+      ],
+      "requiredChildTemplates": [
+        "tmpl-vendor-farm-approval",
+        "tmpl-forest-origin-release"
+      ],
+      "requiredAxioms": [
+        "ax-premises-present",
+        "ax-citations-valid",
+        "ax-ai-ceiling",
+        "ax-no-average-mandatory",
+        "ax-approver-authority",
+        "ax-watchlist-current",
+        "ax-sustainability-before-volume"
+      ],
+      "requiredApproverRoles": [
+        "author"
+      ],
+      "requiredSourceKinds": [],
+      "scorePolicyId": "weakest-link-v1"
+    },
+    {
+      "id": "tmpl-lot-quality-certification",
+      "name": "lot-quality-certification",
+      "version": "tmpl-v1",
+      "requiredPremiseTypes": [
+        "PriorDecision"
+      ],
+      "requiredChildTemplates": [
+        "tmpl-supplier-quality",
+        "tmpl-volume-allocation"
+      ],
+      "requiredAxioms": [
+        "ax-premises-present",
+        "ax-citations-valid",
+        "ax-ai-ceiling",
+        "ax-no-average-mandatory",
+        "ax-approver-authority",
+        "ax-watchlist-current",
+        "ax-sustainability-before-volume"
+      ],
+      "requiredApproverRoles": [
+        "reviewer"
+      ],
+      "requiredSourceKinds": [],
+      "scorePolicyId": "trust-v1"
+    }
+  ]
+}

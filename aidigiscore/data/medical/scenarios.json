@@ -1,0 +1,72 @@
+{
+  "scenarios": [
+    {
+      "id": "med-bulletin-invalidation-repair",
+      "title": "Source change, invalidation and repair",
+      "steps": [
+        {
+          "id": "t0",
+          "title": "Passing state (T0)",
+          "actions": []
+        },
+        {
+          "id": "change",
+          "title": "New source supersedes old",
+          "actions": [
+            {
+              "op": "supersedeSource",
+              "sourceId": "src-med-nmb-2026-07",
+              "newSourceId": "src-med-nmb-2026-11"
+            }
+          ]
+        },
+        {
+          "id": "repair",
+          "title": "Agents propose · humans approve (T1)",
+          "actions": [
+            {
+              "op": "repair",
+              "decisionId": "dec-med-formulary-nexoral",
+              "oldSourceId": "src-med-nmb-2026-07",
+              "newSourceId": "src-med-nmb-2026-11",
+              "agentId": "agt-apothecary"
+            }
+          ]
+        },
+        {
+          "id": "negative",
+          "title": "Stale citation rejected",
+          "actions": [
+            {
+              "op": "negative",
+              "decisionId": "dec-med-pathway-cap-v3",
+              "agentId": "agt-galen"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "med-harmless-change",
+      "title": "Harmless source update",
+      "steps": [
+        {
+          "id": "t0",
+          "title": "Passing state (T0)",
+          "actions": []
+        },
+        {
+          "id": "harmless",
+          "title": "Unrelated record revised",
+          "actions": [
+            {
+              "op": "supersedeSource",
+              "sourceId": "src-med-address-v1",
+              "newSourceId": "src-med-address-v2"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,116 @@
+{
+  "edges": [
+    {
+      "id": "dec-med-nexoral-monograph-src-med-nexoral-monograph-v1",
+      "type": "supports",
+      "fromId": "dec-med-nexoral-monograph",
+      "toId": "src-med-nexoral-monograph-v1",
+      "fromVersion": 1,
+      "toVersion": 1
+    },
+    {
+      "id": "dec-med-nexoral-supply-src-med-aetheris-supply-q3",
+      "type": "supports",
+      "fromId": "dec-med-nexoral-supply",
+      "toId": "src-med-aetheris-supply-q3",
+      "fromVersion": 1,
+      "toVersion": 1
+    },
+    {
+      "id": "dec-med-nexoral-coi-src-med-coi-panel-2026",
+      "type": "supports",
+      "fromId": "dec-med-nexoral-coi",
+      "toId": "src-med-coi-panel-2026",
+      "fromVersion": 1,
+      "toVersion": 1
+    },
+    {
+      "id": "dec-med-formulary-nexoral-src-med-nmb-2026-07",
+      "type": "supports",
+      "fromId": "dec-med-formulary-nexoral",
+      "toId": "src-med-nmb-2026-07",
+      "fromVersion": 1,
+      "toVersion": 1
+    },
+    {
+      "id": "dec-med-formulary-nexoral-dec-med-nexoral-monograph",
+      "type": "composed-of",
+      "fromId": "dec-med-formulary-nexoral",
+      "toId": "dec-med-nexoral-monograph",
+      "fromVersion": 1,
+      "toVersion": 1
+    },
+    {
+      "id": "dec-med-formulary-nexoral-dec-med-nexoral-supply",
+      "type": "composed-of",
+      "fromId": "dec-med-formulary-nexoral",
+      "toId": "dec-med-nexoral-supply",
+      "fromVersion": 1,
+      "toVersion": 1
+    },
+    {
+      "id": "dec-med-formulary-nexoral-dec-med-nexoral-coi",
+      "type": "composed-of",
+      "fromId": "dec-med-formulary-nexoral",
+      "toId": "dec-med-nexoral-coi",
+      "fromVersion": 1,
+      "toVersion": 1
+    },
+    {
+      "id": "dec-med-pathway-cap-v3-dec-med-formulary-nexoral",
+      "type": "composed-of",
+      "fromId": "dec-med-pathway-cap-v3",
+      "toId": "dec-med-formulary-nexoral",
+      "fromVersion": 1,
+      "toVersion": 1
+    },
+    {
+      "id": "dec-med-helix-registry-src-med-helix-registry",
+      "type": "supports",
+      "fromId": "dec-med-helix-registry",
+      "toId": "src-med-helix-registry",
+      "fromVersion": 1,
+      "toVersion": 1
+    },
+    {
+      "id": "dec-med-helix-service-src-med-northwind-service-v2",
+      "type": "supports",
+      "fromId": "dec-med-helix-service",
+      "toId": "src-med-northwind-service-v2",
+      "fromVersion": 1,
+      "toVersion": 1
+    },
+    {
+      "id": "dec-med-qualify-helixpulse-src-med-device-bulletin-2026-06",
+      "type": "supports",
+      "fromId": "dec-med-qualify-helixpulse",
+      "toId": "src-med-device-bulletin-2026-06",
+      "fromVersion": 1,
+      "toVersion": 1
+    },
+    {
+      "id": "dec-med-qualify-helixpulse-dec-med-helix-registry",
+      "type": "composed-of",
+      "fromId": "dec-med-qualify-helixpulse",
+      "toId": "dec-med-helix-registry",
+      "fromVersion": 1,
+      "toVersion": 1
+    },
+    {
+      "id": "dec-med-qualify-helixpulse-dec-med-helix-service",
+      "type": "composed-of",
+      "fromId": "dec-med-qualify-helixpulse",
+      "toId": "dec-med-helix-service",
+      "fromVersion": 1,
+      "toVersion": 1
+    },
+    {
+      "id": "dec-med-incident-syn2047-dec-med-qualify-helixpulse",
+      "type": "depends-on",
+      "fromId": "dec-med-incident-syn2047",
+      "toId": "dec-med-qualify-helixpulse",
+      "fromVersion": 1,
+      "toVersion": 1
+    }
+  ]
+}

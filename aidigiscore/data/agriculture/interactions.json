@@ -1,0 +1,56 @@
+{
+  "interactions": [
+    {
+      "id": "int-ag-001",
+      "agentId": "agt-rowan",
+      "decisionId": "dec-ag-approve-redstone",
+      "tool": "cite_source",
+      "at": "2026-11-01T09:00:00Z",
+      "flag": "used",
+      "score": 8.2,
+      "gateway": "allow",
+      "proposal": "Cite the Redstone quality audit.",
+      "verdict": "ACCEPT",
+      "sourceId": "src-ag-quality-audit-redstone"
+    },
+    {
+      "id": "int-ag-002",
+      "agentId": "agt-bramble",
+      "decisionId": "dec-ag-watchlist-redstone",
+      "tool": "check_watchlist",
+      "at": "2026-11-01T09:00:00Z",
+      "flag": "used",
+      "score": 8.7,
+      "gateway": "allow",
+      "proposal": "Check Redstone against the Q2 watchlist.",
+      "verdict": "ACCEPT",
+      "sourceId": "src-ag-watchlist-2026-q2"
+    },
+    {
+      "id": "int-ag-003",
+      "agentId": "agt-cedar",
+      "decisionId": "dec-ag-contract-redstone",
+      "tool": "draft_contract",
+      "at": "2026-11-01T09:00:00Z",
+      "flag": "used",
+      "score": 7.5,
+      "gateway": "allow",
+      "proposal": "Draft Redstone contract terms.",
+      "verdict": "ACCEPT",
+      "sourceId": "src-ag-contract-redstone-v3"
+    },
+    {
+      "id": "int-ag-004",
+      "agentId": "agt-rowan",
+      "decisionId": "dec-ag-allocate-redstone",
+      "tool": "draft_option",
+      "at": "2026-11-01T09:00:00Z",
+      "flag": "used",
+      "score": 8,
+      "gateway": "allow",
+      "proposal": "Draft the 1,200-tonne allocation.",
+      "verdict": "ACCEPT",
+      "sourceId": null
+    }
+  ]
+}

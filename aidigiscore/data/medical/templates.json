@@ -1,0 +1,257 @@
+{
+  "templates": [
+    {
+      "id": "tmpl-monograph-review",
+      "name": "monograph-review",
+      "version": "tmpl-v1",
+      "requiredPremiseTypes": [
+        "Evidence"
+      ],
+      "requiredChildTemplates": [],
+      "requiredAxioms": [
+        "ax-premises-present",
+        "ax-citations-valid",
+        "ax-ai-ceiling",
+        "ax-no-average-mandatory",
+        "ax-approver-authority",
+        "ax-dual-signoff-pathway",
+        "ax-bulletin-current",
+        "ax-device-qualified-for-incident",
+        "ax-no-phi-in-record"
+      ],
+      "requiredApproverRoles": [
+        "reviewer"
+      ],
+      "requiredSourceKinds": [
+        "monograph"
+      ],
+      "scorePolicyId": "trust-v1"
+    },
+    {
+      "id": "tmpl-supply-review",
+      "name": "supply-review",
+      "version": "tmpl-v1",
+      "requiredPremiseTypes": [
+        "Evidence"
+      ],
+      "requiredChildTemplates": [],
+      "requiredAxioms": [
+        "ax-premises-present",
+        "ax-citations-valid",
+        "ax-ai-ceiling",
+        "ax-no-average-mandatory",
+        "ax-approver-authority",
+        "ax-dual-signoff-pathway",
+        "ax-bulletin-current",
+        "ax-device-qualified-for-incident",
+        "ax-no-phi-in-record"
+      ],
+      "requiredApproverRoles": [
+        "reviewer"
+      ],
+      "requiredSourceKinds": [
+        "agreement"
+      ],
+      "scorePolicyId": "trust-v1"
+    },
+    {
+      "id": "tmpl-coi-clearance",
+      "name": "coi-clearance",
+      "version": "tmpl-v1",
+      "requiredPremiseTypes": [
+        "Evidence"
+      ],
+      "requiredChildTemplates": [],
+      "requiredAxioms": [
+        "ax-premises-present",
+        "ax-citations-valid",
+        "ax-ai-ceiling",
+        "ax-no-average-mandatory",
+        "ax-approver-authority",
+        "ax-dual-signoff-pathway",
+        "ax-bulletin-current",
+        "ax-device-qualified-for-incident",
+        "ax-no-phi-in-record"
+      ],
+      "requiredApproverRoles": [
+        "admin"
+      ],
+      "requiredSourceKinds": [
+        "policy"
+      ],
+      "scorePolicyId": "trust-v1"
+    },
+    {
+      "id": "tmpl-formulary-addition",
+      "name": "formulary-addition",
+      "version": "tmpl-v1",
+      "requiredPremiseTypes": [
+        "Evidence",
+        "PriorDecision"
+      ],
+      "requiredChildTemplates": [
+        "tmpl-monograph-review",
+        "tmpl-supply-review",
+        "tmpl-coi-clearance"
+      ],
+      "requiredAxioms": [
+        "ax-premises-present",
+        "ax-citations-valid",
+        "ax-ai-ceiling",
+        "ax-no-average-mandatory",
+        "ax-approver-authority",
+        "ax-dual-signoff-pathway",
+        "ax-bulletin-current",
+        "ax-device-qualified-for-incident",
+        "ax-no-phi-in-record"
+      ],
+      "requiredApproverRoles": [
+        "reviewer"
+      ],
+      "requiredSourceKinds": [
+        "bulletin"
+      ],
+      "scorePolicyId": "weakest-link-v1"
+    },
+    {
+      "id": "tmpl-treatment-pathway-approval",
+      "name": "treatment-pathway-approval",
+      "version": "tmpl-v1",
+      "requiredPremiseTypes": [
+        "PriorDecision"
+      ],
+      "requiredChildTemplates": [
+        "tmpl-formulary-addition"
+      ],
+      "requiredAxioms": [
+        "ax-premises-present",
+        "ax-citations-valid",
+        "ax-ai-ceiling",
+        "ax-no-average-mandatory",
+        "ax-approver-authority",
+        "ax-dual-signoff-pathway",
+        "ax-bulletin-current",
+        "ax-device-qualified-for-incident",
+        "ax-no-phi-in-record"
+      ],
+      "requiredApproverRoles": [
+        "reviewer",
+        "approver"
+      ],
+      "requiredSourceKinds": [],
+      "scorePolicyId": "weakest-link-v1"
+    },
+    {
+      "id": "tmpl-device-registry-review",
+      "name": "device-registry-review",
+      "version": "tmpl-v1",
+      "requiredPremiseTypes": [
+        "Evidence"
+      ],
+      "requiredChildTemplates": [],
+      "requiredAxioms": [
+        "ax-premises-present",
+        "ax-citations-valid",
+        "ax-ai-ceiling",
+        "ax-no-average-mandatory",
+        "ax-approver-authority",
+        "ax-dual-signoff-pathway",
+        "ax-bulletin-current",
+        "ax-device-qualified-for-incident",
+        "ax-no-phi-in-record"
+      ],
+      "requiredApproverRoles": [
+        "reviewer"
+      ],
+      "requiredSourceKinds": [
+        "registry"
+      ],
+      "scorePolicyId": "trust-v1"
+    },
+    {
+      "id": "tmpl-device-service-review",
+      "name": "device-service-review",
+      "version": "tmpl-v1",
+      "requiredPremiseTypes": [
+        "Evidence"
+      ],
+      "requiredChildTemplates": [],
+      "requiredAxioms": [
+        "ax-premises-present",
+        "ax-citations-valid",
+        "ax-ai-ceiling",
+        "ax-no-average-mandatory",
+        "ax-approver-authority",
+        "ax-dual-signoff-pathway",
+        "ax-bulletin-current",
+        "ax-device-qualified-for-incident",
+        "ax-no-phi-in-record"
+      ],
+      "requiredApproverRoles": [
+        "reviewer"
+      ],
+      "requiredSourceKinds": [
+        "agreement"
+      ],
+      "scorePolicyId": "trust-v1"
+    },
+    {
+      "id": "tmpl-device-vendor-qualification",
+      "name": "device-vendor-qualification",
+      "version": "tmpl-v1",
+      "requiredPremiseTypes": [
+        "Evidence",
+        "PriorDecision"
+      ],
+      "requiredChildTemplates": [
+        "tmpl-device-registry-review",
+        "tmpl-device-service-review"
+      ],
+      "requiredAxioms": [
+        "ax-premises-present",
+        "ax-citations-valid",
+        "ax-ai-ceiling",
+        "ax-no-average-mandatory",
+        "ax-approver-authority",
+        "ax-dual-signoff-pathway",
+        "ax-bulletin-current",
+        "ax-device-qualified-for-incident",
+        "ax-no-phi-in-record"
+      ],
+      "requiredApproverRoles": [
+        "reviewer"
+      ],
+      "requiredSourceKinds": [
+        "bulletin"
+      ],
+      "scorePolicyId": "weakest-link-v1"
+    },
+    {
+      "id": "tmpl-incident-review-closure",
+      "name": "incident-review-closure",
+      "version": "tmpl-v1",
+      "requiredPremiseTypes": [
+        "PriorDecision"
+      ],
+      "requiredChildTemplates": [
+        "tmpl-device-vendor-qualification"
+      ],
+      "requiredAxioms": [
+        "ax-premises-present",
+        "ax-citations-valid",
+        "ax-ai-ceiling",
+        "ax-no-average-mandatory",
+        "ax-approver-authority",
+        "ax-dual-signoff-pathway",
+        "ax-bulletin-current",
+        "ax-device-qualified-for-incident",
+        "ax-no-phi-in-record"
+      ],
+      "requiredApproverRoles": [
+        "approver"
+      ],
+      "requiredSourceKinds": [],
+      "scorePolicyId": "trust-v1"
+    }
+  ]
+}

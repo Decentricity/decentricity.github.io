@@ -1,0 +1,28 @@
+{
+  "projects": [
+    {
+      "id": "prj-med-formulary",
+      "name": "Formulary and drug procurement",
+      "purpose": "Record formulary and supply decisions.",
+      "ownerPersonId": "per-julian-park"
+    },
+    {
+      "id": "prj-med-pathway",
+      "name": "Clinical protocol and treatment-pathway approval",
+      "purpose": "Review a synthetic protocol.",
+      "ownerPersonId": "per-amara-okonkwo"
+    },
+    {
+      "id": "prj-med-device",
+      "name": "Medical device vendor qualification",
+      "purpose": "Qualify a fictional device and vendor.",
+      "ownerPersonId": "per-rafael-mendes"
+    },
+    {
+      "id": "prj-med-safety",
+      "name": "Patient-safety incident review",
+      "purpose": "Close a synthetic incident.",
+      "ownerPersonId": "per-nora-lindqvist"
+    }
+  ]
+}

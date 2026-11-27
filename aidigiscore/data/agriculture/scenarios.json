@@ -1,0 +1,72 @@
+{
+  "scenarios": [
+    {
+      "id": "ag-watchlist-invalidation-repair",
+      "title": "Source change, invalidation and repair",
+      "steps": [
+        {
+          "id": "t0",
+          "title": "Passing state (T0)",
+          "actions": []
+        },
+        {
+          "id": "change",
+          "title": "New source supersedes old",
+          "actions": [
+            {
+              "op": "supersedeSource",
+              "sourceId": "src-ag-watchlist-2026-q2",
+              "newSourceId": "src-ag-watchlist-2026-q3"
+            }
+          ]
+        },
+        {
+          "id": "repair",
+          "title": "Agents propose · humans approve (T1)",
+          "actions": [
+            {
+              "op": "repair",
+              "decisionId": "dec-ag-watchlist-redstone",
+              "oldSourceId": "src-ag-watchlist-2026-q2",
+              "newSourceId": "src-ag-watchlist-2026-q3",
+              "agentId": "agt-bramble"
+            }
+          ]
+        },
+        {
+          "id": "negative",
+          "title": "Stale citation rejected",
+          "actions": [
+            {
+              "op": "negative",
+              "decisionId": "dec-ag-allocate-redstone",
+              "agentId": "agt-rowan"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ag-harmless-change",
+      "title": "Harmless source update",
+      "steps": [
+        {
+          "id": "t0",
+          "title": "Passing state (T0)",
+          "actions": []
+        },
+        {
+          "id": "harmless",
+          "title": "Unrelated record revised",
+          "actions": [
+            {
+              "op": "supersedeSource",
+              "sourceId": "src-ag-address-v1",
+              "newSourceId": "src-ag-address-v2"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

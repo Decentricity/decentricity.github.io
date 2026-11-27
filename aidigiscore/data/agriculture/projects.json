@@ -1,0 +1,28 @@
+{
+  "projects": [
+    {
+      "id": "prj-ag-onboarding",
+      "name": "Supplier and farm onboarding",
+      "purpose": "Admit a farm or packer.",
+      "ownerPersonId": "per-maya-chen"
+    },
+    {
+      "id": "prj-ag-sourcing",
+      "name": "Sourcing and procurement plan",
+      "purpose": "Allocate seasonal volume.",
+      "ownerPersonId": "per-maya-chen"
+    },
+    {
+      "id": "prj-ag-certification",
+      "name": "Crop and quality certification",
+      "purpose": "Certify a harvested lot.",
+      "ownerPersonId": "per-tomo-saito"
+    },
+    {
+      "id": "prj-ag-sustainability",
+      "name": "Sustainability and deforestation compliance",
+      "purpose": "Release a plot under the forest-origin policy.",
+      "ownerPersonId": "per-priya-shah"
+    }
+  ]
+}

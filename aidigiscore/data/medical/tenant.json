@@ -1,0 +1,6 @@
+{
+  "id": "tenant-lakeshore-health",
+  "slug": "medical",
+  "name": "Lakeshore Health Network",
+  "disclaimer": "Synthetic data only. This is a decision-governance demonstration. It is not clinical advice, is not a medical device, and must not be used for patient care."
+}

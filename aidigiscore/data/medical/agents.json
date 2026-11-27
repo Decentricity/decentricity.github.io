@@ -1,0 +1,52 @@
+{
+  "agents": [
+    {
+      "id": "agt-galen",
+      "name": "Galen",
+      "brief": "Protocol and literature research",
+      "ownerPersonId": "per-julian-park",
+      "allowedTools": [
+        "search_records",
+        "cite_source",
+        "draft_option",
+        "draft_statement"
+      ],
+      "status": "active"
+    },
+    {
+      "id": "agt-apothecary",
+      "name": "Apothecary",
+      "brief": "Formulary and supply",
+      "ownerPersonId": "per-julian-park",
+      "allowedTools": [
+        "search_supply",
+        "cite_monograph",
+        "propose_repair"
+      ],
+      "status": "active"
+    },
+    {
+      "id": "agt-sentinel",
+      "name": "Sentinel",
+      "brief": "Safety and compliance",
+      "ownerPersonId": "per-nora-lindqvist",
+      "allowedTools": [
+        "check_bulletin",
+        "check_policy",
+        "propose_repair"
+      ],
+      "status": "active"
+    },
+    {
+      "id": "agt-scribe",
+      "name": "Scribe",
+      "brief": "Drafting",
+      "ownerPersonId": "per-hannah-brooks",
+      "allowedTools": [
+        "draft_certificate",
+        "draft_statement"
+      ],
+      "status": "active"
+    }
+  ]
+}

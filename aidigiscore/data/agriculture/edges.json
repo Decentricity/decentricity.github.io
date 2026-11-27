@@ -1,0 +1,108 @@
+{
+  "edges": [
+    {
+      "id": "dec-ag-watchlist-redstone-src-ag-watchlist-2026-q2",
+      "type": "supports",
+      "fromId": "dec-ag-watchlist-redstone",
+      "toId": "src-ag-watchlist-2026-q2",
+      "fromVersion": 1,
+      "toVersion": 1
+    },
+    {
+      "id": "dec-ag-quality-redstone-src-ag-quality-audit-redstone",
+      "type": "supports",
+      "fromId": "dec-ag-quality-redstone",
+      "toId": "src-ag-quality-audit-redstone",
+      "fromVersion": 1,
+      "toVersion": 1
+    },
+    {
+      "id": "dec-ag-contract-redstone-src-ag-contract-redstone-v3",
+      "type": "supports",
+      "fromId": "dec-ag-contract-redstone",
+      "toId": "src-ag-contract-redstone-v3",
+      "fromVersion": 1,
+      "toVersion": 1
+    },
+    {
+      "id": "dec-ag-plot-clearance-src-ag-plot-imagery-plt17",
+      "type": "supports",
+      "fromId": "dec-ag-plot-clearance",
+      "toId": "src-ag-plot-imagery-plt17",
+      "fromVersion": 1,
+      "toVersion": 1
+    },
+    {
+      "id": "dec-ag-plot-clearance-src-ag-forest-policy-v2",
+      "type": "supports",
+      "fromId": "dec-ag-plot-clearance",
+      "toId": "src-ag-forest-policy-v2",
+      "fromVersion": 1,
+      "toVersion": 1
+    },
+    {
+      "id": "dec-ag-approve-redstone-dec-ag-watchlist-redstone",
+      "type": "composed-of",
+      "fromId": "dec-ag-approve-redstone",
+      "toId": "dec-ag-watchlist-redstone",
+      "fromVersion": 1,
+      "toVersion": 1
+    },
+    {
+      "id": "dec-ag-approve-redstone-dec-ag-quality-redstone",
+      "type": "composed-of",
+      "fromId": "dec-ag-approve-redstone",
+      "toId": "dec-ag-quality-redstone",
+      "fromVersion": 1,
+      "toVersion": 1
+    },
+    {
+      "id": "dec-ag-approve-redstone-dec-ag-contract-redstone",
+      "type": "composed-of",
+      "fromId": "dec-ag-approve-redstone",
+      "toId": "dec-ag-contract-redstone",
+      "fromVersion": 1,
+      "toVersion": 1
+    },
+    {
+      "id": "dec-ag-approve-redstone-dec-ag-plot-clearance",
+      "type": "cites",
+      "fromId": "dec-ag-approve-redstone",
+      "toId": "dec-ag-plot-clearance",
+      "fromVersion": 1,
+      "toVersion": 1
+    },
+    {
+      "id": "dec-ag-allocate-redstone-dec-ag-approve-redstone",
+      "type": "composed-of",
+      "fromId": "dec-ag-allocate-redstone",
+      "toId": "dec-ag-approve-redstone",
+      "fromVersion": 1,
+      "toVersion": 1
+    },
+    {
+      "id": "dec-ag-allocate-redstone-dec-ag-plot-clearance",
+      "type": "composed-of",
+      "fromId": "dec-ag-allocate-redstone",
+      "toId": "dec-ag-plot-clearance",
+      "fromVersion": 1,
+      "toVersion": 1
+    },
+    {
+      "id": "dec-ag-certify-lot-441-dec-ag-quality-redstone",
+      "type": "depends-on",
+      "fromId": "dec-ag-certify-lot-441",
+      "toId": "dec-ag-quality-redstone",
+      "fromVersion": 1,
+      "toVersion": 1
+    },
+    {
+      "id": "dec-ag-certify-lot-441-dec-ag-allocate-redstone",
+      "type": "depends-on",
+      "fromId": "dec-ag-certify-lot-441",
+      "toId": "dec-ag-allocate-redstone",
+      "fromVersion": 1,
+      "toVersion": 1
+    }
+  ]
+}
