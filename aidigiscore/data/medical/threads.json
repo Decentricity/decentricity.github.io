@@ -1,0 +1,247 @@
+{
+  "threads": [
+    {
+      "id": "thread-dec-med-nexoral-monograph",
+      "decisionId": "dec-med-nexoral-monograph",
+      "title": "Nexoral monograph review",
+      "messages": [
+        {
+          "actorId": "per-julian-park",
+          "type": "request",
+          "text": "Apothecary, which fictional monograph are we reviewing for the formulary exercise?"
+        },
+        {
+          "actorId": "agt-apothecary",
+          "type": "evidence",
+          "text": "I attached the Nexoral 10 mg monograph v1. The review is scoped to this version."
+        },
+        {
+          "actorId": "per-hannah-brooks",
+          "type": "review",
+          "text": "Log the version here so the panel can distinguish this review from any later restrictions."
+        },
+        {
+          "actorId": "agt-galen",
+          "type": "reply",
+          "text": "I’ll cite this review when the formulary decision is drafted."
+        }
+      ]
+    },
+    {
+      "id": "thread-dec-med-nexoral-supply",
+      "decisionId": "dec-med-nexoral-supply",
+      "title": "Nexoral supply review",
+      "messages": [
+        {
+          "actorId": "per-julian-park",
+          "type": "request",
+          "text": "Before the panel votes, check the fictional Aetheris supply path for the planning period."
+        },
+        {
+          "actorId": "agt-apothecary",
+          "type": "evidence",
+          "text": "I found the supply agreement for Q3 and attached it to the supply review."
+        },
+        {
+          "actorId": "per-hannah-brooks",
+          "type": "review",
+          "text": "Keep supply adequacy as a decision the panel can cite separately."
+        },
+        {
+          "actorId": "agt-galen",
+          "type": "reply",
+          "text": "I’ll make the supply review a formulary prerequisite."
+        }
+      ]
+    },
+    {
+      "id": "thread-dec-med-nexoral-coi",
+      "decisionId": "dec-med-nexoral-coi",
+      "title": "Panel conflict-of-interest review",
+      "messages": [
+        {
+          "actorId": "per-hannah-brooks",
+          "type": "request",
+          "text": "Does the fictional panel have a completed conflict-of-interest clearance for this review?"
+        },
+        {
+          "actorId": "agt-sentinel",
+          "type": "evidence",
+          "text": "I attached the 2026 panel clearance as the evidence for this decision."
+        },
+        {
+          "actorId": "per-julian-park",
+          "type": "review",
+          "text": "Please record the panel clearance here so it can be cited as its own input at the formulary vote."
+        },
+        {
+          "actorId": "agt-scribe",
+          "type": "reply",
+          "text": "I’ll use the recorded clearance in the draft for review."
+        }
+      ]
+    },
+    {
+      "id": "thread-dec-med-formulary-nexoral",
+      "decisionId": "dec-med-formulary-nexoral",
+      "title": "Nexoral formulary vote",
+      "messages": [
+        {
+          "actorId": "per-julian-park",
+          "type": "request",
+          "text": "Can the panel add fictional Nexoral to the adult formulary? I need the review trail before sign-off."
+        },
+        {
+          "actorId": "agt-apothecary",
+          "type": "evidence",
+          "text": "I’ve linked the monograph, supply and conflict-of-interest reviews, plus the July safety bulletin."
+        },
+        {
+          "actorId": "per-hannah-brooks",
+          "type": "review",
+          "text": "Keep the bulletin version in the decision. If a new bulletin supersedes it, the panel has to reopen this vote."
+        },
+        {
+          "actorId": "agt-sentinel",
+          "type": "reply",
+          "text": "I verified that the July bulletin is current at this point in the scenario."
+        }
+      ]
+    },
+    {
+      "id": "thread-dec-med-pathway-cap-v3",
+      "decisionId": "dec-med-pathway-cap-v3",
+      "title": "Pathway v3 sign-off",
+      "messages": [
+        {
+          "actorId": "per-julian-park",
+          "type": "request",
+          "text": "Galen, attach the formulary version that this fictional pathway relies on."
+        },
+        {
+          "actorId": "agt-galen",
+          "type": "evidence",
+          "text": "The pathway cites the current Nexoral formulary decision. I’ve attached that version to the draft."
+        },
+        {
+          "actorId": "per-amara-okonkwo",
+          "type": "review",
+          "text": "I’ll record the CMO approval here. Keep Julian’s P&T sign-off as a separate approval in this thread."
+        },
+        {
+          "actorId": "agt-scribe",
+          "type": "reply",
+          "text": "I’ll send the pathway draft for both signatures against the same version."
+        }
+      ]
+    },
+    {
+      "id": "thread-dec-med-helix-registry",
+      "decisionId": "dec-med-helix-registry",
+      "title": "HelixPulse registry review",
+      "messages": [
+        {
+          "actorId": "per-rafael-mendes",
+          "type": "request",
+          "text": "Can you find the registry entry for HelixPulse in the demo records?"
+        },
+        {
+          "actorId": "agt-sentinel",
+          "type": "evidence",
+          "text": "I attached the fictional current device-registry entry to the review."
+        },
+        {
+          "actorId": "per-hannah-brooks",
+          "type": "review",
+          "text": "Capture the registry as its own decision so the qualification can cite it independently."
+        },
+        {
+          "actorId": "agt-scribe",
+          "type": "reply",
+          "text": "I’ll draft the registry review for Rafael’s sign-off."
+        }
+      ]
+    },
+    {
+      "id": "thread-dec-med-helix-service",
+      "decisionId": "dec-med-helix-service",
+      "title": "Northwind service review",
+      "messages": [
+        {
+          "actorId": "per-rafael-mendes",
+          "type": "request",
+          "text": "Which Northwind service agreement applies to HelixPulse in this exercise?"
+        },
+        {
+          "actorId": "agt-galen",
+          "type": "evidence",
+          "text": "The v2 service agreement is the one listed for HelixPulse. I’ve attached it here."
+        },
+        {
+          "actorId": "per-hannah-brooks",
+          "type": "review",
+          "text": "Please keep service coverage separate from device registry status in the qualification trail."
+        },
+        {
+          "actorId": "agt-scribe",
+          "type": "reply",
+          "text": "I’ll record the service review as a separate input."
+        }
+      ]
+    },
+    {
+      "id": "thread-dec-med-qualify-helixpulse",
+      "decisionId": "dec-med-qualify-helixpulse",
+      "title": "HelixPulse qualification",
+      "messages": [
+        {
+          "actorId": "per-rafael-mendes",
+          "type": "request",
+          "text": "Bring the registry, service, and safety records together for device qualification."
+        },
+        {
+          "actorId": "agt-sentinel",
+          "type": "evidence",
+          "text": "I linked the registry and service decisions and attached the June fictional device bulletin."
+        },
+        {
+          "actorId": "per-nora-lindqvist",
+          "type": "review",
+          "text": "Incident review will cite this qualification, so please retain those versions on the record."
+        },
+        {
+          "actorId": "agt-scribe",
+          "type": "reply",
+          "text": "I’ll draft a qualification for Rafael to sign with those three inputs."
+        }
+      ]
+    },
+    {
+      "id": "thread-dec-med-incident-syn2047",
+      "decisionId": "dec-med-incident-syn2047",
+      "title": "INC-SYN-2047 closure",
+      "messages": [
+        {
+          "actorId": "per-nora-lindqvist",
+          "type": "request",
+          "text": "For synthetic ticket INC-SYN-2047, can we record the device-settings corrective action and close the review?"
+        },
+        {
+          "actorId": "agt-scribe",
+          "type": "evidence",
+          "text": "I’ve linked the current HelixPulse qualification as the premise for closure and used only the synthetic ticket ID."
+        },
+        {
+          "actorId": "per-rafael-mendes",
+          "type": "review",
+          "text": "Please keep the device corrective action scoped to the ticket. A pathway amendment would need its own decision."
+        },
+        {
+          "actorId": "agt-sentinel",
+          "type": "reply",
+          "text": "The qualification is current. I’ll send the closure proposal for Amara’s approval."
+        }
+      ]
+    }
+  ]
+}

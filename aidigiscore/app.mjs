@@ -4,6 +4,7 @@ const api = new MockHarnessClient();
 const $ = id => document.getElementById(id);
 const panel = $('panel');
 const descriptions = {
+  chat:'See how team members and agents reached each decision, with evidence and sign-offs in the thread.',
   graph:'Trace how evidence and decisions flow across projects.',
   board:'Review decisions that need attention and see what triggered each flag.',
   detail:'Inspect premises, approvals, scoring, and versioned certificates.',
@@ -12,11 +13,11 @@ const descriptions = {
   audit:'Inspect the event history and independently verify its hash chain.',
   timeline:'Replay the scenario and inspect the record at each step.',
 };
-const icons = {graph:'<circle cx="4" cy="8" r="2"/><circle cx="12" cy="4" r="2"/><circle cx="12" cy="12" r="2"/><path d="m6 7 4-2M6 9l4 2"/>',board:'<path d="M4 14V3h8l-2 3 2 3H4"/>',detail:'<rect x="4" y="2.5" width="8" height="11" rx="1"/><path d="M6 6h4M6 9h4"/>',console:'<path d="M3 3h10v8H7l-3 2v-2H3zM6 7h4"/>',agents:'<path d="M3 12v-3m5 3V4m5 8V6"/>',audit:'<path d="m8 2 5 2v4c0 3-5 6-5 6S3 11 3 8V4zM6 8l1.5 1.5L10 7"/>',timeline:'<circle cx="8" cy="8" r="5.5"/><path d="M8 5v3l2 1"/>'};
-const screens = { graph:'Decision graph', board:'Flag board', detail:'Decision detail', console:'Agent console',
+const icons = {chat:'<path d="M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2zM5.5 7h5"/>',graph:'<circle cx="4" cy="8" r="2"/><circle cx="12" cy="4" r="2"/><circle cx="12" cy="12" r="2"/><path d="m6 7 4-2M6 9l4 2"/>',board:'<path d="M4 14V3h8l-2 3 2 3H4"/>',detail:'<rect x="4" y="2.5" width="8" height="11" rx="1"/><path d="M6 6h4M6 9h4"/>',console:'<path d="M3 3h10v8H7l-3 2v-2H3zM6 7h4"/>',agents:'<path d="M3 12v-3m5 3V4m5 8V6"/>',audit:'<path d="m8 2 5 2v4c0 3-5 6-5 6S3 11 3 8V4zM6 8l1.5 1.5L10 7"/>',timeline:'<circle cx="8" cy="8" r="5.5"/><path d="M8 5v3l2 1"/>'};
+const screens = { chat:'Team chats', graph:'Decision graph', board:'Flag board', detail:'Decision detail', console:'Agent console',
   agents:'Agent scoreboard', audit:'Audit log', timeline:'Timeline replay' };
-let view = 'graph', selected, scenario, step = 0, timer, busy = false;
-let agentId, consoleDecisionId, filters = {}, auditFilters = {}, chainMessage = '';
+let view = 'chat', selected, scenario, step = 0, timer, busy = false;
+let chatId, highlightedMessage, agentId, consoleDecisionId, filters = {}, auditFilters = {}, chainMessage = '';
 const esc = (input = '') => String(input ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const option = (id, name, current) => `<option value="${esc(id)}" ${id === current ? 'selected' : ''}>${esc(name)}</option>`;
 const select = (id, label, items, current, all) => `<label>${label}<select id="${id}">${all ? option('',all,current) : ''}${items.map(item => option(item.id,item.name,current)).join('')}</select></label>`;
@@ -39,7 +40,7 @@ async function action(task) {
 async function loadTenant(id) {
   stop(); await api.setTenant(id);
   scenario = (await api.listScenarios())[0];
-  selected = undefined; agentId = undefined; consoleDecisionId = undefined; step = 0;
+  selected = undefined; chatId = undefined; highlightedMessage = undefined; agentId = undefined; consoleDecisionId = undefined; step = 0;
   filters = {}; auditFilters = {}; chainMessage = '';
 }
 async function jump(index) {
@@ -125,17 +126,97 @@ async function boardView(projects, people) {
     return [esc(project?.name),link(item.id,item.statement),badge(item.disposition),esc(item.result.reasons.join(', ') || 'Recorded override'),event ? time(event.at) : '—',esc(people.find(person=>person.id===project?.ownerPersonId)?.name)];
   }),'No flagged decisions in this state.')}</div>`;
 }
+const contributionLabels = {
+  request:'Decision request', evidence:'Evidence cited', review:'Team review', proposal:'Proposed decision',
+  approval:'Human sign-off', outcome:'Checker verdict',
+};
+const initials = name => name.replace(/^Dr\. /,'').split(' ').slice(0,2).map(word=>word[0]).join('');
+const messageLink = (decisionId, messageId, label) => `<button class="link" data-open-chat="${esc(decisionId)}" data-message="${esc(messageId)}">${esc(label)}</button>`;
+async function chatView(decisions, agents, people, projects) {
+  const threads = await api.listThreads();
+  const actors = new Map([...people, ...agents, { id:'checker', name:'Decision checker' }].map(item => [item.id,item]));
+  const decisionMap = new Map(decisions.map(item => [item.id,item]));
+  if (!threads.some(thread=>thread.decisionId===chatId)) {
+    chatId = threads.find(thread => ['tmpl-vendor-farm-approval','tmpl-treatment-pathway-approval'].includes(decisionMap.get(thread.decisionId)?.templateId))?.decisionId ?? threads[0].decisionId;
+  }
+  const thread = threads.find(item=>item.decisionId===chatId);
+  const decision = await api.getDecision(chatId);
+  const project = projects.find(item=>item.id===decision.projectId);
+  const contributed = new Set(decision.contributionIds);
+  const attached = new Map(decision.evidence.map(item => [item.id,item]));
+  const groups = Map.groupBy(thread.messages, item=>item.version);
+  const agentOptions = agents.filter(item=>thread.participants.includes(item.id));
+  const humanOptions = people.filter(item=>thread.participants.includes(item.id));
+  const participant = id => {
+    const actor = actors.get(id);
+    return `<span class="participant ${id.startsWith('agt-')?'agent':''}"><span class="avatar" aria-hidden="true">${esc(initials(actor.name))}</span>${esc(actor.name)}${id.startsWith('agt-')?' · AI':''}</span>`;
+  };
+  panel.innerHTML = `<div class="chat-workspace">
+  <section class="inbox" aria-label="Decision conversations"><h2>Conversations <span>${threads.length}</span></h2>
+  ${projects.map(project => {
+    const items = threads.filter(item=>decisionMap.get(item.decisionId)?.projectId===project.id);
+    return items.length ? `<div class="inbox-group"><h3>${esc(project.name)}</h3>${items.map(item =>
+      `<button type="button" data-thread="${esc(item.decisionId)}" aria-pressed="${item.id===thread.id}"><span>${esc(item.title)}</span>
+      <small>${item.participants.filter(id=>id.startsWith('per-')).length} people · ${item.messages.length} messages</small></button>`).join('')}</div>` : '';
+  }).join('')}</section>
+  <article class="conversation">
+    <header class="conversation-header"><div class="conversation-project">${esc(project.name)}</div><h2>${esc(thread.title)}</h2>
+    <div class="participant-list" aria-label="Conversation participants">${thread.participants.map(participant).join('')}</div></header>
+    <div class="decision-banner"><div><div class="row">${badge(decision.disposition)}<span class="muted">Decision v${decision.version}</span></div>
+    <strong>${esc(decision.statement)}</strong></div><button data-decision="${esc(decision.id)}">Inspect decision →</button></div>
+    ${decision.parentDecisionId ? `<p class="parent-thread">${messageLink(decision.parentDecisionId,'','Open the original team conversation')}</p>` : ''}
+    <div class="transcript" aria-label="Conversation transcript">
+    ${[...groups].map(([version,messages])=>`<section aria-label="Decision version ${version}"><h3 class="version-divider">Decision v${version}</h3>
+    ${messages.map(message => {
+      const actor = actors.get(message.actorId);
+      const kind = message.actorId==='checker'?'system':message.actorId.startsWith('agt-')?'agent':'human';
+      const recorded = contributed.has(message.id) && message.version===decision.version;
+      const references = message.refs.map(ref => {
+        const item = attached.get(ref.refId) ?? decisionMap.get(ref.refId);
+        return `<li>${ref.type==='PriorDecision' && item ? link(ref.refId,item.statement) : esc(item?.title ?? ref.refId)} <small>v${ref.version}</small></li>`;
+      });
+      return `<article id="${esc(message.id)}" tabindex="-1" class="chat-message ${kind} ${recorded?'contributed':''} ${message.id===highlightedMessage?'highlighted':''}">
+      <span class="avatar" aria-hidden="true">${kind==='system'?'✓':esc(initials(actor.name))}</span>
+      <div class="message-body"><div class="chat-meta"><strong>${esc(actor.name)}</strong>${kind==='agent'?'<span class="ai-label">AI agent</span>':''}
+      <time datetime="${esc(message.at)}">${time(message.at)}</time></div>
+      <p>${esc(message.text)}</p>
+      ${contributionLabels[message.type] ? `<span class="chat-tag">${contributionLabels[message.type]}</span>` : ''}
+      ${recorded ? '<span class="chat-tag trace-tag">In decision record</span>' : ''}
+      ${references.length ? `<ul class="message-references">${references.join('')}</ul>` : ''}</div></article>`;
+    }).join('')}</section>`).join('')}</div>
+    ${agentOptions.length && humanOptions.length ? `<form id="team-followup" class="team-followup"><h3>Simulated follow-up</h3>
+    <div class="filters">${select('team-person','Send as',humanOptions,humanOptions[0].id)}${select('team-agent','Ask',agentOptions,agentOptions[0].id)}</div>
+    <div class="followup-entry"><label>Message <input type="text" id="team-message" maxlength="220" required placeholder="Ask about the current decision"></label><button>Send</button></div></form>` : ''}
+  </article></div>`;
+  $('team-followup')?.addEventListener('submit', event=>{
+    event.preventDefault();
+    action(async()=>{
+      await api.proposeStep({ decisionId:chatId, personId:$('team-person').value, agentId:$('team-agent').value, proposal:$('team-message').value });
+      const updated = (await api.listThreads()).find(item=>item.decisionId===chatId);
+      highlightedMessage = updated.messages.at(-1).id;
+    });
+  });
+  if (highlightedMessage) document.getElementById(highlightedMessage)?.focus();
+}
 async function detailView(decisions, people) {
   if (!decisions.some(item=>item.id===selected)) selected = decisions[0].id;
   const item = await api.getDecision(selected);
   const result = item.result;
+  const thread = (await api.listThreads()).find(thread=>thread.decisionId===item.id);
+  const actors = new Map([...people,...await api.listAgents()].map(actor=>[actor.id,actor.name]));
+  const provenance = item.history.findLast(cert=>cert.decisionVersion===item.version)?.contributionIds ?? item.contributionIds ?? [];
+  const recorded = thread?.messages.filter(message=>provenance.includes(message.id)) ?? [];
   const formatted = value => esc(JSON.stringify(value,null,2));
   panel.innerHTML = `${select('detail-select','Decision',decisions.map(item=>({...item,name:item.statement})),selected)}
   <section class="card"><div class="row">${badge(item.disposition)}<span class="muted">${esc(item.id)} · v${item.version}</span></div><h3>${esc(item.statement)}</h3><p>${esc(result.verdict)} · ${esc(result.reasons.join(', ') || 'All required checks passed')}</p><button id="rerun">Re-run current checker</button> <output id="rerun-result"></output></section>
+  ${thread ? `<section class="card decision-provenance"><h2>Decision conversation</h2><p>${messageLink(item.id,'','Open team chat · '+thread.title)}</p>
+  ${recorded.length ? `<ul>${recorded.map(message=>`<li>${messageLink(item.id,message.id,contributionLabels[message.type])} <span class="muted">· ${esc(actors.get(message.actorId))}</span><blockquote>${esc(message.text)}</blockquote></li>`).join('')}</ul>` : '<p class="muted">Open the thread to see the discussion and the checker outcome.</p>'}</section>` : ''}
   <div class="detail-grid">
   <section class="card"><h2>Premises and template</h2><p><code>${esc(item.templateId)}</code> · ${esc(item.template.version)}</p><ul>${item.premises.map((ref,i)=>`<li>${esc(ref.type)} · ${item.evidence[i]?.statement ? link(ref.refId,item.evidence[i].statement) : esc(item.evidence[i]?.title || ref.refId)} · v${ref.version}</li>`).join('')}</ul><details><summary>Policy axioms</summary><ul>${item.policies.map(policy=>`<li>${esc(policy.statement)}</li>`).join('')}</ul></details></section>
   <section class="card"><h2>Score and approvals</h2><p>${esc(result.score.ruleId)}</p><dl>${Object.entries({Base:result.score.B,Penalty:result.score.P,'Human adjustment':result.score.H,Ceiling:result.score.C,Trust:result.score.T}).map(([name,value])=>`<dt>${name}</dt><dd>${score(value)}</dd>`).join('')}</dl><ul>${item.approvals.map(approval=>`<li>${esc(people.find(person=>person.id===approval.personId)?.name)} · ${esc(approval.kind)} · ${time(approval.at)}</li>`).join('')}</ul></section>
-  <section class="card"><h2>Certificates</h2>${item.history.map(({input,...cert})=>`<details><summary>v${cert.decisionVersion} · ${cert.verdict}</summary><pre>${formatted(cert)}</pre><button class="verify-certificate" data-version="${cert.decisionVersion}">Re-run stored certificate</button> <output></output></details>`).join('') || '<p>No acceptance certificate.</p>'}</section>
+  <section class="card"><h2>Certificates</h2>${item.history.map(({input,...cert})=>`<details><summary>v${cert.decisionVersion} · ${cert.verdict}</summary><pre>${formatted(cert)}</pre>
+  ${(cert.contributionIds ?? []).map(id=>{const message=thread?.messages.find(item=>item.id===id);return message ? `<div>${messageLink(item.id,id,contributionLabels[message.type]+' · '+actors.get(message.actorId))}</div>` : '';}).join('')}
+  <button class="verify-certificate" data-version="${cert.decisionVersion}">Re-run stored certificate</button> <output></output></details>`).join('') || '<p>No acceptance certificate.</p>'}</section>
   <section class="card"><h2>Point-in-time snapshots</h2>${item.snapshots.map(snapshot=>`<details><summary>${snapshot.label} · trust ${score(snapshot.trustValue)}</summary><pre>${formatted(snapshot)}</pre></details>`).join('') || '<p>No accepted snapshots.</p>'}</section></div>`;
   $('detail-select').onchange = event => action(async()=>{selected=event.target.value;});
   $('rerun').onclick = async () => { const value=await api.rerunChecker(selected); $('rerun-result').textContent=value.verdict + ' ' + value.reasons.join(', '); };
@@ -167,7 +248,7 @@ async function auditView(projects, decisions, agents) {
   const events = await api.listAudit(auditFilters);
   panel.innerHTML = `<div class="card"><div class="controls"><button id="verify">Verify chain</button><button id="tamper">Demonstrate tamper</button><button id="restore">Restore record</button><output role="status">${esc(chainMessage)}</output></div></div>
   <div class="filters">${select('a-project','Project',projects,auditFilters.projectId,'All projects')}${select('a-decision','Decision',decisions.map(item=>({...item,name:short(item.statement,39)})),auditFilters.decisionId,'All decisions')}${select('a-actor','Agent',agents,auditFilters.actorId,'All actors')}${select('a-type','Event',types,auditFilters.type,'All events')}</div>
-  <div class="card">${table(['Time','Event','Record','Details'],events.map(event=>[time(event.at),esc(event.type),`<code>${esc(event.id)}</code>`,`<details><summary>${esc(event.payload.summary ?? event.actorId)}</summary><pre>${esc(JSON.stringify(event,null,2))}</pre></details>`]),'No matching audit events.')}</div>`;
+  <div class="card">${table(['Time','Event','Record','Details'],events.map(event=>[time(event.at),esc(event.type),`<code>${esc(event.id)}</code>`,`<details><summary>${esc(event.payload.summary ?? event.actorId)}</summary><pre>${esc(JSON.stringify(event,null,2))}</pre>${event.payload.messageId ? messageLink(event.decisionId,event.payload.messageId,'Open this message') : ''}</details>`]),'No matching audit events.')}</div>`;
   const verify = async () => {const value=await api.verifyAuditChain();chainMessage=value.ok?value.details:`First break at ${value.brokenAt}. ${value.details}`;};
   $('verify').onclick = ()=>action(verify);
   $('tamper').onclick = ()=>action(async()=>{await api.demonstrateTamper();await verify();});
@@ -195,6 +276,7 @@ async function render() {
   $('heading').textContent=screens[view];
   $('view-description').textContent=descriptions[view];
   $('nav').innerHTML=Object.entries(screens).map(([id,name])=>`<button data-view="${id}" ${view===id?'aria-current="page"':''}><svg viewBox="0 0 16 16" aria-hidden="true">${icons[id]}</svg>${name}</button>`).join('');
+  if(view==='chat') await chatView(decisions,agents,people,projects);
   if(view==='graph') await graphView(decisions,projects,agents);
   if(view==='board') await boardView(projects,people);
   if(view==='detail') await detailView(decisions,people);
@@ -206,6 +288,10 @@ async function render() {
 }
 $('nav').onclick=event=>{const id=event.target.closest('[data-view]')?.dataset.view;if(id)action(async()=>{view=id;});};
 panel.onclick=event=>{
+  const openChat=event.target.closest('[data-open-chat]');
+  if(openChat) action(async()=>{chatId=openChat.dataset.openChat;highlightedMessage=openChat.dataset.message;view='chat';});
+  const thread=event.target.closest('[data-thread]')?.dataset.thread;
+  if(thread) action(async()=>{chatId=thread;highlightedMessage=undefined;});
   const decision=event.target.closest('[data-decision]')?.dataset.decision;
   const agent=event.target.closest('[data-agent]')?.dataset.agent;
   if(decision){event.preventDefault();action(async()=>{selected=decision;view='detail';});}

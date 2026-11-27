@@ -1,0 +1,193 @@
+{
+  "threads": [
+    {
+      "id": "thread-dec-ag-watchlist-redstone",
+      "decisionId": "dec-ag-watchlist-redstone",
+      "title": "Redstone watchlist review",
+      "messages": [
+        {
+          "actorId": "per-luis-ortega",
+          "type": "request",
+          "text": "Can we clear Redstone for onboarding? I need the exact watchlist release on record."
+        },
+        {
+          "actorId": "agt-bramble",
+          "type": "evidence",
+          "text": "I checked the Q2 watchlist against Redstone’s supplier record. I found no match."
+        },
+        {
+          "actorId": "per-maya-chen",
+          "type": "review",
+          "text": "Please pin the Q2 release. The supplier approval must point to this check, so a new list will send it back to us."
+        },
+        {
+          "actorId": "agt-rowan",
+          "type": "reply",
+          "text": "I’ll cite this check on the supplier review, with Q2 as the evidence."
+        }
+      ]
+    },
+    {
+      "id": "thread-dec-ag-quality-redstone",
+      "decisionId": "dec-ag-quality-redstone",
+      "title": "Redstone quality evidence",
+      "messages": [
+        {
+          "actorId": "per-tomo-saito",
+          "type": "request",
+          "text": "Rowan, pull the audit for Redstone. Which evidence can we rely on for supplier onboarding?"
+        },
+        {
+          "actorId": "agt-rowan",
+          "type": "evidence",
+          "text": "I found the Redstone quality audit. I’ve attached that audit to this decision."
+        },
+        {
+          "actorId": "per-maya-chen",
+          "type": "review",
+          "text": "Use it for supplier quality. I’ll have the lot team make its own premium-channel decision."
+        },
+        {
+          "actorId": "agt-cedar",
+          "type": "reply",
+          "text": "I’ll carry the audit reference into the onboarding draft."
+        }
+      ]
+    },
+    {
+      "id": "thread-dec-ag-contract-redstone",
+      "decisionId": "dec-ag-contract-redstone",
+      "title": "Redstone contract terms",
+      "messages": [
+        {
+          "actorId": "per-maya-chen",
+          "type": "request",
+          "text": "Cedar, review the terms against the version procurement has on file."
+        },
+        {
+          "actorId": "agt-cedar",
+          "type": "evidence",
+          "text": "The terms I’m proposing are from the signed-off draft labeled v3. It’s the version attached here."
+        },
+        {
+          "actorId": "per-luis-ortega",
+          "type": "review",
+          "text": "Keep the contract acceptance separate from the watchlist check. We need both on the supplier decision."
+        },
+        {
+          "actorId": "agt-rowan",
+          "type": "reply",
+          "text": "I’ll link this contract review as its own prerequisite."
+        }
+      ]
+    },
+    {
+      "id": "thread-dec-ag-plot-clearance",
+      "decisionId": "dec-ag-plot-clearance",
+      "title": "Block C forest-origin review",
+      "messages": [
+        {
+          "actorId": "per-priya-shah",
+          "type": "request",
+          "text": "Before procurement sets a volume, can we confirm that Block C clears the forest-origin policy?"
+        },
+        {
+          "actorId": "agt-rowan",
+          "type": "evidence",
+          "text": "I found the Block C imagery and the v2 forest-origin policy. Both refer to the plot in the supplier record."
+        },
+        {
+          "actorId": "per-maya-chen",
+          "type": "review",
+          "text": "Please record the clearance for Block C specifically. Our volume approval will cite that plot release."
+        },
+        {
+          "actorId": "agt-bramble",
+          "type": "reply",
+          "text": "I’ve attached both inputs to the plot review for sign-off."
+        }
+      ]
+    },
+    {
+      "id": "thread-dec-ag-approve-redstone",
+      "decisionId": "dec-ag-approve-redstone",
+      "title": "Redstone supplier approval",
+      "messages": [
+        {
+          "actorId": "per-maya-chen",
+          "type": "request",
+          "text": "Can we approve Redstone for the Q3 sourcing plan? Bring the required onboarding checks into this thread."
+        },
+        {
+          "actorId": "agt-rowan",
+          "type": "evidence",
+          "text": "I’ve linked the watchlist check, quality review, contract acceptance, and Block C clearance."
+        },
+        {
+          "actorId": "per-luis-ortega",
+          "type": "review",
+          "text": "The watchlist clearance is tied to Q2. The supplier approval needs revalidation if that source changes."
+        },
+        {
+          "actorId": "agt-cedar",
+          "type": "reply",
+          "text": "I’ll record supplier approval as the proposed decision. The volume allocation stays a separate decision and can cite this one."
+        }
+      ]
+    },
+    {
+      "id": "thread-dec-ag-allocate-redstone",
+      "decisionId": "dec-ag-allocate-redstone",
+      "title": "Q3 Redstone allocation",
+      "messages": [
+        {
+          "actorId": "per-maya-chen",
+          "type": "request",
+          "text": "Can we allocate 1,200 tonnes of Q3 apples to Redstone? Check the threshold before I confirm."
+        },
+        {
+          "actorId": "agt-rowan",
+          "type": "evidence",
+          "text": "The allocation relies on Redstone’s supplier approval and a current release for Block C. I’ve linked both."
+        },
+        {
+          "actorId": "per-priya-shah",
+          "type": "review",
+          "text": "At 1,200 tonnes the forest-origin release is mandatory. Keep it as a direct citation even though onboarding also cites it."
+        },
+        {
+          "actorId": "agt-bramble",
+          "type": "reply",
+          "text": "I checked both dependencies for this allocation and will flag it if either one falls out of date."
+        }
+      ]
+    },
+    {
+      "id": "thread-dec-ag-certify-lot-441",
+      "decisionId": "dec-ag-certify-lot-441",
+      "title": "LOT-441 premium certification",
+      "messages": [
+        {
+          "actorId": "per-tomo-saito",
+          "type": "request",
+          "text": "Can LOT-441 go to the premium channel? I need the quality and sourcing links on the same record."
+        },
+        {
+          "actorId": "agt-rowan",
+          "type": "evidence",
+          "text": "I’ve pulled the Redstone quality decision and the Q3 allocation for the lot review."
+        },
+        {
+          "actorId": "per-maya-chen",
+          "type": "review",
+          "text": "The allocation applies to this supplier. If that decision is reopened, bring this certification back for review too."
+        },
+        {
+          "actorId": "agt-cedar",
+          "type": "reply",
+          "text": "I’ll draft the lot certification against those two decision versions."
+        }
+      ]
+    }
+  ]
+}
